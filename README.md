@@ -18,16 +18,16 @@ Taking advandatge of the powerful pipeline language BigDataScript (http://pcingo
 
 ```
 # get the latest version of chipseq pipelines
-$git clone https://github.com/kundajelab/pipelines/
+$git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
 
-# check you get the tf chipseq pipeline script
-$cd pipelines/bds/chipseq
+# find the tf chipseq pipeline script
+$cd ENCODE_chipseq_pipeline
 $ls -l tf_chipseq.bds
 
 # install dependencies
 $./install_dependencies.sh
 
-# move bds.config to BigDataScript (BDS) directory
+# IMPORTANT! Move bds.config to BigDataScript (BDS) directory
 $mkdir -p $HOME/.bds
 $cp bds.config $HOME/.bds/
 ```
