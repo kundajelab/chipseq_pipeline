@@ -8,8 +8,8 @@ Taking advandatge of the powerful pipeline language BigDataScript (http://pcingo
 ```
 1) One-command-line installation for all dependencies for ChIP-Seq pipeline
 2) One command line (or one configuration file) to run the whole pipeline
-3) Automatically resuming from the point of failure for failed jobs (by comparing timestamps of input/output files)
-4) Optimized parallel jobs for the pipeline
+3) Resuming from the point of failure for failed jobs (by comparing timestamps of input/output files)
+4) Automatically optimize parallel jobs for the pipeline
 5) Sun Grid Engine cluster support
 6) Realtime HTML Progress report to monitor the pipeline jobs
 ```
