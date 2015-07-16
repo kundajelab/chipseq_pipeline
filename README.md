@@ -113,28 +113,15 @@ For better debugging, an HTML progress report in the working directory (where yo
 Add the following command line argument to generate signal tracks.
 
 ```
-# to generate wig
+# to generate wig or bedgraph, and convert bedgraph to bigwig. if you don't want wig, remove -wig true \
 bds tf_chipseq.bds \
 ... \
 -wig true \
--seq /DATA/encodeHg19Male \
--umap /DATA/encodeHg19Male/globalmap_k20tok54
-
-# to generate bedgraph
-bds tf_chipseq.bds \
-... \
--bedgraph true \
--seq /DATA/encodeHg19Male \
--umap /DATA/encodeHg19Male/globalmap_k20tok54
-
-# to convert bedgraph to bigwig
-bds tf_chipseq.bds \
 -bedgraph true \
 -bigwig true \
 -seq /DATA/encodeHg19Male \
--umap /DATA/encodeHg19Male/globalmap_k20tok54
+-umap /DATA/encodeHg19Male/globalmap_k20tok54 \
 -chrsz /DATA/hg19.chrom.sizes
-
 ```
 
 Or add the following lines to the configuration file (for human, hg19).
@@ -143,13 +130,12 @@ CREATE_WIG= true 	// to create wig
 CREATE_BEDGRAPH= true	// to create bedgraph
 CONVERT_TO_BIGWIG= true	// to convert bedgraph to bigwig
 
-CHROM_SIZES=/DATA/hg19.chrom.sizes
-UMAP_DIR=/DATA/encodeHg19Male/globalmap_k20tok54
 SEQ_DIR=/DATA/encodeHg19Male
+UMAP_DIR=/DATA/encodeHg19Male/globalmap_k20tok54
+CHROM_SIZES=/DATA/hg19.chrom.sizes
 ```
 
-Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/
-
+Seq_dir is the directory where reference genome files exist. Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/
 
 ### Contributors
 
