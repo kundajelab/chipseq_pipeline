@@ -220,23 +220,23 @@ Equivalent parameters in a configuration file is listed and explained below:
 
 ```
 # general
-	PREFIX 		: Prefix for all outputs.
-	OUTPUT_DIR 	: Output directory. (default: out)
-	TMP_DIR 	: Temporary directory for intermediate files. (default: tmp).
+	PREFIX 			: Prefix for all outputs.
+	OUTPUT_DIR 		: Output directory. (default: out)
+	TMP_DIR 		: Temporary directory for intermediate files. (default: tmp).
 
-	WALLTIME 	: Default walltime in seconds for all cluster jobs (default: 10800).
-	NTHREADS 	: Default number of threads for all cluster jobs (default: 1).
-	MEMORY 		: Default max. memory in MB for all cluster jobs (default: 4000).
+	WALLTIME 		: Default walltime in seconds for all cluster jobs (default: 10800).
+	NTHREADS 		: Default number of threads for all cluster jobs (default: 1).
+	MEMORY 			: Default max. memory in MB for all cluster jobs (default: 4000).
 
 # handling environment variables
-	MODULE 		: Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
-	SHELLCMD	: Shell cmds separated by ;. Env. vars should be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test")
-	ADDPATH		: Paths to be added to env. var. PATH separated by ; or :. (a quicker way to add PATH)
+	MODULE 			: Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
+	SHELLCMD		: Shell cmds separated by ;. Env. vars should be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test")
+	ADDPATH			: Paths to be added to env. var. PATH separated by ; or :. (a quicker way to add PATH)
 
 # inputs
-        INPUT_TYPE              : Input file type: two options (fastq: including mapping of fastqs, tagalign: starting from tagaligns)
+	INPUT_TYPE              : Input file type: two options (fastq: including mapping of fastqs, tagalign: starting from tagaligns)
 
-        # if inputs are fastqs
+	# if inputs are fastqs
 	INPUT_FASTQ_REP1        : Path for input fastq for replicate 1 (single ended).
 	INPUT_FASTQ_REP2        : Path for input fastq for replicate 2 (single ended).
 	INPUT_FASTQ_CTL_REP1    : Path for control fastq for replicate 1 (single ended).
