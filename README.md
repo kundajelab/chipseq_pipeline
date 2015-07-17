@@ -251,7 +251,7 @@ Equivalent parameters in a configuration file is listed and explained below:
 	INPUT_FASTQ_CTL_REP2_PE1: Path for control fastq for replicate 2 pair 1 (paired-end).
 	INPUT_FASTQ_CTL_REP2_PE2: Path for control fastq for replicate 2 pair 2 (paired-end).
 
-        # if inputs are tagaligns
+	# if inputs are tagaligns
 	TAGALIGN_PE: Set it true if tagaligns are paired end
 
 	INPUT_TAGALIGN_REP1    : Path for input tagalign for replicate 1.
