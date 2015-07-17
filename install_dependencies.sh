@@ -4,6 +4,8 @@
 SOFTWARE=$HOME/software_bds
 BASHRC=$HOME/add_to_bashrc
 
+SCRIPTDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
 echo
 echo "IMPORTANT!"
 echo
@@ -61,13 +63,10 @@ cd $HOME
 wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate
 tar zxvf bds_Linux.tgz
 rm -f bds_Linux.tgz
+cp $SCRIPTDIR/bds.config $HOME/.bds/
 echo "" >> $BASHRC
 echo "# Path for BigDataScript (latest)" > $BASHRC
 echo "export PATH=\$PATH:\$HOME/.bds/" >> $BASHRC
-
-# Installation for chipseq pipeline (latest)
-#cd $SOFTWARE
-#git clone https://github.com/kundajelab/pipelines
 
 # Local installation for bwa (0.7.10)
 cd $SOFTWARE
@@ -246,6 +245,7 @@ echo "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}" >> $BASHRC
 echo "XAPPLRESDIR=\${MCRROOT}/X11/app-defaults" >> $BASHRC
 echo "export LD_LIBRARY_PATH" >> $BASHRC
 echo "export XAPPLRESDIR" >> $BASHRC
+
 
 # WARNING
 echo

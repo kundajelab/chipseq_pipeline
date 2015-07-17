@@ -19,21 +19,13 @@ Taking advandatge of the powerful pipeline language BigDataScript (http://pcingo
 ```
 # get the latest version of chipseq pipelines
 $git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
-
-# find the tf chipseq pipeline script
 $cd ENCODE_chipseq_pipeline
-$ls -l tf_chipseq.bds
 
 # install dependencies
 $./install_dependencies.sh
-
-# IMPORTANT! Move bds.config to BigDataScript (BDS) directory
-$mkdir -p $HOME/.bds
-$cp bds.config $HOME/.bds/
 ```
 
 Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
-
 ```
 # Java settings
 export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
@@ -42,6 +34,11 @@ export MALLOC_ARENA_MAX=4
 
 # BigDataScript settings
 export PATH=$PATH:$HOME/.bds
+```
+
+If you don't use install_dependencies.sh, don't forget to move bds.config to BigDataScript (BDS) directory
+```
+$cp bds.config $HOME/.bds/
 ```
 
 ### Usage
