@@ -113,9 +113,12 @@ echo "export PATH=\$PATH:$SOFTWARE/ucsc_tools" >> $BASHRC
 
 # Local installation for PICARD tools (1.92)
 cd $SOFTWARE
-wget http://sourceforge.net/projects/picard/files/picard-tools/1.92/picard-tools-1.92.zip/download -O picard-tools-1.92.zip
-unzip picard-tools-1.92.zip
-rm -f picard-tools-1.92.zip
+wget http://mitra.stanford.edu/kundaje/software/picard-tools-1.92.tar.gz
+tar zxvf picard-tools-1.92.tar.gz
+rm -f picard-tools-1.92.tar.gz
+#wget http://sourceforge.net/projects/picard/files/picard-tools/1.92/picard-tools-1.92.zip/download -O picard-tools-1.92.zip
+#unzip picard-tools-1.92.zip
+#rm -f picard-tools-1.92.zip
 cd picard-tools-1.92
 chmod 755 *
 echo "" >> $BASHRC
