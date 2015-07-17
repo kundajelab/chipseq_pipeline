@@ -71,10 +71,9 @@ echo "export PATH=\$PATH:\$HOME/.bds/" >> $BASHRC
 
 # Local installation for bwa (0.7.10)
 cd $SOFTWARE
-wget http://sourceforge.net/projects/bio-bwa/files/bwa-0.7.10.tar.bz2/download -O bwa-0.7.10.tar.bz2
-tar jxf bwa-0.7.10.tar.bz2
-rm -f bwa-0.7.10.tar.bz2
+git clone https://github.com/lh3/bwa bwa-0.7.10
 cd bwa-0.7.10
+git checkout tags/0.7.10
 make
 echo "" >> $BASHRC
 echo "# Path for bwa (0.7.10)" >> $BASHRC
@@ -82,10 +81,9 @@ echo "export PATH=\$PATH:$SOFTWARE/bwa-0.7.10" >> $BASHRC
 
 # Local installation for samtools (0.1.19)
 cd $SOFTWARE
-wget http://sourceforge.net/projects/samtools/files/samtools/0.1.19/samtools-0.1.19.tar.bz2/download -O samtools-0.1.19.tar.bz2
-tar jxf samtools-0.1.19.tar.bz2
-rm -f samtools-0.1.19.tar.bz2
+git clone https://github.com/samtools/samtools samtools-0.1.19
 cd samtools-0.1.19
+git checkout tags/0.1.19
 make
 echo "" >> $BASHRC
 echo "# Path for samtools (0.1.19)" >> $BASHRC
