@@ -170,6 +170,7 @@ void spp_idr() {
 	NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
 
 	task ( taskName := "create NPEAKS_IDR.txt", \
+		cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
 		NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
 		sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
 	}
@@ -193,7 +194,8 @@ string get_spp_out_peak_filename( string dir, string ta1, string ta2, string typ
 
 void run_spp( string taskname, string out_dir, string ta, string ctl_ta, string npeak, string rpeak, string ccscore, string fraglen ) {
 
-	task( taskName := "spp " + taskname, cpus := NTHREADS_SPP, timeout := WALLTIME, mem := MEMORY * M, \
+	task( taskName := "spp " + taskname, \
+		cpus := NTHREADS_SPP, timeout := WALLTIME, mem := MEMORY * M, \
 		[npeak, rpeak, ccscore] <- [ta, ctl_ta] ) {
 
 		sys $PRELOAD
@@ -215,15 +217,27 @@ void run_idr_nboley( string taskname, string out_dir, string peak1, string peak2
 	IDR_OUTPUT := "$prefix.IDR"
 	NPEAKS_IDR := "$out_dir/NPEAKS_IDR.txt"
 
-	task( taskName := "IDR (nboley)" + taskname, cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
+	peak1_  := "$out_dir/_" + get_basename( peak1 )
+	peak2_  := "$out_dir/_" + get_basename( peak2 )
+	pooled_ := "$out_dir/_" + get_basename( pooled )
+
+	task( taskName := "IDR (nboley)" + taskname, \
+		cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
 		IDR_OUTPUT <- [peak1, peak2, pooled] ) { // --use-old-output-format 
 
 		sys $PRELOAD
 
-		sys idr --samples $peak1 $peak2 --peak-list $pooled --input-file-type narrowPeak \
+		// Bug fix (we have floating point representation of chr coord., possible bug in run_spp.R?):
+		// chr3    153999636       1.54e+08        .       0       .       4.47152214284156        -1      -0.0118951365772202     18
+		sys zcat $peak1 | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $peak1_
+		sys zcat $peak2 | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $peak2_
+		sys zcat $pooled | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $pooled_
+
+		sys idr --samples $peak1_ $peak2_ --peak-list $pooled_ --input-file-type narrowPeak \
 			--output-file $IDR_OUTPUT --plot --idr-threshold $IDR_THRESH
 
 		sys echo -e "$taskname\t$(cat $IDR_OUTPUT | wc -l)" >> $NPEAKS_IDR
+                sys rm -rf $peak1_ $peak2_ $pooled_
 	}
 }
 

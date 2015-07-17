@@ -14,6 +14,7 @@ echo "sudo apt-get install build-essential zlib1g-dev ncurses-dev gfortran libbo
 echo "sudo apt-get install openssl libssl-dev"
 echo "sudo apt-get install libfreetype6-dev"
 echo "sudo apt-get install liblapack-dev"
+#echo "sudo apt-get install libopenblas-dev"
 echo "sudo apt-get install git"
 echo
 echo "# Check if you already have java installed on your system"
@@ -158,6 +159,20 @@ echo "" >> $BASHRC
 echo "# Path for R (2.15.1)" >> $BASHRC
 echo "export PATH=\$PATH:$SOFTWARE/R-2.15.1/bin" >> $BASHRC
 
+#LAPACK
+mkdir -p $SOFTWARE/blas
+cd $SOFTWARE/blas
+wget http://www.netlib.org/lapack/lapack.tgz
+tar xzf lapack.tgz
+rm -f lapack.tgz
+cd lapack-*/
+cp INSTALL/make.inc.gfortran make.inc          # On Linux with lapack-3.2.1 or newer
+make lapacklib
+make clean
+
+echo "" >> $BASHRC
+echo "# LAPACK" >> $BASHRC
+eecho "export LAPACK=$SOFTWARE/blas/lapack-*/liblapack.a" >> $BASHRC
 
 # Local installation instruction for Python (3.4.3) and relevant packages (for Nathan Boley's IDR)
 cd $SOFTWARE
@@ -171,9 +186,11 @@ wget http://cython.org/release/Cython-0.22.tar.gz
 tar zxvf Cython-0.22.tar.gz
 cd Cython-0.22
 $SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
+ln -s $SOFTWARE/python3.4/bin/python3.4 $SOFTWARE/python3.4/bin/python3
 cd $SOFTWARE
 $SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" numpy
 $SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" matplotlib
+$SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" scipy
 echo "" >> $BASHRC
 echo "# Path for run_spp.R (Anshul's phantompeakqualtool)" >> $BASHRC
 echo "export PATH=\$PATH:$SOFTWARE/python3.4/bin" >> $BASHRC
@@ -184,6 +201,7 @@ cd $SOFTWARE
 git clone --recursive https://github.com/nboley/idr.git
 cd idr
 $SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
+ln -s $SOFTWARE/python3.4/bin/python3.4 $SOFTWARE/python3.4/bin/python3
 echo "" >> $BASHRC
 echo "# Path for IDR (written by Nathan Boley)" >> $BASHRC
 echo "export PATH=\$PATH:$SOFTWARE/idr/bin" >> $BASHRC

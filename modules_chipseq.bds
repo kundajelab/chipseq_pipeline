@@ -224,7 +224,7 @@ void read_param_align_map() {
 				+ "$DIR_SW_BDS/idrCode:" \
 				+ "\${PATH}"
 
-		SHELLCMD := "export PICARDROOT=$DIR_SW_BDS/picard-tools-1.92;" \
+		SHELLCMD := "export PICARDROOT=$DIR_SW_BDS/picard-tools-1.92; export LAPACK=$DIR_SW_BDS/blas/lapack-*/liblapack.a; " \
 
 		SHELLCMD = SHELLCMD \
 				+ "MCRROOT=$DIR_SW_BDS/MATLAB_Compiler_Runtime/v714;" \
