@@ -1,0 +1,70 @@
+// prefix
+PREFIX=ENCSR000EGM
+OUTPUT_DIR=out
+
+// input is fastq and single ended
+INPUT_TYPE=fastq
+
+INPUT_FASTQ_REP1= /srv/scratch/leepc12/data/ENCODE/ENCSR000EGM/ENCFF000YLW.fastq.gz
+INPUT_FASTQ_REP2= /srv/scratch/leepc12/data/ENCODE/ENCSR000EGM/ENCFF000YLY.fastq.gz
+INPUT_FASTQ_CTL_REP1= /srv/scratch/leepc12/data/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
+
+// bwa
+BWA_INDEX_NAME= /srv/scratch/leepc12/hg19/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
+
+// idr
+USE_IDR_NBOLEY=true
+
+// cluster resources configuration
+NTHREADS=1                              // (default:1)
+WALLTIME=10800                  // in seconds (default:10800)
+MEMORY=4000                     // in MB (default:4000)
+
+NTHREADS_BWA_ALN=2              // (default:2)
+WALLTIME_BWA_ALN=20000  // in seconds (default:36000)
+MEMORY_BWA_ALN=8000     // in MB (default:8000)
+
+WALLTIME_BWA_SAMPE=24000        // in seconds (default:36000)
+MEMORY_BWA_SAMPE=10000          // in megabytes (default:8000)
+
+NTHREADS_SPP=4
+WALLTIME_SPP=24000              // in seconds (default:40000)
+MEMORY_SPP=8000                 // in MB (default:8000)
+
+// signal track generation
+CREATE_WIG=false
+CREATE_BEDGRAPH=false
+CONVERT_TO_BIGWIG=false
+CHROM_SIZES=/mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes
+UMAP_DIR=/mnt/data/ENCODE/byDataType/umap/encodeHg19Male/globalmap_k20tok54
+SEQ_DIR=/mnt/data/ENCODE/byDataType/sequence/encodeHg19Male
+
+// All dependencies are installed on Kundaje lab's cluster servers (mitra, nandi, amold and wotan)
+// Do not run ../install_dependencies.sh on these clusters
+MODULE_BIO=bwa/0.7.10; samtools/0.1.19; bedtools/2.19.1; ucsc_tools/3.0.9; picard-tools/1.92; phantompeakqualtools/default; align2rawsignal/2.0
+MODULE_LANG=java/latest; r/2.15.1
+ADDPATH=/software/idrCode
+SHELLCMD_JAVA= export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"; export MAX_JAVA_MEM="8G"; export MALLOC_ARENA_MAX=4
+
+
+//////////////////////////// parameters with default values (for power users)
+
+// general
+TMP_DIR=tmp
+QC_ONLY=false
+NUM_REP=1
+
+// bwa
+BWA_ALN_PARAM=-q 5 -l 32 -k 2
+
+// dupe remover
+MAPQ_THRESH=30
+NREADS=15000000 // should be integer + million
+
+// spp
+NPEAK=300000
+
+// IDR
+IDR_THRESH=0.02
+
+
