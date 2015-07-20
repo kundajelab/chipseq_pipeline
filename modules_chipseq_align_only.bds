@@ -413,7 +413,7 @@ void align_bwa( int ctl, int rep ) {
 				sys $PRELOAD
 
 				sys samtools flagstat $RAW_BAM_FILE > $RAW_BAM_FILE_MAPSTATS
-				sys rm -f $SAI_FILE_1
+				//sys rm -f $SAI_FILE_1
 			}
 
 			wait
