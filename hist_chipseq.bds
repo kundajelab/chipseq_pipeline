@@ -4,14 +4,16 @@ include "modules_chipseq.bds"
 
 
 // cmd line arg wrapper and help
-string gensz 		= ""				help Genome size; hs for human, mm for mouse (default: hs)
-int nth_macs2		= 2 				help Number of threads for MACS2 (default: 2)
+string gensz 		= ""		help Genome size; hs for human, mm for mouse (default: hs)
+int nth_macs2		= 2 		help Number of threads for MACS2 (default: 2)
+int wt_spp		= 40000		help Walltime in seconds for MACS2 (default: 40000).
+int mem_spp		= 8000 		help Max. memory in MB for MACS2 (default: 8000).
 
 // parameters
 string GENOMESIZE 	= gensz
 int NTHREADS_MACS2 	= nth_macs2
-
-
+int WALLTIME_MACS2 	= wt_macs2
+int MEMORY_MACS2	= mem_macs2
 
 
 // pipeline starts here
@@ -32,12 +34,16 @@ void read_param_hist_chipseq() {
 	// read parameters
 	if ( conf_file_exists() ) {
 		
-		if ( conf.hasKey("GENOMESIZE") ) 		GENOMESIZE 		= rm_comment( conf{ "GENOMESIZE" } )
+		if ( conf.hasKey("GENOMESIZE") ) 	GENOMESIZE	= rm_comment( conf{ "GENOMESIZE" } )
 		if ( conf.hasKey("NTHREADS_MACS2") )	NTHREADS_MACS2	= parse_int( conf{ "NTHREADS_MACS2" } )
+		if ( conf.hasKey("WALLTIME_MACS2") )	WALLTIME_MACS2	= parse_int( conf{ "WALLTIME_MACS2" } )
+		if ( conf.hasKey("MEMORY_MACS2") )	MEMORY_MACS2	= parse_int( conf{ "MEMORY_MACS2" } )			
 	}
 
 	print("GENOMESIZE = $GENOMESIZE\n");
 	print("NTHREADS_MACS2 = $NTHREADS_MACS2\n");
+	print("WALLTIME_MACS2 = $WALLTIME_MACS2\n");
+	print("MEMORY_MACS2 = $MEMORY_MACS2\n");
 
 }
 
@@ -47,78 +53,86 @@ void macs2() {
 
 	print( "\nMACS2...\n" );
 
-	FRAGLEN := get_fraglen( 0, 1 ) // get it from rep1
-	print("FRAGLEN for MACS2: $FRAGLEN \n")
-	
-	// prepare for tagAlign files
-	fastqs_Rep1 	:= get_fastqs( 0, 1 )
-	fastqs_Rep2 	:= get_fastqs( 0, 2 ) // check if rep2 doesn't exist
-	suffix_PE 		:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
-	suffix_SE 		:= ".filt.nodup.srt.SE.tagAlign.gz"
-	suffix 			:= fastqs_Rep1.size()==2 ? suffix_PE : suffix_SE
+	FRAGLEN_REP1 := get_fraglen( 0, 1 ) // get it from rep1
+	FRAGLEN_REP2 := get_fraglen( 0, 2 ) // get it from rep2
+
+	real frgln1 = FRAGLEN_REP1.parseReal()
+	real frgln2 = FRAGLEN_REP2.parseReal()
+	string FRAGLEN_MEAN = round( (frgln1+frgln2)*0.5 )
+
+	print("FRAGLEN for spp (rep1, rep2, mean): $FRAGLEN_REP1, $FRAGLEN_REP2, $FRAGLEN_MEAN\n")
+
+	// prepare for tagAlign file names
+	suffix_PE 	:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
+	suffix_SE 	:= ".filt.nodup.srt.SE.tagAlign.gz"
 	suffix_PSR_PE 	:= ".filt.nodup.PE2SE"
 	suffix_PSR_SE 	:= ".filt.nodup.SE"
-	suffix_PSR 		:= fastqs_Rep1.size()==2 ? suffix_PSR_PE : suffix_PSR_SE
 
-	DATASET_PREFIX := get_ofprefix( 0 )
+	suffix 		:= is_paired_end( 0, 1 ) ? suffix_PE : suffix_SE
+	suffix_PSR 	:= is_paired_end( 0, 1 ) ? suffix_PSR_PE : suffix_PSR_SE
+
+	DATASET_PREFIX 	:= get_ofprefix( 0 )
 	
-	REP1_TA_FILE :="$DATASET_PREFIX"+"_Rep1" + suffix
-	REP2_TA_FILE :="$DATASET_PREFIX"+"_Rep2" + suffix
-	POOLED_TA_FILE :="$DATASET_PREFIX"+"_Rep0.tagAlign.gz"
-	REP1_PR1_TA_FILE :="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr1.tagAlign.gz"
-	REP1_PR2_TA_FILE :="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr2.tagAlign.gz"
-	REP2_PR1_TA_FILE :="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr1.tagAlign.gz"
-	REP2_PR2_TA_FILE :="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr2.tagAlign.gz"
-	PPR1_TA_FILE :="$DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
-	PPR2_TA_FILE :="$DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
+	REP1_TA_FILE 		:="$DATASET_PREFIX"+"_Rep1" + suffix
+	REP2_TA_FILE 		:="$DATASET_PREFIX"+"_Rep2" + suffix
+	POOLED_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.tagAlign.gz"
+	REP1_PR1_TA_FILE 	:="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr1.tagAlign.gz"
+	REP1_PR2_TA_FILE 	:="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr2.tagAlign.gz"
+	REP2_PR1_TA_FILE 	:="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr1.tagAlign.gz"
+	REP2_PR2_TA_FILE 	:="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr2.tagAlign.gz"
+	PPR1_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
+	PPR2_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
 
-	ctl_fastqs_Rep1 	:= get_fastqs( 1, 1 )
-	ctl_fastqs_Rep2 	:= get_fastqs( 1, 2 ) // check if rep2 doesn't exist
 	ctl_suffix_PE 		:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
 	ctl_suffix_SE 		:= ".filt.nodup.srt.SE.tagAlign.gz"
-	ctl_suffix 			:= ctl_fastqs_Rep1.size()==2 ? ctl_suffix_PE : ctl_suffix_SE
 	ctl_suffix_PSR_PE 	:= ".filt.nodup.PE2SE"
 	ctl_suffix_PSR_SE 	:= ".filt.nodup.SE"
-	ctl_suffix_PSR 		:= ctl_fastqs_Rep1.size()==2 ? ctl_suffix_PSR_PE : ctl_suffix_PSR_SE
 
-	CTL_DATASET_PREFIX := get_ofprefix( 1 )
+	ctl_suffix 		:= is_paired_end( 1, 1 ) ? ctl_suffix_PE : ctl_suffix_SE
+	ctl_suffix_PSR 		:= is_paired_end( 1, 1 ) ? ctl_suffix_PSR_PE : ctl_suffix_PSR_SE
 
-	CTL_REP1_TA_FILE :="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix
-	CTL_REP2_TA_FILE := ctl_fastqs_Rep2.size()>0 ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix : CTL_REP1_TA_FILE
-	CTL_POOLED_TA_FILE :="$CTL_DATASET_PREFIX"+"_Rep0.tagAlign.gz"
-	CTL_REP1_PR1_TA_FILE :="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr1.tagAlign.gz"
-	CTL_REP1_PR2_TA_FILE :="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr2.tagAlign.gz"
-	CTL_REP2_PR1_TA_FILE :="$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr1.tagAlign.gz"
-	CTL_REP2_PR2_TA_FILE :="$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr2.tagAlign.gz"
-	CTL_PPR1_TA_FILE :="$CTL_DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
-	CTL_PPR2_TA_FILE :="$CTL_DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
+	CTL_DATASET_PREFIX 	:= get_ofprefix( 1 )
+
+	CTL_REP1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix
+	CTL_REP2_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix : CTL_REP1_TA_FILE
+	CTL_POOLED_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.tagAlign.gz"
+	CTL_REP1_PR1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr1.tagAlign.gz"
+	CTL_REP1_PR2_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr2.tagAlign.gz"
+	CTL_REP2_PR1_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr1.tagAlign.gz" : CTL_REP1_PR1_TA_FILE
+	CTL_REP2_PR2_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr2.tagAlign.gz" : CTL_REP1_PR2_TA_FILE
+
+	CTL_PPR1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
+	CTL_PPR2_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
 
 	PEAK_OUTPUT_DIR := OUTPUT_DIR + "/peaks"
 	PEAK_OUTPUT_DIR.mkdir() 
 
 	///////////////////////////////// MACS2
 
-	run_macs2( "Rep1", PEAK_OUTPUT_DIR, 		REP1_TA_FILE, CTL_REP1_TA_FILE, FRAGLEN )
+	write_report( "ChIP-Seq Pipeline HTML Report" )
+
+	run_macs2( "Rep1", PEAK_OUTPUT_DIR, 		REP1_TA_FILE, CTL_REP1_TA_FILE, FRAGLEN_REP1 )
 		if ( NO_PARALLEL_JOB ) wait
-	run_macs2( "Rep2", PEAK_OUTPUT_DIR, 		REP2_TA_FILE, CTL_REP2_TA_FILE, FRAGLEN )
+	run_macs2( "Rep2", PEAK_OUTPUT_DIR, 		REP2_TA_FILE, CTL_REP2_TA_FILE, FRAGLEN_REP2 )
 		if ( NO_PARALLEL_JOB ) wait
-	run_macs2( "Pooled", PEAK_OUTPUT_DIR, 		POOLED_TA_FILE, CTL_POOLED_TA_FILE, FRAGLEN )
+	run_macs2( "Pooled", PEAK_OUTPUT_DIR, 		POOLED_TA_FILE, CTL_POOLED_TA_FILE, FRAGLEN_MEAN )
 		if ( NO_PARALLEL_JOB ) wait
-	run_macs2( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, FRAGLEN )
+	run_macs2( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, FRAGLEN_REP1 )
 		if ( NO_PARALLEL_JOB ) wait
-	run_macs2( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, FRAGLEN )
+	run_macs2( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, FRAGLEN_REP1 )
 		if ( NO_PARALLEL_JOB ) wait
-	run_macs2( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, FRAGLEN )
+	run_macs2( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, FRAGLEN_REP2 )
 		if ( NO_PARALLEL_JOB ) wait
-	run_macs2( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, FRAGLEN )
+	run_macs2( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, FRAGLEN_REP2 )
 		if ( NO_PARALLEL_JOB ) wait
-	run_macs2( "PPR1", PEAK_OUTPUT_DIR, 		PPR1_TA_FILE, CTL_PPR1_TA_FILE, FRAGLEN )
+	run_macs2( "PPR1", PEAK_OUTPUT_DIR, 		PPR1_TA_FILE, CTL_PPR1_TA_FILE, FRAGLEN_MEAN )
 		if ( NO_PARALLEL_JOB ) wait
-	run_macs2( "PPR2", PEAK_OUTPUT_DIR, 		PPR2_TA_FILE, CTL_PPR2_TA_FILE, FRAGLEN )
+	run_macs2( "PPR2", PEAK_OUTPUT_DIR, 		PPR2_TA_FILE, CTL_PPR2_TA_FILE, FRAGLEN_MEAN )
 		if ( NO_PARALLEL_JOB ) wait
 
 	wait
 
+	write_report( "ChIP-Seq Pipeline HTML Report" )
 }
 
 void run_macs2( string taskname, string out_dir, string ta, string ctl_ta, string fraglen ) {
