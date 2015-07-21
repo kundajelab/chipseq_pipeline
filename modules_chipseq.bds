@@ -262,6 +262,8 @@ void align_to_pspr() {  // this function is for parallel jobs for each control a
 
 	wait
 
+	write_report( "ChIP-Seq Pipeline HTML Report" )
+
 	for ( int ctl=0; ctl <= NUM_CTL; ctl++) {
 		if ( NO_PARALLEL_JOB ) \
 			pspr( ctl )

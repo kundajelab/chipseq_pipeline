@@ -154,6 +154,8 @@ void spp_idr() {
 	PPR1_RPEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "regionPeak" )
 	PPR2_RPEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "regionPeak" )
 
+	write_report( "ChIP-Seq Pipeline HTML Report" )
+
 	run_spp( "Rep1", PEAK_OUTPUT_DIR, 	REP1_TA_FILE, CTL_REP1_TA_FILE, REP1_PEAK_FILE, REP1_RPEAK_FILE, PEAK_REP1_CCSCORE, FRAGLEN_REP1 )
 		if ( NO_PARALLEL_JOB ) wait
 	run_spp( "Rep2", PEAK_OUTPUT_DIR, 	REP2_TA_FILE, CTL_REP2_TA_FILE, REP2_PEAK_FILE, REP2_RPEAK_FILE, PEAK_REP2_CCSCORE, FRAGLEN_REP2 )
@@ -173,6 +175,8 @@ void spp_idr() {
 	run_spp( "PPR2", PEAK_OUTPUT_DIR, 	PPR2_TA_FILE, CTL_PPR2_TA_FILE, PPR2_PEAK_FILE, PPR2_RPEAK_FILE, PEAK_PPR2_CCSCORE, FRAGLEN_MEAN )
 
 	wait
+
+	write_report( "ChIP-Seq Pipeline HTML Report" )
 
 	// create NPEAKS_IDR file	
 	NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
@@ -195,6 +199,7 @@ void spp_idr() {
 
 	wait
 
+	write_report( "ChIP-Seq Pipeline HTML Report" )
 }
 
 string get_spp_out_peak_filename( string dir, string ta1, string ta2, string type ) {
