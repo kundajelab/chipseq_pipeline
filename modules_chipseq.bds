@@ -252,14 +252,22 @@ void align_to_pspr() {  // this function is for parallel jobs for each control a
 	
 	for ( int ctl=0; ctl <= NUM_CTL; ctl++) { // iterate through inputs (ctl==0 : control, ctl==1 : input)
 		for ( int rep=1; rep <= NUM_REP; rep++) {
-			par align_to_spr( ctl, rep ) 
+
+			if ( NO_PARALLEL_JOB ) \
+				align_to_spr( ctl, rep ) 
+			else \
+				par align_to_spr( ctl, rep ) 
 		}
 	}
 
 	wait
 
-	for ( int ctl=0; ctl <= NUM_CTL; ctl++) \
-		par pspr( ctl )
+	for ( int ctl=0; ctl <= NUM_CTL; ctl++) {
+		if ( NO_PARALLEL_JOB ) \
+			pspr( ctl )
+		else \
+			par pspr( ctl )
+	}
 
 	wait
 }
@@ -313,6 +321,8 @@ void align_bwa( int ctl, int rep ) {
 
 				sys bwa aln $BWA_ALN_PARAM -t $NTHREADS_BWA_ALN $BWA_INDEX_NAME $FASTQ_FILE_1 > $SAI_FILE_1
 			}
+
+			if ( NO_PARALLEL_JOB ) wait
 
 			task( taskName := "bwa aln PE2 " + cat_ctl_rep(ctl, rep), \
 				cpus := NTHREADS_BWA_ALN, timeout := WALLTIME_BWA_ALN, mem := MEMORY_BWA_ALN * M, \
@@ -789,7 +799,10 @@ void sig_trk() {
 	
 	for ( int ctl=0; ctl <= NUM_CTL; ctl++) { // iterate through fastqs (0: not control, 1~: controls)
 		for ( int rep=1; rep <= NUM_REP; rep++) {
-			par sig_trk( ctl, rep )
+			if ( NO_PARALLEL_JOB ) \
+				sig_trk( ctl, rep )
+			else
+				par sig_trk( ctl, rep )
 		}
 	}
 }
@@ -845,6 +858,8 @@ void sig_trk( int ctl, int rep ) {
 			sys align2rawsignal -i=$FINAL_TA_FILE -o=$WIG_FILE -s=$SEQ_DIR -u=$UMAP_DIR -of=wig -l=$FRAGLEN -mm=4
 		}
 	}
+
+	if ( NO_PARALLEL_JOB ) wait
 
 	if ( CREATE_BEDGRAPH ) {
 		task( taskName := "make bedgraph " + cat_ctl_rep(ctl, rep), \

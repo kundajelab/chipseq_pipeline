@@ -10,6 +10,7 @@ string o 		= "out" 		help Output directory. (default: out)
 string tmp 		= "tmp"			help Temporary directory for intermediate files. (default: tmp).
 //string gen		= "" 			help Reference genome name for epigenome browser track generation (eg. hg19, hg18, mm9 or mm10)
 
+bool no_par_job		= false			help Set if true to serialize all jobs, this option is for desktops with limited memory (default: false)
 int wt 			= 10800			help Default walltime in seconds for all cluster jobs (default: 10800).
 int nth			= 1 			help Default number of threads for all cluster jobs (default: 1).
 int mem 		= 4000			help Default max. memory in MB for all cluster jobs (default: 4000).
@@ -25,6 +26,7 @@ string OUTPUT_DIR 	= o
 string TMP_DIR 		= tmp
 //string REF_GENOME	= gen
 
+bool NO_PARALLEL_JOB	= no_par_job
 int WALLTIME 		= wt
 int NTHREADS 		= nth
 int MEMORY 		= mem
@@ -71,6 +73,7 @@ void read_param_general() {
 
 		if ( conf.hasKey("TMP_DIR") ) 		TMP_DIR 	= rm_comment( conf{ "TMP_DIR" } )
 
+		if ( conf.hasKey("NO_PARALLEL_JOB") )	NO_PARALLEL_JOB	= parse_bool( conf{ "NO_PARALLEL_JOB"} )
 		if ( conf.hasKey("WALLTIME") ) 		WALLTIME 	= parse_int( conf{ "WALLTIME" } ) 
 		if ( conf.hasKey("NTHREADS") ) 		NTHREADS  	= parse_int( conf{ "NTHREADS" } ) 
 		if ( conf.hasKey("MEMORY") ) 		MEMORY 		= parse_int( conf{ "MEMORY" } ) 
@@ -162,6 +165,7 @@ void read_param_general() {
 	print("TMP_DIR = $TMP_DIR\n");
 
 	//print("REF_GENOME = $REF_GENOME (for genome browser track generation)\n" );
+	print("NO_PARALLEL_JOB = $NO_PARALLEL_JOB\n");
 	print("WALLTIME = $WALLTIME (seconds)\n");
 	print("NTHREADS = $NTHREADS\n");
 	print("MEMORY = $MEMORY (megabytes)\n");
