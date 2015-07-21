@@ -79,6 +79,7 @@ INPUT_FASTQ_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
 INPUT_FASTQ_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
 BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
+			// for histone chipesq, use macs2
 USE_IDR_NBOLEY= true
 ```
 
