@@ -16,6 +16,8 @@ Taking advandatge of the powerful pipeline language BigDataScript (http://pcingo
 
 ### Installation instruction (pipelines and their dependencies)
 
+For Kundaje lab members, all dependencies have already been installed on lab servers. Do not run install_dependencies.sh on Kundaje lab servers. Take a look at example commands and configuration files (./examples).
+
 ```
 # get the latest version of chipseq pipelines
 $git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
@@ -109,7 +111,7 @@ BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 
 ### HTML report
 
-There are two kinds of report provided by the pipeline:
+There are two kinds of HTML reports provided by the pipeline:
 
 1) BigDataScript HTML report for debugging
 ```
