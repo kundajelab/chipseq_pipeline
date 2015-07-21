@@ -19,7 +19,7 @@ INPUT_FASTQ_CTL_REP1= /srv/scratch/leepc12/data/ENCODE/ENCSR000EGM/Ctl/ENCFF000Y
 BWA_INDEX_NAME= /srv/scratch/leepc12/hg19/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 
 // idr
-USE_IDR_NBOLEY=true
+USE_IDR_NBOLEY=true     // if false, use Anshul's IDR
 
 // cluster resources configuration
 NTHREADS=1                              // (default:1)
@@ -30,9 +30,11 @@ NTHREADS_BWA_ALN=2              // (default:2)
 WALLTIME_BWA_ALN=20000  // in seconds (default:36000)
 MEMORY_BWA_ALN=8000     // in MB (default:8000)
 
-WALLTIME_BWA_SAMPE=24000        // in seconds (default:36000)
-MEMORY_BWA_SAMPE=10000          // in megabytes (default:8000)
+WALLTIME_BWA_SAM=24000        // in seconds (default:36000)
+MEMORY_BWA_SAM=10000          // in megabytes (default:8000)
 
+// choose peak calling method (spp, macs2)
+PEAKCALL_MEHTHOD=spp
 NTHREADS_SPP=4
 WALLTIME_SPP=24000              // in seconds (default:40000)
 MEMORY_SPP=8000                 // in MB (default:8000)
