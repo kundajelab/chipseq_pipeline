@@ -27,14 +27,14 @@ bool idr_nboley 	= true	 	help Use Nathan Boley's code for IDR, otherwise Anshul
 
 // comp. resources for spp
 string PEAKCALL_METHOD 	= peakcall
+int NPEAK 		= npeak	
 int NTHREADS_SPP	= nth_spp
 int WALLTIME_SPP 	= wt_spp
 int MEMORY_SPP		= mem_spp
-int NPEAK 		= npeak	
+string GENOMESIZE 	= gensz
 int NTHREADS_MACS2 	= nth_macs2
 int WALLTIME_MACS2 	= wt_macs2
 int MEMORY_MACS2	= mem_macs2
-string GENOMESIZE 	= gensz
 string IDR_THRESH 	= idr_thresh
 bool USE_IDR_NBOLEY 	= idr_nboley
 
@@ -70,6 +70,7 @@ void read_param_tf_chipseq() {
 		if ( conf.hasKey("USE_IDR_NBOLEY") ) 	USE_IDR_NBOLEY	= parse_bool( conf{ "USE_IDR_NBOLEY"} )
 	}
 
+	print("PEAKCALL_METHOD = $PEAKCALL_METHOD\n");
 	print("NTHREADS_SPP = $NTHREADS_SPP\n");
 	print("WALLTIME_SPP = $WALLTIME_SPP\n");
 	print("MEMORY_SPP = $MEMORY_SPP\n");
@@ -225,7 +226,7 @@ void peakcall_idr() {
 			if ( NO_PARALLEL_JOB ) wait
 
 	}
-	else if ( peakcall == "macs2" ) {
+	else if ( PEAKCALL_METHOD == "macs2" ) {
 
 		run_macs2( "Rep1", PEAK_OUTPUT_DIR, 		REP1_TA_FILE, CTL_REP1_TA_FILE, FRAGLEN_REP1 )
 			if ( NO_PARALLEL_JOB ) wait
@@ -283,14 +284,14 @@ void run_macs2( string taskname, string out_dir, string ta, string ctl_ta, strin
 	PEAK_OUTPUT_DIR 	:= out_dir
 	CHIP_TA_PREFIX 		:= taskname
 
-	REP1_PEAK_FILE		:= "${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.narrowPeak.gz"
- 	REP1_BPEAK_FILE 	:= "${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.broadPeak.gz"
- 	REP1_GPEAK_FILE 	:= "${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.gappedPeak.gz"
- 	FC_SIGNAL_BW_FILE 	:= "${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.fc.signal.bw"
- 	PVAL_SIGNAL_BW_FILE	:= "${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.pval.signal.bw"
+	REP1_PEAK_FILE		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.narrowPeak.gz"
+ 	REP1_BPEAK_FILE 	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.broadPeak.gz"
+ 	REP1_GPEAK_FILE 	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.gappedPeak.gz"
+ 	FC_SIGNAL_BW_FILE 	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bw"
+ 	PVAL_SIGNAL_BW_FILE	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bw"
 
- 	CHRSIZEFILE 		:= $CHROM_SIZES
- 	
+ 	CHRSIZEFILE 		:= CHROM_SIZES
+
 	task( taskName := "macs2 " + taskname, cpus := NTHREADS_MACS2, timeout := WALLTIME, mem := MEMORY * M, \
 		[REP1_PEAK_FILE, REP1_BPEAK_FILE, REP1_GPEAK_FILE, FC_SIGNAL_BW_FILE, PVAL_SIGNAL_BW_FILE] <- [ta, ctl_ta] ) {
 
@@ -300,32 +301,31 @@ void run_macs2( string taskname, string out_dir, string ta, string ctl_ta, strin
 		//# Generate narrow peaks and preliminary signal tracks
 		//============================================
 
-		sys macs2 callpeak -t $ta -c $ctl_ta -f BED -n ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX} -g $GENOMESIZE -p 1e-2 --nomodel --shift 0 --extsize $fraglen --keep-dup all -B --SPMR
+		sys macs2 callpeak -t $ta -c $ctl_ta -f BED -n $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX -g $GENOMESIZE -p 1e-2 --nomodel --shift 0 --extsize $fraglen --keep-dup all -B --SPMR
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.narrowPeak.gz
+		sys sort -k 8gr,8gr $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.narrowPeak.gz
 
 		//# remove additional files
-		sys rm -f ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_peaks.xls \
-			${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_peaks.narrowPeak \
-			${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_summits.bed
+		sys rm -f $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.xls \
+			$PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.narrowPeak \
+			$PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_summits.bed
 
 		//===========================================
 		//# Generate Broad and Gapped Peaks
 		//============================================
-		sys macs2 callpeak -t $ta -c $ctl_ta -f BED -n ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX} -g $GENOMESIZE -p 1e-2 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
-
+		sys macs2 callpeak -t $ta -c $ctl_ta -f BED -n $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX -g $GENOMESIZE -p 1e-2 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
 
 		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.broadPeak.gz
+		sys sort -k 8gr,8gr $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.broadPeak.gz
 
-		sys sort -k 14gr,14gr ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.gappedPeak.gz
+		sys sort -k 14gr,14gr $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.gappedPeak.gz
 
 		//# remove additional files
-		sys rm -f ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_peaks.xls \
-		  ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_peaks.broadPeak \
-		  ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_peaks.gappedPeak \
-		  ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_summits.bed
+		sys rm -f $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.xls \
+		  $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.broadPeak \
+		  $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.gappedPeak \
+		  $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_summits.bed
 
 		//===========================================
 		//# For Fold enrichment signal tracks
@@ -333,17 +333,17 @@ void run_macs2( string taskname, string out_dir, string ta, string ctl_ta, strin
 		//sys CHRSIZEFILE=<path_of_file_containing_chromosome_sizes>
 		//# This file is a tab delimited file with 2 columns Col1 (chromosome name), Col2 (chromosome size in bp).
 
-		sys macs2 bdgcmp -t ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_treat_pileup.bdg -c ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_control_lambda.bdg --outdir ${PEAK_OUTPUT_DIR} -o "${CHIP_TA_PREFIX}"_FE.bdg -m FE
+		sys macs2 bdgcmp -t $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_treat_pileup.bdg -c $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_control_lambda.bdg --outdir $PEAK_OUTPUT_DIR -o "$CHIP_TA_PREFIX"_FE.bdg -m FE
 
 		//# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
-		sys slopBed -i ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_FE.bdg -g $CHRSIZEFILE -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $CHRSIZEFILE ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.fc.signal.bedgraph
+		sys slopBed -i $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_FE.bdg -g $CHRSIZEFILE -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $CHRSIZEFILE $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bedgraph
 
-		sys rm -f ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_FE.bdg
+		sys rm -f $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_FE.bdg
 
 		//# Convert bedgraph to bigwig
-		sys bedGraphToBigWig ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.fc.signal.bedgraph $CHRSIZEFILE ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.fc.signal.bw
+		sys bedGraphToBigWig $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bedgraph $CHRSIZEFILE $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bw
 
-		sys rm -f ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.fc.signal.bedgraph
+		sys rm -f $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bedgraph
 
 		//===========================================
 		//# For -log10(p-value) signal tracks
@@ -357,19 +357,18 @@ void run_macs2( string taskname, string out_dir, string ta, string ctl_ta, strin
 
 		sys sval=$(echo "${chipReads} ${controlReads}" | awk '$1>$2{printf "%f",$2} $1<=$2{printf "%f",$1}');
 
-		sys macs2 bdgcmp -t ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_treat_pileup.bdg -c ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_control_lambda.bdg --outdir ${PEAK_OUTPUT_DIR} -o "${CHIP_TA_PREFIX}"_ppois.bdg -m ppois -S "${sval}"
+		sys macs2 bdgcmp -t $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_treat_pileup.bdg -c $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_control_lambda.bdg --outdir $PEAK_OUTPUT_DIR -o "$CHIP_TA_PREFIX"_ppois.bdg -m ppois -S "${sval}"
 
 		//# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
-		sys slopBed -i ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_ppois.bdg -g $CHRSIZEFILE -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $CHRSIZEFILE ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.pval.signal.bedgraph
+		sys slopBed -i $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_ppois.bdg -g $CHRSIZEFILE -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $CHRSIZEFILE $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bedgraph
 
-		sys rm -rf ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_ppois.bdg
+		sys rm -rf $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_ppois.bdg
 
 		//# Convert bedgraph to bigwig
-		sys bedGraphToBigWig ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.pval.signal.bedgraph $CHRSIZEFILE ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.pval.signal.bw
+		sys bedGraphToBigWig $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bedgraph $CHRSIZEFILE $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bw
 
-		sys rm -f ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.pval.signal.bedgraph
-		sys rm -f ${PEAK_OUTPUT_DIR}/"${CHIP_TA_PREFIX}"_treat_pileup.bdg ${peakFile}_control_lambda.bdg
-
+		sys rm -f $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bedgraph
+		sys rm -f $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_treat_pileup.bdg ${peakFile}_control_lambda.bdg
 	}
 }
 

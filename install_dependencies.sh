@@ -16,7 +16,6 @@ echo "sudo apt-get install build-essential zlib1g-dev ncurses-dev gfortran libbo
 echo "sudo apt-get install openssl libssl-dev"
 echo "sudo apt-get install libfreetype6-dev"
 echo "sudo apt-get install liblapack-dev"
-#echo "sudo apt-get install libopenblas-dev"
 echo "sudo apt-get install git"
 echo
 echo "# Check if you already have java installed on your system"
@@ -28,7 +27,6 @@ echo "sudo apt-get update"
 echo "sudo apt-get install python2.7"
 echo "=============================================================================="
 read -p "Press [Enter] key to continue..."
-
 
 echo
 echo "Add the following lines to your \$HOME/.bashrc or \$HOME/.bash_profile."
@@ -45,11 +43,10 @@ echo "==========================================================================
 read -p "Press [Enter] key to continue..."
 echo
 
-
 echo
 echo "=============================================================================="
 echo "Starting automatic installation for dependencies for ChIP-seq pipeline."
-echo "Make sure you have enough disk space (at least 2GB) on your file system."
+echo "Make sure you have enough disk space (at least 3GB) on your file system."
 echo "All dependencies will be installed under $SOFTWARE."
 echo "=============================================================================="
 read -p "Press [Enter] key to continue..."
@@ -192,7 +189,7 @@ $SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/pyth
 $SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" matplotlib
 $SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" scipy
 echo "" >> $BASHRC
-echo "# Path for run_spp.R (Anshul's phantompeakqualtool)" >> $BASHRC
+echo "# Path for python3" >> $BASHRC
 echo "export PATH=\$PATH:$SOFTWARE/python3.4/bin" >> $BASHRC
 echo "export PYTHONPATH=$SOFTWARE/python3.4/lib/python3.4/site-packages:\$PYTHONPATH">> $BASHRC
 
@@ -214,6 +211,39 @@ rm -f idrCode.tar.gz
 echo "" >> $BASHRC
 echo "# Path for IDR (written by Anshul Kundaje)" >> $BASHRC
 echo "export PATH=\$PATH:$SOFTWARE/idrCode" >> $BASHRC
+
+# Local installation instruction for Python (2.7.2) and relevant packages (for macs2)
+cd $SOFTWARE
+wget https://www.python.org/ftp/python/2.7.2/Python-2.7.2.tgz
+tar zxvf Python-2.7.2.tgz
+rm -f Python-2.7.2.tgz
+cd Python-2.7.2
+./configure --prefix=$SOFTWARE/python2.7
+make altinstall prefix=$SOFTWARE/python2.7 exec-prefix=$SOFTWARE/python2.7
+wget http://cython.org/release/Cython-0.22.tar.gz
+tar zxvf Cython-0.22.tar.gz
+cd Cython-0.22
+$SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
+ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python2
+cd $SOFTWARE
+cd python2.7/bin
+get https://bootstrap.pypa.io/get-pip.py
+./python2 get-pip.py
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" numpy
+echo "" >> $BASHRC
+echo "# Path for python2" >> $BASHRC
+echo "export PATH=\$PATH:$SOFTWARE/python2.7/bin" >> $BASHRC
+echo "export PYTHONPATH=$SOFTWARE/python2.7/lib/python2.7/site-packages:\$PYTHONPATH">> $BASHRC
+
+# Local installation instruction for MACS2
+cd $SOFTWARE
+git clone https://github.com/taoliu/MACS/
+cd MACS
+$SOFTWARE/python2.7/bin/python2.7 setup_w_cython.py install --prefix=$SOFTWARE/python2.7
+chmod 755 $SOFTWARE/MACS/bin/*
+echo "" >> $BASHRC
+echo "# Path for MACS2" >> $BASHRC
+echo "export PATH=\$PATH:$SOFTWARE/MACS/bin" >> $BASHRC
 
 # Local installation instruction for Wiggler (for generating signal tracks)
 cd $SOFTWARE

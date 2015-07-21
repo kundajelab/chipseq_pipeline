@@ -6,8 +6,8 @@ include "modules_chipseq.bds"
 // cmd line arg wrapper and help
 string gensz 		= ""		help Genome size; hs for human, mm for mouse (default: hs)
 int nth_macs2		= 2 		help Number of threads for MACS2 (default: 2)
-int wt_spp		= 40000		help Walltime in seconds for MACS2 (default: 40000).
-int mem_spp		= 8000 		help Max. memory in MB for MACS2 (default: 8000).
+int wt_macs2		= 40000		help Walltime in seconds for MACS2 (default: 40000).
+int mem_macs2		= 8000 		help Max. memory in MB for MACS2 (default: 8000).
 
 // parameters
 string GENOMESIZE 	= gensz
