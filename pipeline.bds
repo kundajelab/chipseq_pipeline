@@ -329,6 +329,7 @@ void write_files_to_report( string path, string[] lines ) {
 	all := path.dirPath()	
 
 	for ( string str : all ) {
+		//print("debug: $str\n")
 		if ( str.isDir() ) {
 			write_files_to_report( str, lines )
 		}
@@ -341,7 +342,7 @@ void write_files_to_report( string path, string[] lines ) {
 				html = html + 	"<a href=" + rel_path + ">" + rel_path  + "</a>\n" + \
 						"<img src=" + rel_path + ">\n"
 			}
-			else if ( str.endsWith( ".pdf") ) {
+			else if ( str.endsWith( ".pdf") ||  str.endsWith( ".ps") ) {
 				html = html + 	"<a href=" + rel_path + ">" + rel_path  + "</a>\n"
 			} 
 			else if ( str.endsWith( ".ccscores") || str.endsWith( ".cc.qc" ) ) {				
@@ -373,7 +374,12 @@ void write_files_to_report( string path, string[] lines ) {
 						"</pre>\n"				
 			}
 			else if ( str.endsWith( ".txt") || str.endsWith( ".qc" )) {
-				html = html + 	"<pre>" + array_to_str( str.readLines() ) + "</pre>\n"
+				if ( str.size() > 1000000 ) { // if file size is too big > 1MB just link
+					html = html + 	"<a href=" + rel_path + ">" + rel_path  + "</a>\n"
+				}
+				else {
+					html = html + 	"<pre>" + array_to_str( str.readLines() ) + "</pre>\n"
+				}
 			}
 			else {
 				continue
