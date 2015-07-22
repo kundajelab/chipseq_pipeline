@@ -265,6 +265,8 @@ void align_to_pspr() {  // this function is for parallel jobs for each control a
 
 	write_report( "ChIP-Seq Pipeline HTML Report" )
 
+	if ( QC_ONLY ) return
+
 	for ( int ctl=0; ctl <= NUM_CTL; ctl++) {
 		if ( NO_PARALLEL_JOB ) \
 			pspr( ctl )
@@ -280,6 +282,9 @@ void align_to_spr( int ctl, int rep ) {
 	if ( is_input_fastq() ) {
 		align_bwa( ctl, rep )
 		post_align_filt( ctl, rep )
+
+		if ( QC_ONLY ) return // QC_ONLY is for bam
+
 	 	bam_to_tagalign( ctl, rep )
 	}
 	else if ( is_input_tagalign() ) {
