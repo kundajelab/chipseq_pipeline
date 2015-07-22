@@ -5,7 +5,7 @@ include "pipeline.bds"
 ///////////// command line argument wrapper ////////////////
 
 // input file type
-string input 		= "fastq"			help Input file type: two options (fastq: including mapping of fastqs, tagalign)
+string input 		= "fastq"			help Input file type: three options (fastq, bam and tagalign)
 
 // for fastqs (SE)
 string fastq1 		= "" 				help Path for fastq for replicate 1 (single ended).
@@ -53,7 +53,7 @@ bool bedgraph 		= false				help Set it true to create bedgraph (default: false).
 bool bigwig 		= false				help Set it true to convert bedgraph to bigwig signal track (default: false).
 string umap 		= "" 				help Path for unique mappability tracks (https://sites.google.com/site/anshulkundaje/projects/mappability).
 string seq 		= "" 				help Path for sequence files (directory where chr*.fa exist).
-string chrsz 		= "" 				help Path for chrom sizes file for your sequence files.
+string chrsz 		= "" 				help Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
 
 int mapq_thresh 	= 30 				help MAPQ_THRESH (default: 30).
 int nreads 		= 15000000			help NREADS (default. 15000000).

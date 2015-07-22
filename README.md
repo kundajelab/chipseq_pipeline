@@ -390,7 +390,7 @@ For advanced users, all command line parameters for the pipeline is listed and e
 	-addpath <string>        : Path to be PREPENDED to env. var. PATH. Multiple paths should be separated by ; (example: "/bin/test:/bin/test2")
 
 # inputs
-	-input <string>          : Input file type: two options (fastq: including mapping of fastqs, tagalign)
+	-input <string>          : Input file type: three options (fastq, bam and tagalign)
 
 	# if inputs are fastqs
 	-fastq1 <string>         : Path for fastq for replicate 1 (single ended).
@@ -406,6 +406,13 @@ For advanced users, all command line parameters for the pipeline is listed and e
 	-ctl_fastq1_2 <string>   : Path for control fastq for replicate 1 pair 2 (paired-end).
 	-ctl_fastq2_1 <string>   : Path for control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).
 	-ctl_fastq2_2 <string>   : Path for control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).
+
+	# if inputs are bams
+	-bam_PE <bool>           : Set it true if bams are paired end (default: false).
+	-bam1 <string>           : Path for bam for replicate 1.
+	-bam2 <string>           : Path for bam for replicate 2.	
+	-ctl_bam1 <string>       : Path for control bam for replicate 1.
+	-ctl_bam2 <string>       : Path for control bam for replicate 2 (if not exists leave this blank).
 
 	# if inputs are tagaligns
 	-tagalign_PE <bool>      : Set it true if tagaligns are paired end (default: false).
@@ -427,15 +434,13 @@ For advanced users, all command line parameters for the pipeline is listed and e
 	-wig <bool>              : Set it true to create wig (default: false).
 	-bedgraph <bool>         : Set it true to create bedgraph (default: false).
 	-bigwig <bool>           : Set it true to convert bedgraph to bigwig signal track (default: false).
-	-umap <string>           : Path for umap (for hg19, path for globalmap_k20tok54).
-	-seq <string>            : Path for sequence files (for hg19, directory where chr*.fa exist).
-	-chrsz <string>          : Path for chrom.sizes file for your sequence files.
+	-umap <string>           : Path for unique mappability tracks (https://sites.google.com/site/anshulkundaje/projects/mappability).
+	-seq <string>            : Path for sequence files (directory where chr*.fa exist).
+	-chrsz <string>          : Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
 
 # etc.	
 	-mapq_thresh <int>       : MAPQ_THRESH (default: 30).
 	-nreads <int>            : NREADS (default. 15000000).
-	-qc <bool>               : Set it true to test-run and stop before peak calling, false: keep going through IDR (default: false).
-	-num_rep <int>           : Number of replicates, define it for qc = true only. (default: 2).
 
 # spp	
 	-nth_spp <int>           : Number of threads for spp (run_spp.R) (default: 2).
@@ -446,6 +451,10 @@ For advanced users, all command line parameters for the pipeline is listed and e
 # idr	
 	-idr_thresh <string>     : IDR thresh (default: 0.02).
 	-idr_nboley <bool>       : Use Nathan Boley's code for IDR, otherwise Anshul Kundaje's code (default: true)	
+
+# alignment only mode
+	-final_stage <string>    : If not blank, the pipeline will stop after specified stage (bam, tagalign or xcor (cross-correlation score for tagaligns) ) (default: blank).
+	-num_rep <int>           : Number of replicates, define it for non-blank final_stage only. (default: 2).
 ```
 
 Equivalent parameters in a configuration file is listed and explained below:
@@ -466,7 +475,7 @@ Equivalent parameters in a configuration file is listed and explained below:
 	ADDPATH			: Paths to be added to env. var. PATH separated by ; or :. (a quicker way to add PATH)
 
 # inputs
-	INPUT_TYPE              : Input file type: two options (fastq: including mapping of fastqs, tagalign: starting from tagaligns)
+	INPUT_TYPE              : Input file type: three options (fastq, bam and tagalign)
 
 	# if inputs are fastqs
 	INPUT_FASTQ_REP1        : Path for input fastq for replicate 1 (single ended).
@@ -484,35 +493,41 @@ Equivalent parameters in a configuration file is listed and explained below:
 	INPUT_FASTQ_CTL_REP2_PE2: Path for control fastq for replicate 2 pair 2 (paired-end).
 
 	# if inputs are tagaligns
-	TAGALIGN_PE: Set it true if tagaligns are paired end
+	BAM_PE                  : Set it true if bams are paired end
 
-	INPUT_TAGALIGN_REP1    : Path for input tagalign for replicate 1.
-	INPUT_TAGALIGN_REP2    : Path for input tagalign for replicate 2.
-	INPUT_TAGALIGN_CTL_REP1: Path for control tagalign for replicate 1.
-	INPUT_TAGALIGN_CTL_REP2: Path for control tagalign for replicate 2 (if not exists, leave this blank).
+	INPUT_BAM_REP1          : Path for input bam for replicate 1.
+	INPUT_BAM_REP2          : Path for input bam for replicate 2.
+	INPUT_BAM_CTL_REP1      : Path for control bam for replicate 1.
+	INPUT_BAM_CTL_REP2      : Path for control bam for replicate 2 (if not exists, leave this blank).
+
+	# if inputs are tagaligns
+	TAGALIGN_PE             : Set it true if tagaligns are paired end
+
+	INPUT_TAGALIGN_REP1     : Path for input tagalign for replicate 1.
+	INPUT_TAGALIGN_REP2     : Path for input tagalign for replicate 2.
+	INPUT_TAGALIGN_CTL_REP1 : Path for control tagalign for replicate 1.
+	INPUT_TAGALIGN_CTL_REP2 : Path for control tagalign for replicate 2 (if not exists, leave this blank).
 
 # bwa
-	BWA_INDEX_NAME         : Path for bwa index.
-	BWA_ALN_PARAM          : Parameters for bwa align (default: "-q 5 -l 32 -k 2").
-	NTHREADS_BWA_ALN       : Number of threads for bwa aln (default: 2).
-	WALLTIME_BWA_ALN       : Walltime in seconds for bwa aln (default: 36000).
-	MEMORY_BWA_ALN         : Max. memory in MB for bwa aln (default: 8000).
-	WALLTIME_BWA_SAM       : Walltime in seconds for bwa sampe/samse (default: 36000).
-	MEMORY_BWA_SAM         : Max. memory in MB for bwa sampe/samse (default: 8000).
+	BWA_INDEX_NAME          : Path for bwa index.
+	BWA_ALN_PARAM           : Parameters for bwa align (default: "-q 5 -l 32 -k 2").
+	NTHREADS_BWA_ALN        : Number of threads for bwa aln (default: 2).
+	WALLTIME_BWA_ALN        : Walltime in seconds for bwa aln (default: 36000).
+	MEMORY_BWA_ALN          : Max. memory in MB for bwa aln (default: 8000).
+	WALLTIME_BWA_SAM        : Walltime in seconds for bwa sampe/samse (default: 36000).
+	MEMORY_BWA_SAM          : Max. memory in MB for bwa sampe/samse (default: 8000).
 
 # signal track generation
 	CREATE_WIG             : Set it true to create wig (default: false).
 	CREATE_BEDGRAPH        : Set it true to create bedgraph (default: false).
 	CONVERT_TO_BIGWIG      : Set it true to convert bedgraph to bigwig signal track (default: false).
-	UMAP_DIR               : Path for umap (for hg19, path for globalmap_k20tok54).
-	SEQ_DIR                : Path for sequence files (for hg19, directory where chr*.fa exist).
-	CHROM_SIZES            : Path for chrom.sizes file for your sequence files.
+	UMAP_DIR               : Path for unique mappability tracks (https://sites.google.com/site/anshulkundaje/projects/mappability).
+	SEQ_DIR                : Path for sequence files (directory where chr*.fa exist).
+	CHROM_SIZES            : Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
 
 # etc.	
 	MAPQ_THRESH            : MAPQ_THRESH (default: 30).
 	NREADS                 : NREADS (default. 15000000).
-	QC_ONLY                : Set it true to test-run and stop before peak calling, false: keep going through IDR (default: false).
-	NUM_REP                : Number of replicates, define it for qc = true only. (default: 2).
 
 # spp	
 	NTHREADS_SPP           : Number of threads for spp (run_spp.R) (default: 2).
@@ -523,6 +538,10 @@ Equivalent parameters in a configuration file is listed and explained below:
 # idr	
 	IDR_THRESH             : IDR thresh (default: 0.02).
 	USE_IDR_NBOLEY         : Use Nathan Boley's code for IDR, otherwise Anshul Kundaje's code (default: true)	
+
+# alignment only mode
+	FINAL_STAGE            : If not blank, the pipeline will stop after specified stage (bam, tagalign or xcor (cross-correlation score for tagaligns) ) (default: blank).
+	NUM_REP                : Number of replicates, define it for non-blank final_stage only. (default: 2).
 ```
 
 
