@@ -261,6 +261,7 @@ void read_param_align_map() {
 				+ "$DIR_SW_BDS/python3.4/bin:" \
 				+ "$DIR_SW_BDS/align2rawsignal/bin:" \
 				+ "$DIR_SW_BDS/idrCode:" \
+				+ "$DIR_SW_BDS/python2.7/bin:" \
 				+ "$DIR_SW_BDS/MACS/bin:" \
 				+ "\${PATH}"
 

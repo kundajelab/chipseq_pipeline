@@ -43,18 +43,18 @@ case $yn in
       exit;;
 esac
 
-read -p "Are you sure that python 2.7.x is installed on your system? [yes/no] " yn
-case $yn in
-    yes ) echo "YES";;
-    * )
-      echo "Locally install python 2.7.x on your system or use the following command line (ask administrator)"
-      echo "======================================================================================"
-      echo "sudo add-apt-repository ppa:fkrull/deadsnakes"
-      echo "sudo apt-get update"
-      echo "sudo apt-get install python2.7"
-      echo "======================================================================================"
-      exit;;
-esac
+#read -p "Are you sure that python 2.7.x is installed on your system? [yes/no] " yn
+#case $yn in
+#    yes ) echo "YES";;
+#    * )
+#      echo "Locally install python 2.7.x on your system or use the following command line (ask administrator)"
+#      echo "======================================================================================"
+#      echo "sudo add-apt-repository ppa:fkrull/deadsnakes"
+#      echo "sudo apt-get update"
+#      echo "sudo apt-get install python2.7"
+#      echo "======================================================================================"
+#      exit;;
+#esac
 
 echo
 echo "Add the following lines to your \$HOME/.bashrc or \$HOME/.bash_profile."
@@ -316,6 +316,8 @@ echo Created $BASHRC
 echo
 echo IMPORTANT!
 echo
-echo Please add $BASHRC to your $HOME/.bashrc or $HOME/.bash_profile
+echo We recommend to add $BASHRC to your $HOME/.bashrc or $HOME/.bash_profile
+echo
+
 
 
