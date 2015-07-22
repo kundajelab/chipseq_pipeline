@@ -23,6 +23,13 @@ string ctl_fastq1_2	= "" 				help Path for control fastq for replicate 1 pair 2 
 string ctl_fastq2_1 	= "" 				help Path for control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).
 string ctl_fastq2_2 	= "" 				help Path for control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).
 
+// for bam data set
+bool bam_PE 		= false 			help Set it true if bams are paired end (default: false).
+string bam1 		= ""				help Path for bam for replicate 1.
+string bam2 		= ""				help Path for bam for replicate 2.
+string ctl_bam1 	= "" 				help Path for control bam for replicate 1.
+string ctl_bam2 	= "" 				help Path for control bam for replicate 2 (if not exists leave this blank).
+
 // for tagalign data set
 bool tagalign_PE 	= false 			help Set it true if tagaligns are paired end (default: false).
 string tagalign1 	= ""				help Path for tagAlign for replicate 1.
@@ -44,15 +51,15 @@ int mem_bwa_sam		= 8000 				help Max. memory in MB for bwa sampe/samse (default:
 bool wig 		= false				help Set it true to create wig (default: false).
 bool bedgraph 		= false				help Set it true to create bedgraph (default: false).
 bool bigwig 		= false				help Set it true to convert bedgraph to bigwig signal track (default: false).
-string umap 		= "" 				help Path for umap (for hg19, path for globalmap_k20tok54).
-string seq 		= "" 				help Path for sequence files (for hg19, directory where chr*.fa exist).
-string chrsz 		= "" 				help Path for chrom.sizes file for your sequence files.
+string umap 		= "" 				help Path for unique mappability tracks (https://sites.google.com/site/anshulkundaje/projects/mappability).
+string seq 		= "" 				help Path for sequence files (directory where chr*.fa exist).
+string chrsz 		= "" 				help Path for chrom sizes file for your sequence files.
 
 int mapq_thresh 	= 30 				help MAPQ_THRESH (default: 30).
 int nreads 		= 15000000			help NREADS (default. 15000000).
 
-bool qc 		= false 			help Set it true to test-run and stop before peak calling, false: keep going through IDR (default: false).
-int num_rep 		= 2				help Number of replicates, define it for qc = true only. (default: 2).
+string final_stage	= "" 				help If not blank, the pipeline will stop after specified stage (bam, tagalign or xcor (cross-correlation score for tagaligns) ) (default: blank).
+int num_rep 		= 2				help Number of replicates, define it for non-blank final_stage only. (default: 2).
 //int fraglen 		= 200  				//help FragLen for tagAlign input
 
 
@@ -60,6 +67,7 @@ int num_rep 		= 2				help Number of replicates, define it for qc = true only. (d
 
 string INPUT_TYPE 	= input
 bool TAGALIGN_PE 	= tagalign_PE
+bool BAM_PE 		= bam_PE
 string BWA_INDEX_NAME	= idx_bwa		
 string BWA_ALN_PARAM 	= param_bwa
 int NTHREADS_BWA_ALN 	= nth_bwa_aln
@@ -75,7 +83,7 @@ string SEQ_DIR 		= seq
 string CHROM_SIZES 	= chrsz
 int MAPQ_THRESH 	= mapq_thresh
 int NREADS 		= nreads
-bool QC_ONLY		= qc
+string FINAL_STAGE	= final_stage
 int NUM_REP 		= num_rep
 //int FRAGLEN 		= fraglen
 
@@ -92,7 +100,9 @@ void read_param_align_map() {
 
 		if ( conf.hasKey("INPUT_TYPE") )	INPUT_TYPE		= rm_comment( conf{ "INPUT_TYPE"} )
 		if ( conf.hasKey("TAGALIGN_PE") )	TAGALIGN_PE 		= parse_bool( conf{ "TAGALIGN_PE"} )
-		if ( conf.hasKey("BWA_INDEX_NAME") )	BWA_INDEX_NAME 		= chk_file( conf{ "BWA_INDEX_NAME" }, ".bwt" ) // check if filename+".bwt" exists
+		if ( conf.hasKey("BAM_PE") )		BAM_PE 			= parse_bool( conf{ "BAM_PE"} )
+		if ( INPUT_TYPE == "fastq") \
+			if ( conf.hasKey("BWA_INDEX_NAME") )	BWA_INDEX_NAME	= chk_file( conf{ "BWA_INDEX_NAME" }, ".bwt" ) // check if filename+".bwt" exists
 		if ( conf.hasKey("BWA_ALN_PARAM") )	BWA_ALN_PARAM 		= rm_comment( conf{ "BWA_ALN_PARAM" } )
 		if ( conf.hasKey("NTHREADS_BWA_ALN") )	NTHREADS_BWA_ALN	= parse_int( conf{ "NTHREADS_BWA_ALN" } )
 		if ( conf.hasKey("WALLTIME_BWA_ALN") )	WALLTIME_BWA_ALN 	= parse_int( conf{ "WALLTIME_BWA_ALN" } )
@@ -111,17 +121,21 @@ void read_param_align_map() {
 //		if ( conf.hasKey("FRAGLEN") )		FRAGLEN 		= parse_int( conf{ "FRAGLEN"} )
 
 		// QC only?
-		if ( conf.hasKey("QC_ONLY") )		QC_ONLY 		= parse_bool( conf{ "QC_ONLY"} )
-		if ( QC_ONLY ) \
+		if ( conf.hasKey("FINAL_STAGE") )	FINAL_STAGE 		= rm_comment( conf{ "FINAL_STAGE"} )
+		if ( FINAL_STAGE != "" ) \
 			NUM_REP	= parse_int( conf{ "NUM_REP"} )
 	}
 	else {
 	}
 
-	NUM_CTL 	= QC_ONLY ? 0 : 1
+	INPUT_TYPE = INPUT_TYPE.trim().toLower()
+	FINAL_STAGE = FINAL_STAGE.trim().toLower()
+
+	NUM_CTL 	= (FINAL_STAGE=="") ? 1 : 0
 
 	// check params
-	if ( BWA_INDEX_NAME == "" ) error("BWA_INDEX_NAME is not specifed.")
+	if ( (INPUT_TYPE == "fastq") && (BWA_INDEX_NAME == "") ) error("BWA_INDEX_NAME is not specifed.")
+
 	print("INPUT_TYPE = $INPUT_TYPE\n");
 	print("BWA_INDEX_NAME = $BWA_INDEX_NAME\n");
 	print("BWA_ALN_PARAM = $BWA_ALN_PARAM\n");
@@ -133,8 +147,7 @@ void read_param_align_map() {
 	print("MAPQ_THRESH = $MAPQ_THRESH\n");
 	print("NREADS = $NREADS\n");
 
-	print("QC_ONLY = $QC_ONLY\n");	
-	if ( QC_ONLY ) return // if QC only mode, do not check inputs (fastq or tagaligns)
+	if ( FINAL_STAGE != "" ) return // if final output is not blank, do not check inputs (fastq, bam or tagaligns)
 
 	if ( (CREATE_WIG || CREATE_BEDGRAPH) && (UMAP_DIR == "") ) error("UMAP_DIR is not specifed.")
 	if ( (CREATE_WIG || CREATE_BEDGRAPH) && (SEQ_DIR == "") ) error("SEQ_DIR is not specifed.")
@@ -175,8 +188,34 @@ void read_param_align_map() {
 			}
 		}
 	}
+	else if ( is_input_bam() ) {
 
-	if ( is_input_tagalign() ) {
+		print( "\n====== Checking bams...\n" );
+
+		for ( int ctl=0; ctl <= NUM_CTL; ctl++) { // iterate through fastqs (0: not control, 1~: controls)
+
+			prefix := (ctl==0)? "":"Control "
+			bam_Rep1 := get_bam(  ctl, 1 )
+			bam_Rep2 := get_bam(  ctl, 2 )
+
+			print( prefix + "Rep1: $bam_Rep1 \n")
+			print( prefix + "Rep2: $bam_Rep2 \n")
+			
+			if ( bam_Rep1 == "" ) error( prefix + "Rep1 bam missing!\n")
+
+			if ( bam_Rep2 == "" ) {
+				if ( ctl==0 ) {
+					error( prefix + "Rep2 bam missing!\n")
+				}
+				else {
+					print( "Warning: " + prefix + "Rep2 bam missing for control! keep going...\n")
+				}
+			}
+		}
+
+		print("BAM_PE = $BAM_PE\n");
+	}
+	else if ( is_input_tagalign() ) {
 
 		print( "\n====== Checking tagAligns...\n" );
 
@@ -207,7 +246,7 @@ void read_param_align_map() {
 
 	if ( DIR_SW_BDS.exists() ) { // automatically add software binaries to PATH
 
-		print("\n\nFound BigDataScript pipeline software directory ($DIR_SW_BDS) \n")
+		print("\n\nFound ENCODE ChIP-Seq pipeline software directory ($DIR_SW_BDS) \n")
 		print("Automatically adding environment variables...\n")
 
 		PATH := " export PATH=" \
@@ -241,7 +280,6 @@ void read_param_align_map() {
 
 		PRELOAD = PRELOAD + ";" + PATH + ";" + SHELLCMD
 		PRELOAD = PRELOAD.replace( ";;", ";" )
-
 	}
 
 	print("\n")
@@ -265,7 +303,7 @@ void align_to_pspr() {  // this function is for parallel jobs for each control a
 
 	write_report( "ChIP-Seq Pipeline HTML Report" )
 
-	if ( QC_ONLY ) return
+	if ( FINAL_STAGE != "" ) return
 
 	for ( int ctl=0; ctl <= NUM_CTL; ctl++) {
 		if ( NO_PARALLEL_JOB ) \
@@ -283,15 +321,30 @@ void align_to_spr( int ctl, int rep ) {
 		align_bwa( ctl, rep )
 		post_align_filt( ctl, rep )
 
-		if ( QC_ONLY ) return // QC_ONLY is for bam
+		if ( FINAL_STAGE == "bam" ) return
 
 	 	bam_to_tagalign( ctl, rep )
+
+		if ( FINAL_STAGE == "tagalign" ) return
+	}
+	else if ( is_input_bam() ) {
+		softlink_bam( ctl, rep )
+		post_align_filt( ctl, rep )
+
+		if ( FINAL_STAGE == "bam" ) return
+
+		bam_to_tagalign( ctl, rep )
+
+		if ( FINAL_STAGE == "tagalign" ) return
 	}
 	else if ( is_input_tagalign() ) {
 		softlink_tagalign( ctl, rep )
 	}
 
  	xcor( ctl, rep )
+
+	if ( FINAL_STAGE == "xcor" ) return
+
  	spr( ctl, rep )
  	sig_trk( ctl, rep )
 }
@@ -442,6 +495,34 @@ void align_bwa( int ctl, int rep ) {
 		print("warning(align_bwa): no input for ctl $ctl, rep $rep\n")
 	}
 
+}
+
+void softlink_bam( int ctl, int rep ) {
+
+	print( "\n====== softlink_bam ctl:$ctl rep:$rep...\n" );
+
+	OFPREFIX := get_ofprefix( ctl, rep )
+	bam := get_bam( ctl, rep )
+
+	if ( is_paired_end( ctl, rep ) || is_single_ended( ctl, rep ) ) {
+
+		RAW_BAM_PREFIX 	:="$OFPREFIX.raw.srt"
+		RAW_BAM_FILE 	:= "$RAW_BAM_PREFIX.bam" //# To be stored
+
+		task( taskName := "softlink_bam " + cat_ctl_rep(ctl, rep), \
+			cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
+			RAW_BAM_FILE <- bam ) {
+
+			sys $PRELOAD
+
+			sys ln -f -s $bam $RAW_BAM_FILE
+		}
+
+		wait
+	}
+	else { // no data
+		print("warning(align_bwa): no input for ctl $ctl, rep $rep\n")
+	}
 }
 
 void post_align_filt( int ctl, int rep ) {
@@ -794,14 +875,14 @@ void softlink_tagalign( int ctl, int rep ) {
 		wait
 	}
 	else { // no data
-		print("warning(softlink_tagalign): no input for ctl $ctl, rep $rep\n")
+		print("warning(softlink_tagalign): no input for ctl $ctl, rep $rep.\n")
 	}
 }
 
 void sig_trk() {
 
-	if ( QC_ONLY ) {
-		print("No signal track generation for QC_ONLY=true \n")
+	if ( FINAL_STAGE != "" ) {
+		print("No signal track generation if final_stage is defined.\n")
 		return
 	}
 	
@@ -1229,6 +1310,31 @@ string get_fastq( int ctl, int rep, int pe ) {
 	}
 }
 
+
+string get_bam( int ctl, int rep ) {
+
+	key := ( ctl > 0 ? "INPUT_BAM_CTL" : "INPUT_BAM" ) + "_REP" + rep
+
+	if ( conf.hasKey( key ) ) {
+		return get_path( conf{ key } )
+	}
+	else if ( (ctl==0) && (rep==1) ) {
+		return bam1
+	}
+	else if ( (ctl==0) && (rep==2) ) {
+		return bam2
+	}
+	else if ( (ctl==1) && (rep==1) ) {
+		return ctl_bam1
+	}
+	else if ( (ctl==1) && (rep==2) ) {
+		return ctl_bam2
+	}
+	else {
+		return ""
+	}
+}
+
 string get_tagalign( int ctl, int rep ) {
 
 	key := ( ctl > 0 ? "INPUT_TAGALIGN_CTL" : "INPUT_TAGALIGN" ) + "_REP" + rep
@@ -1257,6 +1363,10 @@ bool is_input_fastq() {
 	return INPUT_TYPE.toLower() == "fastq"
 }
 
+bool is_input_bam() {
+	return INPUT_TYPE.toLower() == "bam"
+}
+
 bool is_input_tagalign() {
 	return INPUT_TYPE.toLower() == "tagalign"
 }
@@ -1265,6 +1375,10 @@ bool is_rep2_exist( int ctl ) {
 	if ( is_input_fastq() ) {
 		fastqs := get_fastqs( ctl, 2 )
 		return fastqs.size()>0
+	}
+	else if ( is_input_bam() ) {
+		bam := get_bam( ctl, 2 )
+		return bam!=""
 	}
 	else if ( is_input_tagalign() ) {
 		tagalign := get_tagalign( ctl, 2 )
@@ -1279,6 +1393,10 @@ bool is_paired_end( int ctl, int rep ) {
 		fastqs := get_fastqs( ctl, rep )
 		return fastqs.size()==2
 	}
+	else if ( is_input_bam() ) {
+		bam := get_bam( ctl, rep )
+		return (bam!="") && bam_PE
+	}
 	else if ( is_input_tagalign() ) {
 		tagalign := get_tagalign( ctl, rep )
 		return (tagalign!="") && tagalign_PE
@@ -1291,6 +1409,10 @@ bool is_single_ended( int ctl, int rep ) {
 	if ( is_input_fastq() ) {
 		fastqs := get_fastqs( ctl, rep )
 		return fastqs.size()==1
+	}
+	else if ( is_input_bam() ) {
+		bam := get_bam( ctl, rep )
+		return (bam!="") && (!bam_PE)
 	}
 	else if ( is_input_tagalign() ) {
 		tagalign := get_tagalign( ctl, rep )

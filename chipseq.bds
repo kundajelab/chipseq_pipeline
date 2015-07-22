@@ -70,6 +70,8 @@ void read_param_tf_chipseq() {
 		if ( conf.hasKey("USE_IDR_NBOLEY") ) 	USE_IDR_NBOLEY	= parse_bool( conf{ "USE_IDR_NBOLEY"} )
 	}
 
+	PEAKCALL_METHOD = PEAKCALL_METHOD.trim().toLower()
+
 	print("PEAKCALL_METHOD = $PEAKCALL_METHOD\n");
 	print("NTHREADS_SPP = $NTHREADS_SPP\n");
 	print("WALLTIME_SPP = $WALLTIME_SPP\n");
@@ -88,7 +90,7 @@ void read_param_tf_chipseq() {
 
 void peakcall_idr() {
 	
-	if ( QC_ONLY ) return
+	if ( FINAL_STAGE != "" ) return
 
 	print( "\nPeak calling with ($peakcall) ...\n" );
 

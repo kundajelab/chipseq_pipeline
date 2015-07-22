@@ -9,28 +9,55 @@ SCRIPTDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo
 echo "IMPORTANT!"
 echo
-echo "Please make sure that the following softwares are installed on your system."
-echo "These command lines need super-user privilege to install them, or ask your system administrator."
-echo "=============================================================================="
-echo "sudo apt-get install build-essential zlib1g-dev ncurses-dev gfortran libboost-all-dev"
-echo "sudo apt-get install openssl libssl-dev"
-echo "sudo apt-get install libfreetype6-dev"
-echo "sudo apt-get install liblapack-dev"
-echo "sudo apt-get install git"
+echo "Please make sure that the following softwares are installed on your system:"
 echo
-echo "# Check if you already have java installed on your system"
-echo "sudo apt-get install openjdk-7-jre"
+echo "build-essential zlib1g-dev ncurses-dev gfortran libboost-all-dev"
+echo "openssl libssl-dev"
+echo "libfreetype6-dev"
+echo "liblapack-dev"
+echo "git"
 echo
-echo "# Execute the following lines if you don't have python 2.7 installed on your system"
-echo "sudo add-apt-repository ppa:fkrull/deadsnakes"
-echo "sudo apt-get update"
-echo "sudo apt-get install python2.7"
-echo "=============================================================================="
-read -p "Press [Enter] key to continue..."
+read -p "Are you sure that softwares listed above are installed on your system? [yes/no] " yn
+case $yn in
+    yes ) echo "YES";;
+    * ) 
+      echo "These command lines need super-user privilege, ask your system administrator."
+      echo "======================================================================================"
+      echo "sudo apt-get install build-essential zlib1g-dev ncurses-dev gfortran libboost-all-dev"
+      echo "sudo apt-get install openssl libssl-dev"
+      echo "sudo apt-get install libfreetype6-dev"
+      echo "sudo apt-get install liblapack-dev"
+      echo "sudo apt-get install git"
+      echo "======================================================================================"
+      exit;;
+esac
+
+read -p "Are you sure that java (jre >= version 1.7) is installed on your system? [yes/no] " yn
+case $yn in
+    yes ) echo "YES";;
+    * )
+      echo "Locally install java on your system or use the following command line (ask administrator)"
+      echo "======================================================================================"
+      echo "sudo apt-get install openjdk-7-jre"
+      echo "======================================================================================"
+      exit;;
+esac
+
+read -p "Are you sure that python 2.7.x is installed on your system? [yes/no] " yn
+case $yn in
+    yes ) echo "YES";;
+    * )
+      echo "Locally install python 2.7.x on your system or use the following command line (ask administrator)"
+      echo "======================================================================================"
+      echo "sudo add-apt-repository ppa:fkrull/deadsnakes"
+      echo "sudo apt-get update"
+      echo "sudo apt-get install python2.7"
+      echo "======================================================================================"
+      exit;;
+esac
 
 echo
 echo "Add the following lines to your \$HOME/.bashrc or \$HOME/.bash_profile."
-echo "Once installation is done, we recommend to add $BASHRC to one of them too."
 echo "=============================================================================="
 echo "# Java settings"
 echo "export _JAVA_OPTIONS=\"-Xms256M -Xmx512M -XX:ParallelGCThreads=1\""
@@ -40,14 +67,18 @@ echo
 echo "# BigDataScript settings"
 echo "export PATH=\$PATH:\$HOME/.bds"
 echo "=============================================================================="
-read -p "Press [Enter] key to continue..."
-echo
+read -p "Are you sure that you added the lines above to your \$HOME/.bashrc or \$HOME/.bash_profile? [yes/no] " yn
+case $yn in
+    yes ) echo "YES";;
+    * ) exit;;
+esac
 
 echo
 echo "=============================================================================="
 echo "Starting automatic installation for dependencies for ChIP-seq pipeline."
 echo "Make sure you have enough disk space (at least 3GB) on your file system."
 echo "All dependencies will be installed under $SOFTWARE."
+echo "Once installation is done, we recommend to add $BASHRC to \$HOME/.bashrc or \$HOME/.bash_profile ."
 echo "=============================================================================="
 read -p "Press [Enter] key to continue..."
 echo

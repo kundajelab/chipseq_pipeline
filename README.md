@@ -6,24 +6,23 @@ ENCODE ChIP-Seq pipelines are based on https://docs.google.com/document/d/1lG_Rd
 Taking advandatge of the powerful pipeline language BigDataScript (http://pcingola.github.io/BigDataScript/index.html), ENCODE ChIP-Seq pipelines have the following features:
 
 ```
-1) One-command-line installation for all dependencies for ChIP-Seq pipeline
-2) One command line (or one configuration file) to run the whole pipeline
-3) Resuming from the point of failure for failed jobs (by comparing timestamps of input/output files)
-4) Automatically optimize parallel jobs for the pipeline
-5) Sun Grid Engine cluster support
-6) Realtime HTML Progress report to monitor the pipeline jobs
+1) One-command-line installation for all dependencies for ChIP-Seq pipeline.
+2) One command line (or one configuration file) to run the whole pipeline.
+3) Starting the pipeline from fastq, bam or tagalign inputs.
+4) Resuming from the point of failure.
+5) Automatically optimizing parallel jobs for the pipeline.
+6) Sun Grid Engine cluster support.
+7) Realtime HTML Progress reports to monitor pipeline jobs.
 ```
+
 
 ### Installation instruction (pipelines and their dependencies)
 
-For Kundaje lab members, all dependencies have already been installed on lab servers. Do not run install_dependencies.sh on Kundaje lab servers. Take a look at example commands and configuration files (./examples).
-
+Get the latest version of chipseq pipelines and install dependencies.
 ```
-# get the latest version of chipseq pipelines
 $git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
 $cd ENCODE_chipseq_pipeline
 
-# install dependencies
 $./install_dependencies.sh
 ```
 
@@ -38,14 +37,40 @@ export MALLOC_ARENA_MAX=4
 export PATH=$PATH:$HOME/.bds
 ```
 
-If you don't use install_dependencies.sh, don't forget to move bds.config to BigDataScript (BDS) directory
+
+### Installation instruction (for Kundaje lab members)
+
+For Kundaje lab members, all dependencies have already been installed on lab servers. Do not run install_dependencies.sh on Kundaje lab servers.
+Get the latest version of BigDataScript.
 ```
+cd $HOME
+wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate
+tar zxvf bds_Linux.tgz
+rm -f bds_Linux.tgz
+```
+
+Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
+```
+# Java settings
+export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
+export MAX_JAVA_MEM="8G"
+export MALLOC_ARENA_MAX=4
+
+# BigDataScript settings
+export PATH=$PATH:$HOME/.bds
+```
+
+Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
+```
+$git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
+$cd ENCODE_chipseq_pipeline
 $cp bds.config $HOME/.bds/
 ```
 
-### Usage
 
-There are two ways to define parameters for ChIP-Seq pipelines. For most of the parameters, they already have default values. If they are not defined in command line argument or in a configuration file, default value will be used.
+### Usage (starting from fastq inputs)
+
+There are two ways to define parameters for ChIP-Seq pipelines. For most of the parameters, they already have default values. If they are not defined in command line argument or in a configuration file, default value will be used. Take a look at example commands and configuration files (./examples). IMPORTANT! For generating bwa index, we recommend to use bwa 0.7.10.
 
 1) From command line arguments 
 ```
@@ -55,10 +80,13 @@ $bds chipseq.bds [OPTS_FOR_PIPELINE]
 # help for parameters
 $bds chipseq.bds -h
 
-# example cmd. line args (human, no replicate-2 control fastq and using Anshul Kundaje's IDR)
+# example cmd. line args 
+#  -single ended fastqs input, no replicate-2 control fastq
+#  -using spp as peak calling method
+#  -using Anshul Kundaje's IDR code
+
 $bds chipseq.bds \
 -prefix ENCSR000EGM \
--input fastq \
 -fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
 -ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
@@ -71,7 +99,10 @@ $bds chipseq.bds \
 ```
 $bds chipseq.bds [CONF_FILE]
 
-# example configuration file (human, no replicate-2 control fastq and using Nathan Boley's IDR)
+#  -single ended fastqs input, no replicate-2 control fastq
+#  -using spp as peak calling method
+#  -using Nathan Boley's IDR code
+
 $cat [CONF_FILE]
 
 PREFIX= ENCSR000EGM
@@ -85,31 +116,135 @@ PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
 USE_IDR_NBOLEY= true
 ```
 
-IMPORTANT! For generating bwa index, we recommend to use bwa 0.7.10.
 
-### Usage (alignment only)
+### Usage (starting from bam inputs)
 
-Use QC_ONLY mode for alignment only (configuration file only). Specify number of replicates by NUM_REP. QC_ONLY mode does not involve peak calling and IDR.
+1) From command line arguments 
+
+```
+#  -single ended bam input (add -bam_PE false), no replicate-2 control bam
+#  -using spp as peak calling method
+#  -using Anshul Kundaje's IDR code
+
+$bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input bam \
+-bam_PE false \
+-bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
+-bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
+-peakcall spp \
+-idr_nboley false
+```
+
+2) From a configuration file
+```
+$bds chipseq.bds [CONF_FILE]
+
+#  -single ended bam input (set BAM_PE= false), no replicate-2 control bam
+#  -using spp as peak calling method
+#  -using Nathan Boley's IDR code
+
+$cat [CONF_FILE]
+
+PREFIX= ENCSR000EGM
+INPUT_TYPE= BAM
+BAM_PE= false
+INPUT_BAM_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.bam
+INPUT_BAM_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.bam
+INPUT_BAM_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam
+PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
+			// for histone chipesq, use macs2
+USE_IDR_NBOLEY= true
+```
+
+
+### Usage (starting from tagalign inputs)
+
+1) From command line arguments 
+
+```
+#  -single ended tagalign input (add -tagalign_PE false), no replicate-2 control tagalign
+#  -using spp as peak calling method
+#  -using Anshul Kundaje's IDR code
+
+$bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input tagalign \
+-tagalign_PE false \
+-tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
+-tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
+-ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
+-peakcall spp \
+-idr_nboley false
+```
+
+2) From a configuration file
+```
+$bds chipseq.bds [CONF_FILE]
+
+#  -single ended tagalign input (set TAGALIGN_PE= false), no replicate-2 control tagalign
+#  -using spp as peak calling method
+#  -using Nathan Boley's IDR code
+
+$cat [CONF_FILE]
+
+PREFIX= ENCSR000EGM
+INPUT_TYPE= tagalign
+TAGALIGN_PE= false
+INPUT_TAGALIGN_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.tagalign
+INPUT_TAGALIGN_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.tagalign
+INPUT_TAGALIGN_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign
+PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
+			// for histone chipesq, use macs2
+USE_IDR_NBOLEY= true
+```
+
+
+### Alignment only mode without peak calling
+
+Without peak calling, data for multiple number of replicates can be processed to generate desired outputs only (bam, tagalign and cross correlation score/plot). Pipeline stages are: bam -> tagalign -> xcor. Also, you can start from any input type (fastq, bam or tagalign).
+
+Take a look at the following examples.
+
+1) Starting from fastqs, final stage is bam generation
 
 ```
 $bds chipseq.bds [CONF_FILE]
 
-# example configuration file (human, no replicate-2 control fastq and using Nathan Boley's IDR)
 $cat [CONF_FILE]
 
 PREFIX= ENCSR000EGM
-QC_ONLY= true
-NUM_REP= 5	// number of replicates you want to align
-INPUT_TYPE= fastq
+FINAL_STAGE= bam 	// choose final stage to stop the pipeline (options: bam, tagalign and xcor)
+NUM_REP= 5 		// number of replicates you want to align
+INPUT_TYPE= fastq 	// starting from fastq inputs
 INPUT_FASTQ_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
 INPUT_FASTQ_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
 INPUT_FASTQ_REP3= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
 INPUT_FASTQ_REP4= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
 INPUT_FASTQ_REP5= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
-BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
+BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa 	// don't forget to inlcude bwa idx if starting from fastqs
 ```
 
-### HTML report
+1) Starting from bams, final stage is cross-correlation score/plot.
+
+```
+$bds chipseq.bds [CONF_FILE]
+
+$cat [CONF_FILE]
+
+PREFIX= ENCSR000EGM
+FINAL_STAGE= xcor 	// choose final stage to stop the pipeline (options: bam, tagalign and xcor)
+NUM_REP= 25 		// number of replicates you want to align
+INPUT_TYPE= bam 	// starting from bam inputs
+INPUT_BAM_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.bam
+INPUT_BAM_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.bam
+...
+INPUT_BAM_REP25= /DATA/ENCSR000EGM/ENCFF000???.bam
+```
+
+
+### Useful HTML reports
 
 There are two kinds of HTML reports provided by the pipeline:
 
@@ -122,8 +257,10 @@ This report is automatically generated by BigDataScript and is useful for debugg
 2) ChIP-Seq pipeline report for QC and result
 ```
 Located at the output folder (typically, ./out/) with name Report.html.
-This report shows all QC and result files (qc, txt, log, pdf, png, gif and jpg).
+This report shows all QC and result files including plots (qc, txt, log, pdf, png, gif and jpg).
+Don't forget to move linked files (pdf, png, jpg and so on) together with HTML.
 ```
+
 
 ### For desktops with limited memory (< 16GB)
 
@@ -177,6 +314,7 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 [main_samview] truncated file.
 ```
 
+
 ### For cluster use (Sun Grid Engine only)
 
 Add "-s sge" to the command line.
@@ -184,6 +322,7 @@ Add "-s sge" to the command line.
 ```
 $bds -s sge chipseq.bds ...
 ```
+
 
 ### Debugging, logging and HTML report for the pipeline
 
@@ -200,9 +339,10 @@ $bds -dryRun chipseq.bds ...
 
 For better debugging, an HTML progress report in the working directory (where you run the pipeline command) will be useful. You can monitor your BDS jobs real time.
 
-### Signal track generation for tagAlign files (example for human, hg19)
 
-Add the following command line argument to generate signal tracks.
+### Signal track generation
+
+Add the following command line argument to generate signal tracks for tagalign outputs.
 
 ```
 # to generate wig or bedgraph, and convert bedgraph to bigwig. if you don't want wig, remove -wig true \
@@ -222,15 +362,15 @@ CREATE_WIG= true 	// to create wig
 CREATE_BEDGRAPH= true	// to create bedgraph
 CONVERT_TO_BIGWIG= true	// to convert bedgraph to bigwig
 
-SEQ_DIR=/DATA/encodeHg19Male
-UMAP_DIR=/DATA/encodeHg19Male/globalmap_k20tok54
+SEQ_DIR=/DATA/encodeHg19Male 		// hg19 example
+UMAP_DIR=/DATA/encodeHg19Male/globalmap_k20tok54 // get this from https://sites.google.com/site/anshulkundaje/projects/mappability
 CHROM_SIZES=/DATA/hg19.chrom.sizes
 ```
 
 Seq_dir is the directory where reference genome files exist. Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/
 
 
-### List of all parameters for TF ChIP-Seq pipeline
+### List of all parameters for ChIP-Seq pipelines
 
 For advanced users, all command line parameters for the pipeline is listed and explained below:
 
@@ -434,6 +574,7 @@ If you just want to add something to your $PATH, use ADDPATH instead of SHELLCMD
 ```
 ADDPATH= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin/test
 ```
+
 
 ### What are -mod, -shcmd and -addpath?
 
