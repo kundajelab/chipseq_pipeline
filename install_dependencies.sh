@@ -96,15 +96,15 @@ echo "" >> $BASHRC
 echo "# Path for BigDataScript (latest)" > $BASHRC
 echo "export PATH=\$PATH:\$HOME/.bds/" >> $BASHRC
 
-# Local installation for bwa (0.7.10)
+# Local installation for bwa (0.7.3)
 cd $SOFTWARE
-git clone https://github.com/lh3/bwa bwa-0.7.10
-cd bwa-0.7.10
-git checkout tags/0.7.10
+git clone https://github.com/lh3/bwa bwa-0.7.3
+cd bwa-0.7.3
+git checkout tags/0.7.3
 make
 echo "" >> $BASHRC
-echo "# Path for bwa (0.7.10)" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/bwa-0.7.10" >> $BASHRC
+echo "# Path for bwa (0.7.3)" >> $BASHRC
+echo "export PATH=\$PATH:$SOFTWARE/bwa-0.7.3" >> $BASHRC
 
 # Local installation for samtools (0.1.19)
 cd $SOFTWARE

@@ -250,7 +250,7 @@ void read_param_align_map() {
 		print("Automatically adding environment variables...\n")
 
 		PATH := " export PATH=" \
-				+ "$DIR_SW_BDS/bwa-0.7.10:" \
+				+ "$DIR_SW_BDS/bwa-0.7.3:" \
 				+ "$DIR_SW_BDS/samtools-0.1.19:" \
 				+ "$DIR_SW_BDS/bedtools2-2.19.1/bin:" \
 				+ "$DIR_SW_BDS/ucsc_tools:" \

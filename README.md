@@ -20,10 +20,10 @@ Taking advandatge of the powerful pipeline language BigDataScript (http://pcingo
 
 Get the latest version of chipseq pipelines and install dependencies.
 ```
-$git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
-$cd ENCODE_chipseq_pipeline
+$ git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
+$ cd ENCODE_chipseq_pipeline
 
-$./install_dependencies.sh
+$ ./install_dependencies.sh
 ```
 
 Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
@@ -43,10 +43,10 @@ export PATH=$PATH:$HOME/.bds
 For Kundaje lab members, all dependencies have already been installed on lab servers. Do not run install_dependencies.sh on Kundaje lab servers.
 Get the latest version of BigDataScript.
 ```
-cd $HOME
-wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate
-tar zxvf bds_Linux.tgz
-rm -f bds_Linux.tgz
+$ cd $HOME
+$ wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate
+$ tar zxvf bds_Linux.tgz
+$ rm -f bds_Linux.tgz
 ```
 
 Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
@@ -62,55 +62,55 @@ export PATH=$PATH:$HOME/.bds
 
 Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
 ```
-$git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
-$cd ENCODE_chipseq_pipeline
-$cp bds.config $HOME/.bds/
+$ git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
+$ cd ENCODE_chipseq_pipeline
+$ cp bds.config $HOME/.bds/
 ```
 
 
 ### Usage (starting from fastq inputs)
 
-There are two ways to define parameters for ChIP-Seq pipelines. For most of the parameters, they already have default values. If they are not defined in command line argument or in a configuration file, default value will be used. Take a look at example commands and configuration files (./examples). IMPORTANT! For generating bwa index, we recommend to use bwa 0.7.10.
+There are two ways to define parameters for ChIP-Seq pipelines. For most of the parameters, they already have default values. If they are not defined in command line argument or in a configuration file, default value will be used. Take a look at example commands and configuration files (./examples). IMPORTANT! For generating bwa index, we recommend to use bwa 0.7.3.
 
 1) From command line arguments 
 ```
 # general usage
-$bds chipseq.bds [OPTS_FOR_PIPELINE]
+$ bds chipseq.bds [OPTS_FOR_PIPELINE]
 
 # help for parameters
-$bds chipseq.bds -h
+$ bds chipseq.bds -h
 
 # example cmd. line args 
 #  -single ended fastqs input, no replicate-2 control fastq
 #  -using spp as peak calling method
 #  -using Anshul Kundaje's IDR code
 
-$bds chipseq.bds \
+$ bds chipseq.bds \
 -prefix ENCSR000EGM \
 -fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
 -ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
--idx_bwa /INDEX/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa \
+-idx_bwa /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
 -peakcall spp \
 -idr_nboley false
 ```
 
 2) From a configuration file
 ```
-$bds chipseq.bds [CONF_FILE]
+$ bds chipseq.bds [CONF_FILE]
 
 #  -single ended fastqs input, no replicate-2 control fastq
 #  -using spp as peak calling method
 #  -using Nathan Boley's IDR code
 
-$cat [CONF_FILE]
+$ cat [CONF_FILE]
 
 PREFIX= ENCSR000EGM
 INPUT_TYPE= fastq
 INPUT_FASTQ_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
 INPUT_FASTQ_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
 INPUT_FASTQ_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
-BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
+BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
 			// for histone chipesq, use macs2
 USE_IDR_NBOLEY= true
@@ -126,7 +126,7 @@ USE_IDR_NBOLEY= true
 #  -using spp as peak calling method
 #  -using Anshul Kundaje's IDR code
 
-$bds chipseq.bds \
+$ bds chipseq.bds \
 -prefix ENCSR000EGM \
 -input bam \
 -bam_PE false \
@@ -139,13 +139,13 @@ $bds chipseq.bds \
 
 2) From a configuration file
 ```
-$bds chipseq.bds [CONF_FILE]
+$ bds chipseq.bds [CONF_FILE]
 
 #  -single ended bam input (set BAM_PE= false), no replicate-2 control bam
 #  -using spp as peak calling method
 #  -using Nathan Boley's IDR code
 
-$cat [CONF_FILE]
+$ cat [CONF_FILE]
 
 PREFIX= ENCSR000EGM
 INPUT_TYPE= BAM
@@ -168,7 +168,7 @@ USE_IDR_NBOLEY= true
 #  -using spp as peak calling method
 #  -using Anshul Kundaje's IDR code
 
-$bds chipseq.bds \
+$ bds chipseq.bds \
 -prefix ENCSR000EGM \
 -input tagalign \
 -tagalign_PE false \
@@ -181,13 +181,13 @@ $bds chipseq.bds \
 
 2) From a configuration file
 ```
-$bds chipseq.bds [CONF_FILE]
+$ bds chipseq.bds [CONF_FILE]
 
 #  -single ended tagalign input (set TAGALIGN_PE= false), no replicate-2 control tagalign
 #  -using spp as peak calling method
 #  -using Nathan Boley's IDR code
 
-$cat [CONF_FILE]
+$ cat [CONF_FILE]
 
 PREFIX= ENCSR000EGM
 INPUT_TYPE= tagalign
@@ -210,9 +210,9 @@ Take a look at the following examples.
 1) Starting from fastqs, final stage is bam generation
 
 ```
-$bds chipseq.bds [CONF_FILE]
+$ bds chipseq.bds [CONF_FILE]
 
-$cat [CONF_FILE]
+$ cat [CONF_FILE]
 
 PREFIX= ENCSR000EGM
 FINAL_STAGE= bam 	// choose final stage to stop the pipeline (options: bam, tagalign and xcor)
@@ -223,15 +223,15 @@ INPUT_FASTQ_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
 INPUT_FASTQ_REP3= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
 INPUT_FASTQ_REP4= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
 INPUT_FASTQ_REP5= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
-BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa 	// don't forget to inlcude bwa idx if starting from fastqs
+BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa 	// don't forget to inlcude bwa idx if starting from fastqs
 ```
 
 1) Starting from bams, final stage is cross-correlation score/plot.
 
 ```
-$bds chipseq.bds [CONF_FILE]
+$ bds chipseq.bds [CONF_FILE]
 
-$cat [CONF_FILE]
+$ cat [CONF_FILE]
 
 PREFIX= ENCSR000EGM
 FINAL_STAGE= xcor 	// choose final stage to stop the pipeline (options: bam, tagalign and xcor)
@@ -264,7 +264,7 @@ Don't forget to move linked files (pdf, png, jpg and so on) together with HTML.
 
 ### For desktops with limited memory (< 16GB)
 
-Some bioinformatics softwares like bwa 0.7.10, samtools 0.1.12 do not return non-zero error code even though they are lack of memory (See the following example of bwa 0.7.10 for a desktop with 4 cores and 12GB of memory). Therefore, the pipeline will continue with wrong files. If you get unsatisfactory result take a closer look at HTML report generated by the pipeline. Such HTML report must be found in the working directory where you run the pipeline.
+Some bioinformatics softwares like bwa 0.7.3, samtools 0.1.12 do not return non-zero error code even though they are lack of memory (See the following example of bwa 0.7.3 for a desktop with 4 cores and 12GB of memory). Therefore, the pipeline will continue with wrong files. If you get unsatisfactory result take a closer look at HTML report generated by the pipeline. Such HTML report must be found in the working directory where you run the pipeline.
 
 The minimum memory requirement for the pipeline is 8GB, but we recommend to run the pipeline on computers with more than 16GB of memory. If you have memory issues, there are two options. Try with 2) first and if it doesn't work go 1). The difference between those two options is that even single thread jobs will be serialized for 1).
 
@@ -309,7 +309,7 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 [bwa_read_seq] 0.0% bases are trimmed.
 [bwa_aln_core] convert to sequence coordinate... [bwt_restore_sa] Failed to allocate 1547846992 bytes at bwt.c line 404: Cannot allocate memory
 [samopen] SAM header is present: 25 sequences.
-[sam_read1] reference 'ID:bwa	PN:bwa	VN:0.7.10-r789	CL:bwa samse /home/leepc12/run/index/encodeHg19Male_bwa-0.7.10.fa /home/leepc12/run/ENCSR000EGM3/out/TEST_Rep2.sai /home/leepc12/run/ENCODE/ENCFF000YLY.fastq.gz
+[sam_read1] reference 'ID:bwa	PN:bwa	VN:0.7.3-r789	CL:bwa samse /home/leepc12/run/index/encodeHg19Male_bwa-0.7.3.fa /home/leepc12/run/ENCSR000EGM3/out/TEST_Rep2.sai /home/leepc12/run/ENCODE/ENCFF000YLY.fastq.gz
 ' is recognized as '*'.
 [main_samview] truncated file.
 ```
@@ -320,7 +320,7 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 Add "-s sge" to the command line.
 
 ```
-$bds -s sge chipseq.bds ...
+$ bds -s sge chipseq.bds ...
 ```
 
 
@@ -328,13 +328,13 @@ $bds -s sge chipseq.bds ...
 
 ```
 # make BDS verbose
-$bds -v chipseq.bds ...
+$ bds -v chipseq.bds ...
 
 # display debugging information
-$bds -d chipseq.bds ...
+$ bds -d chipseq.bds ...
 
 # test run (this actually does nothing) to check input/output file names and commands
-$bds -dryRun chipseq.bds ...
+$ bds -dryRun chipseq.bds ...
 ```
 
 For better debugging, an HTML progress report in the working directory (where you run the pipeline command) will be useful. You can monitor your BDS jobs real time.
@@ -547,24 +547,24 @@ Equivalent parameters in a configuration file is listed and explained below:
 
 ### What are MODULE, SHELLCMD and ADDPATH? (handling environment variables)
 
-It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. MODULE, SHELLCMD and ADDPATH are three convenient ways to define environment variables. Environment variables defined with MODULE, SHELLCMD and ADDPATH are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.10 with MODULE. bwa of version 0.7.10 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
+It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. MODULE, SHELLCMD and ADDPATH are three convenient ways to define environment variables. Environment variables defined with MODULE, SHELLCMD and ADDPATH are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with MODULE. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
 
 1) MODULE
 
-There are different versions of bioinformatics softwares (eg. samtools, bedtools and bwa) and <a href="http://modules.sourceforge.net/">Enviroment Modules</a> is the best way to manage environemt variables for them. For example, if you want to add environment variables for bwa 0.7.10 by using Environment Modules. You can simply type the following:
+There are different versions of bioinformatics softwares (eg. samtools, bedtools and bwa) and <a href="http://modules.sourceforge.net/">Enviroment Modules</a> is the best way to manage environemt variables for them. For example, if you want to add environment variables for bwa 0.7.3 by using Environment Modules. You can simply type the following:
 
 ```
-$module add bwa/0.7.10;
+$ module add bwa/0.7.3;
 ```
 
 The equivalent setting in the pipeline configuration file should look like:
 ```
-MODULE= bwa/0.7.10;
+MODULE= bwa/0.7.3;
 ```
 
 You can have multiple lines for MODULE since any suffix is allowed. Use ; as a delimiter.
 ```
-MODULE_BIO= bwa/0.7.10; bedtools/2.x.x; samtools/1.2
+MODULE_BIO= bwa/0.7.3; bedtools/2.x.x; samtools/1.2
 MODULE_LANG= r/2.15.1; java/latest
 ```
 
@@ -600,7 +600,82 @@ ADDPATH= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin
 They are command line argument versions of MODULE, SHELLCMD and ADDPATH. For example,
 
 ```
-$bds chipseq.bds -mod 'bwa/0.7.10; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin'
+$ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin'
+```
+
+### Troubleshooting
+
+1) "[gzclose] buffer error" during bwa aln
+
+Example:
+```
+[bwa_aln] 17bp reads: max_diff = 2
+[bwa_aln] 38bp reads: max_diff = 3
+[bwa_aln] 64bp reads: max_diff = 4
+[bwa_aln] 93bp reads: max_diff = 5
+[bwa_aln] 124bp reads: max_diff = 6
+[bwa_aln] 157bp reads: max_diff = 7
+[bwa_aln] 190bp reads: max_diff = 8
+[bwa_aln] 225bp reads: max_diff = 9
+[bwa_read_seq] 0.2% bases are trimmed.
+[bwa_aln_core] calculate SA coordinate... 21.39 sec
+[bwa_aln_core] write to the disk... 0.10 sec
+[bwa_aln_core] 262144 sequences have been processed.
+[bwa_read_seq] 0.2% bases are trimmed.
+[bwa_aln_core] calculate SA coordinate... 21.27 sec
+[bwa_aln_core] write to the disk... 0.09 sec
+[bwa_aln_core] 524288 sequences have been processed.
+[bwa_read_seq] 0.2% bases are trimmed.
+[bwa_aln_core] calculate SA coordinate... 21.51 sec
+[bwa_aln_core] write to the disk... 0.08 sec
+[bwa_aln_core] 786432 sequences have been processed.
+[bwa_read_seq] 0.2% bases are trimmed.
+[bwa_aln_core] calculate SA coordinate... 21.34 sec
+[bwa_aln_core] write to the disk... 0.08 sec
+[bwa_aln_core] 1048576 sequences have been processed.
+[bwa_read_seq] 0.2% bases are trimmed.
+[bwa_aln_core] calculate SA coordinate... 21.83 sec
+[bwa_aln_core] write to the disk... 0.07 sec
+[bwa_aln_core] 1309550 sequences have been processed.
+[gzclose] buffer error
+```
+
+Solution1 (BEST):
+Use bwa-0.7.3 or bwa-0.6.2.
+```
+$ git clone https://github.com/lh3/bwa bwa-0.7.3
+$ cd bwa-0.7.3
+$ git checkout tags/0.7.3
+$ make
+$ ./bwa
+```
+
+Solution2:
+Upgrade zlib to 1.2.8. (https://github.com/MikkelSchubert/paleomix/wiki/BAM-pipeline-specific-troubleshooting#4.3.)
+```
+$ BWA_VER=0.7.3
+$ git clone https://github.com/lh3/bwa
+$ cd bwa
+$ git checkout tags/${BWA_VER}
+$ sed -e's#INCLUDES=#INCLUDES=-Izlib-1.2.8/ #' -e's#-lz#zlib-1.2.8/libz.a#' Makefile > Makefile.zlib
+$ make clean
+$ wget http://zlib.net/zlib-1.2.8.tar.gz
+$ tar xvzf zlib-1.2.8.tar.gz
+$ cd zlib-1.2.8
+$ ./configure
+$ make
+$ cd ..
+$ make -f Makefile.zlib
+$ ./bwa
+```
+
+Tested bwa versions (with zlib 1.2.8)
+```
+succeeded:
+0.6.2 0.7.1 0.7.2 0.7.3
+
+failed:
+0.7.4 0.7.5 0.7.7 0.7.3 0.7.11 0.7.12
 ```
 
 ### Contributors

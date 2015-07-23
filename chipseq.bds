@@ -18,12 +18,16 @@ int wt_macs2		= 40000		help Walltime in seconds for MACS2 (default: 40000).
 int mem_macs2		= 8000 		help Max. memory in MB for MACS2 (default: 8000).
 string gensz 		= ""		help Genome size; hs for human, mm for mouse (default: hs)
 
-// gem (not implemented yet)
+// gem
+int nth_gem		= 2 		help Number of threads for gem (default: 2)
+int wt_gem		= 40000		help Walltime in seconds for gem (default: 40000).
+int mem_gem		= 8000 		help Max. memory in MB for gem (default: 8000).
+string read_dist_file 	= "" 		help Read distribution file (Read_Distribution_default.txt).
 
 // idr
 string idr_thresh 	= 0.02		help IDR thresh (default: 0.02).
 bool idr_nboley 	= true	 	help Use Nathan Boley's code for IDR, otherwise Anshul Kundaje's code (default: true)
-
+string idr_thresh_transformed = 540 	//help IDR thresh transformed (default: 540).
 
 // comp. resources for spp
 string PEAKCALL_METHOD 	= peakcall
@@ -35,8 +39,13 @@ string GENOMESIZE 	= gensz
 int NTHREADS_MACS2 	= nth_macs2
 int WALLTIME_MACS2 	= wt_macs2
 int MEMORY_MACS2	= mem_macs2
+int NTHREADS_GEM 	= nth_gem
+int WALLTIME_GEM 	= wt_gem
+int MEMORY_GEM		= mem_gem
 string IDR_THRESH 	= idr_thresh
 bool USE_IDR_NBOLEY 	= idr_nboley
+int IDR_THRESH_TRANSFORMED = idr_thresh_transformed
+string READ_DIST_FILE 	= read_dist_file
 
 // pipeline starts here
 read_param_general()
@@ -68,6 +77,8 @@ void read_param_tf_chipseq() {
 		// IDR
 		if ( conf.hasKey("IDR_THRESH") ) 	IDR_THRESH	= parse_real( conf{ "IDR_THRESH"} )
 		if ( conf.hasKey("USE_IDR_NBOLEY") ) 	USE_IDR_NBOLEY	= parse_bool( conf{ "USE_IDR_NBOLEY"} )
+		if ( conf.hasKey("IDR_THRESH_TRANSFORMED") ) 	\
+							IDR_THRESH_TRANSFORMED	= parse_real( conf{ "IDR_THRESH_TRANSFORMED"} )
 	}
 
 	PEAKCALL_METHOD = PEAKCALL_METHOD.trim().toLower()
@@ -82,10 +93,13 @@ void read_param_tf_chipseq() {
 	print("MEMORY_MACS2 = $MEMORY_MACS2\n");
 	print("GENOMESIZE = $GENOMESIZE\n");
 	print("IDR_THRESH = $IDR_THRESH\n");
-	if ( USE_IDR_NBOLEY ) \
+	if ( USE_IDR_NBOLEY ) {
+		print("IDR_THRESH_TRANSFORMED = $IDR_THRESH_TRANSFORMED\n");
 		print("\nUsing Nathan Boley's IDR\n\n");
-	else \
-		print("\nUsing Anshul Kundaje's IDR\n\n");		
+	}
+	else {
+		print("\nUsing Anshul Kundaje's IDR\n\n");
+	}
 }
 
 void peakcall_idr() {
@@ -228,6 +242,62 @@ void peakcall_idr() {
 			if ( NO_PARALLEL_JOB ) wait
 
 	}
+	else if ( PEAKCALL_METHOD == "gem" ) {
+
+		// narrow peak
+	 	REP1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "narrowPeak" )
+	 	REP2_PEAK_FILE 		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "narrowPeak" )
+	 	POOLED_PEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "narrowPeak" )
+	 	REP1_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "narrowPeak" )
+	 	REP1_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "narrowPeak" )
+		REP2_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "narrowPeak" )
+		REP2_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "narrowPeak" )
+		PPR1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "narrowPeak" )
+		PPR2_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "narrowPeak" )
+
+		run_gem( "Rep1", PEAK_OUTPUT_DIR, 	REP1_TA_FILE, CTL_REP1_TA_FILE )
+			if ( NO_PARALLEL_JOB ) wait
+		run_gem( "Rep2", PEAK_OUTPUT_DIR, 	REP2_TA_FILE, CTL_REP2_TA_FILE )
+			if ( NO_PARALLEL_JOB ) wait
+		run_gem( "Pooled", PEAK_OUTPUT_DIR, 	POOLED_TA_FILE, CTL_POOLED_TA_FILE )
+			if ( NO_PARALLEL_JOB ) wait
+		run_gem( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE )
+			if ( NO_PARALLEL_JOB ) wait
+		run_gem( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE )
+			if ( NO_PARALLEL_JOB ) wait
+		run_gem( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE)
+			if ( NO_PARALLEL_JOB ) wait
+		run_gem( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE)
+			if ( NO_PARALLEL_JOB ) wait
+		run_gem( "PPR1", PEAK_OUTPUT_DIR, 	PPR1_TA_FILE, CTL_PPR1_TA_FILE )
+			if ( NO_PARALLEL_JOB ) wait
+		run_gem( "PPR2", PEAK_OUTPUT_DIR, 	PPR2_TA_FILE, CTL_PPR2_TA_FILE )
+			if ( NO_PARALLEL_JOB ) wait
+
+		wait
+
+		write_report( "ChIP-Seq Pipeline HTML Report" )
+
+		///////////////////////////////// IDR
+		// create NPEAKS_IDR file	
+		NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
+
+		task ( taskName := "create NPEAKS_IDR.txt", \
+			cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
+			NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
+			sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
+		}
+		
+		run_idr( "Rep1_vs_Rep2", PEAK_OUTPUT_DIR, 		REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE ) // (1) or 4a
+			if ( NO_PARALLEL_JOB ) wait
+		run_idr( "PPR1_vs_PPR2", PEAK_OUTPUT_DIR, 		PPR1_PEAK_FILE, PPR2_PEAK_FILE, POOLED_PEAK_FILE ) // (2) or 4c
+			if ( NO_PARALLEL_JOB ) wait
+		run_idr( "Rep1_PR1_vs_Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR1_PEAK_FILE, REP1_PR2_PEAK_FILE, REP1_PEAK_FILE ) // (3) or 4b-1
+			if ( NO_PARALLEL_JOB ) wait
+		run_idr( "Rep2_PR1_vs_Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR1_PEAK_FILE, REP2_PR2_PEAK_FILE, REP2_PEAK_FILE ) // (4) or 4b-2
+			if ( NO_PARALLEL_JOB ) wait
+
+	}
 	else if ( PEAKCALL_METHOD == "macs2" ) {
 
 		run_macs2( "Rep1", PEAK_OUTPUT_DIR, 		REP1_TA_FILE, CTL_REP1_TA_FILE, FRAGLEN_REP1 )
@@ -286,16 +356,16 @@ void run_macs2( string taskname, string out_dir, string ta, string ctl_ta, strin
 	PEAK_OUTPUT_DIR 	:= out_dir
 	CHIP_TA_PREFIX 		:= taskname
 
-	REP1_PEAK_FILE		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.narrowPeak.gz"
- 	REP1_BPEAK_FILE 	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.broadPeak.gz"
- 	REP1_GPEAK_FILE 	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.gappedPeak.gz"
+	PEAK_FILE		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.narrowPeak.gz"
+ 	BPEAK_FILE 		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.broadPeak.gz"
+ 	GPEAK_FILE 		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.gappedPeak.gz"
  	FC_SIGNAL_BW_FILE 	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bw"
  	PVAL_SIGNAL_BW_FILE	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bw"
 
  	CHRSIZEFILE 		:= CHROM_SIZES
 
 	task( taskName := "macs2 " + taskname, cpus := NTHREADS_MACS2, timeout := WALLTIME, mem := MEMORY * M, \
-		[REP1_PEAK_FILE, REP1_BPEAK_FILE, REP1_GPEAK_FILE, FC_SIGNAL_BW_FILE, PVAL_SIGNAL_BW_FILE] <- [ta, ctl_ta] ) {
+		[PEAK_FILE, BPEAK_FILE, GPEAK_FILE, FC_SIGNAL_BW_FILE, PVAL_SIGNAL_BW_FILE] <- [ta, ctl_ta] ) {
 
 		sys $PRELOAD
 
@@ -374,6 +444,37 @@ void run_macs2( string taskname, string out_dir, string ta, string ctl_ta, strin
 	}
 }
 
+void run_gem( string taskname, string out_dir, string ta, string ctl_ta ) {
+
+	PEAK_OUTPUT_DIR 	:= out_dir
+	CHIP_TA_PREFIX 		:= taskname
+
+	PEAK_FILE 		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.narrowPeak.gz"
+
+
+
+	task( taskName := "gem " + taskname, cpus := NTHREADS_GEM, timeout := WALLTIME_GEM, mem := MEMORY_GEM * M, \
+		[REP1_PEAK_FILE] <- [ta, ctl_ta] ) {
+
+		sys $PRELOAD
+
+		//gunzip $CHIP_TA_PREFIX}.tagAlign.gz
+		sys gzip -d -c ta > $CHIP_TA_PREFIX.tagAlign
+
+		sys java -Xmx15G -jar $(which gem.jar) --g $CHROM_SIZES --d $READ_DIST_FILE --s 2400000000 \
+			--expt $CHIP_TA_PREFIX.tagAlign  --ctrl $ctl_ta --f BED \
+			--out  $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX --genome $SEQ_DIR --k_min 6 --k_max 13 --outNP --q 0
+		sys rm -f $CHIP_TA_PREFIX.tagAlign
+
+		//# =============================
+		//# Sort peaks by signal value and truncate peaks to top 300K
+		//# =============================
+		sys sort -k7nr,7nr $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX/$CHIP_TA_PREFIX"_GEM_events.narrowPeak" | head -n 300000 \
+			| gzip -c > $PEAK_FILE
+	}
+}
+
+
 void run_idr( string taskname, string out_dir, string peak1, string peak2, string pooled ) {
 
 	if ( USE_IDR_NBOLEY ) 	run_idr_nboley( taskname, out_dir, peak1, peak2, pooled )
@@ -383,7 +484,11 @@ void run_idr( string taskname, string out_dir, string peak1, string peak2, strin
 void run_idr_nboley( string taskname, string out_dir, string peak1, string peak2, string pooled ) {
 
 	prefix := "$out_dir/$taskname"
-	IDR_OUTPUT := "$prefix.IDR"
+	IDR_OUTPUT := "$prefix.overlapped-peaks.txt"
+
+	PEAK_FILE="$prefix.IDR"+"$IDR_THRESH.narrowPeak.gz"
+	SUMMIT_PEAK_FILE="$prefix.IDR"+"$IDR_THRESH.withSummits.narrowPeak.gz"
+
 	NPEAKS_IDR := "$out_dir/NPEAKS_IDR.txt"
 
 	peak1_  := "$out_dir/_" + get_basename( peak1 )
@@ -392,7 +497,7 @@ void run_idr_nboley( string taskname, string out_dir, string peak1, string peak2
 
 	task( taskName := "IDR (nboley)" + taskname, \
 		cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
-		IDR_OUTPUT <- [peak1, peak2, pooled] ) { // --use-old-output-format 
+		[IDR_OUTPUT, PEAK_FILE, SUMMIT_PEAK_FILE]<- [peak1, peak2, pooled] ) { // --use-old-output-format 
 
 		sys $PRELOAD
 
@@ -403,10 +508,24 @@ void run_idr_nboley( string taskname, string out_dir, string peak1, string peak2
 		sys zcat $pooled | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $pooled_
 
 		sys idr --samples $peak1_ $peak2_ --peak-list $pooled_ --input-file-type narrowPeak \
-			--output-file $IDR_OUTPUT --plot --idr-threshold $IDR_THRESH
+			--output-file $IDR_OUTPUT --rank signal.value --soft-idr-threshold $IDR_THRESH \
+			--plot
 
-		sys echo -e "$taskname\t$(cat $IDR_OUTPUT | wc -l)" >> $NPEAKS_IDR
+		//sys echo -e "$taskname\t$(cat $IDR_OUTPUT | wc -l)" >> $NPEAKS_IDR
                 sys rm -rf $peak1_ $peak2_ $pooled_
+
+                //# ============================================================================
+		//# Get peaks passing global IDR threshold of 5% and convert file to narrowPeak format (Step 9)
+		//# ============================================================================
+		sys awk 'BEGIN{OFS="\t"} $5>'"$IDR_THRESH_TRANSFORMED"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' $IDR_OUTPUT \
+			| sort -u -k1,1 -k2,2n -k3,3n | sort -k7n,7n | gzip -c > $PEAK_FILE
+
+		//# =====================================
+		//# Get peaks summit locations from offsets (Step 10)
+		//# =====================================
+		sys zcat $PEAK_FILE | awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$2+$10}' | sort -k1,1 -k10,10n | gzip > $SUMMIT_PEAK_FILE
+
+		sys echo -e "$taskname\t$(zcat $PEAK_FILE | wc -l)" >> $NPEAKS_IDR		
 	}
 }
 
