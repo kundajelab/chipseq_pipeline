@@ -44,7 +44,7 @@ int WALLTIME_GEM 	= wt_gem
 int MEMORY_GEM		= mem_gem
 string IDR_THRESH 	= idr_thresh
 bool USE_IDR_NBOLEY 	= idr_nboley
-int IDR_THRESH_TRANSFORMED = idr_thresh_transformed
+string IDR_THRESH_TRANSFORMED = idr_thresh_transformed
 string READ_DIST_FILE 	= read_dist_file
 
 // pipeline starts here
@@ -78,7 +78,7 @@ void read_param_tf_chipseq() {
 		if ( conf.hasKey("IDR_THRESH") ) 	IDR_THRESH	= parse_real( conf{ "IDR_THRESH"} )
 		if ( conf.hasKey("USE_IDR_NBOLEY") ) 	USE_IDR_NBOLEY	= parse_bool( conf{ "USE_IDR_NBOLEY"} )
 		if ( conf.hasKey("IDR_THRESH_TRANSFORMED") ) 	\
-							IDR_THRESH_TRANSFORMED	= parse_real( conf{ "IDR_THRESH_TRANSFORMED"} )
+							IDR_THRESH_TRANSFORMED	= parse_int( conf{ "IDR_THRESH_TRANSFORMED"} )
 	}
 
 	PEAKCALL_METHOD = PEAKCALL_METHOD.trim().toLower()
@@ -486,8 +486,8 @@ void run_idr_nboley( string taskname, string out_dir, string peak1, string peak2
 	prefix := "$out_dir/$taskname"
 	IDR_OUTPUT := "$prefix.overlapped-peaks.txt"
 
-	PEAK_FILE="$prefix.IDR"+"$IDR_THRESH.narrowPeak.gz"
-	SUMMIT_PEAK_FILE="$prefix.IDR"+"$IDR_THRESH.withSummits.narrowPeak.gz"
+	PEAK_FILE := "$prefix.IDR"+"$IDR_THRESH.narrowPeak.gz"
+	SUMMIT_PEAK_FILE := "$prefix.IDR"+"$IDR_THRESH.withSummits.narrowPeak.gz"
 
 	NPEAKS_IDR := "$out_dir/NPEAKS_IDR.txt"
 
