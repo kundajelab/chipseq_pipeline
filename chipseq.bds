@@ -22,7 +22,7 @@ string gensz 		= ""		help Genome size; hs for human, mm for mouse (default: hs)
 int nth_gem		= 2 		help Number of threads for gem (default: 2)
 int wt_gem		= 40000		help Walltime in seconds for gem (default: 40000).
 int mem_gem		= 8000 		help Max. memory in MB for gem (default: 8000).
-string read_dist_file 	= "" 		help Read distribution file (Read_Distribution_default.txt).
+//string read_dist_file 	= "" 		help Read distribution file (Read_Distribution_default.txt).
 
 // idr
 string idr_thresh 	= 0.02		help IDR thresh (default: 0.02).
@@ -45,7 +45,7 @@ int MEMORY_GEM		= mem_gem
 string IDR_THRESH 	= idr_thresh
 bool USE_IDR_NBOLEY 	= idr_nboley
 string IDR_THRESH_TRANSFORMED = idr_thresh_transformed
-string READ_DIST_FILE 	= read_dist_file
+//string READ_DIST_FILE 	= read_dist_file
 
 // pipeline starts here
 read_param_general()
@@ -451,25 +451,23 @@ void run_gem( string taskname, string out_dir, string ta, string ctl_ta ) {
 
 	PEAK_FILE 		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.narrowPeak.gz"
 
-
-
 	task( taskName := "gem " + taskname, cpus := NTHREADS_GEM, timeout := WALLTIME_GEM, mem := MEMORY_GEM * M, \
-		[REP1_PEAK_FILE] <- [ta, ctl_ta] ) {
+		[PEAK_FILE] <- [ta, ctl_ta] ) {
 
 		sys $PRELOAD
 
 		//gunzip $CHIP_TA_PREFIX}.tagAlign.gz
-		sys gzip -d -c ta > $CHIP_TA_PREFIX.tagAlign
+		sys gzip -d -c $ta > $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.tagAlign
 
-		sys java -Xmx15G -jar $(which gem.jar) --g $CHROM_SIZES --d $READ_DIST_FILE --s 2400000000 \
-			--expt $CHIP_TA_PREFIX.tagAlign  --ctrl $ctl_ta --f BED \
+		sys java -Xmx15G -jar ${GEMROOT}/gem.jar --g $CHROM_SIZES --d ${GEMROOT}/Read_Distribution_default.txt --s 2400000000 \
+			--expt $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.tagAlign  --ctrl $ctl_ta --f BED \
 			--out  $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX --genome $SEQ_DIR --k_min 6 --k_max 13 --outNP --q 0
 		sys rm -f $CHIP_TA_PREFIX.tagAlign
 
 		//# =============================
 		//# Sort peaks by signal value and truncate peaks to top 300K
 		//# =============================
-		sys sort -k7nr,7nr $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX/$CHIP_TA_PREFIX"_GEM_events.narrowPeak" | head -n 300000 \
+		sys sort -k7nr,7nr $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX"_GEM_events.narrowPeak" | head -n 300000 \
 			| gzip -c > $PEAK_FILE
 	}
 }

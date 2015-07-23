@@ -276,6 +276,19 @@ echo "" >> $BASHRC
 echo "# Path for MACS2" >> $BASHRC
 echo "export PATH=\$PATH:$SOFTWARE/MACS/bin" >> $BASHRC
 
+# Local installation instruction for gem 
+cd $SOFTWARE
+wget http://cgs.csail.mit.edu/gem/download/gem.v2.6.tar.gz
+tar zxvf gem.v2.6.tar.gz
+rm -f gem.v2.6.tar.gz
+cd gem
+chmod 755 $SOFTWARE/gem/*.jar
+echo "" >> $BASHRC
+echo "# Path for gem" >> $BASHRC
+echo "export PATH=\$PATH:$SOFTWARE/gem" >> $BASHRC
+echo "export GEMROOT=$SOFTWARE/gem" >> $BASHRC
+echo "export GEM=$SOFTWARE/gem/gem.jar" >> $BASHRC
+
 # Local installation instruction for Wiggler (for generating signal tracks)
 cd $SOFTWARE
 wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz
