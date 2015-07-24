@@ -327,7 +327,7 @@ void peakcall_idr() {
 			if ( NO_PARALLEL_JOB ) wait
 	}
 	else {
-		error("wrong peak calling method ($peakcall)!")
+		error("wrong peak calling method ($PEAKCALL_METHOD)!")
 	}
 
 	wait
@@ -338,7 +338,7 @@ void peakcall_idr() {
 string get_spp_out_peak_filename( string dir, string ta1, string ta2, string type ) {
 	return dir + "/" \
  		+ rm_str_at_end( get_basename( ta1 ),".gz" ) \
- 		+ "_VS_" + rm_str_at_end( get_basename( ta2 ),".gz" ) + "." + type + ".gz" \
+ 		+ "_VS_" + rm_str_at_end( get_basename( ta2 ),".gz" ) + "." + type + ".gz"
 }
 
 void run_spp( string taskname, string out_dir, string ta, string ctl_ta, string npeak, string rpeak, string ccscore, string fraglen ) {
