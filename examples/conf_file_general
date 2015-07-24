@@ -30,9 +30,9 @@ BWA_INDEX_NAME= /srv/scratch/leepc12/hg19/encodeHg19Male_v0.7.10/encodeHg19Male_
 // if input is tagalign
 //INPUT_TYPE=tagalign
 //TAGALIGN_PE= false
-//INPUT_TAGALIGN_REP1= /mnt/data/ENCODE/byDataType/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep1.bam.unique.tagAlign.gz
-//INPUT_TAGALIGN_REP2= /mnt/data/ENCODE/byDataType/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam.unique.tagAlign.gz
-//INPUT_TAGALIGN_CTL_REP1= /mnt/data/ENCODE/byDataType/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562InputIggrabAln.bam.unique.tagAlign.gz
+//INPUT_TAGALIGN_REP1= /mnt/data/ENCODE/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep1.bam.unique.tagAlign.gz
+//INPUT_TAGALIGN_REP2= /mnt/data/ENCODE/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam.unique.tagAlign.gz
+//INPUT_TAGALIGN_CTL_REP1= /mnt/data/ENCODE/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562InputIggrabAln.bam.unique.tagAlign.gz
 
 // peak calling method (spp, macs2, gem)
 PEAKCALL_METHOD=spp
@@ -52,7 +52,7 @@ MEMORY_BWA_ALN=8000     	// in MB (default:8000)
 WALLTIME_BWA_SAM=24000        	// in seconds (default:36000)
 MEMORY_BWA_SAM=10000          	// in megabytes (default:8000)
 
-// choose peak calling method (spp, macs2)
+// choose peak calling method (spp, macs2 and gem)
 PEAKCALL_MEHTHOD=spp
 NTHREADS_SPP=4
 WALLTIME_SPP=24000              // in seconds (default:40000)
@@ -62,14 +62,24 @@ MEMORY_SPP=8000                 // in MB (default:8000)
 //NTHREADS_SPP=4
 //WALLTIME_SPP=24000            // in seconds (default:40000)
 //MEMORY_SPP=8000               // in MB (default:8000)
+//GENOMESIZE=hs 		// hs for human, mm for mouse
+//CHROM_SIZES=/mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes
+
+//PEAKCALL_MEHTHOD=gem
+//NTHREADS_GEM=4
+//WALLTIME_GEM=24000 		// in seconds (default:40000)
+//MEMORY_GEM=16000 		// in MB (default:16000)
+//CHROM_SIZES=/mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes
+//SEQ_DIR=/mnt/data/ENCODE/sequence/encodeHg19Male
+
 
 // signal track generation
-CREATE_WIG=false
-CREATE_BEDGRAPH=false
-CONVERT_TO_BIGWIG=false
-CHROM_SIZES=/mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes
-UMAP_DIR=/mnt/data/ENCODE/byDataType/umap/encodeHg19Male/globalmap_k20tok54
-SEQ_DIR=/mnt/data/ENCODE/byDataType/sequence/encodeHg19Male
+//CREATE_WIG=false
+//CREATE_BEDGRAPH=false
+//CONVERT_TO_BIGWIG=false
+//CHROM_SIZES=/mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes
+//UMAP_DIR=/mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k20tok54
+//SEQ_DIR=/mnt/data/ENCODE/sequence/encodeHg19Male
 
 //////////////////////////// parameters with default values (for power users)
 
@@ -87,9 +97,6 @@ NREADS=15000000	// should be integer * million
 
 // spp
 NPEAK=300000
-
-// MACS2
-//GENOMESIZE=hs 	// hs for human, mm for mouse
 
 // IDR
 IDR_THRESH=0.02
