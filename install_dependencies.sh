@@ -85,7 +85,9 @@ if [ $EXIT == 1 ]; then
   echo "Some of the softwares are not installed on your system."
   echo "We strongly recommend to install all softwares listed above and re-run install_dependencies.sh."
   echo 
-  echo "However, you can proceed with risk (complication of some bio-softwares will fail)."
+  echo "However, you can proceed if you have equivalent softwares locally installed on your system."
+  echo "Otherwise, compilation of some bio-softwares will fail."
+  echo 
   read -p "Are you sure that you want to proceed? [yes/no] " yn
   case $yn in
       yes ) echo "YES";;
@@ -93,22 +95,25 @@ if [ $EXIT == 1 ]; then
   esac
 fi 
 
-echo
-echo "Add the following lines to your \$HOME/.bashrc or \$HOME/.bash_profile."
-echo "=============================================================================="
-echo "# Java settings"
-echo "export _JAVA_OPTIONS=\"-Xms256M -Xmx512M -XX:ParallelGCThreads=1\""
-echo "export MAX_JAVA_MEM=\"8G\""
-echo "export MALLOC_ARENA_MAX=4"
-echo
-echo "# BigDataScript settings"
-echo "export PATH=\$PATH:\$HOME/.bds"
-echo "=============================================================================="
-read -p "Are you sure that you added the lines above to your \$HOME/.bashrc or \$HOME/.bash_profile? [yes/no] " yn
-case $yn in
-    yes ) echo "YES";;
-    * ) exit;;
-esac
+if [ ! -f $HOME/.bashrc ]; then
+  echo > $HOME/.bashrc
+fi 
+
+BASHRC_CONTENTS=(
+"export _JAVA_OPTIONS=\"-Xms256M -Xmx512M -XX:ParallelGCThreads=1\""
+"export MAX_JAVA_MEM=\"8G\""
+"export MALLOC_ARENA_MAX=4"
+"export PATH=\$PATH:\$HOME/.bds"
+)
+
+echo 
+echo "Adding following lines to your $HOME/.bashrc ..."
+for i in "${BASHRC_CONTENTS[@]}"; do
+  if [ $(grep "$i" "$HOME/.bashrc" | wc -l ) == 0 ]; then
+    echo $i
+    echo $i >> $HOME/.bashrc
+  fi
+done
 
 echo
 echo "=============================================================================="
