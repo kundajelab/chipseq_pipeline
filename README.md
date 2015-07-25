@@ -23,7 +23,7 @@ Get the latest version of chipseq pipelines and install dependencies.
 $ git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
 $ cd ENCODE_chipseq_pipeline
 
-$ ./install_dependencies.sh
+$ ./install_dependencies.sh   # this will take longer than 30 minutes depending on your system
 ```
 
 Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:

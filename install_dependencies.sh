@@ -2,14 +2,14 @@
 
 # DO NOT CHANGE NAMING OF SOFTWARE DIRECTORY!
 SOFTWARE=$HOME/software_bds
-BASHRC=$HOME/add_to_bashrc
+BASHRC=$HOME/.bashrc
 
 SCRIPTDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 SOFTWARES_APT_GET=(
 build-essential
 zlib1g-dev
-ncurses-dev
+libncurses5-dev
 gfortran
 libboost-all-dev
 openssl libssl-dev
@@ -23,7 +23,7 @@ echo
 
 EXIT=0
 for i in "${SOFTWARES_APT_GET[@]}"; do
-  if [ $(dpkg -l | awk '{print $2;}' | grep -Fx $i | wc -l) == 0 ]; then
+  if [ $(dpkg -l | awk '{print $2;}' | grep $i | wc -l) != 0 ]; then
     echo
     echo " * $i found on your system."
   else
@@ -95,38 +95,49 @@ if [ $EXIT == 1 ]; then
   esac
 fi 
 
-if [ ! -f $HOME/.bashrc ]; then
-  echo > $HOME/.bashrc
+if [ ! -f $BASHRC ]; then
+  echo > $BASHRC
 fi 
 
-BASHRC_CONTENTS=(
+function add_to_bashrc {
+  echo 
+  echo "Adding following lines to your $BASHRC ..."
+  for i in "${CONTENTS[@]}"; do
+    if [ $(grep "$i" "$BASHRC" | wc -l ) == 0 ]; then
+      echo $i
+      echo $i >> $BASHRC
+    fi
+  done
+}
+
+
+CONTENTS=(
 "export _JAVA_OPTIONS=\"-Xms256M -Xmx512M -XX:ParallelGCThreads=1\""
 "export MAX_JAVA_MEM=\"8G\""
 "export MALLOC_ARENA_MAX=4"
 "export PATH=\$PATH:\$HOME/.bds"
 )
+add_to_bashrc
 
-echo 
-echo "Adding following lines to your $HOME/.bashrc ..."
-for i in "${BASHRC_CONTENTS[@]}"; do
-  if [ $(grep "$i" "$HOME/.bashrc" | wc -l ) == 0 ]; then
-    echo $i
-    echo $i >> $HOME/.bashrc
-  fi
-done
+#echo 
+#echo "Adding following lines to your $BASHRC ..."
+#for i in "${BASHRC_CONTENTS[@]}"; do
+ # if [ $(grep "$i" "$BASHRC" | wc -l ) == 0 ]; then
+#    echo $i
+#    echo $i >> $BASHRC
+#  fi
+#done
 
 echo
 echo "=============================================================================="
 echo "Starting automatic installation for dependencies for ChIP-seq pipeline."
 echo "Make sure you have enough disk space (at least 3GB) on your file system."
 echo "All dependencies will be installed under $SOFTWARE."
-echo "Once installation is done, we recommend to add $BASHRC to \$HOME/.bashrc or \$HOME/.bash_profile ."
 echo "=============================================================================="
 read -p "Press [Enter] key to continue..."
 echo
 
 mkdir -p $SOFTWARE
-echo "# Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile " > $BASHRC
 
 # Local installation for BigDataScript (latest)
 cd $HOME
@@ -134,9 +145,8 @@ wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?
 tar zxvf bds_Linux.tgz
 rm -f bds_Linux.tgz
 cp $SCRIPTDIR/bds.config $HOME/.bds/
-echo "" >> $BASHRC
-echo "# Path for BigDataScript (latest)" > $BASHRC
-echo "export PATH=\$PATH:\$HOME/.bds/" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:\$HOME/.bds/")
+add_to_bashrc
 
 # Local installation for bwa (0.7.3)
 cd $SOFTWARE
@@ -144,9 +154,8 @@ git clone https://github.com/lh3/bwa bwa-0.7.3
 cd bwa-0.7.3
 git checkout tags/0.7.3
 make
-echo "" >> $BASHRC
-echo "# Path for bwa (0.7.3)" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/bwa-0.7.3" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/bwa-0.7.3")
+add_to_bashrc
 
 # Local installation for samtools (0.1.19)
 cd $SOFTWARE
@@ -154,9 +163,8 @@ git clone https://github.com/samtools/samtools samtools-0.1.19
 cd samtools-0.1.19
 git checkout tags/0.1.19
 make
-echo "" >> $BASHRC
-echo "# Path for samtools (0.1.19)" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/samtools-0.1.19" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/samtools-0.1.19")
+add_to_bashrc
 
 # Local installation for bedtools (2.19.1)
 cd $SOFTWARE
@@ -165,9 +173,8 @@ tar zxvf bedtools-2.19.1.tar.gz
 rm -f bedtools-2.19.1.tar.gz
 cd bedtools2-2.19.1
 make
-echo "" >> $BASHRC
-echo "# Path for bedtools (2.19.1)" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/bedtools2-2.19.1/bin" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/bedtools2-2.19.1/bin")
+add_to_bashrc
 
 # Local installation for UCSC tools
 cd $SOFTWARE
@@ -176,9 +183,8 @@ cd ucsc_tools
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
 chmod 755 *
-echo "" >> $BASHRC
-echo "# Path for UCSC tools" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/ucsc_tools" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/ucsc_tools")
+add_to_bashrc
 
 # Local installation for PICARD tools (1.92)
 cd $SOFTWARE
@@ -190,10 +196,11 @@ rm -f picard-tools-1.92.tar.gz
 #rm -f picard-tools-1.92.zip
 cd picard-tools-1.92
 chmod 755 *
-echo "" >> $BASHRC
-echo "# Path for PICARd tools" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/picard-tools-1.92" >> $BASHRC
-echo "export PICARDROOT=$SOFTWARE/picard-tools-1.92" >> $BASHRC
+CONTENTS=(
+"export PATH=\$PATH:$SOFTWARE/picard-tools-1.92"
+"export PICARDROOT=$SOFTWARE/picard-tools-1.92"
+)
+add_to_bashrc
 
 # Local installation for run_spp.R (Anshul's phantompeakqualtool)
 cd $SOFTWARE
@@ -201,9 +208,8 @@ wget https://phantompeakqualtools.googlecode.com/files/ccQualityControl.v.1.1.ta
 tar zxvf ccQualityControl.v.1.1.tar.gz
 rm -f ccQualityControl.v.1.1.tar.gz
 chmod 755 phantompeakqualtools/*
-echo "" >> $BASHRC
-echo "# Path for run_spp.R (Anshul's phantompeakqualtool)" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/phantompeakqualtools" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/phantompeakqualtools")
+add_to_bashrc
 
 # Local installation instruction for R (2.15.1) and relevant packages
 cd $SOFTWARE
@@ -221,13 +227,11 @@ echo > tmp.R
   echo 'install.packages("snowfall", repos="http://cran.us.r-project.org")' >> tmp.R
   echo 'install.packages("bitops", repos="http://cran.us.r-project.org")' >> tmp.R
   echo 'install.packages("caTools", repos="http://cran.us.r-project.org")' >> tmp.R
-#  echo 'install.packages("./spp_1.10.tar.gz")' >> tmp.R
   echo 'install.packages("./phantompeakqualtools/spp_1.10.1.tar.gz")' >> tmp.R
 $SOFTWARE/R-2.15.1/bin/Rscript tmp.R
 rm -f tmp.R
-echo "" >> $BASHRC
-echo "# Path for R (2.15.1)" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/R-2.15.1/bin" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/R-2.15.1/bin")
+add_to_bashrc
 
 #LAPACK
 mkdir -p $SOFTWARE/blas
@@ -239,10 +243,8 @@ cd lapack-*/
 cp INSTALL/make.inc.gfortran make.inc          # On Linux with lapack-3.2.1 or newer
 make lapacklib
 make clean
-
-echo "" >> $BASHRC
-echo "# LAPACK" >> $BASHRC
-eecho "export LAPACK=$SOFTWARE/blas/lapack-*/liblapack.a" >> $BASHRC
+CONTENTS=("export LAPACK=$SOFTWARE/blas/lapack-*/liblapack.a")
+add_to_bashrc
 
 # Local installation instruction for Python (3.4.3) and relevant packages (for Nathan Boley's IDR)
 cd $SOFTWARE
@@ -261,10 +263,11 @@ cd $SOFTWARE
 $SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" numpy
 $SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" matplotlib
 $SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" scipy
-echo "" >> $BASHRC
-echo "# Path for python3" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/python3.4/bin" >> $BASHRC
-echo "export PYTHONPATH=$SOFTWARE/python3.4/lib/python3.4/site-packages:\$PYTHONPATH">> $BASHRC
+CONTENTS=(
+"export PATH=\$PATH:$SOFTWARE/python3.4/bin"
+"export PYTHONPATH=$SOFTWARE/python3.4/lib/python3.4/site-packages:\$PYTHONPATH"
+)
+add_to_bashrc
 
 # Local installation instruction for Nathan Boley's IDR
 cd $SOFTWARE
@@ -272,18 +275,16 @@ git clone --recursive https://github.com/nboley/idr.git
 cd idr
 $SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
 ln -s $SOFTWARE/python3.4/bin/python3.4 $SOFTWARE/python3.4/bin/python3
-echo "" >> $BASHRC
-echo "# Path for IDR (written by Nathan Boley)" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/idr/bin" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/idr/bin")
+add_to_bashrc
 
 # Local installation instruction for Anshul Kundaje's IDR
 cd $SOFTWARE
 wget https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0 -O idrCode.tar.gz
 tar zxvf idrCode.tar.gz
 rm -f idrCode.tar.gz
-echo "" >> $BASHRC
-echo "# Path for IDR (written by Anshul Kundaje)" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/idrCode" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/idrCode")
+add_to_bashrc
 
 # Local installation instruction for Python (2.7.2) and relevant packages (for macs2)
 cd $SOFTWARE
@@ -303,10 +304,11 @@ cd python2.7/bin
 get https://bootstrap.pypa.io/get-pip.py
 ./python2 get-pip.py
 $SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" numpy
-echo "" >> $BASHRC
-echo "# Path for python2" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/python2.7/bin" >> $BASHRC
-echo "export PYTHONPATH=$SOFTWARE/python2.7/lib/python2.7/site-packages:\$PYTHONPATH">> $BASHRC
+CONTENTS=(
+"export PATH=\$PATH:$SOFTWARE/python2.7/bin"
+"export PYTHONPATH=$SOFTWARE/python2.7/lib/python2.7/site-packages:\$PYTHONPATH"
+)
+add_to_bashrc
 
 # Local installation instruction for MACS2
 cd $SOFTWARE
@@ -314,9 +316,8 @@ git clone https://github.com/taoliu/MACS/
 cd MACS
 $SOFTWARE/python2.7/bin/python2.7 setup_w_cython.py install --prefix=$SOFTWARE/python2.7
 chmod 755 $SOFTWARE/MACS/bin/*
-echo "" >> $BASHRC
-echo "# Path for MACS2" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/MACS/bin" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/MACS/bin")
+add_to_bashrc
 
 # Local installation instruction for gem 
 cd $SOFTWARE
@@ -325,20 +326,21 @@ tar zxvf gem.v2.6.tar.gz
 rm -f gem.v2.6.tar.gz
 cd gem
 chmod 755 $SOFTWARE/gem/*.jar
-echo "" >> $BASHRC
-echo "# Path for gem" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/gem" >> $BASHRC
-echo "export GEMROOT=$SOFTWARE/gem" >> $BASHRC
-echo "export GEM=$SOFTWARE/gem/gem.jar" >> $BASHRC
+CONTENTS=(
+"export PATH=\$PATH:$SOFTWARE/gem"
+"export GEMROOT=$SOFTWARE/gem"
+"export GEM=$SOFTWARE/gem/gem.jar"
+)
+add_to_bashrc
 
 # Local installation instruction for Wiggler (for generating signal tracks)
 cd $SOFTWARE
 wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz
 tar zxvf align2rawsignal.2.0.tgz
 rm -f align2rawsignal.2.0.tgz
-echo "" >> $BASHRC
-echo "# Path for Wiggler" >> $BASHRC
-echo "export PATH=\$PATH:$SOFTWARE/align2rawsignal/bin" >> $BASHRC
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/align2rawsignal/bin")
+add_to_bashrc
+
 wget http://www.broadinstitute.org/~anshul/softwareRepo/MCR2010b.bin
 chmod 755 MCR2010b.bin
 echo 1 > tmp.stdin
@@ -349,29 +351,23 @@ echo 3 >> tmp.stdin
 ./MCR2010b.bin -console < tmp.stdin
 rm -f tmp.stdin
 rm -f MCR2010b.bin
-echo "" >> $BASHRC
-echo "# Path for MCR2010b.bin" >> $BASHRC
-echo "MCRROOT=$SOFTWARE/MATLAB_Compiler_Runtime/v714" >> $BASHRC
-echo "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64" >> $BASHRC
-echo "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64" >> $BASHRC
-echo "MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64" >> $BASHRC
-echo "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/native_threads" >> $BASHRC
-echo "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/server" >> $BASHRC
-echo "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}" >> $BASHRC
-echo "XAPPLRESDIR=\${MCRROOT}/X11/app-defaults" >> $BASHRC
-echo "export LD_LIBRARY_PATH" >> $BASHRC
-echo "export XAPPLRESDIR" >> $BASHRC
-
+CONTENTS=(
+"MCRROOT=$SOFTWARE/MATLAB_Compiler_Runtime/v714" 
+"LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64" 
+"LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64" 
+"MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64" 
+"LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/native_threads" 
+"LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/server" 
+"LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}" 
+"XAPPLRESDIR=\${MCRROOT}/X11/app-defaults" 
+"export LD_LIBRARY_PATH" 
+"export XAPPLRESDIR"
+)
+add_to_bashrc
 
 # WARNING
 echo
-echo
-echo Done Installing all dependencies for ChIP-Seq pipeline
-echo Created $BASHRC
-echo
-echo IMPORTANT!
-echo
-echo We recommend to add $BASHRC to your $HOME/.bashrc or $HOME/.bash_profile
+echo "Done Installing all dependencies for ChIP-Seq pipeline"
 echo
 
 
