@@ -6,55 +6,92 @@ BASHRC=$HOME/add_to_bashrc
 
 SCRIPTDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-echo
-echo "IMPORTANT!"
-echo
-echo "Please make sure that the following softwares are installed on your system:"
-echo
-echo "build-essential zlib1g-dev ncurses-dev gfortran libboost-all-dev"
-echo "openssl libssl-dev"
-echo "libfreetype6-dev"
-echo "liblapack-dev"
-echo "git"
-echo
-read -p "Are you sure that softwares listed above are installed on your system? [yes/no] " yn
-case $yn in
-    yes ) echo "YES";;
-    * ) 
-      echo "These command lines need super-user privilege, ask your system administrator."
-      echo "======================================================================================"
-      echo "sudo apt-get install build-essential zlib1g-dev ncurses-dev gfortran libboost-all-dev"
-      echo "sudo apt-get install openssl libssl-dev"
-      echo "sudo apt-get install libfreetype6-dev"
-      echo "sudo apt-get install liblapack-dev"
-      echo "sudo apt-get install git"
-      echo "======================================================================================"
-      exit;;
-esac
+SOFTWARES_APT_GET=(
+build-essential
+zlib1g-dev
+ncurses-dev
+gfortran
+libboost-all-dev
+openssl libssl-dev
+libfreetype6-dev
+liblapack-dev
+)
 
-read -p "Are you sure that java (jre >= version 1.7) is installed on your system? [yes/no] " yn
-case $yn in
-    yes ) echo "YES";;
-    * )
-      echo "Locally install java on your system or use the following command line (ask administrator)"
-      echo "======================================================================================"
-      echo "sudo apt-get install openjdk-7-jre"
-      echo "======================================================================================"
-      exit;;
-esac
+echo
+echo Checking softwares on your system...
+echo
 
-#read -p "Are you sure that python 2.7.x is installed on your system? [yes/no] " yn
-#case $yn in
-#    yes ) echo "YES";;
-#    * )
-#      echo "Locally install python 2.7.x on your system or use the following command line (ask administrator)"
-#      echo "======================================================================================"
-#      echo "sudo add-apt-repository ppa:fkrull/deadsnakes"
-#      echo "sudo apt-get update"
-#      echo "sudo apt-get install python2.7"
-#      echo "======================================================================================"
-#      exit;;
-#esac
+EXIT=0
+for i in "${SOFTWARES_APT_GET[@]}"; do
+  if [ $(dpkg -l | awk '{print $2;}' | grep -Fx $i | wc -l) == 0 ]; then
+    echo
+    echo " * $i found on your system."
+  else
+    echo
+    echo " * $i not found your system."
+    echo "   Please install $i using the following commmand or ask administrator."
+    echo "   ============================================================="
+    echo "   sudo apt-get install $i"
+    echo "   ============================================================="
+    EXIT=1
+  fi
+done
+
+if [ $(which git | wc -l) == 0 ]; then  
+  echo
+  echo " * Git not found your system."
+  echo "   Please install git using the following commmand or ask administrator."
+  echo "   ============================================================="
+  echo "   sudo apt-get install git"
+  echo "   ============================================================="
+  echo "   You can also install git on your local directory."
+  echo "   (https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)"
+  EXIT=1
+else
+  echo
+  echo " * Git found your system."
+fi
+
+NEED_JAVA_INSTALL=0
+if [ $(which java | wc -l) == 0 ]; then  
+  echo
+  echo " * Java not found your system."
+  EXIT=1
+  NEED_JAVA_INSTALL=1
+else
+  JAVA_VER=$(java -version 2>&1 | grep "java version" | cut -d'"' -f2 | cut -d'.' -f1-2)
+  echo
+  echo " * Java found your system (version: ${JAVA_VER})."
+  if [[ (( ${JAVA_VER} < 1.7 )) ]]; then
+    echo "   Java version is too low. Version needs to be >= 1.7"
+    EXIT=1
+    NEED_JAVA_INSTALL=1
+  fi
+fi
+
+if [ ${NEED_JAVA_INSTALL} == 1 ]; then
+  echo "   Please install java using the following commmand or ask administrator."
+  echo "   ============================================================="
+  echo "   sudo apt-get install openjdk-7-jre"
+  echo "   ============================================================="
+  echo "   You can also install java (jre version >= 1.7) on your local directory."
+  echo "   (http://java.com/en/download/manual.jsp?locale=en)"
+fi
+
+if [ $EXIT == 1 ]; then
+  echo
+  echo "WARNING!!"
+  echo
+  echo "Some of the softwares are not installed on your system."
+  echo "We strongly recommend to install all softwares listed above and re-run install_dependencies.sh."
+  echo 
+  echo "However, you can proceed with risk (complication of some bio-softwares will fail)."
+  read -p "Are you sure that you want to proceed? [yes/no] " yn
+  case $yn in
+      yes ) echo "YES";;
+      * ) exit;;
+  esac
+fi 
 
 echo
 echo "Add the following lines to your \$HOME/.bashrc or \$HOME/.bash_profile."
