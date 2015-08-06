@@ -46,6 +46,7 @@ INPUT_FASTQ_CTL_REP1= /DATA/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
 //BAM_PE= false
 //INPUT_BAM_REP1= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep1.bam
 //INPUT_BAM_REP2= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam
+//BAM_CTL_PE= false
 //INPUT_BAM_CTL_REP1= /DATA/wgEncodeSydhTfbsK562InputIggrabAln.bam
 
 // if input is tagalign
@@ -53,6 +54,7 @@ INPUT_FASTQ_CTL_REP1= /DATA/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
 //TAGALIGN_PE= false
 //INPUT_TAGALIGN_REP1= /mnt/data/ENCODE/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep1.bam.unique.tagAlign.gz
 //INPUT_TAGALIGN_REP2= /mnt/data/ENCODE/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam.unique.tagAlign.gz
+//TAGALIGN_CTL_PE= false
 //INPUT_TAGALIGN_CTL_REP1= /mnt/data/ENCODE/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562InputIggrabAln.bam.unique.tagAlign.gz
 
 // peak calling method (spp, macs2, gem)
