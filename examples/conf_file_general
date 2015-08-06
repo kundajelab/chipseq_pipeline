@@ -1,7 +1,7 @@
 // All dependencies are installed on Kundaje lab's cluster servers (mitra, nandi, amold and wotan)
 // Do not run ../install_dependencies.sh on these clusters
 // For Kundaje lab members, uncomment the following lines:
-//MODULE_BIO=bwa/0.7.3; samtools/0.1.19; bedtools/2.19.1; ucsc_tools/3.0.9; picard-tools/1.92; phantompeakqualtools/default; align2rawsignal/2.0; gem/2.6
+//MODULE_BIO=bwa/0.7.3; samtools/0.1.19; bedtools/2.19.1; ucsc_tools/3.0.9; picard-tools/1.92; phantompeakqualtools/default; align2rawsignal/2.0; MACS2/2.1.0; gem/2.6
 //MODULE_LANG=java/latest; r/2.15.1
 //ADDPATH=/software/idrCode
 //SHELLCMD_JAVA= export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"; export MAX_JAVA_MEM="8G"; export MALLOC_ARENA_MAX=4
@@ -13,12 +13,33 @@ PREFIX=ENCSR000EGM
 OUTPUT_DIR=out
 
 // if input is fastq and single ended
+BWA_INDEX_NAME= /DATA/hg19/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 INPUT_TYPE=fastq
-INPUT_FASTQ_REP1= /srv/scratch/leepc12/data/ENCODE/ENCSR000EGM/ENCFF000YLW.fastq.gz
-INPUT_FASTQ_REP2= /srv/scratch/leepc12/data/ENCODE/ENCSR000EGM/ENCFF000YLY.fastq.gz
-INPUT_FASTQ_CTL_REP1= /srv/scratch/leepc12/data/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
+INPUT_FASTQ_REP1= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLW.fastq.gz
+INPUT_FASTQ_REP2= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLY.fastq.gz
+INPUT_FASTQ_CTL_REP1= /DATA/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
 // bwa
-BWA_INDEX_NAME= /srv/scratch/leepc12/hg19/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
+
+// if input is fastq and paired end
+//BWA_INDEX_NAME= /DATA/hg19/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
+//INPUT_TYPE=fastq
+//INPUT_FASTQ_REP1_PE1= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLW.fastq.gz
+//INPUT_FASTQ_REP1_PE2= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLW2.fastq.gz
+//INPUT_FASTQ_REP2_PE1= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLY.fastq.gz
+//INPUT_FASTQ_REP2_PE2= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLY2.fastq.gz
+//INPUT_FASTQ_CTL_REP1= /DATA/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
+//INPUT_FASTQ_CTL_REP2= /DATA/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB2.fastq.gz
+
+// if input is fastq and mixed up (fastqs are paired end but control fastq is single ended)
+//BWA_INDEX_NAME= /DATA/hg19/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
+//INPUT_TYPE=fastq
+//INPUT_FASTQ_REP1_PE1= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLW.fastq.gz
+//INPUT_FASTQ_REP1_PE2= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLW2.fastq.gz
+//INPUT_FASTQ_REP2_PE1= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLY.fastq.gz
+//INPUT_FASTQ_REP2_PE2= /DATA/ENCODE/ENCSR000EGM/ENCFF000YLY2.fastq.gz
+//INPUT_FASTQ_CTL= /DATA/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
+
+ (control is single ended)
 
 // if input is bam
 //INPUT_TYPE=bam
