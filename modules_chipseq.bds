@@ -27,6 +27,7 @@ string ctl_fastq2_2 	= "" 				help Path for control fastq for replicate 2 pair 2
 bool bam_PE 		= false 			help Set it true if bams are paired end (default: false).
 string bam1 		= ""				help Path for bam for replicate 1.
 string bam2 		= ""				help Path for bam for replicate 2.
+bool bam_ctl_PE		= false 			help Set it true if control bams are paired end (default: false).
 string ctl_bam1 	= "" 				help Path for control bam for replicate 1.
 string ctl_bam2 	= "" 				help Path for control bam for replicate 2 (if not exists leave this blank).
 
@@ -34,6 +35,7 @@ string ctl_bam2 	= "" 				help Path for control bam for replicate 2 (if not exis
 bool tagalign_PE 	= false 			help Set it true if tagaligns are paired end (default: false).
 string tagalign1 	= ""				help Path for tagAlign for replicate 1.
 string tagalign2 	= ""				help Path for tagAlign for replicate 2.
+bool tagalign_ctl_PE 	= false 			help Set it true if control tagaligns are paired end (default: false).
 string ctl_tagalign1 	= "" 				help Path for control tagAlign for replicate 1.
 string ctl_tagalign2 	= "" 				help Path for control tagAlign for replicate 2 (if not exists leave this blank).
 
@@ -67,7 +69,9 @@ int num_rep 		= 2				help Number of replicates, define it for non-blank final_st
 
 string INPUT_TYPE 	= input
 bool TAGALIGN_PE 	= tagalign_PE
+bool TAGALIGN_CTL_PE 	= tagalign_ctl_PE
 bool BAM_PE 		= bam_PE
+bool BAM_CTL_PE 	= bam_ctl_PE
 string BWA_INDEX_NAME	= idx_bwa		
 string BWA_ALN_PARAM 	= param_bwa
 int NTHREADS_BWA_ALN 	= nth_bwa_aln
@@ -100,7 +104,9 @@ void read_param_align_map() {
 
 		if ( conf.hasKey("INPUT_TYPE") )	INPUT_TYPE		= rm_comment( conf{ "INPUT_TYPE"} )
 		if ( conf.hasKey("TAGALIGN_PE") )	TAGALIGN_PE 		= parse_bool( conf{ "TAGALIGN_PE"} )
+		if ( conf.hasKey("TAGALIGN_CTL_PE") )	TAGALIGN_CTL_PE 	= parse_bool( conf{ "TAGALIGN_CTL_PE"} )
 		if ( conf.hasKey("BAM_PE") )		BAM_PE 			= parse_bool( conf{ "BAM_PE"} )
+		if ( conf.hasKey("BAM_CTL_PE") )	BAM_CTL_PE		= parse_bool( conf{ "BAM_CTL_PE"} )
 		if ( INPUT_TYPE == "fastq") \
 			if ( conf.hasKey("BWA_INDEX_NAME") )	BWA_INDEX_NAME	= chk_file( conf{ "BWA_INDEX_NAME" }, ".bwt" ) // check if filename+".bwt" exists
 		if ( conf.hasKey("BWA_ALN_PARAM") )	BWA_ALN_PARAM 		= rm_comment( conf{ "BWA_ALN_PARAM" } )
@@ -214,6 +220,7 @@ void read_param_align_map() {
 		}
 
 		print("BAM_PE = $BAM_PE\n");
+		print("BAM_CTL_PE = $BAM_CTL_PE\n");
 	}
 	else if ( is_input_tagalign() ) {
 
@@ -241,6 +248,7 @@ void read_param_align_map() {
 		}
 
 		print("TAGALIGN_PE = $TAGALIGN_PE\n");
+		print("TAGALIGN_CTL_PE = $TAGALIGN_CTL_PE\n");
 //		print("FRAGLEN = $FRAGLEN\n");
 	}
 
@@ -1398,11 +1406,11 @@ bool is_paired_end( int ctl, int rep ) {
 	}
 	else if ( is_input_bam() ) {
 		bam := get_bam( ctl, rep )
-		return (bam!="") && bam_PE
+		return (bam!="") && (ctl==0 ? BAM_PE : BAM_CTL_PE)
 	}
 	else if ( is_input_tagalign() ) {
 		tagalign := get_tagalign( ctl, rep )
-		return (tagalign!="") && tagalign_PE
+		return (tagalign!="") && (ctl==0 ? TAGALIGN_PE : TAGALIGN_CTL_PE)
 	}
 	return false;
 }
@@ -1415,11 +1423,11 @@ bool is_single_ended( int ctl, int rep ) {
 	}
 	else if ( is_input_bam() ) {
 		bam := get_bam( ctl, rep )
-		return (bam!="") && (!bam_PE)
+		return (bam!="") && (! (ctl==0 ? BAM_PE : BAM_CTL_PE) )
 	}
 	else if ( is_input_tagalign() ) {
 		tagalign := get_tagalign( ctl, rep )
-		return (tagalign!="") && (!tagalign_PE)
+		return (tagalign!="") && (! (ctl==0 ? TAGALIGN_PE : TAGALIGN_CTL_PE) )
 	}
 	return false;
 }

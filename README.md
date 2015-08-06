@@ -72,6 +72,8 @@ $ cp bds.config $HOME/.bds/
 
 There are two ways to define parameters for ChIP-Seq pipelines. For most of the parameters, they already have default values. If they are not defined in command line argument or in a configuration file, default value will be used. Take a look at example commands and configuration files (./examples). IMPORTANT! For generating bwa index, we recommend to use bwa 0.7.3.
 
+The following examples are for single ended data set. For paired end one, take a look at the next chapter.
+
 1) From command line arguments 
 ```
 # general usage
@@ -122,7 +124,8 @@ USE_IDR_NBOLEY= true 	// if true, use Nathan Boley's IDR code
 1) From command line arguments 
 
 ```
-#  -single ended bam input (add -bam_PE false), no replicate-2 control bam
+#  -single ended bam input (add -bam_PE false)
+#  -single ended control bam input (add -bam_ctl_PE false), no replicate-2 control bam
 #  -using spp as peak calling method
 #  -using Anshul Kundaje's IDR code
 
@@ -132,6 +135,7 @@ $ bds chipseq.bds \
 -bam_PE false \
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-bam_ctl_PE false \
 -ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
 -peakcall spp \
 -idr_nboley false
@@ -141,7 +145,8 @@ $ bds chipseq.bds \
 ```
 $ bds chipseq.bds [CONF_FILE]
 
-#  -single ended bam input (set BAM_PE= false), no replicate-2 control bam
+#  -single ended bam input (set BAM_PE= false)
+#  -single ended control bam input (set BAM_CTL_PE= false), no replicate-2 control bam
 #  -using spp as peak calling method
 #  -using Nathan Boley's IDR code
 
@@ -152,6 +157,7 @@ INPUT_TYPE= BAM
 BAM_PE= false
 INPUT_BAM_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.bam
 INPUT_BAM_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.bam
+BAM_CTL_PE= false
 INPUT_BAM_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam
 PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
 			// for histone chipesq, use macs2
@@ -164,7 +170,8 @@ USE_IDR_NBOLEY= true
 1) From command line arguments 
 
 ```
-#  -single ended tagalign input (add -tagalign_PE false), no replicate-2 control tagalign
+#  -single ended tagalign input (add -tagalign_PE false)
+#  -single ended control tagalign input (add -tagalign_ctl_PE false), no replicate-2 control tagalign
 #  -using spp as peak calling method
 #  -using Anshul Kundaje's IDR code
 
@@ -174,6 +181,7 @@ $ bds chipseq.bds \
 -tagalign_PE false \
 -tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
 -tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
+-tagalign_ctl_PE false \
 -ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
 -peakcall spp \
 -idr_nboley false
@@ -183,7 +191,8 @@ $ bds chipseq.bds \
 ```
 $ bds chipseq.bds [CONF_FILE]
 
-#  -single ended tagalign input (set TAGALIGN_PE= false), no replicate-2 control tagalign
+#  -single ended tagalign input (set TAGALIGN_PE= false)
+#  -single ended control tagalign input (set TAGALIGN_CTL_PE= false), no replicate-2 control tagalign
 #  -using spp as peak calling method
 #  -using Nathan Boley's IDR code
 
@@ -194,12 +203,127 @@ INPUT_TYPE= tagalign
 TAGALIGN_PE= false
 INPUT_TAGALIGN_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.tagalign
 INPUT_TAGALIGN_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.tagalign
+TAGALIGN_CTL_PE= false
 INPUT_TAGALIGN_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign
 PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
 			// for histone chipesq, use macs2
 USE_IDR_NBOLEY= true
 ```
 
+### For paired end data set
+
+1) For fastqs (-input fastq in command line argument or INPUT_TYPE==fastq in a configuration file):
+The pipeline automatically determines if fastqs are single end or paired end by the number (and key name) of fastqs defined in command line argument or in a configuration file. Key name must be 'fastq?' for single ended fastq and 'fastq?_#' for paired end fastqs where ? and # mean the index of each replicate and pairing index, respectively.
+
+```
+# inputs and control are single ended
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input fastq \
+-fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
+-fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
+-ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
+...
+
+# inputs and control are paired end
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input fastq \
+-fastq1_1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
+-fastq1_2 /DATA/ENCSR000EGM/ENCFF000YLW2.fastq.gz \
+-fastq2_1 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
+-fastq2_2 /DATA/ENCSR000EGM/ENCFF000YLY2.fastq.gz \
+-ctl_fastq1_1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
+-ctl_fastq1_2 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB2.fastq.gz \
+...
+
+# inputs are paired end control is single ended
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input fastq \
+-fastq1_1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
+-fastq1_2 /DATA/ENCSR000EGM/ENCFF000YLW2.fastq.gz \
+-fastq2_1 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
+-fastq2_2 /DATA/ENCSR000EGM/ENCFF000YLY2.fastq.gz \
+-ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
+...
+```
+
+2) For bams (-input bam in command line argument or INPUT_TYPE==bam in a configuration file):
+The pipeline take additional parameters (-bam_PE and -bam_ctl_PE for command line argument, BAM_PE and BAM_CTL_PE for a configuration file) to determines if data set is single end or paired end.
+
+```
+# inputs and control are single ended
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input bam \
+-bam_PE false \
+-bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
+-bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-bam_ctl_PE false \
+-ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
+...
+
+# inputs and control are paired-end
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input bam \
+-bam_ctl_PE true \
+-bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
+-bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-bam_ctl_PE true \
+-ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
+...
+
+# inputs are paired end and control is single ended
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input bam \
+-bam_ctl_PE true \
+-bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
+-bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-bam_ctl_PE false \
+-ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
+...
+```
+
+3) For tagaligns (-input tagalign in command line argument or INPUT_TYPE==tagalign in a configuration file):
+The pipeline take additional parameters (-tagalign_PE and -tagalign_ctl_PE for command line argument, TAGALIGN_PE and TAGALIGN_CTL_PE for a configuration file) to determines if data set is single end or paired end.
+
+```
+# inputs and control are single ended
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input tagalign \
+-tagalign_PE false \
+-tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
+-tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
+-tagalign_ctl_PE false \
+-ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
+...
+
+# inputs and control are paired-end
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input tagalign \
+-tagalign_ctl_PE true \
+-tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
+-tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
+-tagalign_ctl_PE true \
+-ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
+...
+
+# inputs are paired end and control is single ended
+$ bds chipseq.bds \
+-prefix ENCSR000EGM \
+-input tagalign \
+-tagalign_ctl_PE true \
+-tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
+-tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
+-tagalign_ctl_PE false \
+-ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
+...
+```
 
 ### Alignment only mode without peak calling
 
@@ -503,6 +627,7 @@ For advanced users, all command line parameters for the pipeline is listed and e
 	-bam_PE <bool>           : Set it true if bams are paired end (default: false).
 	-bam1 <string>           : Path for bam for replicate 1.
 	-bam2 <string>           : Path for bam for replicate 2.	
+	-bam_ctl_PE <bool>       : Set it true if control bams are paired end (default: false).
 	-ctl_bam1 <string>       : Path for control bam for replicate 1.
 	-ctl_bam2 <string>       : Path for control bam for replicate 2 (if not exists leave this blank).
 
@@ -510,6 +635,7 @@ For advanced users, all command line parameters for the pipeline is listed and e
 	-tagalign_PE <bool>      : Set it true if tagaligns are paired end (default: false).
 	-tagalign1 <string>      : Path for tagAlign for replicate 1.
 	-tagalign2 <string>      : Path for tagAlign for replicate 2.	
+	-tagalign_ctl_PE <bool>  : Set it true if control tagaligns are paired end (default: false).
 	-ctl_tagalign1 <string>  : Path for control tagAlign for replicate 1.
 	-ctl_tagalign2 <string>  : Path for control tagAlign for replicate 2 (if not exists leave this blank).
 
@@ -599,17 +725,17 @@ Equivalent parameters in a configuration file is listed and explained below:
 
 	# if inputs are tagaligns
 	BAM_PE                  : Set it true if bams are paired end
-
 	INPUT_BAM_REP1          : Path for input bam for replicate 1.
 	INPUT_BAM_REP2          : Path for input bam for replicate 2.
+	BAM_CTL_PE              : Set it true if control bams are paired end
 	INPUT_BAM_CTL_REP1      : Path for control bam for replicate 1.
 	INPUT_BAM_CTL_REP2      : Path for control bam for replicate 2 (if not exists, leave this blank).
 
 	# if inputs are tagaligns
 	TAGALIGN_PE             : Set it true if tagaligns are paired end
-
 	INPUT_TAGALIGN_REP1     : Path for input tagalign for replicate 1.
 	INPUT_TAGALIGN_REP2     : Path for input tagalign for replicate 2.
+	TAGALIGN_CTL_PE         : Set it true if control tagaligns are paired end
 	INPUT_TAGALIGN_CTL_REP1 : Path for control tagalign for replicate 1.
 	INPUT_TAGALIGN_CTL_REP2 : Path for control tagalign for replicate 2 (if not exists, leave this blank).
 
