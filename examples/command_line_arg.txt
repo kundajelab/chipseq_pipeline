@@ -28,6 +28,7 @@ bds ~/ENCODE_chipseq_pipeline/tf_chipseq.bds \
 -tagalign_PE false \
 -tagalign1 /DATA/ENCODE/ENCSR000EGM/T1.tagAlign.gz \
 -tagalign2 /DATA/ENCODE/ENCSR000EGM/T2.tagAlign.gz \
+-tagalign_ctl_PE false \
 -ctl_tagalign1 /DATA/ENCODE/ENCSR000EGM/Ctl/T3.tagAlign.gz \
 -idr_nboley true
 
@@ -38,6 +39,7 @@ bds ~/ENCODE_chipseq_pipeline/tf_chipseq.bds \
 -bam_PE false \
 -bam1 /DATA/ENCODE/ENCSR000EGM/BAM1.bam \
 -bam2 /DATA/ENCODE/ENCSR000EGM/BAM2.bam \
+-bam_ctl_PE false \
 -ctl_bam1 /DATA/ENCODE/ENCSR000EGM/Ctl/BAM3.bam \
 -peakcall macs2 \
 -gensz hs
