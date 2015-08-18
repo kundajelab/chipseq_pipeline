@@ -2,6 +2,10 @@
 
 include "modules_chipseq.bds"
 
+// peak file name if input == "peak"
+string peak1 		= ""		help Path for peak for replicate 1.
+string peak2 		= ""		help Path for peak for replicate 2.
+string pooled 		= ""		help Path for pooled peak.
 
 // peak calling method
 string peakcall 	= "spp"		help Choose peak calling method: spp, macs2 and gem (default: spp).
@@ -108,127 +112,30 @@ void read_param_tf_chipseq() {
 	else {
 		print("\nUsing Anshul Kundaje's IDR\n\n");
 	}
+
+	// check if all peaks files exist
+	if ( is_input_peak() ) {
+
+		print( "\n====== Checking peaks...\n" );
+		
+		if ( get_peak( 1 ) == "" ) error( prefix + "Rep1 peak missing!\n")
+		if ( get_peak( 2 ) == "" ) error( prefix + "Rep2 peak missing!\n")
+		if ( get_peak( 0 ) == "" ) error( prefix + "Pooled peak missing!\n")
+	}	
 }
 
 void peakcall_idr() {
 	
 	if ( FINAL_STAGE != "" ) return
 
-	print( "\nPeak calling with ($PEAKCALL_METHOD)...\n" );
+	if ( is_input_peak() ) {
+		PEAK_OUTPUT_DIR := OUTPUT_DIR + "/peaks"
 
-	// prepare for SPP
-	FRAGLEN_REP1 := get_fraglen( 0, 1 ) // get it from rep1
-	FRAGLEN_REP2 := get_fraglen( 0, 2 ) // get it from rep2
+		REP1_PEAK_FILE := get_peak( 1 )
+		REP2_PEAK_FILE := get_peak( 2 )
+		POOLED_PEAK_FILE := get_peak( 0 )
 
-	real frgln1 = FRAGLEN_REP1.parseReal()
-	real frgln2 = FRAGLEN_REP2.parseReal()
-	string FRAGLEN_MEAN = round( (frgln1+frgln2)*0.5 )
-	
-	print("FRAGLEN (rep1, rep2, mean): $FRAGLEN_REP1, $FRAGLEN_REP2, $FRAGLEN_MEAN\n")
-
-	// prepare for tagAlign file names
-	suffix_PE 	:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
-	suffix_SE 	:= ".filt.nodup.srt.SE.tagAlign.gz"
-	suffix_PSR_PE 	:= ".filt.nodup.PE2SE"
-	suffix_PSR_SE 	:= ".filt.nodup.SE"
-
-	suffix 		:= is_paired_end( 0, 1 ) ? suffix_PE : suffix_SE
-	suffix_PSR 	:= is_paired_end( 0, 1 ) ? suffix_PSR_PE : suffix_PSR_SE
-
-	DATASET_PREFIX 	:= get_ofprefix( 0 )
-	
-	REP1_TA_FILE 		:="$DATASET_PREFIX"+"_Rep1" + suffix
-	REP2_TA_FILE 		:="$DATASET_PREFIX"+"_Rep2" + suffix
-	POOLED_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.tagAlign.gz"
-	REP1_PR1_TA_FILE 	:="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr1.tagAlign.gz"
-	REP1_PR2_TA_FILE 	:="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr2.tagAlign.gz"
-	REP2_PR1_TA_FILE 	:="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr1.tagAlign.gz"
-	REP2_PR2_TA_FILE 	:="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr2.tagAlign.gz"
-	PPR1_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
-	PPR2_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
-
-	ctl_suffix_PE 		:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
-	ctl_suffix_SE 		:= ".filt.nodup.srt.SE.tagAlign.gz"
-	ctl_suffix_PSR_PE 	:= ".filt.nodup.PE2SE"
-	ctl_suffix_PSR_SE 	:= ".filt.nodup.SE"
-
-	ctl_suffix 		:= is_paired_end( 1, 1 ) ? ctl_suffix_PE : ctl_suffix_SE
-	ctl_suffix_PSR 		:= is_paired_end( 1, 1 ) ? ctl_suffix_PSR_PE : ctl_suffix_PSR_SE
-
-	CTL_DATASET_PREFIX 	:= get_ofprefix( 1 )
-
-	CTL_REP1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix
-	CTL_REP2_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix : CTL_REP1_TA_FILE
-	CTL_POOLED_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.tagAlign.gz"
-	CTL_REP1_PR1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr1.tagAlign.gz"
-	CTL_REP1_PR2_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr2.tagAlign.gz"
-	CTL_REP2_PR1_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr1.tagAlign.gz" : CTL_REP1_PR1_TA_FILE
-	CTL_REP2_PR2_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr2.tagAlign.gz" : CTL_REP1_PR2_TA_FILE
-
-	CTL_PPR1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
-	CTL_PPR2_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
-
-	PEAK_OUTPUT_DIR := OUTPUT_DIR + "/peaks"
-	PEAK_OUTPUT_DIR.mkdir() 
-
-	write_report( "ChIP-Seq Pipeline HTML Report" )
-
-	if ( PEAKCALL_METHOD == "spp" ) {
-
-		// cc score
-		PEAK_REP1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_TA_FILE ) + ".ccscores"
-		PEAK_REP2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_TA_FILE ) + ".ccscores"
-		PEAK_POOLED_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( POOLED_TA_FILE ) + ".ccscores"
-		PEAK_REP1_PR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_PR1_TA_FILE ) + ".ccscores"
-		PEAK_REP1_PR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_PR2_TA_FILE ) + ".ccscores"
-		PEAK_REP2_PR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_PR1_TA_FILE ) + ".ccscores"
-		PEAK_REP2_PR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_PR2_TA_FILE ) + ".ccscores"
-		PEAK_PPR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( PPR1_TA_FILE ) + ".ccscores"
-		PEAK_PPR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( PPR2_TA_FILE ) + ".ccscores"
-
-		// narrow peak
-	 	REP1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "narrowPeak" )
-	 	REP2_PEAK_FILE 		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "narrowPeak" )
-	 	POOLED_PEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "narrowPeak" )
-	 	REP1_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "narrowPeak" )
-	 	REP1_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "narrowPeak" )
-		REP2_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "narrowPeak" )
-		REP2_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "narrowPeak" )
-		PPR1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "narrowPeak" )
-		PPR2_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "narrowPeak" )
-
-		// region peak
-	 	REP1_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "regionPeak" )
-	 	REP2_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "regionPeak" )
-	 	POOLED_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "regionPeak" )
-	 	REP1_PR1_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "regionPeak" )
-	 	REP1_PR2_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "regionPeak" )
-		REP2_PR1_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "regionPeak" )
-		REP2_PR2_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "regionPeak" )
-		PPR1_RPEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "regionPeak" )
-		PPR2_RPEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "regionPeak" )
-
-		run_spp( "Rep1", PEAK_OUTPUT_DIR, 	REP1_TA_FILE, CTL_REP1_TA_FILE, REP1_PEAK_FILE, REP1_RPEAK_FILE, PEAK_REP1_CCSCORE, FRAGLEN_REP1 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_spp( "Rep2", PEAK_OUTPUT_DIR, 	REP2_TA_FILE, CTL_REP2_TA_FILE, REP2_PEAK_FILE, REP2_RPEAK_FILE, PEAK_REP2_CCSCORE, FRAGLEN_REP2 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_spp( "Pooled", PEAK_OUTPUT_DIR, 	POOLED_TA_FILE, CTL_POOLED_TA_FILE, POOLED_PEAK_FILE, POOLED_RPEAK_FILE, PEAK_POOLED_CCSCORE, FRAGLEN_MEAN )
-			if ( NO_PARALLEL_JOB ) wait
-		run_spp( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, REP1_PR1_PEAK_FILE, REP1_PR1_RPEAK_FILE, PEAK_REP1_PR1_CCSCORE, FRAGLEN_REP1 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_spp( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, REP1_PR2_PEAK_FILE, REP1_PR2_RPEAK_FILE, PEAK_REP1_PR2_CCSCORE, FRAGLEN_REP1 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_spp( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, REP2_PR1_PEAK_FILE, REP2_PR1_RPEAK_FILE, PEAK_REP2_PR1_CCSCORE, FRAGLEN_REP2 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_spp( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, REP2_PR2_PEAK_FILE, REP2_PR2_RPEAK_FILE, PEAK_REP2_PR2_CCSCORE, FRAGLEN_REP2 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_spp( "PPR1", PEAK_OUTPUT_DIR, 	PPR1_TA_FILE, CTL_PPR1_TA_FILE, PPR1_PEAK_FILE, PPR1_RPEAK_FILE, PEAK_PPR1_CCSCORE, FRAGLEN_MEAN )
-			if ( NO_PARALLEL_JOB ) wait
-		run_spp( "PPR2", PEAK_OUTPUT_DIR, 	PPR2_TA_FILE, CTL_PPR2_TA_FILE, PPR2_PEAK_FILE, PPR2_RPEAK_FILE, PEAK_PPR2_CCSCORE, FRAGLEN_MEAN )
-
-		wait
-
-		write_report( "ChIP-Seq Pipeline HTML Report" )
+		PEAK_OUTPUT_DIR.mkdir()
 
 		///////////////////////////////// IDR
 		// create NPEAKS_IDR file	
@@ -239,95 +146,228 @@ void peakcall_idr() {
 			NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
 			sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
 		}
+
+		wait
 		
 		run_idr( "Rep1_vs_Rep2", PEAK_OUTPUT_DIR, 		REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE ) // (1) or 4a
-			if ( NO_PARALLEL_JOB ) wait
-		run_idr( "PPR1_vs_PPR2", PEAK_OUTPUT_DIR, 		PPR1_PEAK_FILE, PPR2_PEAK_FILE, POOLED_PEAK_FILE ) // (2) or 4c
-			if ( NO_PARALLEL_JOB ) wait
-		run_idr( "Rep1_PR1_vs_Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR1_PEAK_FILE, REP1_PR2_PEAK_FILE, REP1_PEAK_FILE ) // (3) or 4b-1
-			if ( NO_PARALLEL_JOB ) wait
-		run_idr( "Rep2_PR1_vs_Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR1_PEAK_FILE, REP2_PR2_PEAK_FILE, REP2_PEAK_FILE ) // (4) or 4b-2
-			if ( NO_PARALLEL_JOB ) wait
+	}	
+	else {
 
-	}
-	else if ( PEAKCALL_METHOD == "gem" ) {
+		print( "\nPeak calling with ($PEAKCALL_METHOD)...\n" );
 
-		// narrow peak
-	 	REP1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "narrowPeak" )
-	 	REP2_PEAK_FILE 		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "narrowPeak" )
-	 	POOLED_PEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "narrowPeak" )
-	 	REP1_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "narrowPeak" )
-	 	REP1_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "narrowPeak" )
-		REP2_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "narrowPeak" )
-		REP2_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "narrowPeak" )
-		PPR1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "narrowPeak" )
-		PPR2_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "narrowPeak" )
+		// prepare for SPP
+		FRAGLEN_REP1 := get_fraglen( 0, 1 ) // get it from rep1
+		FRAGLEN_REP2 := get_fraglen( 0, 2 ) // get it from rep2
 
-		run_gem( "Rep1", PEAK_OUTPUT_DIR, 	REP1_TA_FILE, CTL_REP1_TA_FILE, REP1_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
-		run_gem( "Rep2", PEAK_OUTPUT_DIR, 	REP2_TA_FILE, CTL_REP2_TA_FILE, REP2_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
-		run_gem( "Pooled", PEAK_OUTPUT_DIR, 	POOLED_TA_FILE, CTL_POOLED_TA_FILE, POOLED_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
-		run_gem( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, REP1_PR1_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
-		run_gem( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, REP1_PR2_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
-		run_gem( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, REP2_PR1_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
-		run_gem( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, REP2_PR2_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
-		run_gem( "PPR1", PEAK_OUTPUT_DIR, 	PPR1_TA_FILE, CTL_PPR1_TA_FILE, PPR1_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
-		run_gem( "PPR2", PEAK_OUTPUT_DIR, 	PPR2_TA_FILE, CTL_PPR2_TA_FILE, PPR2_PEAK_FILE )
-			if ( NO_PARALLEL_JOB ) wait
+		real frgln1 = FRAGLEN_REP1.parseReal()
+		real frgln2 = FRAGLEN_REP2.parseReal()
+		string FRAGLEN_MEAN = round( (frgln1+frgln2)*0.5 )
+		
+		print("FRAGLEN (rep1, rep2, mean): $FRAGLEN_REP1, $FRAGLEN_REP2, $FRAGLEN_MEAN\n")
 
-		wait
+		// prepare for tagAlign file names
+		suffix_PE 	:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
+		suffix_SE 	:= ".filt.nodup.srt.SE.tagAlign.gz"
+		suffix_PSR_PE 	:= ".filt.nodup.PE2SE"
+		suffix_PSR_SE 	:= ".filt.nodup.SE"
+
+		suffix 		:= is_paired_end( 0, 1 ) ? suffix_PE : suffix_SE
+		suffix_PSR 	:= is_paired_end( 0, 1 ) ? suffix_PSR_PE : suffix_PSR_SE
+
+		DATASET_PREFIX 	:= get_ofprefix( 0 )
+		
+		REP1_TA_FILE 		:="$DATASET_PREFIX"+"_Rep1" + suffix
+		REP2_TA_FILE 		:="$DATASET_PREFIX"+"_Rep2" + suffix
+		POOLED_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.tagAlign.gz"
+		REP1_PR1_TA_FILE 	:="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr1.tagAlign.gz"
+		REP1_PR2_TA_FILE 	:="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr2.tagAlign.gz"
+		REP2_PR1_TA_FILE 	:="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr1.tagAlign.gz"
+		REP2_PR2_TA_FILE 	:="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr2.tagAlign.gz"
+		PPR1_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
+		PPR2_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
+
+		ctl_suffix_PE 		:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
+		ctl_suffix_SE 		:= ".filt.nodup.srt.SE.tagAlign.gz"
+		ctl_suffix_PSR_PE 	:= ".filt.nodup.PE2SE"
+		ctl_suffix_PSR_SE 	:= ".filt.nodup.SE"
+
+		ctl_suffix 		:= is_paired_end( 1, 1 ) ? ctl_suffix_PE : ctl_suffix_SE
+		ctl_suffix_PSR 		:= is_paired_end( 1, 1 ) ? ctl_suffix_PSR_PE : ctl_suffix_PSR_SE
+
+		CTL_DATASET_PREFIX 	:= get_ofprefix( 1 )
+
+		CTL_REP1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix
+		CTL_REP2_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix : CTL_REP1_TA_FILE
+		CTL_POOLED_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.tagAlign.gz"
+		CTL_REP1_PR1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr1.tagAlign.gz"
+		CTL_REP1_PR2_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr2.tagAlign.gz"
+		CTL_REP2_PR1_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr1.tagAlign.gz" : CTL_REP1_PR1_TA_FILE
+		CTL_REP2_PR2_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr2.tagAlign.gz" : CTL_REP1_PR2_TA_FILE
+
+		CTL_PPR1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
+		CTL_PPR2_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
+
+		PEAK_OUTPUT_DIR := OUTPUT_DIR + "/peaks"
+		PEAK_OUTPUT_DIR.mkdir() 
 
 		write_report( "ChIP-Seq Pipeline HTML Report" )
 
-		///////////////////////////////// IDR
-		// create NPEAKS_IDR file	
-		NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
+		if ( PEAKCALL_METHOD == "spp" ) {
 
-		task ( taskName := "create NPEAKS_IDR.txt", \
-			cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
-			NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
-			sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
+			// cc score
+			PEAK_REP1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_TA_FILE ) + ".ccscores"
+			PEAK_REP2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_TA_FILE ) + ".ccscores"
+			PEAK_POOLED_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( POOLED_TA_FILE ) + ".ccscores"
+			PEAK_REP1_PR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_PR1_TA_FILE ) + ".ccscores"
+			PEAK_REP1_PR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_PR2_TA_FILE ) + ".ccscores"
+			PEAK_REP2_PR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_PR1_TA_FILE ) + ".ccscores"
+			PEAK_REP2_PR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_PR2_TA_FILE ) + ".ccscores"
+			PEAK_PPR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( PPR1_TA_FILE ) + ".ccscores"
+			PEAK_PPR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( PPR2_TA_FILE ) + ".ccscores"
+
+			// narrow peak
+		 	REP1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "narrowPeak" )
+		 	REP2_PEAK_FILE 		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "narrowPeak" )
+		 	POOLED_PEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "narrowPeak" )
+		 	REP1_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "narrowPeak" )
+		 	REP1_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "narrowPeak" )
+			REP2_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "narrowPeak" )
+			REP2_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "narrowPeak" )
+			PPR1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "narrowPeak" )
+			PPR2_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "narrowPeak" )
+
+			// region peak
+		 	REP1_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "regionPeak" )
+		 	REP2_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "regionPeak" )
+		 	POOLED_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "regionPeak" )
+		 	REP1_PR1_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "regionPeak" )
+		 	REP1_PR2_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "regionPeak" )
+			REP2_PR1_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "regionPeak" )
+			REP2_PR2_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "regionPeak" )
+			PPR1_RPEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "regionPeak" )
+			PPR2_RPEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "regionPeak" )
+
+			run_spp( "Rep1", PEAK_OUTPUT_DIR, 	REP1_TA_FILE, CTL_REP1_TA_FILE, REP1_PEAK_FILE, REP1_RPEAK_FILE, PEAK_REP1_CCSCORE, FRAGLEN_REP1 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_spp( "Rep2", PEAK_OUTPUT_DIR, 	REP2_TA_FILE, CTL_REP2_TA_FILE, REP2_PEAK_FILE, REP2_RPEAK_FILE, PEAK_REP2_CCSCORE, FRAGLEN_REP2 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_spp( "Pooled", PEAK_OUTPUT_DIR, 	POOLED_TA_FILE, CTL_POOLED_TA_FILE, POOLED_PEAK_FILE, POOLED_RPEAK_FILE, PEAK_POOLED_CCSCORE, FRAGLEN_MEAN )
+				if ( NO_PARALLEL_JOB ) wait
+			run_spp( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, REP1_PR1_PEAK_FILE, REP1_PR1_RPEAK_FILE, PEAK_REP1_PR1_CCSCORE, FRAGLEN_REP1 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_spp( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, REP1_PR2_PEAK_FILE, REP1_PR2_RPEAK_FILE, PEAK_REP1_PR2_CCSCORE, FRAGLEN_REP1 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_spp( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, REP2_PR1_PEAK_FILE, REP2_PR1_RPEAK_FILE, PEAK_REP2_PR1_CCSCORE, FRAGLEN_REP2 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_spp( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, REP2_PR2_PEAK_FILE, REP2_PR2_RPEAK_FILE, PEAK_REP2_PR2_CCSCORE, FRAGLEN_REP2 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_spp( "PPR1", PEAK_OUTPUT_DIR, 	PPR1_TA_FILE, CTL_PPR1_TA_FILE, PPR1_PEAK_FILE, PPR1_RPEAK_FILE, PEAK_PPR1_CCSCORE, FRAGLEN_MEAN )
+				if ( NO_PARALLEL_JOB ) wait
+			run_spp( "PPR2", PEAK_OUTPUT_DIR, 	PPR2_TA_FILE, CTL_PPR2_TA_FILE, PPR2_PEAK_FILE, PPR2_RPEAK_FILE, PEAK_PPR2_CCSCORE, FRAGLEN_MEAN )
+
+			wait
+
+			write_report( "ChIP-Seq Pipeline HTML Report" )
+
+			///////////////////////////////// IDR
+			// create NPEAKS_IDR file	
+			NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
+
+			task ( taskName := "create NPEAKS_IDR.txt", \
+				cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
+				NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
+				sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
+			}
+			
+			run_idr( "Rep1_vs_Rep2", PEAK_OUTPUT_DIR, 		REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE ) // (1) or 4a
+				if ( NO_PARALLEL_JOB ) wait
+			run_idr( "PPR1_vs_PPR2", PEAK_OUTPUT_DIR, 		PPR1_PEAK_FILE, PPR2_PEAK_FILE, POOLED_PEAK_FILE ) // (2) or 4c
+				if ( NO_PARALLEL_JOB ) wait
+			run_idr( "Rep1_PR1_vs_Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR1_PEAK_FILE, REP1_PR2_PEAK_FILE, REP1_PEAK_FILE ) // (3) or 4b-1
+				if ( NO_PARALLEL_JOB ) wait
+			run_idr( "Rep2_PR1_vs_Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR1_PEAK_FILE, REP2_PR2_PEAK_FILE, REP2_PEAK_FILE ) // (4) or 4b-2
+				if ( NO_PARALLEL_JOB ) wait
+
 		}
-		
-		run_idr_nboley_gem( "Rep1_vs_Rep2", PEAK_OUTPUT_DIR, 		REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE ) // (1) or 4a
-			if ( NO_PARALLEL_JOB ) wait
-		run_idr_nboley_gem( "PPR1_vs_PPR2", PEAK_OUTPUT_DIR, 		PPR1_PEAK_FILE, PPR2_PEAK_FILE, POOLED_PEAK_FILE ) // (2) or 4c
-			if ( NO_PARALLEL_JOB ) wait
-		run_idr_nboley_gem( "Rep1_PR1_vs_Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR1_PEAK_FILE, REP1_PR2_PEAK_FILE, REP1_PEAK_FILE ) // (3) or 4b-1
-			if ( NO_PARALLEL_JOB ) wait
-		run_idr_nboley_gem( "Rep2_PR1_vs_Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR1_PEAK_FILE, REP2_PR2_PEAK_FILE, REP2_PEAK_FILE ) // (4) or 4b-2
-			if ( NO_PARALLEL_JOB ) wait
-	}
-	else if ( PEAKCALL_METHOD == "macs2" ) {
+		else if ( PEAKCALL_METHOD == "gem" ) {
 
-		run_macs2( "Rep1", PEAK_OUTPUT_DIR, 		REP1_TA_FILE, CTL_REP1_TA_FILE, FRAGLEN_REP1 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_macs2( "Rep2", PEAK_OUTPUT_DIR, 		REP2_TA_FILE, CTL_REP2_TA_FILE, FRAGLEN_REP2 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_macs2( "Pooled", PEAK_OUTPUT_DIR, 		POOLED_TA_FILE, CTL_POOLED_TA_FILE, FRAGLEN_MEAN )
-			if ( NO_PARALLEL_JOB ) wait
-		run_macs2( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, FRAGLEN_REP1 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_macs2( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, FRAGLEN_REP1 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_macs2( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, FRAGLEN_REP2 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_macs2( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, FRAGLEN_REP2 )
-			if ( NO_PARALLEL_JOB ) wait
-		run_macs2( "PPR1", PEAK_OUTPUT_DIR, 		PPR1_TA_FILE, CTL_PPR1_TA_FILE, FRAGLEN_MEAN )
-			if ( NO_PARALLEL_JOB ) wait
-		run_macs2( "PPR2", PEAK_OUTPUT_DIR, 		PPR2_TA_FILE, CTL_PPR2_TA_FILE, FRAGLEN_MEAN )
-			if ( NO_PARALLEL_JOB ) wait
-	}
-	else {
-		error("wrong peak calling method ($PEAKCALL_METHOD)!")
+			// narrow peak
+		 	REP1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "narrowPeak" )
+		 	REP2_PEAK_FILE 		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "narrowPeak" )
+		 	POOLED_PEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "narrowPeak" )
+		 	REP1_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "narrowPeak" )
+		 	REP1_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "narrowPeak" )
+			REP2_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "narrowPeak" )
+			REP2_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "narrowPeak" )
+			PPR1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "narrowPeak" )
+			PPR2_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "narrowPeak" )
+
+			run_gem( "Rep1", PEAK_OUTPUT_DIR, 	REP1_TA_FILE, CTL_REP1_TA_FILE, REP1_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+			run_gem( "Rep2", PEAK_OUTPUT_DIR, 	REP2_TA_FILE, CTL_REP2_TA_FILE, REP2_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+			run_gem( "Pooled", PEAK_OUTPUT_DIR, 	POOLED_TA_FILE, CTL_POOLED_TA_FILE, POOLED_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+			run_gem( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, REP1_PR1_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+			run_gem( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, REP1_PR2_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+			run_gem( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, REP2_PR1_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+			run_gem( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, REP2_PR2_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+			run_gem( "PPR1", PEAK_OUTPUT_DIR, 	PPR1_TA_FILE, CTL_PPR1_TA_FILE, PPR1_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+			run_gem( "PPR2", PEAK_OUTPUT_DIR, 	PPR2_TA_FILE, CTL_PPR2_TA_FILE, PPR2_PEAK_FILE )
+				if ( NO_PARALLEL_JOB ) wait
+
+			wait
+
+			write_report( "ChIP-Seq Pipeline HTML Report" )
+
+			///////////////////////////////// IDR
+			// create NPEAKS_IDR file	
+			NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
+
+			task ( taskName := "create NPEAKS_IDR.txt", \
+				cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
+				NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
+				sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
+			}
+			
+			run_idr_nboley_gem( "Rep1_vs_Rep2", PEAK_OUTPUT_DIR, 		REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE ) // (1) or 4a
+				if ( NO_PARALLEL_JOB ) wait
+			run_idr_nboley_gem( "PPR1_vs_PPR2", PEAK_OUTPUT_DIR, 		PPR1_PEAK_FILE, PPR2_PEAK_FILE, POOLED_PEAK_FILE ) // (2) or 4c
+				if ( NO_PARALLEL_JOB ) wait
+			run_idr_nboley_gem( "Rep1_PR1_vs_Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR1_PEAK_FILE, REP1_PR2_PEAK_FILE, REP1_PEAK_FILE ) // (3) or 4b-1
+				if ( NO_PARALLEL_JOB ) wait
+			run_idr_nboley_gem( "Rep2_PR1_vs_Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR1_PEAK_FILE, REP2_PR2_PEAK_FILE, REP2_PEAK_FILE ) // (4) or 4b-2
+				if ( NO_PARALLEL_JOB ) wait
+		}
+		else if ( PEAKCALL_METHOD == "macs2" ) {
+
+			run_macs2( "Rep1", PEAK_OUTPUT_DIR, 		REP1_TA_FILE, CTL_REP1_TA_FILE, FRAGLEN_REP1 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_macs2( "Rep2", PEAK_OUTPUT_DIR, 		REP2_TA_FILE, CTL_REP2_TA_FILE, FRAGLEN_REP2 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_macs2( "Pooled", PEAK_OUTPUT_DIR, 		POOLED_TA_FILE, CTL_POOLED_TA_FILE, FRAGLEN_MEAN )
+				if ( NO_PARALLEL_JOB ) wait
+			run_macs2( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, FRAGLEN_REP1 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_macs2( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, FRAGLEN_REP1 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_macs2( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, FRAGLEN_REP2 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_macs2( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, FRAGLEN_REP2 )
+				if ( NO_PARALLEL_JOB ) wait
+			run_macs2( "PPR1", PEAK_OUTPUT_DIR, 		PPR1_TA_FILE, CTL_PPR1_TA_FILE, FRAGLEN_MEAN )
+				if ( NO_PARALLEL_JOB ) wait
+			run_macs2( "PPR2", PEAK_OUTPUT_DIR, 		PPR2_TA_FILE, CTL_PPR2_TA_FILE, FRAGLEN_MEAN )
+				if ( NO_PARALLEL_JOB ) wait
+		}
+		else {
+			error("wrong peak calling method ($PEAKCALL_METHOD)!")
+		}
 	}
 
 	wait
@@ -703,4 +743,25 @@ void run_idr_anshul( string taskname, string out_dir, string peak1, string peak2
 string get_basename( string path ) { // BDS .baseName() returns wrong basename for softlinks	
 	int loc_slash = path.lastIndexOf( "/" )
 	return path.substr( loc_slash+1 )
+}
+
+string get_peak( int rep ) { // rep0 = pooled peak
+
+	key := ( rep == 0 ? "INPUT_PEAK_POOLED" : ("INPUT_PEAK_REP" + rep) ) 
+
+	if ( conf.hasKey( key ) ) {
+		return get_path( conf{ key } )
+	}
+	else if ( rep==1 ) {
+		return peak1
+	}
+	else if ( rep==2 ) {
+		return peak2
+	}
+	else if ( rep==0 ) {
+		return pooled
+	}
+	else {
+		return ""
+	}
 }

@@ -1,3 +1,4 @@
 *.chp
 .*.swp
 idr*
+.nfs*

@@ -325,6 +325,17 @@ $ bds chipseq.bds \
 ...
 ```
 
+4) For peaks (-input peak in command line argument or INPUT_TYPE==peak in a configuration file):
+
+```
+$ bds chipseq.bds \
+-input peak \
+-peak1 /DATA/rep1_regionpeak.gz \
+-peak2 /DATA/rep2_regionpeak.gz \
+-pooled /DATA/pooled_regionpeak.gz \
+-idr_nboley false 	# if false, use A. Kundaje's IDR code
+```
+
 ### Alignment only mode without peak calling
 
 Without peak calling, data for multiple number of replicates can be processed to generate desired outputs only (bam, tagalign and cross correlation score/plot). Pipeline stages are: bam -> tagalign -> xcor. Also, you can start from any input type (fastq, bam or tagalign).
@@ -639,6 +650,11 @@ For advanced users, all command line parameters for the pipeline is listed and e
 	-ctl_tagalign1 <string>  : Path for control tagAlign for replicate 1.
 	-ctl_tagalign2 <string>  : Path for control tagAlign for replicate 2 (if not exists leave this blank).
 
+	# if inputs are peaks
+	-peak1 <string>          : Path for peak for replicate 1.
+	-peak2 <string>          : Path for peak for replicate 2.	
+	-pooled <string>         : Path for pooled peak.
+
 # bwa
 	-idx_bwa <string>        : Path for bwa index.
 	-param_bwa <string>      : Parameters for bwa align (default: "-q 5 -l 32 -k 2").
@@ -738,6 +754,10 @@ Equivalent parameters in a configuration file is listed and explained below:
 	TAGALIGN_CTL_PE         : Set it true if control tagaligns are paired end
 	INPUT_TAGALIGN_CTL_REP1 : Path for control tagalign for replicate 1.
 	INPUT_TAGALIGN_CTL_REP2 : Path for control tagalign for replicate 2 (if not exists, leave this blank).
+
+	INPUT_PEAK_REP1         : Path for peak for replicate 1.
+	INPUT_PEAK_REP1         : Path for peak for replicate 2.	
+	INPUT_PEAK_POOLED       : Path for pooled peak.
 
 # bwa
 	BWA_INDEX_NAME          : Path for bwa index.

@@ -5,7 +5,7 @@ include "pipeline.bds"
 ///////////// command line argument wrapper ////////////////
 
 // input file type
-string input 		= "fastq"			help Input file type: three options (fastq, bam and tagalign)
+string input 		= "fastq"			help Input file type: three options (fastq, bam, tagalign or peak)
 
 // for fastqs (SE)
 string fastq1 		= "" 				help Path for fastq for replicate 1 (single ended).
@@ -99,6 +99,10 @@ init_cmd_line_arg_fastqs()
 
 
 void read_param_align_map() {
+
+	if ( (PREFIX=="") && (!is_input_peak()) ) {
+		error( "PREFIX is null, specify it.\n" )
+	}	
 
 	if ( conf_file_exists() ) { // parameters in conf_file overrides those on cmd line args.
 
@@ -316,14 +320,17 @@ void align_to_pspr() {  // this function is for parallel jobs for each control a
 
 	if ( FINAL_STAGE != "" ) return
 
-	for ( int ctl=0; ctl <= NUM_CTL; ctl++) {
-		if ( NO_PARALLEL_JOB ) \
-			pspr( ctl )
-		else \
-			par pspr( ctl )
-	}
+	if ( !is_input_peak() ) {
 
-	wait
+		for ( int ctl=0; ctl <= NUM_CTL; ctl++) {
+			if ( NO_PARALLEL_JOB ) \
+				pspr( ctl )
+			else \
+				par pspr( ctl )
+		}
+
+		wait
+	}
 }
 
 void align_to_spr( int ctl, int rep ) {
@@ -351,13 +358,17 @@ void align_to_spr( int ctl, int rep ) {
 	else if ( is_input_tagalign() ) {
 		softlink_tagalign( ctl, rep )
 	}
+	
 
- 	xcor( ctl, rep )
+	if ( !is_input_peak() ) {
 
-	if ( FINAL_STAGE == "xcor" ) return
+	 	xcor( ctl, rep )
 
- 	spr( ctl, rep )
- 	sig_trk( ctl, rep )
+		if ( FINAL_STAGE == "xcor" ) return
+
+	 	spr( ctl, rep )
+	 	sig_trk( ctl, rep )
+	 }
 }
 
 void align_bwa( int ctl, int rep ) {
@@ -1380,6 +1391,66 @@ bool is_input_bam() {
 
 bool is_input_tagalign() {
 	return INPUT_TYPE.toLower() == "tagalign"
+}
+
+bool is_input_peak() {
+	return INPUT_TYPE.toLower() == "peak"
+}
+
+bool is_rep2_exist( int ctl ) {
+	if ( is_input_fastq() ) {
+		fastqs := get_fastqs( ctl, 2 )
+		return fastqs.size()>0
+	}
+	else if ( is_input_bam() ) {
+		bam := get_bam( ctl, 2 )
+		return bam!=""
+	}
+	else if ( is_input_tagalign() ) {
+		tagalign := get_tagalign( ctl, 2 )
+		return tagalign!=""
+	}
+	return false;
+}
+
+string get_tagalign( int ctl, int rep ) {
+
+	key := ( ctl > 0 ? "INPUT_TAGALIGN_CTL" : "INPUT_TAGALIGN" ) + "_REP" + rep
+
+	if ( conf.hasKey( key ) ) {
+		return get_path( conf{ key } )
+	}
+	else if ( (ctl==0) && (rep==1) ) {
+		return tagalign1
+	}
+	else if ( (ctl==0) && (rep==2) ) {
+		return tagalign2
+	}
+	else if ( (ctl==1) && (rep==1) ) {
+		return ctl_tagalign1
+	}
+	else if ( (ctl==1) && (rep==2) ) {
+		return ctl_tagalign2
+	}
+	else {
+		return ""
+	}
+}
+
+bool is_input_fastq() {
+	return INPUT_TYPE.toLower() == "fastq"
+}
+
+bool is_input_bam() {
+	return INPUT_TYPE.toLower() == "bam"
+}
+
+bool is_input_tagalign() {
+	return INPUT_TYPE.toLower() == "tagalign"
+}
+
+bool is_input_peak() {
+	return INPUT_TYPE.toLower() == "peak"
 }
 
 bool is_rep2_exist( int ctl ) {
