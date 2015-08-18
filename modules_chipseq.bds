@@ -4,7 +4,7 @@ include "pipeline.bds"
 
 ///////////// command line argument wrapper ////////////////
 
-bool kundaje_lab 	= false				help Set it true if you run the pipeline on Kundaje lab servers (automatically set environments)
+bool kundaje_lab 	= false				help Set it true if you run the pipeline on Kundaje lab servers (automatically set environments, default: false)
 
 // input file type
 string input 		= "fastq"			help Input file type: three options (fastq, bam, tagalign or peak)

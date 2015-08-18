@@ -51,12 +51,6 @@ $ rm -f bds_Linux.tgz
 
 Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
 ```
-# Java settings
-export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
-export MAX_JAVA_MEM="8G"
-export MALLOC_ARENA_MAX=4
-
-# BigDataScript settings
 export PATH=$PATH:$HOME/.bds
 ```
 
@@ -65,6 +59,21 @@ Get the latest version of chipseq pipelines. Don't forget to move bds.config to 
 $ git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
 $ cd ENCODE_chipseq_pipeline
 $ cp bds.config $HOME/.bds/
+```
+
+For Kundaje lab servers (mitra, nandi, amold and wotan), the pipeline provides flags to automatically set environments for all required softwares.
+```
+# Add the following to the command line argument
+$ bds -s sge chipseq.bds \
+...
+-kundaje_lab true
+
+# Add the following to the configuration file
+$ bds -s sge [CONF_FILE]
+
+$ cat [CONF_FILE]
+...
+KUNDAJE_LAB= true
 ```
 
 
@@ -602,6 +611,9 @@ Seq_dir is the directory where reference genome files exist. Umap files are prov
 For advanced users, all command line parameters for the pipeline is listed and explained below:
 
 ```
+# Flags for Kundaje lab
+	-kundaje_lab <bool>      : Set it true if you run the pipeline on Kundaje lab servers (automatically set environments, default: false)
+
 # general
 	-c <string>              : Configuration file path (if not specified, define parameters in command line argument).
 	-prefix <string>         : Prefix for all outputs.
@@ -707,6 +719,9 @@ For advanced users, all command line parameters for the pipeline is listed and e
 Equivalent parameters in a configuration file is listed and explained below:
 
 ```
+# Flags for Kundaje lab
+	KUNDAJE_LAB             : Set it true if you run the pipeline on Kundaje lab servers (automatically set environments, default: false)
+
 # general
 	PREFIX 			: Prefix for all outputs.
 	OUTPUT_DIR 		: Output directory. (default: out)

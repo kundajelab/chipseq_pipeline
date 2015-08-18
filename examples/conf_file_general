@@ -1,10 +1,8 @@
 // All dependencies are installed on Kundaje lab's cluster servers (mitra, nandi, amold and wotan)
 // Do not run ../install_dependencies.sh on these clusters
 // For Kundaje lab members, uncomment the following lines:
-//MODULE_BIO=bwa/0.7.3; samtools/0.1.19; bedtools/2.19.1; ucsc_tools/3.0.9; picard-tools/1.92; phantompeakqualtools/default; align2rawsignal/2.0; MACS2/2.1.0; gem/2.6
-//MODULE_LANG=java/latest; r/2.15.1
-//ADDPATH=/software/idrCode
-//SHELLCMD_JAVA= export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"; export MAX_JAVA_MEM="8G"; export MALLOC_ARENA_MAX=4
+
+//KUNDAJE_LAB=true
 
 
 
@@ -55,6 +53,12 @@ INPUT_FASTQ_CTL_REP1= /DATA/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
 //INPUT_TAGALIGN_REP2= /mnt/data/ENCODE/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam.unique.tagAlign.gz
 //TAGALIGN_CTL_PE= false
 //INPUT_TAGALIGN_CTL_REP1= /mnt/data/ENCODE/mapped/mar2012/distinctTagAlign/wgEncodeSydhTfbs/female/wgEncodeSydhTfbsK562InputIggrabAln.bam.unique.tagAlign.gz
+
+// if input is peak
+//INPUT_TYPE=peak
+//INPUT_PEAK_REP1=/mnt/data/chromatinVariation1/PeaksKasowskiFiles/GM12878.PE2SE.br1.tagAlign_VS_SRR998196.tagAlign.modified.regionPeak.gz
+//INPUT_PEAK_REP2=/mnt/data/chromatinVariation1/PeaksKasowskiFiles/GM12878.PE2SE.br2.tagAlign_VS_SRR998196.tagAlign.modified.regionPeak.gz
+//INPUT_PEAK_POOLED=/mnt/data/chromatinVariation1/PeaksKasowskiFiles/GM12878.PE2SE.tagAlign_VS_SRR998196.tagAlign.modified.regionPeak.gz
 
 // peak calling method (spp, macs2, gem)
 PEAKCALL_METHOD=spp
