@@ -4,6 +4,8 @@ include "pipeline.bds"
 
 ///////////// command line argument wrapper ////////////////
 
+bool kundaje_lab 	= false				help Set it true if you run the pipeline on Kundaje lab servers (automatically set environments)
+
 // input file type
 string input 		= "fastq"			help Input file type: three options (fastq, bam, tagalign or peak)
 
@@ -67,6 +69,7 @@ int num_rep 		= 2				help Number of replicates, define it for non-blank final_st
 
 ///////////// actual parameter variables ////////////////
 
+string KUNDAJE_LAB	= kundaje_lab
 string INPUT_TYPE 	= input
 bool TAGALIGN_PE 	= tagalign_PE
 bool TAGALIGN_CTL_PE 	= tagalign_ctl_PE
@@ -106,6 +109,9 @@ void read_param_align_map() {
 
 	if ( conf_file_exists() ) { // parameters in conf_file overrides those on cmd line args.
 
+		if ( conf.hasKey("KUNDAJE_LAB") )	KUNDAJE_LAB 		= parse_bool( conf{ "KUNDAJE_LAB"} )
+
+		if ( conf.hasKey("TAGALIGN_CTL_PE") )	TAGALIGN_CTL_PE 	= parse_bool( conf{ "TAGALIGN_CTL_PE"} )
 		if ( conf.hasKey("INPUT_TYPE") )	INPUT_TYPE		= rm_comment( conf{ "INPUT_TYPE"} )
 		if ( conf.hasKey("TAGALIGN_PE") )	TAGALIGN_PE 		= parse_bool( conf{ "TAGALIGN_PE"} )
 		if ( conf.hasKey("TAGALIGN_CTL_PE") )	TAGALIGN_CTL_PE 	= parse_bool( conf{ "TAGALIGN_CTL_PE"} )
@@ -146,6 +152,7 @@ void read_param_align_map() {
 	// check params
 	if ( (INPUT_TYPE == "fastq") && (BWA_INDEX_NAME == "") ) error("BWA_INDEX_NAME is not specifed.")
 
+	print("KUNDAJE_LAB = $KUNDAJE_LAB\n");
 	print("INPUT_TYPE = $INPUT_TYPE\n");
 	print("BWA_INDEX_NAME = $BWA_INDEX_NAME\n");
 	print("BWA_ALN_PARAM = $BWA_ALN_PARAM\n");
@@ -256,7 +263,16 @@ void read_param_align_map() {
 //		print("FRAGLEN = $FRAGLEN\n");
 	}
 
-	if ( DIR_SW_BDS.exists() ) { // automatically add software binaries to PATH
+	if ( KUNDAJE_LAB ) {
+
+		print("\n\nKUNDAJE_LAB == true\n")
+		print("Automatically adding environment variables...\n")
+
+		PRELOAD = PRELOAD + "; . /etc/profile.d/modules.sh; module add bwa/0.7.3; module add samtools/0.1.19; module add bedtools/2.19.1; module add ucsc_tools/3.0.9; module add picard-tools/1.92; module add phantompeakqualtools/default; module add align2rawsignal/2.0; module add MACS2/2.1.0; module add java/latest; module add r/2.15.1; module add gem/2.6; export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4"
+                PRELOAD = PRELOAD.replace( ";;", ";" )
+
+	}
+	else if ( DIR_SW_BDS.exists() ) { // automatically add software binaries to PATH
 
 		print("\n\nFound ENCODE ChIP-Seq pipeline software directory ($DIR_SW_BDS) \n")
 		print("Automatically adding environment variables...\n")
