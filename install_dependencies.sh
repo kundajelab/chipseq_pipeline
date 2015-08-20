@@ -12,37 +12,107 @@ zlib1g-dev
 libncurses5-dev
 gfortran
 libboost-all-dev
-openssl libssl-dev
+openssl
+libssl-dev
 libfreetype6-dev
 liblapack-dev
 )
+
+SOFTWARES_YUM=(
+gcc
+kernel-devel
+wget
+bc
+zlib-devel
+libncurses5-devel
+gcc-gfortran
+libboost-devel
+openssl
+openssl-devel
+freetype-devel
+lapack-devel
+)
+
+LINUX_ID_LIKE="non-debian,non-fedora"
+
+if [[ $(cat /etc/*-release | grep fedora | wc -l) > 0 ]]; then
+  LINUX_ID_LIKE=fedora
+fi
+
+if [[ $(cat /etc/*-release | grep debian | wc -l) > 0 ]]; then
+  LINUX_ID_LIKE=debian
+fi
+
+echo 
+echo Found Linux distribution: ${LINUX_ID_LIKE}
+echo 
 
 echo
 echo Checking softwares on your system...
 echo
 
 EXIT=0
-for i in "${SOFTWARES_APT_GET[@]}"; do
-  if [ $(dpkg -l | awk '{print $2;}' | grep $i | wc -l) != 0 ]; then
-    echo
-    echo " * $i found on your system."
-  else
-    echo
-    echo " * $i not found your system."
-    echo "   Please install $i using the following commmand or ask administrator."
-    echo "   ============================================================="
-    echo "   sudo apt-get install $i"
-    echo "   ============================================================="
-    EXIT=1
-  fi
-done
+if [ ${LINUX_ID_LIKE} == debian ]; then
 
-if [ $(which git | wc -l) == 0 ]; then  
+  for i in "${SOFTWARES_APT_GET[@]}"; do
+    if [ $(dpkg -l | awk '{print $2;}' | grep $i | wc -l) != 0 ]; then
+      echo
+      echo " * $i found on your system."
+    else
+      echo
+      echo " * $i not found your system."
+      echo "   Please install $i using the following commmand or ask administrator."
+      echo "   ============================================================="
+      echo "   sudo apt-get install $i"
+      echo "   ============================================================="
+      EXIT=1
+    fi
+  done
+
+elif [ ${LINUX_ID_LIKE} == fedora ]; then
+  for i in "${SOFTWARES_YUM[@]}"; do
+    if [ $(yum list installed | grep -v "libc" | grep $i | wc -l) != 0 ]; then
+      echo
+      echo " * $i found on your system."
+    else
+      echo
+      echo " * $i not found your system."
+      echo "   Please install $i using the following commmand or ask administrator."
+      echo "   ============================================================="
+      echo "   yum install $i"
+      echo "   ============================================================="
+      EXIT=1
+    fi
+  done
+
+
+else
+  echo
+  echo "Your linux system is not based on fedora (Red Hat, ...) or debian(Ubuntu, ...)."
+  echo "Installer will fail if you don't manually install all required softwares."
+  echo "List of required softwares: "
+  echo
+fi
+
+
+
+
+
+
+
+
+if [ $(which git | wc -l) == 0 ]; then
   echo
   echo " * Git not found your system."
   echo "   Please install git using the following commmand or ask administrator."
   echo "   ============================================================="
-  echo "   sudo apt-get install git"
+  if [ ${LINUX_ID_LIKE} == debian ]; then
+    echo "   sudo apt-get install git"
+  elif [ ${LINUX_ID_LIKE} == fedora ]; then
+    echo "   sudo apt-get install git"
+  else
+    echo "   Manually install git on your system"
+  fi
   echo "   ============================================================="
   echo "   You can also install git on your local directory."
   echo "   (https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)"
@@ -53,7 +123,7 @@ else
 fi
 
 NEED_JAVA_INSTALL=0
-if [ $(which java | wc -l) == 0 ]; then  
+if [ $(which java | wc -l) == 0 ]; then
   echo
   echo " * Java not found your system."
   EXIT=1
@@ -72,11 +142,22 @@ fi
 if [ ${NEED_JAVA_INSTALL} == 1 ]; then
   echo "   Please install java using the following commmand or ask administrator."
   echo "   ============================================================="
-  echo "   sudo apt-get install openjdk-7-jre"
+  if [ ${LINUX_ID_LIKE} == debian ]; then
+    echo "   sudo apt-get install openjdk-7-jre"
+  elif [ ${LINUX_ID_LIKE} == fedora ]; then
+    echo "   yum install java-1.7.0-openjdk"
+  fi
   echo "   ============================================================="
   echo "   You can also install java (jre version >= 1.7) on your local directory."
   echo "   (http://java.com/en/download/manual.jsp?locale=en)"
 fi
+
+
+
+
+
+
+
 
 if [ $EXIT == 1 ]; then
   echo

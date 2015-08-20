@@ -64,7 +64,6 @@ int nreads 		= 15000000			help NREADS (default. 15000000).
 
 string final_stage	= "" 				help If not blank, the pipeline will stop after specified stage (bam, tagalign or xcor (cross-correlation score for tagaligns) ) (default: blank).
 int num_rep 		= 2				help Number of replicates, define it for non-blank final_stage only. (default: 2).
-//int fraglen 		= 200  				//help FragLen for tagAlign input
 
 
 ///////////// actual parameter variables ////////////////
@@ -92,7 +91,6 @@ int MAPQ_THRESH 	= mapq_thresh
 int NREADS 		= nreads
 string FINAL_STAGE	= final_stage
 int NUM_REP 		= num_rep
-//int FRAGLEN 		= fraglen
 
 // system vars
 int NUM_CTL
@@ -134,11 +132,9 @@ void read_param_align_map() {
 		if ( conf.hasKey("MAPQ_THRESH") )	MAPQ_THRESH 		= parse_int( conf{ "MAPQ_THRESH" } )
 		if ( conf.hasKey("NREADS") )		NREADS 			= parse_int( conf{ "NREADS" } )
 
-//		if ( conf.hasKey("FRAGLEN") )		FRAGLEN 		= parse_int( conf{ "FRAGLEN"} )
-
-		// QC only?
+		// FINAL_STAGE
 		if ( conf.hasKey("FINAL_STAGE") )	FINAL_STAGE 		= rm_comment( conf{ "FINAL_STAGE"} )
-		if ( FINAL_STAGE != "" ) \
+		if ( (FINAL_STAGE != "") && (conf.hasKey("NUM_REP") ) ) \
 			NUM_REP	= parse_int( conf{ "NUM_REP"} )
 	}
 	else {
@@ -260,7 +256,6 @@ void read_param_align_map() {
 
 		print("TAGALIGN_PE = $TAGALIGN_PE\n");
 		print("TAGALIGN_CTL_PE = $TAGALIGN_CTL_PE\n");
-//		print("FRAGLEN = $FRAGLEN\n");
 	}
 
 	if ( KUNDAJE_LAB ) {
@@ -530,7 +525,7 @@ void align_bwa( int ctl, int rep ) {
 		
 	}
 	else { // no data		
-		print("warning(align_bwa): no input for ctl $ctl, rep $rep\n")
+		//print("warning(align_bwa): no input for ctl $ctl, rep $rep\n")
 	}
 
 }
@@ -559,7 +554,7 @@ void softlink_bam( int ctl, int rep ) {
 		wait
 	}
 	else { // no data
-		print("warning(align_bwa): no input for ctl $ctl, rep $rep\n")
+		//print("warning(align_bwa): no input for ctl $ctl, rep $rep\n")
 	}
 }
 
@@ -616,7 +611,7 @@ void post_align_filt( int ctl, int rep ) {
 			//# Will produce coordinate sorted BAM
 			// segmentation fault occurred so I split it into two cmd lines 
 
-			//sys samtools fixmate -r $TMP_FILT_BAM_FILE | \
+			// sys samtools fixmate -r $TMP_FILT_BAM_FILE | \
 			//	samtools view -F 1804 -f 2 -u - | \
 			//	samtools sort - $FILT_BAM_PREFIX			
 			sys samtools fixmate -r $TMP_FILT_BAM_FILE $OFPREFIX.fixmate.tmp
@@ -628,9 +623,13 @@ void post_align_filt( int ctl, int rep ) {
 			//# =============
 
 			sys java -Xmx4G -jar ${PICARDROOT}/MarkDuplicates.jar \
-				INPUT=$FILT_BAM_FILE OUTPUT=$TMP_FILT_BAM_FILE2 \
+				INPUT=$FILT_BAM_FILE OUTPUT=$TMP_FILT_BAM_FILE \
 				METRICS_FILE=$DUP_FILE_QC VALIDATION_STRINGENCY=LENIENT \
 				ASSUME_SORTED=true REMOVE_DUPLICATES=false
+			//sys java -Xmx4G -jar ${PICARDROOT}/MarkDuplicates.jar \
+			//	INPUT=$FILT_BAM_FILE OUTPUT=$TMP_FILT_BAM_FILE2 \
+			//	METRICS_FILE=$DUP_FILE_QC VALIDATION_STRINGENCY=LENIENT \
+			//	ASSUME_SORTED=true REMOVE_DUPLICATES=false
 			
 			//# ============================
 			//# Remove duplicates
@@ -639,8 +638,10 @@ void post_align_filt( int ctl, int rep ) {
 			//# ============================
 
 			//sys mv $TMP_FILT_BAM_FILE2 $FILT_BAM_FILE
-			//sys samtools view -F 1804 -f 2 -b $FILT_BAM_FILE > $FINAL_BAM_FILE
-			sys samtools view -F 1804 -f 2 -b $TMP_FILT_BAM_FILE2 > $FINAL_BAM_FILE
+			sys mv $TMP_FILT_BAM_FILE $FILT_BAM_FILE
+			
+			sys samtools view -F 1804 -f 2 -b $FILT_BAM_FILE > $FINAL_BAM_FILE
+			//sys samtools view -F 1804 -f 2 -b $TMP_FILT_BAM_FILE2 > $FINAL_BAM_FILE
 							
 			sys samtools sort -n $FINAL_BAM_FILE $FINAL_NMSRT_BAM_PREFIX
 
@@ -659,22 +660,22 @@ void post_align_filt( int ctl, int rep ) {
 
 			// segmentation fault occurred so I split it into two cmd lines 
 
-			//sys samtools sort -n $FILT_BAM_FILE | \
-			//	bedtools bamtobed -bedpe -i stdin | \
-			//	awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}' | \
-			//	grep -v 'chrM' | sort | uniq -c | \
-			//	awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}' > $PBC_FILE_QC
-			
-			sys samtools sort -n $TMP_FILT_BAM_FILE2 $OFPREFIX.srt.tmp
-			sys bedtools bamtobed -bedpe -i $OFPREFIX.srt.tmp.bam | \
+			sys samtools sort -n $FILT_BAM_FILE | \
+				bedtools bamtobed -bedpe -i stdin | \
 				awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}' | \
 				grep -v 'chrM' | sort | uniq -c | \
 				awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}' > $PBC_FILE_QC
-			sys rm $OFPREFIX.srt.tmp.bam
+			
+			//sys samtools sort -n $TMP_FILT_BAM_FILE2 $OFPREFIX.srt.tmp
+			//sys bedtools bamtobed -bedpe -i $OFPREFIX.srt.tmp.bam | \
+			//	awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}' | \
+			//	grep -v 'chrM' | sort | uniq -c | \
+			//	awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}' > $PBC_FILE_QC
+			//sys rm $OFPREFIX.srt.tmp.bam
 			
 			sys rm -f $FILT_BAM_FILE
 			sys rm -f $TMP_FILT_BAM_FILE
-			sys rm -f $TMP_FILT_BAM_FILE2
+			//sys rm -f $TMP_FILT_BAM_FILE2
 		}
 
 		wait
@@ -716,14 +717,14 @@ void post_align_filt( int ctl, int rep ) {
 				INPUT=$FILT_BAM_FILE OUTPUT=$TMP_FILT_BAM_FILE \
 				METRICS_FILE=$DUP_FILE_QC VALIDATION_STRINGENCY=LENIENT \
 				ASSUME_SORTED=true REMOVE_DUPLICATES=false
-			//sys mv $TMP_FILT_BAM_FILE $FILT_BAM_FILE
 
 			//# ============================
 			//# Remove duplicates
 			//# Index final position sorted BAM
 			//# ============================
-			//sys samtools view -F 1804 -b $FILT_BAM_FILE > $FINAL_BAM_FILE
-			sys samtools view -F 1804 -b $TMP_FILT_BAM_FILE > $FINAL_BAM_FILE
+			sys mv $TMP_FILT_BAM_FILE $FILT_BAM_FILE
+			sys samtools view -F 1804 -b $FILT_BAM_FILE > $FINAL_BAM_FILE
+			//sys samtools view -F 1804 -b $TMP_FILT_BAM_FILE > $FINAL_BAM_FILE
 			
 			//# Index Final BAM file
 			sys samtools index $FINAL_BAM_FILE $FINAL_BAM_INDEX_FILE
@@ -738,19 +739,19 @@ void post_align_filt( int ctl, int rep ) {
 			//# PBC File output
 			//# TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
 
-			//sys bedtools bamtobed -i $FILT_BAM_FILE | \
-			sys bedtools bamtobed -i $TMP_FILT_BAM_FILE | \
+			//sys bedtools bamtobed -i $TMP_FILT_BAM_FILE | \
+			sys bedtools bamtobed -i $FILT_BAM_FILE | \
 				awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}' | \
 				grep -v 'chrM' | sort | uniq -c | \
 				awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}' > $PBC_FILE_QC
 
-			sys rm -r $FILT_BAM_FILE
-			sys rm -r $TMP_FILT_BAM_FILE
+			sys rm -f $FILT_BAM_FILE
+			//sys rm -f $TMP_FILT_BAM_FILE
 		}
 		wait
 	}
 	else { // no data		
-		print("warning(post_align_filt): no input for ctl $ctl, rep $rep\n")
+		//print("warning(post_align_filt): no input for ctl $ctl, rep $rep\n")
 	}
 
 }
@@ -834,7 +835,7 @@ void bam_to_tagalign( int ctl, int rep ) {
 
 	}
 	else { // no data		
-		print("warning(bam_to_tagAlign): no input for ctl $ctl, rep $rep\n")
+		//print("warning(bam_to_tagAlign): no input for ctl $ctl, rep $rep\n")
 	}
 }
 
@@ -867,19 +868,12 @@ void softlink_tagalign( int ctl, int rep ) {
 			//# Create tagAlign file
 			//# ===================			
 			sys ln -f -s $tagalign $FINAL_TA_FILE
-		
-			//# ================
-			//# Create BEDPE file
-			//# ================
-			sys bedtools bamtobed -bedpe -mate1 -i $FINAL_NMSRT_BAM_FILE | gzip -c > $FINAL_BEDPE_FILE
-
+						
 			//# =================================
 			//# Subsample tagAlign file
-			//# Restrict to one read end per pair for CC analysis
 			//# ================================
-			sys zcat $FINAL_BEDPE_FILE | \
-				grep -v "chrM" | shuf -n $NREADS | \
-				awk 'BEGIN{OFS="\t"}{print $1,$2,$3,"N","1000",$9}' | gzip -c > $SUBSAMPLED_TA_FILE
+			sys zcat $FINAL_TA_FILE | \
+				grep -v "chrM" | shuf -n $NREADS | gzip -c > $SUBSAMPLED_TA_FILE
 		}
 
 		wait
@@ -913,7 +907,7 @@ void softlink_tagalign( int ctl, int rep ) {
 		wait
 	}
 	else { // no data
-		print("warning(softlink_tagalign): no input for ctl $ctl, rep $rep.\n")
+		//print("warning(softlink_tagalign): no input for ctl $ctl, rep $rep.\n")
 	}
 }
 
@@ -941,7 +935,7 @@ void sig_trk( int ctl, int rep ) {
 	OFPREFIX := get_ofprefix( ctl, rep )
 
 	if ( !( is_paired_end( ctl, rep ) || is_single_ended( ctl, rep ) ) ) {
-		print("warning(sig_trk): no input for ctl $ctl, rep $rep\n")
+		//print("warning(sig_trk): no input for ctl $ctl, rep $rep\n")
 		return
 	}
 
@@ -1060,14 +1054,14 @@ void xcor( int ctl, int rep ) {
 			sys Rscript $(which run_spp_nodups.R) \
 				-c=$SUBSAMPLED_TA_FILE -p=$NTHREADS \
 				-filtchr=chrM -savp=$CC_PLOT_FILE -out=$CC_SCORES_FILE
-			sys sed -r 's/,[^\t]+//g' $CC_SCORES_FILE > $OFPREFIX.tmp2
-			sys mv $OFPREFIX.tmp2 $CC_SCORES_FILE
+			sys sed -r 's/,[^\t]+//g' $CC_SCORES_FILE > $OFPREFIX.temp
+			sys mv $OFPREFIX.temp $CC_SCORES_FILE
 		}
 
 		wait
 	}
 	else {
-		print("warning(xcor): no input for ctl $ctl, rep $rep\n")
+		//print("warning(xcor): no input for ctl $ctl, rep $rep\n")
 	}
 }
 
@@ -1096,9 +1090,12 @@ void spr( int ctl, int rep ) { // self-pseudo-replicate
 			//# =======================
 
 			//# Get total number of read pairs
+			sys nlines=$( zcat $FINAL_BEDPE_FILE | wc -l )
+			sys nlines=$(( (nlines + 1) / 2 ))
+
 			//# Shuffle and split BEDPE file into 2 equal parts
 			//# Will produce $PR_PREFIX00 and $PR_PREFIX01
-			sys nlines=$( zcat $FINAL_BEDPE_FILE | wc -l ); nlines=$(( (nlines + 1) / 2 )); zcat $FINAL_BEDPE_FILE | shuf | split -d -l $((nlines)) - $PR_PREFIX. 
+			sys zcat $FINAL_BEDPE_FILE | shuf | split -d -l $((nlines)) - $PR_PREFIX.  
 
 			//# Convert read pairs to reads into standard tagAlign file
 			sys awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}' "$PR_PREFIX.00" | \
@@ -1131,9 +1128,12 @@ void spr( int ctl, int rep ) { // self-pseudo-replicate
 			//# =======================
 
 			//# Get total number of read pairs
+			sys nlines=$( zcat $FINAL_TA_FILE | wc -l )
+			sys nlines=$(( (nlines + 1) / 2 ))
+			
 			//# Shuffle and split BEDPE file into 2 equal parts
 			//# Will produce $PR_PREFIX00 and $PR_PREFIX01
-			sys nlines=$( zcat $FINAL_TA_FILE | wc -l ); nlines=$(( (nlines + 1) / 2 )); zcat $FINAL_TA_FILE | shuf | split -d -l $((nlines)) - $PR_PREFIX.
+			sys zcat $FINAL_TA_FILE | shuf | split -d -l $((nlines)) - $PR_PREFIX.
 
 			//# Convert read pairs to reads into standard tagAlign file
 			sys gzip -c $PR_PREFIX.00 > $PR1_TA_FILE
@@ -1146,7 +1146,7 @@ void spr( int ctl, int rep ) { // self-pseudo-replicate
 
 	}
 	else { // no data				
-		print("warning(spr): no input for ctl $ctl, rep $rep\n")
+		//print("warning(spr): no input for ctl $ctl, rep $rep\n")
 	}
 }
 
@@ -1232,7 +1232,7 @@ void pspr( int ctl ) {
 				//# ======================== 
 				//# Create pooled datasets
 				//# =======================
-				sys cp $REP1_TA_FILE $POOLED_TA_FILE			
+				sys cp $REP1_TA_FILE $POOLED_TA_FILE
 			}
 
 			task( taskName := "ppr1 tagAlign (ctl:"+ctl+")", \
@@ -1244,7 +1244,7 @@ void pspr( int ctl ) {
 				//# ========================
 				//# Create pooled pseudoreplicates
 				//# =======================
-				sys cp $REP1_PR1_TA_FILE $PPR1_TA_FILE			
+				sys cp $REP1_PR1_TA_FILE $PPR1_TA_FILE
 			}
 
 			task( taskName := "ppr2 tagAlign (ctl:"+ctl+")", \
@@ -1256,8 +1256,7 @@ void pspr( int ctl ) {
 				sys cp $REP1_PR2_TA_FILE $PPR2_TA_FILE
 			}
 
-			wait
-			
+			wait			
 		}
 	}
 	
