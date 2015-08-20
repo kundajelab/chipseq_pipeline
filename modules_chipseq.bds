@@ -68,7 +68,7 @@ int num_rep 		= 2				help Number of replicates, define it for non-blank final_st
 
 ///////////// actual parameter variables ////////////////
 
-string KUNDAJE_LAB	= kundaje_lab
+bool KUNDAJE_LAB	= kundaje_lab
 string INPUT_TYPE 	= input
 bool TAGALIGN_PE 	= tagalign_PE
 bool TAGALIGN_CTL_PE 	= tagalign_ctl_PE

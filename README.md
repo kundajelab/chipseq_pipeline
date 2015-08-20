@@ -957,6 +957,26 @@ failed:
 0.7.4 0.7.5 0.7.7 0.7.3 0.7.11 0.7.12
 ```
 
+
+2) Unsupported major.minor version (java)
+
+When running bds (BigDataScript), you get the following error if you have lower version of java or high version of java is not selected as default.
+
+Solution:
+```
+# install latest version of java
+
+# for Fedora based linux (Red Hat, ...)
+$ sudo apt-get install openjdk-8-jre"
+
+# fr Debian based linux (Ubuntu, ...)
+$ sudo yum install java-1.8.0-openjdk"
+
+# choose the latest java as default
+$ sudo update-alternatives --config java
+```
+
+
 ### Contributors
 
 * Jin wook Lee - PhD Student, Mechanical Engineering Dept., Stanford University

@@ -20,7 +20,12 @@ liblapack-dev
 
 SOFTWARES_YUM=(
 gcc
+gcc-c++
 kernel-devel
+lapack-devel
+libXpm-devel
+libXp-devel
+libXmu-devel
 wget
 bc
 zlib-devel
@@ -30,7 +35,6 @@ boost-devel
 openssl
 openssl-devel
 freetype-devel
-lapack
 )
 
 LINUX_ID_LIKE="non-debian,non-fedora"
@@ -79,7 +83,22 @@ elif [ ${LINUX_ID_LIKE} == fedora ]; then
       echo " * $i not found your system."
       echo "   Please install $i using the following commmand or ask administrator."
       echo "   ============================================================="
-      echo "   sudo yum install $i"
+      if [ $i == "lapack-devel" ]; then
+        echo "   # find yum repo for (server-optional) in /etc/yum.repos.d
+        echo "   grep -rl "server-optional" /etc/yum.repos.d
+        echo 
+        echo "   # enable the repo (repo name can vary)
+        echo "   vim /etc/yum.repos.d/[ANY_REPO_FOUND]
+        echo 
+        echo "   [rhui-REGION-rhel-server-optional]"
+        echo "   ..."
+        echo "   enabled=1"
+        echo
+        echo "   # install lapack-devel"
+        echo "   sudo yum install lapack-devel" 
+      else
+        echo "   sudo yum install $i" 
+      fi
       echo "   ============================================================="
       EXIT=1
     fi
@@ -137,9 +156,9 @@ if [ ${NEED_JAVA_INSTALL} == 1 ]; then
   echo "   Please install java using the following commmand or ask administrator."
   echo "   ============================================================="
   if [ ${LINUX_ID_LIKE} == debian ]; then
-    echo "   sudo apt-get install openjdk-7-jre"
+    echo "   sudo apt-get install openjdk-8-jre"
   elif [ ${LINUX_ID_LIKE} == fedora ]; then
-    echo "   sudo yum install java-1.7.0-openjdk"
+    echo "   sudo yum install java-1.8.0-openjdk"
   fi
   echo "   ============================================================="
   echo "   You can also install java (jre version >= 1.7) on your local directory."
@@ -418,12 +437,8 @@ add_to_bashrc
 
 wget http://www.broadinstitute.org/~anshul/softwareRepo/MCR2010b.bin
 chmod 755 MCR2010b.bin
-echo 1 > tmp.stdin
-echo $SOFTWARE"/MATLAB_Compiler_Runtime" >> tmp.stdin
-echo 1 >> tmp.stdin
-echo 1 >> tmp.stdin
-echo 3 >> tmp.stdin
-./MCR2010b.bin -console < tmp.stdin
+echo '-P installLocation="'$SOFTWARE'/MATLAB_Compiler_Runtime"' > tmp.stdin
+./MCR2010b.bin -silent -options "tmp.stdin"
 rm -f tmp.stdin
 rm -f MCR2010b.bin
 CONTENTS=(
