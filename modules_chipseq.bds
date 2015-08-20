@@ -62,7 +62,7 @@ string chrsz 		= "" 				help Path for chrom sizes file for your sequence files (
 int mapq_thresh 	= 30 				help MAPQ_THRESH (default: 30).
 int nreads 		= 15000000			help NREADS (default. 15000000).
 
-string final_stage	= "" 				help If not blank, the pipeline will stop after specified stage (bam, tagalign or xcor (cross-correlation score for tagaligns) ) (default: blank).
+string final_stage	= "" 				help If specified, control data will be ignored and the pipeline will stop right after specified stage (bam, tagalign or xcor (cross-correlation score) ). (default: blank).
 int num_rep 		= 2				help Number of replicates, define it for non-blank final_stage only. (default: 2).
 
 

@@ -712,7 +712,7 @@ For advanced users, all command line parameters for the pipeline is listed and e
 	-idr_nboley <bool>       : Use Nathan Boley's code for IDR, otherwise Anshul Kundaje's code (default: true)	
 
 # alignment only mode
-	-final_stage <string>    : If not blank, the pipeline will stop after specified stage (bam, tagalign or xcor (cross-correlation score for tagaligns) ) (default: blank).
+	-final_stage <string>    : If specified, control data will be ignored and the pipeline will stop right after specified stage (bam, tagalign or xcor (cross-correlation score) ). (default: blank).
 	-num_rep <int>           : Number of replicates, define it for non-blank final_stage only. (default: 2).
 ```
 
@@ -819,7 +819,7 @@ Equivalent parameters in a configuration file is listed and explained below:
 	USE_IDR_NBOLEY         : Use Nathan Boley's code for IDR, otherwise Anshul Kundaje's code (default: true)	
 
 # alignment only mode
-	FINAL_STAGE            : If not blank, the pipeline will stop after specified stage (bam, tagalign or xcor (cross-correlation score for tagaligns) ) (default: blank).
+	FINAL_STAGE            : If specified, control data will be ignored and the pipeline will stop right after specified stage (bam, tagalign or xcor (cross-correlation score) ). (default: blank).
 	NUM_REP                : Number of replicates, define it for non-blank final_stage only. (default: 2).
 ```
 
@@ -967,10 +967,10 @@ Solution:
 # install latest version of java
 
 # for Fedora based linux (Red Hat, ...)
-$ sudo apt-get install openjdk-8-jre"
+$ sudo apt-get install openjdk-8-jre
 
 # fr Debian based linux (Ubuntu, ...)
-$ sudo yum install java-1.8.0-openjdk"
+$ sudo yum install java-1.8.0-openjdk
 
 # choose the latest java as default
 $ sudo update-alternatives --config java
