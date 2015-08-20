@@ -24,13 +24,13 @@ kernel-devel
 wget
 bc
 zlib-devel
-libncurses5-devel
+ncurses-devel
 gcc-gfortran
-libboost-devel
+boost-devel
 openssl
 openssl-devel
 freetype-devel
-lapack-devel
+lapack
 )
 
 LINUX_ID_LIKE="non-debian,non-fedora"
@@ -71,7 +71,7 @@ if [ ${LINUX_ID_LIKE} == debian ]; then
 
 elif [ ${LINUX_ID_LIKE} == fedora ]; then
   for i in "${SOFTWARES_YUM[@]}"; do
-    if [ $(yum list installed | grep -v "libc" | grep $i | wc -l) != 0 ]; then
+    if [ $(rpm -q $i  | grep -v "is not installed" | wc -l) != 0 ]; then
       echo
       echo " * $i found on your system."
     else
@@ -79,7 +79,7 @@ elif [ ${LINUX_ID_LIKE} == fedora ]; then
       echo " * $i not found your system."
       echo "   Please install $i using the following commmand or ask administrator."
       echo "   ============================================================="
-      echo "   yum install $i"
+      echo "   sudo yum install $i"
       echo "   ============================================================="
       EXIT=1
     fi
@@ -88,17 +88,11 @@ elif [ ${LINUX_ID_LIKE} == fedora ]; then
 
 else
   echo
-  echo "Your linux system is not based on fedora (Red Hat, ...) or debian(Ubuntu, ...)."
-  echo "Installer will fail if you don't manually install all required softwares."
+  echo "Your linux system is not based on Fedora (Red Hat, ...) or Debian (Ubuntu, ...)."
+  echo "Installer will fail if you didn't manually install all required softwares."
   echo "List of required softwares: "
-  echo
+  echo "  gcc, kernel-devel, wget, bc, zlib-devel, ncurses-devel, gcc-gfortran, boost-devel, openssl, openssl-devel, freetype-devel, lapack"
 fi
-
-
-
-
-
-
 
 
 if [ $(which git | wc -l) == 0 ]; then
@@ -109,7 +103,7 @@ if [ $(which git | wc -l) == 0 ]; then
   if [ ${LINUX_ID_LIKE} == debian ]; then
     echo "   sudo apt-get install git"
   elif [ ${LINUX_ID_LIKE} == fedora ]; then
-    echo "   sudo apt-get install git"
+    echo "   sudo yum install git"
   else
     echo "   Manually install git on your system"
   fi
@@ -145,7 +139,7 @@ if [ ${NEED_JAVA_INSTALL} == 1 ]; then
   if [ ${LINUX_ID_LIKE} == debian ]; then
     echo "   sudo apt-get install openjdk-7-jre"
   elif [ ${LINUX_ID_LIKE} == fedora ]; then
-    echo "   yum install java-1.7.0-openjdk"
+    echo "   sudo yum install java-1.7.0-openjdk"
   fi
   echo "   ============================================================="
   echo "   You can also install java (jre version >= 1.7) on your local directory."
