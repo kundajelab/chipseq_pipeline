@@ -64,7 +64,7 @@ if [ ${LINUX_ID_LIKE} == debian ]; then
       echo " * $i found on your system."
     else
       echo
-      echo " * $i not found your system."
+      echo " * $i not found on your system."
       echo "   Please install $i using the following commmand or ask administrator."
       echo "   ============================================================="
       echo "   sudo apt-get install $i"
@@ -80,7 +80,7 @@ elif [ ${LINUX_ID_LIKE} == fedora ]; then
       echo " * $i found on your system."
     else
       echo
-      echo " * $i not found your system."
+      echo " * $i not found on your system."
       echo "   Please install $i using the following commmand or ask administrator."
       echo "   ============================================================="
       if [ $i == "lapack-devel" ]; then
@@ -138,13 +138,13 @@ fi
 NEED_JAVA_INSTALL=0
 if [ $(which java | wc -l) == 0 ]; then
   echo
-  echo " * Java not found your system."
+  echo " * Java not found on your system."
   EXIT=1
   NEED_JAVA_INSTALL=1
 else
-  JAVA_VER=$(java -version 2>&1 | grep "java version" | cut -d'"' -f2 | cut -d'.' -f1-2)
+  JAVA_VER=$(java -version 2>&1 | grep "version" | cut -d'"' -f2 | cut -d'.' -f1-2)
   echo
-  echo " * Java found your system (version: ${JAVA_VER})."
+  echo " * Java found on your system (version: ${JAVA_VER})."
   if [[ (( ${JAVA_VER} < 1.7 )) ]]; then
     echo "   Java version is too low. Version needs to be >= 1.7"
     EXIT=1
