@@ -98,6 +98,7 @@ void read_conf() {
 
 		// final stage
 		final_stage	= get_conf_val( final_stage, 		["FINAL_STAGE", "FINAL_OUT"] )
+		num_rep 	= get_conf_val_int( num_rep, 		["NUM_REP", "NUMREP"] )
 
 		// inputs
 		input 		= get_conf_val( input, 			["INPUT_TYPE", "INPUT"] )
@@ -153,97 +154,20 @@ void read_conf() {
 
 	// if no data for control rep1 and final stage is before peak calling
 	// this should be aligment only mode, so ignore all control from here
-	if ( is_final_stage_before_peak() && !is_data_available( 1, 0 ) ) {
+	if ( is_align_only_mode() ) {
+		print("\n\nAlign only mode for $num_rep replicates (no control data found)!\n\n")
 		num_ctl = 0
+	}
+	else {
+		num_rep = 2 // # of replicates should be 2 if not align only mode
 	}
 }
 
 void chk_input_data() {
 
-	// check input data
-	if ( is_input_fastq() ) {
+	print( "\n\n====== Checking inputs (data type = $input) ...\n\n" );
 
-		print( "\n====== Checking fastqs...\n" );
-
-		for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicats (0: not control, 1~: controls)
-
-			prefix := (ctl==0)? "":"Control "
-			fastqs_Rep1 := get_fastqs( ctl, 1 )
-			fastqs_Rep2 := get_fastqs( ctl, 2 )
-
-			print( prefix + "Rep1: \n")
-			for ( string s : fastqs_Rep1 ) print("\t$s\n")
-
-			print( prefix + "Rep2: \n")
-			for ( string s : fastqs_Rep2 ) print("\t$s\n")
-			
-			if ( fastqs_Rep1.size() == 0 ) {
-				error( prefix + "Rep1 fastqs missing!\n")
-			}
-
-			if ( fastqs_Rep2.size() == 0 ) {
-				if ( ctl==0 ) {
-					error( prefix + "Rep2 fastqs missing!\n")
-				}
-				else {
-					print( "\tWarning: " + prefix + "Rep2 fastqs missing ! keep going...\n")
-				}
-			}
-		}
-	}
-	else if ( is_input_bam() ) {
-
-		print( "\n====== Checking bams...\n" );
-
-		for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicates (0: not control, 1~: controls)
-
-			prefix := (ctl==0)? "":"Control "
-			bam_Rep1 := get_bam(  ctl, 1 )
-			bam_Rep2 := get_bam(  ctl, 2 )
-
-			print( prefix + "Rep1: $bam_Rep1 \n")
-			print( prefix + "Rep2: $bam_Rep2 \n")
-			
-			if ( bam_Rep1 == "" ) error( prefix + "Rep1 bam missing!\n")
-
-			if ( bam_Rep2 == "" ) {
-				if ( ctl==0 ) {
-					error( prefix + "Rep2 bam missing!\n")
-				}
-				else {
-					print( "\tWarning: " + prefix + "Rep2 bam missing for control! keep going...\n")
-				}
-			}
-		}
-	}
-	else if ( is_input_tag() ) {
-
-		print( "\n====== Checking tagAligns...\n" );
-
-		for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicates (0: not control, 1~: controls)
-
-			prefix := (ctl==0)? "":"Control "
-			tag_Rep1 := get_tag(  ctl, 1 )
-			tag_Rep2 := get_tag(  ctl, 2 )
-
-			print( prefix + "Rep1: $tag_Rep1 \n")
-			print( prefix + "Rep2: $tag_Rep2 \n")
-			
-			if ( tag_Rep1 == "" ) error( prefix + "Rep1 tagalign missing!\n")
-
-			if ( tag_Rep2 == "" ) {
-				if ( ctl==0 ) {
-					error( prefix + "Rep2 tagalign missing!\n")
-				}
-				else {
-					print( "\tWarning: " + prefix + "Rep2 tagalign missing for control! keep going...\n")
-				}
-			}
-		}
-	}
-	else if ( is_input_peak() ) {
-
-		print( "\n====== Checking tagAligns...\n" );
+	if ( is_input_peak() ) {
 
 		pooled := get_peak(0)
 		peak1 := get_peak(1)
@@ -251,16 +175,82 @@ void chk_input_data() {
 
 		if ( pooled == "" ) error( "Pooled peak input file missing!\n")
 		print( "\tPooled peak: $pooled\n")
+		if ( !pooled.exists() )
+			error( "\t\tFile not found!\n")
 
 		if ( peak1 == "" ) error( "Peak 1 input file missing!\n")
 		print( "\tPeak1: $peak1\n")
+		if ( !peak1.exists() )
+			error( "\t\tFile not found!\n")
 
 		if ( peak2 == "" ) error( "Peak 1 input file missing!\n")
 		print( "\tPeak2: $peak2\n")
+		if ( !peak2.exists() )
+			error( "\t\tFile not found!\n")	
+
+		return
+	}
+	
+	string[] data_all
+
+	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicats (0: not control, 1~: controls)
+
+		for ( int rep=1; rep <= num_rep; rep++) {
+
+			string[] data
+
+			string prefix = (ctl==1) ? "Control " : ""
+
+			if ( is_input_fastq() ) {
+				prefix = prefix + "Rep$rep fastq"
+				fastqs := get_fastqs( ctl, rep )
+				if ( fastqs.size()==0 ) {
+					data.push( "" )
+				}
+				else {
+					for ( string fastq : fastqs ) data.push( fastq )
+				}
+			}
+			else if ( is_input_bam() ) {
+				prefix = prefix +"Rep$rep bam"
+				data.push( get_bam( ctl, rep ) )
+			}
+			else if ( is_input_nodup_bam() ) {
+				prefix = prefix +"Rep$rep nodup_bam"
+				data.push( get_bam( ctl, rep ) )
+			}
+			else if ( is_input_tag() ) {
+				prefix = prefix + "Rep$rep tagalign"
+				data.push( get_tag( ctl, rep ) )
+			}
+
+			print("$prefix :\n")
+
+			for ( string s : data ) {
+				print("\t$s\n")
+				if ( (s != "") && !(s.exists()) ) error("\t\tFile not found!\n")
+			}
+
+			// if data is missing
+			if ( data[0] == "" ) {
+				if ( (rep==2) && (ctl==1) ) \
+					print( "\tWarning: Control $prefix missing! keep going...\n")
+				else \
+					error( "\t$prefix missing!\n")
+			}
+
+			// check any duplicate input filename
+			for ( string s : data ) {
+				if ( is_in_array( get_basename( s ), get_basename( data_all ) ) ) \
+					error( "\t$prefix has duplicate filename!\n")
+			}
+
+			data_all = concat( data_all, data )
+		}
 	}
 
 	if ( final_stage != "" ) \
-		print( "\n====== Final stage : $final_stage \n" );
+		print( "\n\n====== Final stage : $final_stage \n\n" );
 }
 
 void init() {
@@ -365,7 +355,6 @@ void align() {
 
 			// align()
 			if ( is_single_ended( ctl, rep ) ) {
-
 				
 				if ( no_par_job ) \
 					_align( data, input, final_stage, out_dir, info ) // go serial 
@@ -424,6 +413,8 @@ void signal_trk() {
 }
 
 void peakcall_idr() {
+
+	if ( is_align_only_mode() ) return
 
 	if ( !is_final_stage_peak() && !is_final_stage_idr() ) return
 
@@ -881,6 +872,10 @@ string get_peak( int rep ) { // rep0 = pooled peak
 	}
 }
 
+bool is_align_only_mode() {
+	return !is_input_peak() && !is_data_available( 1, 1 )
+}
+
 bool is_rep2_exist( int ctl ) {
 	if ( is_input_fastq() ) {
 		fastqs := get_fastqs( ctl, 2 )
@@ -1076,6 +1071,9 @@ string get_task_info( int ctl, int rep ) {
 }
 
 bool is_data_available( int ctl, int rep ) {
+
+	if ( (ctl==1) && (rep>2) ) return false
+
 	if ( is_input_fastq() ) {
 		return get_fastqs( ctl, rep ).size() > 0
 	}
