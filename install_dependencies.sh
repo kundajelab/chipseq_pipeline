@@ -413,6 +413,13 @@ cd python2.7/bin
 get https://bootstrap.pypa.io/get-pip.py
 ./python2 get-pip.py
 $SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" numpy
+
+cd $SOFTWARE
+git clone git://github.com/numpy/numpy.git numpy
+cd numpy
+git checkout tags/v1.9.2
+$SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
+
 CONTENTS=(
 "export PATH=\$PATH:$SOFTWARE/python2.7/bin"
 "export PYTHONPATH=$SOFTWARE/python2.7/lib/python2.7/site-packages:\$PYTHONPATH"
