@@ -55,6 +55,7 @@ echo
 echo Checking softwares on your system...
 echo
 
+
 EXIT=0
 if [ ${LINUX_ID_LIKE} == debian ]; then
 
@@ -147,6 +148,10 @@ else
   echo " * Java found on your system (version: ${JAVA_VER})."
   if [[ (( ${JAVA_VER} < 1.7 )) ]]; then
     echo "   Java version is too low. Version needs to be >= 1.7"
+    echo "   If you have multiple versions of java installed on your system, choose the latest one."
+    echo "   ============================================================="
+    echo "   sudo update-alternatives --config java"
+    echo "   ============================================================="
     EXIT=1
     NEED_JAVA_INSTALL=1
   fi
@@ -157,6 +162,10 @@ if [ ${NEED_JAVA_INSTALL} == 1 ]; then
   echo "   ============================================================="
   if [ ${LINUX_ID_LIKE} == debian ]; then
     echo "   sudo apt-get install openjdk-8-jre"
+    echo ""
+    echo "   or"
+    echo ""
+    echo "   sudo apt-get install openjdk-7-jre"
   elif [ ${LINUX_ID_LIKE} == fedora ]; then
     echo "   sudo yum install java-1.8.0-openjdk"
   fi
@@ -164,7 +173,6 @@ if [ ${NEED_JAVA_INSTALL} == 1 ]; then
   echo "   You can also install java (jre version >= 1.7) on your local directory."
   echo "   (http://java.com/en/download/manual.jsp?locale=en)"
 fi
-
 
 
 
@@ -181,6 +189,8 @@ if [ $EXIT == 1 ]; then
   echo 
   echo "However, you can proceed if you have equivalent softwares locally installed on your system."
   echo "Otherwise, compilation of some bio-softwares will fail."
+  echo 
+  echo "If you have trouble with 'sudo apt-get install [PACKAGE]', try with 'sudo apt-get update' first. "
   echo 
   read -p "Are you sure that you want to proceed? [yes/no] " yn
   case $yn in
