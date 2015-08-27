@@ -123,7 +123,7 @@ Example:
 If you want to start from bam files and stop right after cross-correlation analysis.
 ```
 $ bds chipseq.bds [...] -input bam [...] -final_stage xcor
-...
+```
 
 
 ### How to define input data type and path
