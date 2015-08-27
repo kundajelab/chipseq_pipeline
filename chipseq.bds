@@ -175,22 +175,22 @@ void chk_input_data() {
 
 		if ( pooled == "" ) error( "Pooled peak input file missing!\n")
 		print( "\tPooled peak: $pooled\n")
-		if ( !pooled.exists() )
+		if ( !pooled.exists() ) \
 			error( "\t\tFile not found!\n")
 
 		if ( peak1 == "" ) error( "Peak 1 input file missing!\n")
 		print( "\tPeak1: $peak1\n")
-		if ( !peak1.exists() )
+		if ( !peak1.exists() ) \
 			error( "\t\tFile not found!\n")
 
-		if ( peak2 == "" ) error( "Peak 1 input file missing!\n")
+		if ( peak2 == "" ) error( "Peak 2 input file missing!\n")
 		print( "\tPeak2: $peak2\n")
-		if ( !peak2.exists() )
+		if ( !peak2.exists() ) \
 			error( "\t\tFile not found!\n")	
 
 		return
 	}
-	
+
 	string[] data_all
 
 	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicats (0: not control, 1~: controls)
