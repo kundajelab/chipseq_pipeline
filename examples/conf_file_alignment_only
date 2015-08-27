@@ -4,45 +4,38 @@
 
 //KUNDAJE_LAB=true
 
-
-
-
-// prefix
-PREFIX=ENCSR000EGM
-OUTPUT_DIR=out
+OUT_DIR=out
 
 // use this to process raw data without peak calling
 // final stage (pipeline will stop after the specified final stage)
-FINAL_STAGE=tagalign 	// bam, tagalign, xcor (cross correlation score/plot)
-NUM_REP=5 		// any number of replicates you want to process
+FINAL_STAGE=tag 	// bam, nodup_bam, tag, xcor (cross correlation score/plot)
+NUM=5 		// any number of replicates you want to process
 
 // if input is fastq and single ended
-INPUT_TYPE=fastq
-INPUT_FASTQ_REP1= /DATA/ENCFF000YLW.fastq.gz
-INPUT_FASTQ_REP2= /DATA/ENCFF000YLY.fastq.gz
-INPUT_FASTQ_REP3= /DATA/ENCFF000YLZ.fastq.gz
-INPUT_FASTQ_REP4= /DATA/ENCFF000YL1.fastq.gz
-INPUT_FASTQ_REP5= /DATA/ENCFF000YL2.fastq.gz
+INPUT=fastq
+FASTQ1= /DATA/ENCFF000YLW.fastq.gz
+FASTQ2= /DATA/ENCFF000YLY.fastq.gz
+FASTQ3= /DATA/ENCFF000YLZ.fastq.gz
+FASTQ4= /DATA/ENCFF000YL1.fastq.gz
+FASTQ5= /DATA/ENCFF000YL2.fastq.gz
 // bwa
 BWA_INDEX_NAME= /srv/scratch/leepc12/hg19/encodeHg19Male_v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 
 // if input is bam
-//INPUT_TYPE=bam
-//BAM_PE= false
-//INPUT_BAM_REP1= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep1.bam
-//INPUT_BAM_REP2= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam
-//INPUT_BAM_REP3= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep3.bam
-//INPUT_BAM_REP4= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep4.bam
-//INPUT_BAM_REP5= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep5.bam
+//INPUT=bam
+//BAM1= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep1.bam
+//BAM2= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam
+//BAM3= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep3.bam
+//BAM4= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep4.bam
+//BAM5= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep5.bam
 
 // if input is tagalign
-//INPUT_TYPE=tagalign
-//TAGALIGN_PE= false
-//INPUT_TAGALIGN_REP1= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep1.bam.unique.tagAlign.gz
-//INPUT_TAGALIGN_REP2= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam.unique.tagAlign.gz
-//INPUT_TAGALIGN_REP3= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep3.bam.unique.tagAlign.gz
-//INPUT_TAGALIGN_REP4= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep4.bam.unique.tagAlign.gz
-//INPUT_TAGALIGN_REP5= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep5.bam.unique.tagAlign.gz
+//INPUT=tag
+//TAG1= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep1.bam.unique.tagAlign.gz
+//TAG2= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep2.bam.unique.tagAlign.gz
+//TAG3= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep3.bam.unique.tagAlign.gz
+//TAG4= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep4.bam.unique.tagAlign.gz
+//TAG5= /DATA/wgEncodeSydhTfbsK562CtcfbIggrabAlnRep5.bam.unique.tagAlign.gz
 
 // cluster resources configuration
 NTHREADS=1 			// (default:1)
@@ -59,11 +52,8 @@ MEMORY_BWA_SAM=10000          	// in megabytes (default:8000)
 
 //////////////////////////// parameters with default values (for power users)
 
-// general
-TMP_DIR=tmp
-
 // bwa
-BWA_ALN_PARAM=-q 5 -l 32 -k 2
+PARAM_BWA_ALN=-q 5 -l 32 -k 2
 
 // dupe remover
 MAPQ_THRESH=30

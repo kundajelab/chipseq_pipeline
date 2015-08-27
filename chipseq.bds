@@ -1,756 +1,871 @@
 #!/usr/bin/env bds
 
-include "modules_chipseq.bds"
+helpUnsorted := true // help( $ bds chipseq.bds -h ) will not be sorted
 
-// peak file name if input == "peak"
-string peak1 		= ""		help Path for peak for replicate 1.
-string peak2 		= ""		help Path for peak for replicate 2.
-string pooled 		= ""		help Path for pooled peak.
+include "modules/align.bds"
+include "modules/peakcall.bds"
+include "modules/idr.bds"
+include "modules/signal.bds"
+include "modules/report.bds"
+include "modules/conf.bds"
 
-// peak calling method
-string peakcall 	= "spp"		help Choose peak calling method: spp, macs2 and gem (default: spp).
 
-// cmd line arg wrapper and help
-int nth_spp 		= 2		help Number of threads for spp (run_spp.R) (default: 2).
-int wt_spp		= 40000		help Walltime in seconds for spp (default: 40000).
-int mem_spp		= 8000 		help Max. memory in MB for spp (default: 8000).
-int npeak 		= 300000 	help Parameter for -npeak in phantompeakqual tool run_spp.R (default: 300000).
+bool kundaje_lab 	= false		help Set it true if you run the pipeline on Kundaje lab servers (automatically set environments, default: false)
 
-// macs2
-int nth_macs2		= 2 		help Number of threads for MACS2 (default: 2)
-int wt_macs2		= 40000		help Walltime in seconds for MACS2 (default: 40000).
-int mem_macs2		= 8000 		help Max. memory in MB for MACS2 (default: 8000).
-string gensz 		= ""		help Genome size; hs for human, mm for mouse (default: hs)
+string input 		= "fastq"	help Input file type: 5 options (fastq, bam, nodup_bam, tag or peak)
 
-// gem
-int nth_gem		= 2 		help Number of threads for gem (default: 2)
-int wt_gem		= 40000		help Walltime in seconds for gem (default: 40000).
-int mem_gem		= 16000 	help Max. memory in MB for gem (default: 16000).
-//string read_dist_file 	= "" 		help Read distribution file (Read_Distribution_default.txt).
+// for fastqs (SE)
+string fastq1 		= "" 		help Path for fastq for replicate 1 (single ended).
+string fastq2 		= "" 		help Path for fastq for replicate 2 (single ended).
+string ctl_fastq1 	= "" 		help Path for control fastq for replicate 1 (single ended).
+string ctl_fastq2 	= "" 		help Path for control fastq for replicate 2 (single ended, if not exists leave this blank).
 
-// idr
-string idr_thresh 	= 0.02		help IDR threshold (default: 0.02).
-bool idr_nboley 	= true	 	help Use Nathan Boley's code for IDR, otherwise Anshul Kundaje's code (default: true)
-string idr_thresh_transformed = 540 	//help IDR thresh transformed (default: 540).
+// for fasqts (PE)
+string fastq1_1		= "" 		help Path for fastq for replicate 1 pair 1 (paired-end).
+string fastq1_2		= "" 		help Path for fastq for replicate 1 pair 2 (paired-end).
+string fastq2_1 	= "" 		help Path for fastq for replicate 2 pair 1 (paired-end).
+string fastq2_2 	= "" 		help Path for fastq for replicate 2 pair 2 (paired-end).
+string ctl_fastq1_1	= "" 		help Path for control fastq for replicate 1 pair 1 (paired-end).
+string ctl_fastq1_2	= "" 		help Path for control fastq for replicate 1 pair 2 (paired-end).
+string ctl_fastq2_1 	= "" 		help Path for control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).
+string ctl_fastq2_2 	= "" 		help Path for control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).
 
-// comp. resources for spp
-string PEAKCALL_METHOD 	= peakcall
-int NPEAK 		= npeak	
-int NTHREADS_SPP	= nth_spp
-int WALLTIME_SPP 	= wt_spp
-int MEMORY_SPP		= mem_spp
-string GENOMESIZE 	= gensz
-int NTHREADS_MACS2 	= nth_macs2
-int WALLTIME_MACS2 	= wt_macs2
-int MEMORY_MACS2	= mem_macs2
-int NTHREADS_GEM 	= nth_gem
-int WALLTIME_GEM 	= wt_gem
-int MEMORY_GEM		= mem_gem
-string IDR_THRESH 	= idr_thresh
-bool USE_IDR_NBOLEY 	= idr_nboley
-string IDR_THRESH_TRANSFORMED = idr_thresh_transformed
-//string READ_DIST_FILE 	= read_dist_file
+// for bam data set
+string bam1 		= ""		help Path for bam or nodup_bam for replicate 1.
+string bam2 		= ""		help Path for bam or nodup_bam for replicate 2.
+string ctl_bam1 	= "" 		help Path for control bam or nodup_bam for replicate 1.
+string ctl_bam2 	= "" 		help Path for control bam or nodup_bam for replicate 2 (if not exists leave this blank).
 
-// pipeline starts here
-read_param_general()
-read_param_align_map()
-read_param_tf_chipseq()
+bool bam1_PE 		= false 	help Set it true if bam replicate 1 is paired end (default: false).
+bool bam2_PE 		= false 	help Set it true if bam replicate 2 is paired end (default: false).
+bool ctl_bam1_PE 	= false 	help Set it true if bam control replicate 1 is paired end (default: false).
+bool ctl_bam2_PE 	= false 	help Set it true if bam control replicate 2 is paired end (default: false).
 
-align_to_pspr()
-peakcall_idr()
+// for tag data set
+string tag1 		= ""		help Path for tagalign for replicate 1.
+string tag2 		= ""		help Path for tagalign for replicate 2.
+string ctl_tag1 	= "" 		help Path for control tagalign for replicate 1.
+string ctl_tag2 	= "" 		help Path for control tagalign for replicate 2 (if not exists leave this blank).
 
-// functions
-void read_param_tf_chipseq() {
+bool tag1_PE 		= false 	help Set it true if tagalign replicate 1 is paired end (default: false).
+bool tag2_PE 		= false 	help Set it true if tagalign replicate 2 is paired end (default: false).
+bool ctl_tag1_PE 	= false 	help Set it true if tagalign control replicate 1 is paired end (default: false).
+bool ctl_tag2_PE 	= false 	help Set it true if tagalign control replicate 2 is paired end (default: false).
 
-	// read parameters
+// for peak data set
+string peak1 		= ""		help Path for peak 1
+string peak2 		= ""		help Path for peak 2
+string pooled2 		= ""		help Path for pooled peak
+
+string final_stage	= "" 		help Pipeline will stop after producing final output (bam, nodup_bam, tag, xcor (cross-corr. analysis), peak ). (default: blank).
+int num_rep 		= 2		help Number of replicates, define it for non-blank final_stage only. (default: 2).
+int num_ctl 		= 1
+
+string html_rpt_title 	= "ChIP-Seq Pipeline HTML Report"
+string html_rpt_file 	= "Report.html"	
+
+init_cmd_arg()
+
+
+
+// chipseq pipeline starts here
+help() // show help if no parameters are given
+
+read_conf() // read configruation file if exists
+
+chk_input_data()
+
+init() // initialization (mkdir out_dir. and set shell environment)
+
+align() // align
+
+write_report()
+
+signal_trk() // signal track generation (tagalign -> wig, bedgraph or bigwig), this goes in parallel with peackcall_idr()
+
+peakcall_idr() // peakcalling (spp, gem or macs2) and idr (no idr after macs2)
+
+write_report()
+
+
+
+void read_conf() {
+
 	if ( conf_file_exists() ) {
 
-		if ( conf.hasKey("PEAKCALL_METHOD") ) 	PEAKCALL_METHOD	= rm_comment( conf{ "PEAKCALL_METHOD" } )
+		// kundaje lab support (automatic shell env. settings)
+		kundaje_lab 	= get_conf_val_bool( kundaje_lab,	["KUNDAJE_LAB"] )
 
-		// peak calling (phantompeakqualtools: run_spp.R)
-		if ( conf.hasKey("NTHREADS_SPP") )	NTHREADS_SPP	= parse_int( conf{ "NTHREADS_SPP" } )
-		if ( conf.hasKey("WALLTIME_SPP") )	WALLTIME_SPP	= parse_int( conf{ "WALLTIME_SPP" } )
-		if ( conf.hasKey("MEMORY_SPP") )	MEMORY_SPP	= parse_int( conf{ "MEMORY_SPP" } )
-		if ( conf.hasKey("NPEAK") ) 		NPEAK 		= parse_int( conf{ "NPEAK" } )
+		// final stage
+		final_stage	= get_conf_val( final_stage, 		["FINAL_STAGE", "FINAL_OUT"] )
 
-		if ( conf.hasKey("NTHREADS_MACS2") )	NTHREADS_MACS2	= parse_int( conf{ "NTHREADS_MACS2" } )
-		if ( conf.hasKey("WALLTIME_MACS2") )	WALLTIME_MACS2	= parse_int( conf{ "WALLTIME_MACS2" } )
-		if ( conf.hasKey("MEMORY_MACS2") )	MEMORY_MACS2	= parse_int( conf{ "MEMORY_MACS2" } )			
+		// inputs
+		input 		= get_conf_val( input, 			["INPUT_TYPE", "INPUT"] )
 
-		if ( conf.hasKey("NTHREADS_GEM") )	NTHREADS_GEM	= parse_int( conf{ "NTHREADS_GEM" } )
-		if ( conf.hasKey("WALLTIME_GEM") )	WALLTIME_GEM	= parse_int( conf{ "WALLTIME_GEM" } )
-		if ( conf.hasKey("MEMORY_GEM") )	MEMORY_GEM	= parse_int( conf{ "MEMORY_GEM" } )			
+		// align	
+		mapq_thresh 	= get_conf_val_int( mapq_thresh,	["MAPQ_THRESH"] )
+		nreads 		= get_conf_val_int( nreads,		["NREADS"] )
 
-		if ( conf.hasKey("GENOMESIZE") ) 	GENOMESIZE	= rm_comment( conf{ "GENOMESIZE" } )
+		bwa_idx 	= get_conf_val( bwa_idx, 		["BWA_INDEX_NAME", "BWA_IDX", "BWA_IDX_NAME"] )
+		param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["BWA_ALN_PARAM", "PARAM_BWA_ALN"] )
 
-		// IDR
-		if ( conf.hasKey("IDR_THRESH") ) 	IDR_THRESH	= parse_real( conf{ "IDR_THRESH"} )
-		if ( conf.hasKey("USE_IDR_NBOLEY") ) 	USE_IDR_NBOLEY	= parse_bool( conf{ "USE_IDR_NBOLEY"} )
-		if ( conf.hasKey("IDR_THRESH_TRANSFORMED") ) 	\
-							IDR_THRESH_TRANSFORMED	= parse_int( conf{ "IDR_THRESH_TRANSFORMED"} )
+		nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["NTHREADS_BWA_ALN", "NTH_BWA_ALN", "CPU_BWA_ALN"] )
+		wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["WALLTIME_BWA_ALN", "WT_BWA_ALN", "TIMEOUT_BWA_ALN"] )
+		mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["MEMORY_BWA_ALN", "MEM_BWA_ALN"] )
+
+		wt_bwa_sam	= get_conf_val( wt_bwa_sam, 		["WALLTIME_BWA_SAM", "WT_BWA_SAM", "TIMEOUT_BWA_SAM"] )
+		mem_bwa_sam 	= get_conf_val( mem_bwa_sam, 		["MEMORY_BWA_SAM", "MEM_BWA_SAM"] )
+
+		//signal track genenration
+		make_wig	= get_conf_val_bool( make_wig, 		["CREATE_WIG", "MAKE_WIG", "WIG"] )
+		make_bedgraph	= get_conf_val_bool( make_bedgraph, 	["CREATE_BEDGRAPH", "MAKE_BEDGRAPH", "BEDGRAPH"] )
+		make_bigwig	= get_conf_val_bool( make_bigwig, 	["CONVERT_TO_BIGWIG", "MAKE_BIGWIG", "BIGWIG"] )
+
+		umap		= get_conf_val( umap, 			["UMAP_DIR", "UMAP"] )
+		gensz		= get_conf_val( gensz, 			["GENSZ", "GENOMESIZE", "GENOME_SIZE", "GENOME_SZ", "GEN_SZ"] )
+		chrsz		= get_conf_val( chrsz, 			["CHROM_SIZES", "CHRSZ", "CHR_SZ"] )
+
+		// peakcalling
+		peakcall	= get_conf_val( peakcall, 		["PEAKCALL_METHOD", "PEAKCALL"] )
+
+		npeak 		= get_conf_val_int( npeak,		["NPEAK"] )
+
+		nth_spp 	= get_conf_val_int( nth_spp,		["NTHREADS_SPP", "NTH_SPP", "CPU_SPP"] )
+		wt_spp 		= get_conf_val( wt_spp, 		["WALLTIME_SPP", "WT_SPP", "TIMEOUT_SPP"] )
+		mem_spp 	= get_conf_val( mem_spp, 		["MEMORY_SPP", "MEM_SPP"] )
+
+		gensz		= get_conf_val( gensz, 			["GENSZ", "GENOMESIZE", "GENOME_SIZE", "GENOME_SZ", "GEN_SZ"] )
+
+		nth_macs2 	= get_conf_val_int( nth_macs2,		["NTHREADS_MACS2", "NTH_MACS2", "CPU_MACS2"] )
+		wt_macs2 	= get_conf_val( wt_macs2, 		["WALLTIME_MACS2", "WT_MACS2", "TIMEOUT_MACS2"] )
+		mem_macs2 	= get_conf_val( mem_macs2, 		["MEMORY_MACS2", "MEM_MACS2"] )
+
+		seq 		= get_conf_val( seq,			["SEQ_DIR", "SEQ"] )
+
+		nth_gem 	= get_conf_val_int( nth_gem,		["NTHREADS_GEM", "NTH_GEM", "CPU_GEM"] )
+		wt_gem 		= get_conf_val( wt_gem, 		["WALLTIME_GEM", "WT_GEM", "TIMEOUT_GEM"] )
+		mem_gem 	= get_conf_val( mem_gem, 		["MEMORY_GEM", "MEM_GEM"] )
+
+		// idr
+		use_idr1 	= get_conf_val_bool( use_idr1, 		["USE_IDR1"] )
+		idr_thresh 	= get_conf_val( idr_thresh, 		["IDR_THRESH"] )
 	}
 
-	PEAKCALL_METHOD = PEAKCALL_METHOD.trim().toLower()
-
-	print("PEAKCALL_METHOD = $PEAKCALL_METHOD\n");
-	print("NTHREADS_SPP = $NTHREADS_SPP\n");
-	print("WALLTIME_SPP = $WALLTIME_SPP\n");
-	print("MEMORY_SPP = $MEMORY_SPP\n");
-	print("NPEAK = $NPEAK\n");
-	print("NTHREADS_MACS2 = $NTHREADS_MACS2\n");
-	print("WALLTIME_MACS2 = $WALLTIME_MACS2\n");
-	print("MEMORY_MACS2 = $MEMORY_MACS2\n");
-	print("NTHREADS_GEM = $NTHREADS_GEM\n");
-	print("WALLTIME_GEM = $WALLTIME_GEM\n");
-	print("MEMORY_GEM = $MEMORY_GEM\n");
-	print("GENOMESIZE = $GENOMESIZE\n");
-	print("IDR_THRESH = $IDR_THRESH\n");
-	if ( USE_IDR_NBOLEY ) {
-		print("IDR_THRESH_TRANSFORMED = $IDR_THRESH_TRANSFORMED\n");
-		print("\nUsing Nathan Boley's IDR\n\n");
+	// if no data for control rep1 and final stage is before peak calling
+	// this should be aligment only mode, so ignore all control from here
+	if ( is_final_stage_before_peak() && !is_data_available( 1, 0 ) ) {
+		num_ctl = 0
 	}
-	else {
-		print("\nUsing Anshul Kundaje's IDR\n\n");
+}
+
+void chk_input_data() {
+
+	// check input data
+	if ( is_input_fastq() ) {
+
+		print( "\n====== Checking fastqs...\n" );
+
+		for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicats (0: not control, 1~: controls)
+
+			prefix := (ctl==0)? "":"Control "
+			fastqs_Rep1 := get_fastqs( ctl, 1 )
+			fastqs_Rep2 := get_fastqs( ctl, 2 )
+
+			print( prefix + "Rep1: \n")
+			for ( string s : fastqs_Rep1 ) print("\t$s\n")
+
+			print( prefix + "Rep2: \n")
+			for ( string s : fastqs_Rep2 ) print("\t$s\n")
+			
+			if ( fastqs_Rep1.size() == 0 ) {
+				error( prefix + "Rep1 fastqs missing!\n")
+			}
+
+			if ( fastqs_Rep2.size() == 0 ) {
+				if ( ctl==0 ) {
+					error( prefix + "Rep2 fastqs missing!\n")
+				}
+				else {
+					print( "\tWarning: " + prefix + "Rep2 fastqs missing ! keep going...\n")
+				}
+			}
+		}
+	}
+	else if ( is_input_bam() ) {
+
+		print( "\n====== Checking bams...\n" );
+
+		for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicates (0: not control, 1~: controls)
+
+			prefix := (ctl==0)? "":"Control "
+			bam_Rep1 := get_bam(  ctl, 1 )
+			bam_Rep2 := get_bam(  ctl, 2 )
+
+			print( prefix + "Rep1: $bam_Rep1 \n")
+			print( prefix + "Rep2: $bam_Rep2 \n")
+			
+			if ( bam_Rep1 == "" ) error( prefix + "Rep1 bam missing!\n")
+
+			if ( bam_Rep2 == "" ) {
+				if ( ctl==0 ) {
+					error( prefix + "Rep2 bam missing!\n")
+				}
+				else {
+					print( "\tWarning: " + prefix + "Rep2 bam missing for control! keep going...\n")
+				}
+			}
+		}
+	}
+	else if ( is_input_tag() ) {
+
+		print( "\n====== Checking tagAligns...\n" );
+
+		for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicates (0: not control, 1~: controls)
+
+			prefix := (ctl==0)? "":"Control "
+			tag_Rep1 := get_tag(  ctl, 1 )
+			tag_Rep2 := get_tag(  ctl, 2 )
+
+			print( prefix + "Rep1: $tag_Rep1 \n")
+			print( prefix + "Rep2: $tag_Rep2 \n")
+			
+			if ( tag_Rep1 == "" ) error( prefix + "Rep1 tagalign missing!\n")
+
+			if ( tag_Rep2 == "" ) {
+				if ( ctl==0 ) {
+					error( prefix + "Rep2 tagalign missing!\n")
+				}
+				else {
+					print( "\tWarning: " + prefix + "Rep2 tagalign missing for control! keep going...\n")
+				}
+			}
+		}
+	}
+	else if ( is_input_peak() ) {
+
+		print( "\n====== Checking tagAligns...\n" );
+
+		pooled := get_peak(0)
+		peak1 := get_peak(1)
+		peak2 := get_peak(2)
+
+		if ( pooled == "" ) error( "Pooled peak input file missing!\n")
+		print( "\tPooled peak: $pooled\n")
+
+		if ( peak1 == "" ) error( "Peak 1 input file missing!\n")
+		print( "\tPeak1: $peak1\n")
+
+		if ( peak2 == "" ) error( "Peak 1 input file missing!\n")
+		print( "\tPeak2: $peak2\n")
 	}
 
-	// check if all peaks files exist
-	if ( is_input_peak() ) {
+	if ( final_stage != "" ) \
+		print( "\n====== Final stage : $final_stage \n" );
+}
 
-		print( "\n====== Checking peaks...\n" );
+void init() {
+
+	// create output dir.	
+	out_dir = mkdir_path( out_dir ) // mkdir and get absolute path
+
+	// set shell environments automatically
+	dir_sw_BDS  := "$HOME/software_bds" // location of dependencies installed by the script "install_dependencies.sh"
+
+	if ( kundaje_lab ) {
+
+		print("\n\nAutomatically adding environment variables... (kundaje_lab == true) \n\n")
+
+		SHCMD_INIT = SHCMD_INIT + " . /etc/profile.d/modules.sh; module add bwa/0.7.3; module add samtools/0.1.19; module add bedtools/2.19.1;" \
+					+ " module add ucsc_tools/3.0.9; module add picard-tools/1.92; module add phantompeakqualtools/default; " \
+					+ " module add align2rawsignal/2.0; module add MACS2/2.1.0; module add java/latest; module add r/2.15.1; module add gem/2.6;" \
+					+ " export PATH=${PATH}:/software/idrCode; " \
+					+ " export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4"
+
+                SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
+
+	}
+	else if ( dir_sw_BDS.exists() ) { // automatically add software binaries to shell env. vars like PATH
+
+		print("\n\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
+		print("\nAutomatically adding environment variables...\n\n")
+
+		path := " export PATH=" \
+			+ "$dir_sw_BDS/bwa-0.7.3:" \
+			+ "$dir_sw_BDS/samtools-0.1.19:" \
+			+ "$dir_sw_BDS/bedtools2-2.19.1/bin:" \
+			+ "$dir_sw_BDS/ucsc_tools:" \
+			+ "$dir_sw_BDS/picard-tools-1.92:" \
+			+ "$dir_sw_BDS/R-2.15.1/bin:" \
+			+ "$dir_sw_BDS/phantompeakqualtools:" \
+			+ "$dir_sw_BDS/idr/bin:" \
+			+ "$dir_sw_BDS/python3.4/bin:" \
+			+ "$dir_sw_BDS/align2rawsignal/bin:" \
+			+ "$dir_sw_BDS/idrCode:" \
+			+ "$dir_sw_BDS/python2.7/bin:" \
+			+ "$dir_sw_BDS/MACS/bin:" \
+			+ "$dir_sw_BDS/gem:" \
+			+ "\${PATH}"
+
+		shellcmd := "export PICARDROOT=$dir_sw_BDS/picard-tools-1.92; export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
+				+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; " \
+
+		shellcmd = shellcmd \
+			+ "MCRROOT=$dir_sw_BDS/MATLAB_Compiler_Runtime/v714;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64;" \
+			+ "MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/native_threads;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/server;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE};" \
+			+ "XAPPLRESDIR=\${MCRROOT}/X11/app-defaults;" \
+			+ "export LD_LIBRARY_PATH;" \
+			+ "export XAPPLRESDIR;"
+
+		SHCMD_INIT = SHCMD_INIT + ";" + path + ";" + shellcmd
+		SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
+	}
+}
+
+void align() {
+
+	// parallel jobs for align() for each replicate and each control
+	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through inputs (ctl==0 : input, ctl==1 : control)	
 		
-		if ( get_peak( 1 ) == "" ) error( prefix + "Rep1 peak missing!\n")
-		if ( get_peak( 2 ) == "" ) error( prefix + "Rep2 peak missing!\n")
-		if ( get_peak( 0 ) == "" ) error( prefix + "Pooled peak missing!\n")
-	}	
+		for ( int rep=1; rep <= num_rep; rep++) {
+
+			if ( !is_data_available( ctl, rep ) ) continue
+
+			string[] data
+
+			// suffix for task name
+			info 	:= get_task_info( ctl, rep )
+
+			// prepare data for align()
+			if ( is_input_fastq() ) {
+				
+				data = get_fastqs( ctl, rep )
+			}
+			else if ( is_input_nodup_bam() ) {
+
+				data = [ get_bam( ctl, rep ) ]
+			}
+			else if ( is_input_bam() ) {
+
+				data = [ get_bam( ctl, rep ) ]
+			}
+			else if ( is_input_tag() ) {
+
+				data = [ get_tag( ctl, rep ) ]
+			}
+			else {
+				continue
+			}
+
+			if ( data.size() == 0 ) continue
+
+			// align()
+			if ( is_single_ended( ctl, rep ) ) {
+
+				
+				if ( no_par_job ) \
+					_align( data, input, final_stage, out_dir, info ) // go serial 
+				else \
+					par _align( data, input, final_stage, out_dir, info ) // go parallel
+			}
+			else {				
+				if ( no_par_job ) \
+					_align_PE( data, input, final_stage, out_dir, info ) // go serial 
+				else \
+					par _align_PE( data, input, final_stage, out_dir, info ) // go parallel
+			}
+		}
+	}
+	wait
+}
+
+void signal_trk() {
+
+	if ( is_input_peak() ) {
+		print("Info: Input is peak, so skipping signal track generation.\n\n")
+		return
+	}
+
+	if ( is_final_stage_before_xcor() ) {
+		print("Warning: Signal track generation requires cross-corr. analysis (xcor), but final_stage is $final_stage.\n\n")
+		return
+	}
+
+	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through relicates (0: not control, 1: control)
+
+		for ( int rep=1; rep <= num_rep; rep++) {
+
+			if ( !is_data_available( ctl, rep ) ) continue
+
+			string[] tags
+
+			// suffix for task name
+			info 	:= get_task_info( ctl, rep )
+
+			// load tagalign and its self pseudo replicates
+			string tag, tag_pr1, tag_pr2
+			(tag, tag_pr1, tag_pr2) = load_data( "$out_dir/data_tag_$info" )
+
+			// load fraglen
+			o := load_data( "$out_dir/data_fraglen_$info" )
+			fraglen := o[0]
+
+			if ( no_par_job )  \
+				_signal_trk( tag, fraglen, out_dir, info )
+			else \
+				par _signal_trk( tag, fraglen, out_dir, info )
+		}
+	}
+	
 }
 
 void peakcall_idr() {
-	
-	if ( FINAL_STAGE != "" ) return
+
+	if ( !is_final_stage_peak() && !is_final_stage_idr() ) return
+
+	peak_out_dir := "$out_dir/peaks"
+	peak_out_dir = mkdir_path( peak_out_dir ) // mkdir and get absolute path
 
 	if ( is_input_peak() ) {
-		PEAK_OUTPUT_DIR := OUTPUT_DIR + "/peaks"
-
-		REP1_PEAK_FILE := get_peak( 1 )
-		REP2_PEAK_FILE := get_peak( 2 )
-		POOLED_PEAK_FILE := get_peak( 0 )
-
-		PEAK_OUTPUT_DIR.mkdir()
-
-		///////////////////////////////// IDR
-		// create NPEAKS_IDR file	
-		NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
-
-		task ( taskName := "create NPEAKS_IDR.txt", \
-			cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
-			NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
-			sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
-		}
-
-		wait
+		// idr
+		pooled := get_peak(0)
+		peak1  := get_peak(1)
+		peak2  := get_peak(2)
 		
-		run_idr( "Rep1_vs_Rep2", PEAK_OUTPUT_DIR, 		REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE ) // (1) or 4a
-	}	
-	else {
+		_idr( peak1, peak2, pooled, peak_out_dir, "IDR" )
+		return
+	}
 
-		print( "\nPeak calling with ($PEAKCALL_METHOD)...\n" );
+	// prepare file names needed for peak calling(index 0:non-control 1:control)
+	string[] tags, tags_pr1, tags_pr2
+	string tag_pooled, tag_ppr1, tag_ppr2
 
-		// prepare for SPP
-		FRAGLEN_REP1 := get_fraglen( 0, 1 ) // get it from rep1
-		FRAGLEN_REP2 := get_fraglen( 0, 2 ) // get it from rep2
+	string[] ctl_tags, ctl_tags_pr1, ctl_tags_pr2
+	string ctl_tag_pooled, ctl_tag_ppr1, ctl_tag_ppr2
+	
+	// fragment length is important for peak calling
+	string[] fraglens
+	string fraglen_mean
 
-		real frgln1 = FRAGLEN_REP1.parseReal()
-		real frgln2 = FRAGLEN_REP2.parseReal()
-		string FRAGLEN_MEAN = round( (frgln1+frgln2)*0.5 )
-		
-		print("FRAGLEN (rep1, rep2, mean): $FRAGLEN_REP1, $FRAGLEN_REP2, $FRAGLEN_MEAN\n")
+	string[] ctl_fraglens
+	string ctl_fraglen_mean
 
-		// prepare for tagAlign file names
-		suffix_PE 	:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
-		suffix_SE 	:= ".filt.nodup.srt.SE.tagAlign.gz"
-		suffix_PSR_PE 	:= ".filt.nodup.PE2SE"
-		suffix_PSR_SE 	:= ".filt.nodup.SE"
+	// create pooled pseudo repllicates
+	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through inputs (ctl==0 : input, ctl==1 : control)
 
-		suffix 		:= is_paired_end( 0, 1 ) ? suffix_PE : suffix_SE
-		suffix_PSR 	:= is_paired_end( 0, 1 ) ? suffix_PSR_PE : suffix_PSR_SE
+		for ( int rep=1; rep <= num_rep; rep++) {
 
-		DATASET_PREFIX 	:= get_ofprefix( 0 )
-		
-		REP1_TA_FILE 		:="$DATASET_PREFIX"+"_Rep1" + suffix
-		REP2_TA_FILE 		:="$DATASET_PREFIX"+"_Rep2" + suffix
-		POOLED_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.tagAlign.gz"
-		REP1_PR1_TA_FILE 	:="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr1.tagAlign.gz"
-		REP1_PR2_TA_FILE 	:="$DATASET_PREFIX"+"_Rep1" + suffix_PSR + ".pr2.tagAlign.gz"
-		REP2_PR1_TA_FILE 	:="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr1.tagAlign.gz"
-		REP2_PR2_TA_FILE 	:="$DATASET_PREFIX"+"_Rep2" + suffix_PSR + ".pr2.tagAlign.gz"
-		PPR1_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
-		PPR2_TA_FILE 		:="$DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
+			if ( !is_data_available( ctl, rep ) ) continue
 
-		ctl_suffix_PE 		:= ".filt.srt.nodup.PE2SE.tagAlign.gz"
-		ctl_suffix_SE 		:= ".filt.nodup.srt.SE.tagAlign.gz"
-		ctl_suffix_PSR_PE 	:= ".filt.nodup.PE2SE"
-		ctl_suffix_PSR_SE 	:= ".filt.nodup.SE"
+			info 	:= get_task_info( ctl, rep )
 
-		ctl_suffix 		:= is_paired_end( 1, 1 ) ? ctl_suffix_PE : ctl_suffix_SE
-		ctl_suffix_PSR 		:= is_paired_end( 1, 1 ) ? ctl_suffix_PSR_PE : ctl_suffix_PSR_SE
+			// load tagalign and its self pseudo replicates
+			string tag, tag_pr1, tag_pr2
+			(tag, tag_pr1, tag_pr2) = load_data( "$out_dir/data_tag_$info" )
 
-		CTL_DATASET_PREFIX 	:= get_ofprefix( 1 )
+			// load fraglen info
+			o := load_data( "$out_dir/data_fraglen_$info" )
+			fraglen := o[0]
 
-		CTL_REP1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix
-		CTL_REP2_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix : CTL_REP1_TA_FILE
-		CTL_POOLED_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.tagAlign.gz"
-		CTL_REP1_PR1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr1.tagAlign.gz"
-		CTL_REP1_PR2_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep1" + ctl_suffix_PSR + ".pr2.tagAlign.gz"
-		CTL_REP2_PR1_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr1.tagAlign.gz" : CTL_REP1_PR1_TA_FILE
-		CTL_REP2_PR2_TA_FILE 	:= is_rep2_exist( 1 ) ? "$CTL_DATASET_PREFIX"+"_Rep2" + ctl_suffix_PSR + ".pr2.tagAlign.gz" : CTL_REP1_PR2_TA_FILE
+			if ( ctl==0 ) {
+				tags.add( tag )
+				tags_pr1.add( tag_pr1 )
+				tags_pr2.add( tag_pr2 )
 
-		CTL_PPR1_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.pr1.tagAlign.gz"
-		CTL_PPR2_TA_FILE 	:="$CTL_DATASET_PREFIX"+"_Rep0.pr2.tagAlign.gz"
-
-		PEAK_OUTPUT_DIR := OUTPUT_DIR + "/peaks"
-		PEAK_OUTPUT_DIR.mkdir() 
-
-		write_report( "ChIP-Seq Pipeline HTML Report" )
-
-		if ( PEAKCALL_METHOD == "spp" ) {
-
-			// cc score
-			PEAK_REP1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_TA_FILE ) + ".ccscores"
-			PEAK_REP2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_TA_FILE ) + ".ccscores"
-			PEAK_POOLED_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( POOLED_TA_FILE ) + ".ccscores"
-			PEAK_REP1_PR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_PR1_TA_FILE ) + ".ccscores"
-			PEAK_REP1_PR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP1_PR2_TA_FILE ) + ".ccscores"
-			PEAK_REP2_PR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_PR1_TA_FILE ) + ".ccscores"
-			PEAK_REP2_PR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( REP2_PR2_TA_FILE ) + ".ccscores"
-			PEAK_PPR1_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( PPR1_TA_FILE ) + ".ccscores"
-			PEAK_PPR2_CCSCORE 	:= PEAK_OUTPUT_DIR + "/" + get_basename( PPR2_TA_FILE ) + ".ccscores"
-
-			// narrow peak
-		 	REP1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "narrowPeak" )
-		 	REP2_PEAK_FILE 		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "narrowPeak" )
-		 	POOLED_PEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "narrowPeak" )
-		 	REP1_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "narrowPeak" )
-		 	REP1_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "narrowPeak" )
-			REP2_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "narrowPeak" )
-			REP2_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "narrowPeak" )
-			PPR1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "narrowPeak" )
-			PPR2_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "narrowPeak" )
-
-			// region peak
-		 	REP1_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "regionPeak" )
-		 	REP2_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "regionPeak" )
-		 	POOLED_RPEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "regionPeak" )
-		 	REP1_PR1_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "regionPeak" )
-		 	REP1_PR2_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "regionPeak" )
-			REP2_PR1_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "regionPeak" )
-			REP2_PR2_RPEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "regionPeak" )
-			PPR1_RPEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "regionPeak" )
-			PPR2_RPEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "regionPeak" )
-
-			run_spp( "Rep1", PEAK_OUTPUT_DIR, 	REP1_TA_FILE, CTL_REP1_TA_FILE, REP1_PEAK_FILE, REP1_RPEAK_FILE, PEAK_REP1_CCSCORE, FRAGLEN_REP1 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_spp( "Rep2", PEAK_OUTPUT_DIR, 	REP2_TA_FILE, CTL_REP2_TA_FILE, REP2_PEAK_FILE, REP2_RPEAK_FILE, PEAK_REP2_CCSCORE, FRAGLEN_REP2 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_spp( "Pooled", PEAK_OUTPUT_DIR, 	POOLED_TA_FILE, CTL_POOLED_TA_FILE, POOLED_PEAK_FILE, POOLED_RPEAK_FILE, PEAK_POOLED_CCSCORE, FRAGLEN_MEAN )
-				if ( NO_PARALLEL_JOB ) wait
-			run_spp( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, REP1_PR1_PEAK_FILE, REP1_PR1_RPEAK_FILE, PEAK_REP1_PR1_CCSCORE, FRAGLEN_REP1 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_spp( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, REP1_PR2_PEAK_FILE, REP1_PR2_RPEAK_FILE, PEAK_REP1_PR2_CCSCORE, FRAGLEN_REP1 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_spp( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, REP2_PR1_PEAK_FILE, REP2_PR1_RPEAK_FILE, PEAK_REP2_PR1_CCSCORE, FRAGLEN_REP2 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_spp( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, REP2_PR2_PEAK_FILE, REP2_PR2_RPEAK_FILE, PEAK_REP2_PR2_CCSCORE, FRAGLEN_REP2 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_spp( "PPR1", PEAK_OUTPUT_DIR, 	PPR1_TA_FILE, CTL_PPR1_TA_FILE, PPR1_PEAK_FILE, PPR1_RPEAK_FILE, PEAK_PPR1_CCSCORE, FRAGLEN_MEAN )
-				if ( NO_PARALLEL_JOB ) wait
-			run_spp( "PPR2", PEAK_OUTPUT_DIR, 	PPR2_TA_FILE, CTL_PPR2_TA_FILE, PPR2_PEAK_FILE, PPR2_RPEAK_FILE, PEAK_PPR2_CCSCORE, FRAGLEN_MEAN )
-
-			wait
-
-			write_report( "ChIP-Seq Pipeline HTML Report" )
-
-			///////////////////////////////// IDR
-			// create NPEAKS_IDR file	
-			NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
-
-			task ( taskName := "create NPEAKS_IDR.txt", \
-				cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
-				NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
-				sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
+				fraglens.add( fraglen )
 			}
-			
-			run_idr( "Rep1_vs_Rep2", PEAK_OUTPUT_DIR, 		REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE ) // (1) or 4a
-				if ( NO_PARALLEL_JOB ) wait
-			run_idr( "PPR1_vs_PPR2", PEAK_OUTPUT_DIR, 		PPR1_PEAK_FILE, PPR2_PEAK_FILE, POOLED_PEAK_FILE ) // (2) or 4c
-				if ( NO_PARALLEL_JOB ) wait
-			run_idr( "Rep1_PR1_vs_Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR1_PEAK_FILE, REP1_PR2_PEAK_FILE, REP1_PEAK_FILE ) // (3) or 4b-1
-				if ( NO_PARALLEL_JOB ) wait
-			run_idr( "Rep2_PR1_vs_Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR1_PEAK_FILE, REP2_PR2_PEAK_FILE, REP2_PEAK_FILE ) // (4) or 4b-2
-				if ( NO_PARALLEL_JOB ) wait
+			else {
+				ctl_tags.add( tag )
+				ctl_tags_pr1.add( tag_pr1 )
+				ctl_tags_pr2.add( tag_pr2 )
 
-		}
-		else if ( PEAKCALL_METHOD == "gem" ) {
-
-			// narrow peak
-		 	REP1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_TA_FILE, CTL_REP1_TA_FILE, "narrowPeak" )
-		 	REP2_PEAK_FILE 		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_TA_FILE, CTL_REP2_TA_FILE, "narrowPeak" )
-		 	POOLED_PEAK_FILE 	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, POOLED_TA_FILE, CTL_POOLED_TA_FILE, "narrowPeak" )
-		 	REP1_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, "narrowPeak" )
-		 	REP1_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, "narrowPeak" )
-			REP2_PR1_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, "narrowPeak" )
-			REP2_PR2_PEAK_FILE	:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, "narrowPeak" )
-			PPR1_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR1_TA_FILE, CTL_PPR1_TA_FILE, "narrowPeak" )
-			PPR2_PEAK_FILE		:= get_spp_out_peak_filename( PEAK_OUTPUT_DIR, PPR2_TA_FILE, CTL_PPR2_TA_FILE, "narrowPeak" )
-
-			run_gem( "Rep1", PEAK_OUTPUT_DIR, 	REP1_TA_FILE, CTL_REP1_TA_FILE, REP1_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-			run_gem( "Rep2", PEAK_OUTPUT_DIR, 	REP2_TA_FILE, CTL_REP2_TA_FILE, REP2_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-			run_gem( "Pooled", PEAK_OUTPUT_DIR, 	POOLED_TA_FILE, CTL_POOLED_TA_FILE, POOLED_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-			run_gem( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, REP1_PR1_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-			run_gem( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, REP1_PR2_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-			run_gem( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, REP2_PR1_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-			run_gem( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, REP2_PR2_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-			run_gem( "PPR1", PEAK_OUTPUT_DIR, 	PPR1_TA_FILE, CTL_PPR1_TA_FILE, PPR1_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-			run_gem( "PPR2", PEAK_OUTPUT_DIR, 	PPR2_TA_FILE, CTL_PPR2_TA_FILE, PPR2_PEAK_FILE )
-				if ( NO_PARALLEL_JOB ) wait
-
-			wait
-
-			write_report( "ChIP-Seq Pipeline HTML Report" )
-
-			///////////////////////////////// IDR
-			// create NPEAKS_IDR file	
-			NPEAKS_IDR := "$PEAK_OUTPUT_DIR/NPEAKS_IDR.txt"
-
-			task ( taskName := "create NPEAKS_IDR.txt", \
-				cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
-				NPEAKS_IDR <- [REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE] ) {
-				sys echo -e "Sample type\tNumber of peaks" > $NPEAKS_IDR
+				ctl_fraglens.add( fraglen )
 			}
-			
-			run_idr_nboley_gem( "Rep1_vs_Rep2", PEAK_OUTPUT_DIR, 		REP1_PEAK_FILE, REP2_PEAK_FILE, POOLED_PEAK_FILE ) // (1) or 4a
-				if ( NO_PARALLEL_JOB ) wait
-			run_idr_nboley_gem( "PPR1_vs_PPR2", PEAK_OUTPUT_DIR, 		PPR1_PEAK_FILE, PPR2_PEAK_FILE, POOLED_PEAK_FILE ) // (2) or 4c
-				if ( NO_PARALLEL_JOB ) wait
-			run_idr_nboley_gem( "Rep1_PR1_vs_Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR1_PEAK_FILE, REP1_PR2_PEAK_FILE, REP1_PEAK_FILE ) // (3) or 4b-1
-				if ( NO_PARALLEL_JOB ) wait
-			run_idr_nboley_gem( "Rep2_PR1_vs_Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR1_PEAK_FILE, REP2_PR2_PEAK_FILE, REP2_PEAK_FILE ) // (4) or 4b-2
-				if ( NO_PARALLEL_JOB ) wait
 		}
-		else if ( PEAKCALL_METHOD == "macs2" ) {
 
-			run_macs2( "Rep1", PEAK_OUTPUT_DIR, 		REP1_TA_FILE, CTL_REP1_TA_FILE, FRAGLEN_REP1 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_macs2( "Rep2", PEAK_OUTPUT_DIR, 		REP2_TA_FILE, CTL_REP2_TA_FILE, FRAGLEN_REP2 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_macs2( "Pooled", PEAK_OUTPUT_DIR, 		POOLED_TA_FILE, CTL_POOLED_TA_FILE, FRAGLEN_MEAN )
-				if ( NO_PARALLEL_JOB ) wait
-			run_macs2( "Rep1_PR1", PEAK_OUTPUT_DIR, 	REP1_PR1_TA_FILE, CTL_REP1_PR1_TA_FILE, FRAGLEN_REP1 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_macs2( "Rep1_PR2", PEAK_OUTPUT_DIR, 	REP1_PR2_TA_FILE, CTL_REP1_PR2_TA_FILE, FRAGLEN_REP1 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_macs2( "Rep2_PR1", PEAK_OUTPUT_DIR, 	REP2_PR1_TA_FILE, CTL_REP2_PR1_TA_FILE, FRAGLEN_REP2 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_macs2( "Rep2_PR2", PEAK_OUTPUT_DIR, 	REP2_PR2_TA_FILE, CTL_REP2_PR2_TA_FILE, FRAGLEN_REP2 )
-				if ( NO_PARALLEL_JOB ) wait
-			run_macs2( "PPR1", PEAK_OUTPUT_DIR, 		PPR1_TA_FILE, CTL_PPR1_TA_FILE, FRAGLEN_MEAN )
-				if ( NO_PARALLEL_JOB ) wait
-			run_macs2( "PPR2", PEAK_OUTPUT_DIR, 		PPR2_TA_FILE, CTL_PPR2_TA_FILE, FRAGLEN_MEAN )
-				if ( NO_PARALLEL_JOB ) wait
-		}
-		else {
-			error("wrong peak calling method ($PEAKCALL_METHOD)!")
+		if ( ctl==0 ) {
+
+			if ( tags.size() < 2 ) { // if there is no rep2
+				error("Needs at least two replicates for peak calling!\n\n")
+			}
+
+			(tag_pooled, tag_ppr1, tag_ppr2 ) = _ppr( tags, tags_pr1, tags_pr2, out_dir, "ctl0" ) // make pooled psudo replicate
+
+		} else {
+
+			if ( ctl_tags.size() < 2 ) { // if there is no rep2 for control, just duplicate rep2 and pooled from rep1
+				print("Warning (ppr): Control Rep2 tagAlign missing, duplicate Rep2 and pooled from Rep1!\n\n")
+
+				ctl_tags.add( ctl_tags[0] )
+				ctl_tags_pr1.add( ctl_tags_pr1[0] )
+				ctl_tags_pr2.add( ctl_tags_pr2[0] )
+
+				ctl_fraglens.add( ctl_fraglens[0] )
+			}
+
+			(ctl_tag_pooled, ctl_tag_ppr1, ctl_tag_ppr2 ) = _ppr( ctl_tags, ctl_tags_pr1, ctl_tags_pr2, out_dir, "ctl1" ) // make pooled psudo replicate
 		}
 	}
 
 	wait
 
-	write_report( "ChIP-Seq Pipeline HTML Report" )
+	// prepare for peak calling
+	tag_rep1 	:= tags[0]	tag_rep1_pr1 	:= tags_pr1[0]	tag_rep1_pr2 	:= tags_pr2[0]
+	tag_rep2 	:= tags[1]	tag_rep2_pr1 	:= tags_pr1[1]	tag_rep2_pr2 	:= tags_pr2[1]
+
+	ctl_tag_rep1 	:= ctl_tags[0]	ctl_tag_rep1_pr1 := ctl_tags_pr1[0]	ctl_tag_rep1_pr2 := ctl_tags_pr2[0]
+	ctl_tag_rep2 	:= ctl_tags[1]	ctl_tag_rep2_pr1 := ctl_tags_pr1[1]	ctl_tag_rep2_pr2 := ctl_tags_pr2[1]
+
+	fraglen_rep1 	:= fraglens[0]
+	fraglen_rep2 	:= fraglens[1]
+
+	// compute mean of two fraglens
+	real frgln1 	= fraglen_rep1.parseReal(); 	real frgln2 = fraglen_rep2.parseReal()
+	fraglen_mean 	= round( (frgln1+frgln2)*0.5 )
+
+	// peak calling
+	string peak_rep1, peak_rep2, peak_pooled, tmp
+
+	(peak_rep1, tmp)   = _peakcall( tag_rep1, ctl_tag_rep1, fraglen_rep1, peak_out_dir, "Rep1" )
+	(peak_rep2, tmp)   = _peakcall( tag_rep2, ctl_tag_rep2, fraglen_rep2, peak_out_dir, "Rep2" )
+	(peak_pooled, tmp) = _peakcall( tag_pooled, ctl_tag_pooled, fraglen_mean, peak_out_dir, "Pooled" )
+
+	string peak_rep1_pr1, peak_rep1_pr2, peak_rep2_pr1, peak_rep2_pr2
+
+	(peak_rep1_pr1, tmp) = _peakcall( tag_rep1_pr1, ctl_tag_rep1_pr1, fraglen_rep1, peak_out_dir, "Rep1_PR1" )
+	(peak_rep1_pr2, tmp) = _peakcall( tag_rep1_pr2, ctl_tag_rep1_pr2, fraglen_rep1, peak_out_dir, "Rep1_PR2" )
+	(peak_rep2_pr1, tmp) = _peakcall( tag_rep2_pr1, ctl_tag_rep2_pr1, fraglen_rep2, peak_out_dir, "Rep2_PR1" )
+	(peak_rep2_pr2, tmp) = _peakcall( tag_rep2_pr2, ctl_tag_rep2_pr2, fraglen_rep2, peak_out_dir, "Rep2_PR2" )
+
+	string peak_ppr1, peak_ppr2
+
+	(peak_ppr1, tmp) = _peakcall( tag_ppr1, ctl_tag_ppr1, fraglen_mean, peak_out_dir, "PPR1" )
+	(peak_ppr2, tmp) = _peakcall( tag_ppr2, ctl_tag_ppr2, fraglen_mean, peak_out_dir, "PPR2" )
+
+	wait
+
+	if ( !is_final_stage_idr() ) return
+
+	// idr
+
+	if ( is_peakcall_spp() || is_peakcall_gem() ) {
+	//if ( is_peakcall_spp() ) {
+
+		_idr( peak_rep1, peak_rep2, peak_pooled, peak_out_dir, "IDR_Rep1_vs_Rep2" )
+		_idr( peak_ppr1, peak_ppr2, peak_pooled, peak_out_dir, "IDR_PPR1_vs_PPR2" )
+		_idr( peak_rep1_pr1, peak_rep1_pr2, peak_rep1, peak_out_dir, "IDR_Rep1_PR1_vs_Rep1_PR2" )
+		_idr( peak_rep2_pr1, peak_rep2_pr2, peak_rep2, peak_out_dir, "IDR_Rep2_PR1_vs_Rep2_PR2" )
+	}
+
+	wait
 }
 
-string get_spp_out_peak_filename( string dir, string ta1, string ta2, string type ) {
-	return dir + "/" \
- 		+ rm_str_at_end( get_basename( ta1 ),".gz" ) \
- 		+ "_VS_" + rm_str_at_end( get_basename( ta2 ),".gz" ) + "." + type + ".gz"
+void write_report() {
+	_write_report( html_rpt_title, "$out_dir/$html_rpt_file", out_dir )
 }
 
-void run_spp( string taskname, string out_dir, string ta, string ctl_ta, string npeak, string rpeak, string ccscore, string fraglen ) {
+void help() {
 
-	task( taskName := "spp " + taskname, \
-		cpus := NTHREADS_SPP, timeout := WALLTIME, mem := MEMORY * M, \
-		[npeak, rpeak, ccscore] <- [ta, ctl_ta] ) {
+	if ( is_cmd_line_arg_empty() ) {
 
-		sys $PRELOAD
+		print(" Usage 1 (command line argument): example starting from two SE fastqs \n")
+		print("\n")
+		print("\t\$ bds chipseq.bds \\ \n")
+		print("\t\t -fastq1 [FASTQ_REP1] \\ \n")
+		print("\t\t -fastq2 [FASTQ_REP2] \\ \n")
+		print("\t\t -bwa_idx [BWA_INDEX] \\ \n")
+		print("\t\t ... \n")
+		print("\n")
+		print(" Usage 2 (configruation file): \n")
+		print("\n")
+		print("\t\$ bds chipseq.bds [CONF_FILE] \\ \n")
+		print("\n")
+		print("\t===[CONF_FILE] contents===\n")
+		print("\tFASTQ1= [FASTQ_REP1]\n")
+		print("\tFASTQ2= [FASTQ_REP2]\n")
+		print("\tBWA_IDX= [BWA_INDEX]\n")
+		print("\t\t ...\n")
+		print("\n")
+		print(" For Sun Grid Engine (SGE) cluster use\n")
+		print("\n")
+		print("\t\$ bds -s sge chipseq.bds ... \n")
+		print("\n")
+		print(" For Kundaje lab cluster use (this will automatically set shell environments.)\n")
+		print("\n")
+		print("\t\$ bds -s sge chipseq.bds ... -kundaje_lab true \n")
+		print("\n")
+		print("\n")
+		print(" List of paramters\n")
+		print(" \n")
+		print(" === general === \n")
+		print(" -out_dir \t\tOutput directory. (default: out)\n")
+		print(" -no_par_job \t\tSet if true to serialize all jobs, this option is for desktops with limited memory (default: false)\n")
+		print(" \n")
+		print(" === inputs ===\n")
+		print(" -input \t\tInput file type: three options (fastq, bam, nodup_bam, tag or peak)\n")
+		print(" \n")
+		print(" === for fastqs (SE) === \n")
+		print(" -fastq1 \t\tPath for fastq for replicate 1 (single ended).\n")
+		print(" -fastq2 \t\tPath for fastq for replicate 2 (single ended).\n")
+		print(" -ctl_fastq1 \t\tPath for control fastq for replicate 1 (single ended).\n")
+		print(" -ctl_fastq2 \t\tPath for control fastq for replicate 2 (single ended, if not exists leave this blank).\n")
+		print(" \n")
+		print(" === for fasqts (PE) ===\n")
+		print(" -fastq1_1 \t\tPath for fastq for replicate 1 pair 1 (paired-end).\n")
+		print(" -fastq1_2 \t\tPath for fastq for replicate 1 pair 2 (paired-end).\n")
+		print(" -fastq2_1 \t\tPath for fastq for replicate 2 pair 1 (paired-end).\n")
+		print(" -fastq2_2 \t\tPath for fastq for replicate 2 pair 2 (paired-end).\n")
+		print(" -ctl_fastq1_1 \t\tPath for control fastq for replicate 1 pair 1 (paired-end).\n")
+		print(" -ctl_fastq1_2 \t\tPath for control fastq for replicate 1 pair 2 (paired-end).\n")
+		print(" -ctl_fastq2_1 \t\tPath for control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).\n")
+		print(" -ctl_fastq2_2 \t\tPath for control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).\n")
+		print(" \n")
+		print(" === for bam data set ===\n")
+		print(" -bam1 \t\t\tPath for bam for replicate 1.\n")
+		print(" -bam2 \t\t\tPath for bam for replicate 2.\n")
+		print(" -ctl_bam1 \t\tPath for control bam for replicate 1.\n")
+		print(" -ctl_bam2 \t\tPath for control bam for replicate 2 (if not exists leave this blank).\n")
+		print(" \n")
+		print(" -bam1_PE \t\tSet it true if bam replicate 1 is paired end (default: false).\n")
+		print(" -bam2_PE \t\tSet it true if bam replicate 2 is paired end (default: false).\n")
+		print(" -ctl_bam1_PE \t\tSet it true if bam control replicate 1 is paired end (default: false).\n")
+		print(" -ctl_bam2_PE \t\tSet it true if bam control replicate 2 is paired end (default: false).\n")
+		print(" \n")
+		print(" === for tag data set ===\n")
+		print(" -tag1 \t\t\tPath for tagalign for replicate 1.\n")
+		print(" -tag2 \t\t\tPath for tagalign for replicate 2.\n")
+		print(" -ctl_tag1 \t\tPath for control tagalign for replicate 1.\n")
+		print(" -ctl_tag2 \t\tPath for control tagalign for replicate 2 (if not exists leave this blank).\n")
+		print(" \n")
+		print(" -tag1_PE \t\tSet it true if tagalign replicate 1 is paired end (default: false).\n")
+		print(" -tag2_PE \t\tSet it true if tagalign replicate 2 is paired end (default: false).\n")
+		print(" -ctl_tag1_PE \t\tSet it true if tagalign control replicate 1 is paired end (default: false).\n")
+		print(" -ctl_tag2_PE \t\tSet it true if tagalign control replicate 2 is paired end (default: false).\n")
+		print(" \n")
+		print(" === for peak data set ===\n")
+		print(" -peak1 \t\tPath for peak 1\n")
+		print(" -peak2 \t\tPath for peak 2\n")
+		print(" -pooled2 \t\tPath for pooled peak\n")
+		print(" \n")
+		print(" === alignment only mode (final stage)===\n")
+		print(" -final_stage \t\tPipeline will stop after producing final output (bam, nodup_bam, tag, xcor (cross-corr. analysis), peak ). (default: blank).\n")
+		print(" -num_rep \t\tNumber of replicates, define it for non-blank final_stage only. (default: 2).\n")
+		print(" \n")
+		print(" === align\n")
+		print(" -bwa_idx \t\tPath for bwa index.\n")
+		print(" \n")
+		print(" === peakcall\n")
+		print(" -peakcall \t\tChoose peak calling method: spp, macs2 and gem (default: spp).\n")
+		print(" -gensz \t\tGenome size; hs for human, mm for mouse (default: hs)\n")
+		print(" -chrsz \t\tPath for chrom sizes file for your ref. sequence files (use fetchChromSizes from UCSC tools).\n")
+		print(" -seq \t\t\tPath for sequence files (directory where chr*.fa exist).\n")
+		print(" \n")
+		print(" === idr\n")
+		print(" -use_idr1 \t\tIf set true, use IDR1 code. Otherwise use IDR2 code (default: false)\n")
+		print(" \n")
+		print(" === signal track generation\n")
+		print(" -make_wig \t\tSet it true to create wig (default: false).\n")
+		print(" -make_bedgraph \tSet it true to create bedgraph (default: false).\n")
+		print(" -make_bigwig \t\tSet it true to convert bedgraph to bigwig signal track (default: false).\n")
+		print(" \n")
+		print(" -umap \t\t\tPath for unique mappability tracks (https:===sites.google.com/site/anshulkundaje/projects/mappability).\n")
+		print(" -chrsz \t\tPath for chrom sizes file for your ref. sequence files (use fetchChromSizes from UCSC tools).\n")
+		print(" -seq \t\t\tPath for sequence files (directory where chr*.fa exist).\n")
+		print(" \n")
+		print(" === cluster resource for hard (bottle-necked) jobs\n")
+		print(" -nth_bwa_aln \t\tNumber of threads for bwa aln (default: 2).\n")
+		print(" -wt_bwa_aln \t\tWalltime for bwa aln (default: 10h).\n")
+		print(" -mem_bwa_aln \t\tMax. memory for bwa aln (default: 8G).\n")
+		print(" \n")
+		print(" -wt_bwa_sam \t\tWalltime for bwa sampe/samse (default: 12h).\n")
+		print(" -mem_bwa_sam \t\tMax. memory for bwa sampe/samse (default: 8G).\n")
+		print(" \n")
+		print(" -nth_spp \t\tNumber of threads for spp (run_spp.R) (default: 2).\n")
+		print(" -wt_spp	\tWalltime for spp (default: 10h).\n")
+		print(" -mem_spp \t\tMax. memory for spp (default: 8G).\n")
+		print(" \n")
+		print(" -nth_macs2 \t\tNumber of threads for MACS2 (default: 2)\n")
+		print(" -wt_macs2 \t\tWalltime for MACS2 (default: 10h).\n")
+		print(" -mem_macs2 \t\tMax. memory for MACS2 (default: 8G).\n")
+		print(" \n")
+		print(" -nth_gem \t\tNumber of threads for gem (default: 2)\n")
+		print(" -wt_gem	\tWalltime for gem (default: 20h).\n")
+		print(" -mem_gem \t\tMax. memory for gem (default: 16G).\n")
+		print(" \n")
+		print(" === cluster resource for all other jobs\n")
+		print(" -nth \t\t\tDefault number of threads for all cluster jobs (default: 1).\n")
+		print(" -wt \t\t\tDefault walltime for all cluster jobs (example: 8:10:00, 3h, 3600 , default: 6h).\n")
+		print(" -mem \t\t\tDefault max. memory for all cluster jobs (example: 4G, 100KB, default: 4G).\n")
+		print(" \n")
+		print(" === align (advanced options)\n")
+		print(" -param_bwa_aln \tParameters for bwa align (default: \"-q 5 -l 32 -k 2\").\n")
+		print(" -mapq_thresh \t\tThreshold for removing low MAPQ reads (default: 30).\n")
+		print(" -nreads \t\tNumber of reads to be subsampled for cross corr. analysis (default. 15000000).\n")
+		print(" \n")
+		print(" === idr (advanced options)\n")
+		print(" -idr_thresh \t\tIDR threshold (default: 0.02).\n")
+		print(" \n")
+		print(" === shell environment setting (advanced options)\n")
+		print(" -mod \t\t\tEnv. modules separated by ; (example: \"bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92\").\n")
+		print(" -shcmd \t\tShell cmds separated by ;. Env. vars should be written as \${VAR} not as \$VAR (example: \"export PATH=\${PATH}:/usr/test; VAR=test\"). \n")
+		print(" -addpath \t\tPath to be PREPENDED to env. var. PATH. Allows multiple paths separated by ; (example: \"/bin/test:/bin/test2\")\n")
+		print(" \n")
 
-		sys Rscript $(which run_spp_nodups.R) -c=$ta -p=$NTHREADS_SPP -i=$ctl_ta \
-			-npeak=$NPEAK -odir=$out_dir -speak=$fraglen -savn -savr -savp -rf -out=$ccscore
+		exit
 	}
 }
 
-void run_macs2( string taskname, string out_dir, string ta, string ctl_ta, string fraglen ) {
 
-	PEAK_OUTPUT_DIR 	:= out_dir
-	CHIP_TA_PREFIX 		:= taskname
 
-	PEAK_FILE		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.narrowPeak.gz"
- 	BPEAK_FILE 		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.broadPeak.gz"
- 	GPEAK_FILE 		:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.gappedPeak.gz"
- 	FC_SIGNAL_BW_FILE 	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bw"
- 	PVAL_SIGNAL_BW_FILE	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bw"
 
- 	CHRSIZEFILE 		:= CHROM_SIZES
 
-	task( taskName := "macs2 " + taskname, cpus := NTHREADS_MACS2, timeout := WALLTIME, mem := MEMORY * M, \
-		[PEAK_FILE, BPEAK_FILE, GPEAK_FILE, FC_SIGNAL_BW_FILE, PVAL_SIGNAL_BW_FILE] <- [ta, ctl_ta] ) {
+void init_cmd_arg() {
+	if ( fastq1 != "" ) fastq1_1 = fastq1
+	if ( fastq2 != "" ) fastq2_1 = fastq2
+	if ( ctl_fastq1 != "" ) ctl_fastq1_1 = ctl_fastq1
+	if ( ctl_fastq2 != "" ) ctl_fastq2_1 = ctl_fastq2
+}
 
-		sys $PRELOAD
+string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], elseif single-end else return [PE1], else []	
+	string[] ret
+	for ( int pe=1; pe<=2; pe++ ) {
+		str := get_fastq( ctl, rep, pe )
+		if ( str.length() > 0 ) { // if not null, append
+			ret.add( str )
+		}
+	}
 
-		//==========================================
-		//# Generate narrow peaks and preliminary signal tracks
-		//============================================
+	return ret
+}
 
-		sys macs2 callpeak -t $ta -c $ctl_ta -f BED -n $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX -g $GENOMESIZE -p 1e-2 --nomodel --shift 0 --extsize $fraglen --keep-dup all -B --SPMR
+string get_fastq( int ctl, int rep, int pe ) {
 
-		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.narrowPeak.gz
+	key_wo_PE := ( ctl > 0 ? "CTL_FASTQ" : "FASTQ" ) + "_REP" + rep 
+	key := key_wo_PE + "_PE" + pe
 
-		//# remove additional files
-		sys rm -f $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.xls \
-			$PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.narrowPeak \
-			$PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_summits.bed
+	key_wo_PE2 := ( ctl > 0 ? "CTL_FASTQ" : "FASTQ" ) + rep 
+	key2 := key_wo_PE2 + "_" + pe
 
-		//===========================================
-		//# Generate Broad and Gapped Peaks
-		//============================================
-		sys macs2 callpeak -t $ta -c $ctl_ta -f BED -n $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX -g $GENOMESIZE -p 1e-2 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
-
-		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.broadPeak.gz
-
-		sys sort -k 14gr,14gr $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.gappedPeak.gz
-
-		//# remove additional files
-		sys rm -f $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.xls \
-		  $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.broadPeak \
-		  $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_peaks.gappedPeak \
-		  $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_summits.bed
-
-		//===========================================
-		//# For Fold enrichment signal tracks
-		//============================================
-		//sys CHRSIZEFILE=<path_of_file_containing_chromosome_sizes>
-		//# This file is a tab delimited file with 2 columns Col1 (chromosome name), Col2 (chromosome size in bp).
-
-		sys macs2 bdgcmp -t $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_treat_pileup.bdg -c $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_control_lambda.bdg --outdir $PEAK_OUTPUT_DIR -o "$CHIP_TA_PREFIX"_FE.bdg -m FE
-
-		//# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
-		sys slopBed -i $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_FE.bdg -g $CHRSIZEFILE -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $CHRSIZEFILE $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bedgraph
-
-		sys rm -f $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_FE.bdg
-
-		//# Convert bedgraph to bigwig
-		sys bedGraphToBigWig $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bedgraph $CHRSIZEFILE $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bw
-
-		sys rm -f $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.fc.signal.bedgraph
-
-		//===========================================
-		//# For -log10(p-value) signal tracks
-		//============================================
-
-		//# Compute sval = min(no. of reads in ChIP, no. of reads in control) / 1,000,000
-
-		sys chipReads=$(zcat $ta | wc -l | awk '{printf "%f", $1/1000000}');
-
-		sys controlReads=$(zcat $ctl_ta | wc -l | awk '{printf "%f", $1/1000000}');
-
-		sys sval=$(echo "${chipReads} ${controlReads}" | awk '$1>$2{printf "%f",$2} $1<=$2{printf "%f",$1}');
-
-		sys macs2 bdgcmp -t $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_treat_pileup.bdg -c $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_control_lambda.bdg --outdir $PEAK_OUTPUT_DIR -o "$CHIP_TA_PREFIX"_ppois.bdg -m ppois -S "${sval}"
-
-		//# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
-		sys slopBed -i $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_ppois.bdg -g $CHRSIZEFILE -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $CHRSIZEFILE $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bedgraph
-
-		sys rm -rf $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_ppois.bdg
-
-		//# Convert bedgraph to bigwig
-		sys bedGraphToBigWig $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bedgraph $CHRSIZEFILE $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bw
-
-		sys rm -f $PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX.pval.signal.bedgraph
-		sys rm -f $PEAK_OUTPUT_DIR/"$CHIP_TA_PREFIX"_treat_pileup.bdg ${peakFile}_control_lambda.bdg
+	if ( (pe==1) && conf.hasKey( key_wo_PE ) ) {
+		return get_path( conf{ key_wo_PE } )
+	}
+	else if ( (pe==1) && conf.hasKey( key_wo_PE2 ) ) {
+		return get_path( conf{ key_wo_PE2 } )
+	}
+	else if ( conf.hasKey( key ) ) {
+		return get_path( conf{ key } )
+	}
+	else if ( conf.hasKey( key2 ) ) {
+		return get_path( conf{ key2 } )
+	}
+	else if ( (ctl==0) && (rep==1) && (pe==1) ) {
+		return fastq1_1
+	}
+	else if ( (ctl==0) && (rep==1) && (pe==2) ) {
+		return fastq1_2
+	}
+	else if ( (ctl==0) && (rep==2) && (pe==1) ) {
+		return fastq2_1
+	}
+	else if ( (ctl==0) && (rep==2) && (pe==2) ) {
+		return fastq2_2
+	}
+	else if ( (ctl==1) && (rep==1) && (pe==1) ) {
+		return ctl_fastq1_1
+	}
+	else if ( (ctl==1) && (rep==1) && (pe==2) ) {
+		return ctl_fastq1_2
+	}
+	else if ( (ctl==1) && (rep==2) && (pe==1) ) {
+		return ctl_fastq2_1
+	}
+	else if ( (ctl==1) && (rep==2) && (pe==2) ) {
+		return ctl_fastq2_2
+	}
+	else {
+		return ""
 	}
 }
 
-void run_gem( string taskname, string out_dir, string ta, string ctl_ta, string npeak ) {
+string get_bam( int ctl, int rep ) {
 
-	PEAK_OUTPUT_DIR := out_dir
-	CHIP_TA_PREFIX 	:= taskname
+	key := ( ctl > 0 ? "CTL_BAM" : "BAM" ) + "_REP" + rep
+	key2 := ( ctl > 0 ? "CTL_BAM" : "BAM" ) + rep
 
-	PEAK_PREFIX 	:= "$PEAK_OUTPUT_DIR/$CHIP_TA_PREFIX"
-	
-	// outputs
-	PEAK_FILE 	:= npeak
-	PEAK_KSM 	:= npeak.replace(".narrowPeak.gz","_KSM.txt")
-	PEAK_PFM 	:= npeak.replace(".narrowPeak.gz","_PFM.txt")
-	PEAK_HTML 	:= npeak.replace(".narrowPeak.gz","_result.htm")
-
-	Xmx := "-Xmx" + MEMORY_GEM + "M"
-
-	task( taskName := "gem " + taskname, cpus := NTHREADS_GEM, timeout := WALLTIME_GEM, mem := MEMORY_GEM * M, \
-		[PEAK_FILE] <- [ta, ctl_ta] ) {
-
-		sys $PRELOAD
-
-		sys export _JAVA_OPTIONS="-Xms256M $Xmx"; export MAX_JAVA_MEM=$MEMORY_GEM;
-		
-		sys gzip -d -c $ta > $PEAK_PREFIX.tagAlign
-		sys gzip -d -c $ctl_ta > $PEAK_PREFIX.ctl.tagAlign
-
-		sys java $Xmx -jar ${GEMROOT}/gem.jar --g $CHROM_SIZES --d ${GEMROOT}/Read_Distribution_default.txt --s 2400000000 \
-			--expt $PEAK_PREFIX.tagAlign  --ctrl $PEAK_PREFIX.ctl.tagAlign --f BED \
-			--out  $PEAK_PREFIX --genome $SEQ_DIR --k_min 6 --k_max 13 --outNP --q 0 --t $NTHREADS_GEM
-
-		sys rm -f $PEAK_PREFIX.tagAlign
-		sys rm -f $PEAK_PREFIX.ctl.tagAlign
-
-		//# =============================
-		//# Sort peaks by signal value and truncate peaks to top 300K
-		//# =============================
-		sys sort -k7nr,7nr "$PEAK_PREFIX/$CHIP_TA_PREFIX"_GEM_events.narrowPeak | head -n 300000 \
-			| gzip -c > $PEAK_FILE
-
-		sys mv "$PEAK_PREFIX/$CHIP_TA_PREFIX"_KSM.txt $PEAK_KSM
-		sys mv "$PEAK_PREFIX/$CHIP_TA_PREFIX"_PFM.txt $PEAK_PFM
-		sys mv "$PEAK_PREFIX/$CHIP_TA_PREFIX"_result.htm $PEAK_HTML
+	if ( conf.hasKey( key ) ) {
+		return get_path( conf{ key } )
+	}
+	else if ( conf.hasKey( key2 ) ) {
+		return get_path( conf{ key2 } )
+	}
+	else if ( (ctl==0) && (rep==1) ) {
+		return bam1
+	}
+	else if ( (ctl==0) && (rep==2) ) {
+		return bam2
+	}
+	else if ( (ctl==1) && (rep==1) ) {
+		return ctl_bam1
+	}
+	else if ( (ctl==1) && (rep==2) ) {
+		return ctl_bam2
+	}
+	else {
+		return ""
 	}
 }
 
+string get_tag( int ctl, int rep ) {
 
-void run_idr( string taskname, string out_dir, string peak1, string peak2, string pooled ) {
+	key := ( ctl > 0 ? "CTL_TAG" : "TAG" ) + "_REP" + rep
+	key2 := ( ctl > 0 ? "CTL_TAGALIGN" : "TAGALIGN" ) + "_REP" + rep
 
-	if ( USE_IDR_NBOLEY ) 	run_idr_nboley( taskname, out_dir, peak1, peak2, pooled )
-	else 			run_idr_anshul( taskname, out_dir, peak1, peak2, pooled )
-}
+	key3 := ( ctl > 0 ? "CTL_TAG" : "TAG" ) + rep
+	key4 := ( ctl > 0 ? "CTL_TAGALIGN" : "TAGALIGN" ) + rep
 
-// use --idr-threshold
-void run_idr_nboley( string taskname, string out_dir, string peak1, string peak2, string pooled ) {
-
-	prefix := "$out_dir/$taskname"
-	IDR_OUTPUT := "$prefix.overlapped-peaks.txt"
-
-	PEAK_FILE := "$prefix.IDR"+"$IDR_THRESH.narrowPeak.gz"
-	SUMMIT_PEAK_FILE := "$prefix.IDR"+"$IDR_THRESH.withSummits.narrowPeak.gz"
-
-	NPEAKS_IDR := "$out_dir/NPEAKS_IDR.txt"
-
-	peak1_  := "$out_dir/_" + get_basename( peak1 )
-	peak2_  := "$out_dir/_" + get_basename( peak2 )
-	pooled_ := "$out_dir/_" + get_basename( pooled )
-
-	task( taskName := "IDR (nboley)" + taskname, \
-		cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
-		[IDR_OUTPUT, PEAK_FILE, SUMMIT_PEAK_FILE]<- [peak1, peak2, pooled] ) { // --use-old-output-format 
-
-		sys $PRELOAD
-
-		// Bug fix (we have floating point representation of chr coord., possible bug in run_spp.R?):
-		// chr3    153999636       1.54e+08        .       0       .       4.47152214284156        -1      -0.0118951365772202     18
-		sys zcat $peak1 | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $peak1_
-		sys zcat $peak2 | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $peak2_
-		sys zcat $pooled | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $pooled_
-
-		sys idr --samples $peak1_ $peak2_ --peak-list $pooled_ --input-file-type narrowPeak \
-			--output-file $IDR_OUTPUT --rank signal.value --idr-threshold $IDR_THRESH \
-			--plot
-		
-                sys rm -rf $peak1_ $peak2_ $pooled_
-
-                //# ============================================================================
-		//# Get peaks passing global IDR threshold of 5% and convert file to narrowPeak format (Step 9)
-		//# ============================================================================
-		sys awk 'BEGIN{OFS="\t"} $5>'"$IDR_THRESH_TRANSFORMED"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' $IDR_OUTPUT \
-			| sort -u -k1,1 -k2,2n -k3,3n | sort -k7n,7n | gzip -c > $PEAK_FILE
-
-		//# =====================================
-		//# Get peaks summit locations from offsets (Step 10)
-		//# =====================================
-		sys zcat $PEAK_FILE | awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$2+$10}' | sort -k1,1 -k10,10n | gzip > $SUMMIT_PEAK_FILE
-
-		sys echo -e "$taskname\t$(zcat $PEAK_FILE | wc -l)" >> $NPEAKS_IDR
+	if ( conf.hasKey( key ) ) {
+		return get_path( conf{ key } )
 	}
-}
-
-// use --soft-idr-threshold
-void run_idr_nboley_gem( string taskname, string out_dir, string peak1, string peak2, string pooled ) {
-
-	prefix := "$out_dir/$taskname"
-	IDR_OUTPUT := "$prefix.overlapped-peaks.txt"
-
-	PEAK_FILE := "$prefix.IDR"+"$IDR_THRESH.narrowPeak.gz"
-	SUMMIT_PEAK_FILE := "$prefix.IDR"+"$IDR_THRESH.withSummits.narrowPeak.gz"
-
-	NPEAKS_IDR := "$out_dir/NPEAKS_IDR.txt"
-
-	peak1_  := "$out_dir/_" + get_basename( peak1 )
-	peak2_  := "$out_dir/_" + get_basename( peak2 )
-	pooled_ := "$out_dir/_" + get_basename( pooled )
-
-	task( taskName := "IDR (nboley)" + taskname, \
-		cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
-		[IDR_OUTPUT, PEAK_FILE, SUMMIT_PEAK_FILE]<- [peak1, peak2, pooled] ) { // --use-old-output-format 
-
-		sys $PRELOAD
-
-		// Bug fix (we have floating point representation of chr coord., possible bug in run_spp.R?):
-		// chr3    153999636       1.54e+08        .       0       .       4.47152214284156        -1      -0.0118951365772202     18
-		sys zcat $peak1 | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $peak1_
-		sys zcat $peak2 | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $peak2_
-		sys zcat $pooled | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $pooled_
-
-		sys idr --samples $peak1_ $peak2_ --peak-list $pooled_ --input-file-type narrowPeak \
-			--output-file $IDR_OUTPUT --rank signal.value --soft-idr-threshold $IDR_THRESH \
-			--plot
-
-                sys rm -rf $peak1_ $peak2_ $pooled_
-
-                //# ============================================================================
-		//# Get peaks passing global IDR threshold of 5% and convert file to narrowPeak format (Step 9)
-		//# ============================================================================
-		sys awk 'BEGIN{OFS="\t"} $5>'"$IDR_THRESH_TRANSFORMED"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' $IDR_OUTPUT \
-			| sort -u -k1,1 -k2,2n -k3,3n | sort -k7n,7n | gzip -c > $PEAK_FILE
-
-		//# =====================================
-		//# Get peaks summit locations from offsets (Step 10)
-		//# =====================================
-		sys zcat $PEAK_FILE | awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$2+$10}' | sort -k1,1 -k10,10n | gzip > $SUMMIT_PEAK_FILE
-
-		sys echo -e "$taskname\t$(zcat $PEAK_FILE | wc -l)" >> $NPEAKS_IDR		
+	else if ( conf.hasKey( key2 ) ) {
+		return get_path( conf{ key2 } )
 	}
-}
-
-void run_idr_anshul( string taskname, string out_dir, string peak1, string peak2, string pooled ) {
-
-	prefix 	:= "$out_dir/$taskname"
-	NPEAKS_IDR := "$out_dir/NPEAKS_IDR.txt"	
-
-	POOLED_COMMON_PEAKS 	:= "$prefix.POOLED_COMMON_PEAKS.gz"
-	COMMON_REP1_MATCH 	:= "$prefix.COMMON_REP1_MATCH.gz"
-	COMMON_REP2_MATCH 	:= "$prefix.COMMON_REP2_MATCH.gz"
-	REP1_VS_REP2 		:= prefix
-	RECAL_POOLED_COMMON_PEAKS := "$prefix.RECAL_POOLED_COMMON_PEAKS.gz"
-	POOLED_COMMON_PEAKS_IDR := "$prefix.POOLED_COMMON_PEAKS_IDR.gz"
-
-	IDR_OUTPUT 	:= REP1_VS_REP2+".IDR"+IDR_THRESH+".narrowPeak.gz"
-	OUTPUT_PREFIX 	:= taskname
-
-	// temp files to replace floating point number with integer
-	peak1_ 	:= "$out_dir/_" + get_basename( peak1 )
-	peak2_ 	:= "$out_dir/_" + get_basename( peak2 )
-	pooled_ := "$out_dir/_" + get_basename( pooled )
-
-	task( taskName := "IDR (anshul)" + taskname, cpus := NTHREADS, timeout := WALLTIME, mem := MEMORY * M, \
-		IDR_OUTPUT <- [peak1, peak2, pooled] ) { // --use-old-output-format 
-
-		sys $PRELOAD
-
-		// Bug fix (we have floating point representation of chr coord., possible bug in run_spp.R?):
-		// chr3    153999636       1.54e+08        .       0       .       4.47152214284156        -1      -0.0118951365772202     18
-		sys zcat $peak1 | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $peak1_
-		sys zcat $peak2 | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $peak2_
-		sys zcat $pooled | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -c > $pooled_
-
-		//# =============================
-		//# Find peaks in pooled set common to both replicates
-		//# =============================
-		sys bedtools intersect -u -a $pooled_ -b $peak1_ | bedtools intersect -u -a stdin -b $peak2_ \
-			| sort -k7n,7n -k1,1 -k2n,2n -k3n,3n -k10n,10n | gzip -c > $POOLED_COMMON_PEAKS
-
-		//# =============================
-		//# Create 2 new peak file per replicate with coordinates from common pooled set but scores from replicates by first computing overlaps, then then matching to closest summit, then recalibration coordinates to be +/- 2 bp from pooled set summit
-		//# =============================
-		sys bedtools intersect -wa -wb -a $POOLED_COMMON_PEAKS -b $peak1_ \
-			| awk 'BEGIN{OFS="\t"}{d=$2+$10-$12-$20;$21=sqrt(d^2);print $0}' \
-			| bedtools groupby -i stdin -g 1,2,3,10 -c 21 -o min -full | sort -k7n,7n -k1,1 -k2n,2n -k3n,3n -k10n,10n \
-			| awk 'BEGIN{OFS="\t"}{print $1,$2+$10-2,$2+$10+2,$4,$5,$6,$17,$18,$19,2}' | gzip -c > $COMMON_REP1_MATCH
-		sys bedtools intersect -wa -wb -a $POOLED_COMMON_PEAKS -b $peak2_ \
-			| awk 'BEGIN{OFS="\t"}{d=$2+$10-$12-$20;$21=sqrt(d^2);print $0}' \
-			| bedtools groupby -i stdin -g 1,2,3,10 -c 21 -o min -full | sort -k7n,7n -k1,1 -k2n,2n -k3n,3n -k10n,10n \
-			| awk 'BEGIN{OFS="\t"}{print $1,$2+$10-2,$2+$10+2,$4,$5,$6,$17,$18,$19,2}' | gzip -c > $COMMON_REP2_MATCH
-
-		//# =============================
-		//# Pass recalibrated peak files to IDR
-		//# Rscript batch-consistency-analysis.r [peakfile1] [peakfile2] [peak.half.width] [outfile.prefix] [min.overlap.ratio] [is.broadpeak] [ranking.measure]
-		//# For SPP & GEM use [ranking.measure] as signal.value. For PeakSeq use q.value
-		//# make sure the genome_table.txt file is set to the correct version of the genome
-		//# =============================
-		sys cd $(dirname $(which batch-consistency-analysis.r))
-		sys Rscript batch-consistency-analysis.r $COMMON_REP1_MATCH $COMMON_REP2_MATCH -1 $REP1_VS_REP2 0 F signal.value
-		sys cd $out_dir
-
-		//# =============================
-		//# Convert IDR overlap file to narrowPeak format 
-		//# =============================
-		sys sed 1d $REP1_VS_REP2-overlapped-peaks.txt | sed -r 's/"//g' | sort -k11g,11g \
-			| awk '{if ($3 <=$7) st=$3 ; else st=$7 ; if ($4 >= $8) sto=$4 ; else sto=$8 ; printf "%s\t%d\t%d\t%d\t%s\t.\t%s\t%f\t%f\n",$2,st,sto,NR,$5,$9,$10,$11}' \
-			| gzip -c > $REP1_VS_REP2.npk.gz
-
-		//# =============================
-		//# Create a recalibrated vesion of $POOLED_COMMON_PEAKS where coordinates are to be +/- 2 bp from pooled set summit. This is so we can match it with IDR output and retranslate back to original pooled set coordinates
-		//# =============================
-		sys zcat $POOLED_COMMON_PEAKS | awk 'BEGIN{OFS="\t"}{$11=$2;$12=$3;$2=$2+$10-2;$3=$2+$10+2; print $0}' \
-			| gzip -c > $RECAL_POOLED_COMMON_PEAKS
-
-		//# =============================
-		//# Overlap IDR output with $RECAL_POOLED_COMMON_PEAKS to add in IDR scores and switch back to original common pooled set coordinates
-		//# Columns 1-10 are same as pooled common peaks columns
-		//# Col 11: ranking measure from Rep1
-		//# Col 12: ranking measure from Rep2
-		//# Col 13: local IDR score
-		//# Col 14: global IDR score
-		//# IMPORTANT: DCC should store this file! All other files are temporary
-		//# =============================
-		sys bedtools intersect -wa -wb -a $RECAL_POOLED_COMMON_PEAKS -b  $REP1_VS_REP2.npk.gz \
-			| awk 'BEGIN{OFS="\t"}{print $1,$11,$12,$4,$5,$6,$7,$8,$9,$10,$17,$19,$20,$21}' | gzip -c > $POOLED_COMMON_PEAKS_IDR
-
-		//# =============================
-		//# Get peaks passing IDR threshold of 2%
-		//# =============================
-		//sys IDR_THRESH=0.02
-		sys zcat $POOLED_COMMON_PEAKS_IDR | awk 'BEGIN{OFS="\t"} $14<='"$IDR_THRESH"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' \
-			| sort -k7n,7n | gzip -c > $IDR_OUTPUT
-
-		sys NPEAKS_IDR=$(zcat $IDR_OUTPUT | wc -l)
-
-		//# =============================
-		//# Format: Rscript batch-consistency-plot.r [npairs] [output.prefix] [input.file.prefix1] [input.file.prefix2] [input.file.prefix3] ....
-		//# =============================
-		sys cd $(dirname $(which batch-consistency-plot.r))
-		sys Rscript batch-consistency-plot.r 1 $REP1_VS_REP2 $REP1_VS_REP2
-		sys cd $out_dir
-		
-		sys rm -rf $peak1_ $peak2_ $pooled_
-
-		sys echo -e "$taskname\t${NPEAKS_IDR}" >> $NPEAKS_IDR
+	else if ( conf.hasKey( key3 ) ) {
+		return get_path( conf{ key3 } )
 	}
-}
-
-string get_basename( string path ) { // BDS .baseName() returns wrong basename for softlinks	
-	int loc_slash = path.lastIndexOf( "/" )
-	return path.substr( loc_slash+1 )
+	else if ( conf.hasKey( key4 ) ) {
+		return get_path( conf{ key4 } )
+	}
+	else if ( (ctl==0) && (rep==1) ) {
+		return tag1
+	}
+	else if ( (ctl==0) && (rep==2) ) {
+		return tag2
+	}
+	else if ( (ctl==1) && (rep==1) ) {
+		return ctl_tag1
+	}
+	else if ( (ctl==1) && (rep==2) ) {
+		return ctl_tag2
+	}
+	else {
+		return ""
+	}
 }
 
 string get_peak( int rep ) { // rep0 = pooled peak
 
-	key := ( rep == 0 ? "INPUT_PEAK_POOLED" : ("INPUT_PEAK_REP" + rep) ) 
+	key := ( rep == 0 ? "PEAK_POOLED" : ("PEAK_REP" + rep) )
+	key2 := ( rep == 0 ? "PEAK_POOLED" : ("PEAK" + rep) )
 
 	if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )
+	}
+	else if ( conf.hasKey( key2 ) ) {
+		return get_path( conf{ key2 } )
 	}
 	else if ( rep==1 ) {
 		return peak1
@@ -763,5 +878,214 @@ string get_peak( int rep ) { // rep0 = pooled peak
 	}
 	else {
 		return ""
+	}
+}
+
+bool is_rep2_exist( int ctl ) {
+	if ( is_input_fastq() ) {
+		fastqs := get_fastqs( ctl, 2 )
+		return fastqs.size()>0
+	}
+	else if ( is_input_bam() || is_input_nodup_bam() ) {
+		bam := get_bam( ctl, 2 )
+		return bam!=""
+	}
+	else if ( is_input_tag() ) {
+		tag := get_tag( ctl, 2 )
+		return tag!=""
+	}
+	return false;
+}
+
+bool is_bam_paired_end( int ctl, int rep ) {
+	key := ( ctl > 0 ? "CTL_BAM" : "BAM" ) + rep + "_PE"
+
+	if ( conf.hasKey( key ) ) {
+		return conf{ key }.parseBool()
+	}
+	else if ( (ctl==0) && (rep==1) ) {
+		return bam1_PE
+	}
+	else if ( (ctl==0) && (rep==2) ) {
+		return bam2_PE
+	}
+	else if ( (ctl==1) && (rep==1) ) {
+		return ctl_bam1_PE
+	}
+	else if ( (ctl==1) && (rep==2) ) {
+		return ctl_bam2_PE
+	}
+	else {
+		return false
+	}
+}
+
+bool is_bam_single_ended( int ctl, int rep ) {
+	return !is_bam_paired_end( ctl, rep )
+}
+
+bool is_bam_PE( int ctl, int rep ) {
+	return is_bam_paired_end( ctl, rep )
+}
+
+bool is_bam_SE( int ctl, int rep ) {
+	return is_bam_single_ended( ctl, rep )
+}
+
+bool is_tag_paired_end( int ctl, int rep ) {
+	key := ( ctl > 0 ? "CTL_TAG" : "TAG" ) + rep + "_PE"
+
+	if ( conf.hasKey( key ) ) {
+		return conf{ key }.parseBool()
+	}
+	else if ( (ctl==0) && (rep==1) ) {
+		return tag1_PE
+	}
+	else if ( (ctl==0) && (rep==2) ) {
+		return tag2_PE
+	}
+	else if ( (ctl==1) && (rep==1) ) {
+		return ctl_tag1_PE
+	}
+	else if ( (ctl==1) && (rep==2) ) {
+		return ctl_tag2_PE
+	}
+	else {
+		return false
+	}
+}
+
+bool is_tag_single_ended( int ctl, int rep ) {
+	return !is_tag_paired_end( ctl, rep )
+}
+
+bool is_tag_PE( int ctl, int rep ) {
+	return is_tag_paired_end( ctl, rep )
+}
+
+bool is_tag_SE( int ctl, int rep ) {
+	return is_tag_single_ended( ctl, rep )
+}
+
+bool is_paired_end( int ctl, int rep ) {
+
+	if ( is_input_fastq() ) {
+		fastqs := get_fastqs( ctl, rep )
+		return fastqs.size()==2
+	}
+	else if ( is_input_bam() || is_input_nodup_bam() ) {		
+		return is_bam_PE( ctl, rep )
+	}
+	else if ( is_input_tag() ) {
+		return is_tag_PE( ctl, rep )
+	}
+	return false;
+}
+
+bool is_single_ended( int ctl, int rep ) {
+
+	if ( is_input_fastq() ) {
+		fastqs := get_fastqs( ctl, rep )
+		return fastqs.size()==1
+	}
+	else if ( is_input_bam() || is_input_nodup_bam()  ) {
+		return is_bam_SE( ctl, rep )
+	}
+	else if ( is_input_tag() ) {
+		return is_tag_SE( ctl, rep )
+	}
+	return false;
+}
+
+bool is_SE( int ctl, int rep ) {
+	return is_single_ended( ctl, rep )
+}
+
+bool is_PE( int ctl, int rep ) {
+	return is_paired_end( ctl, rep )
+}
+
+bool is_input_fastq() {
+	return input.toLower() == "fastq"
+}
+
+bool is_input_bam() {
+	return input.toLower() == "bam"
+}
+
+bool is_input_nodup_bam() {
+	return input.toLower() == "nodup_bam"
+}
+
+bool is_input_tag() {
+	return input.toLower() == "tag" || input.toLower() == "tagalign"
+}
+
+bool is_input_peak() {
+	return input.toLower() == "peak"
+}
+
+bool is_final_stage_bam() {
+	return final_stage.toLower() == "bam"
+}
+
+bool is_final_stage_nodup_bam() {
+	return final_stage.toLower() == "nodup_bam"
+}
+
+bool is_final_stage_tag() {
+	return final_stage.toLower() == "tag" || final_stage.toLower() == "tagalign"
+}
+
+bool is_final_stage_xcor() {
+	return final_stage.toLower() == "xcor"
+}
+
+bool is_final_stage_peak() {
+	return final_stage.toLower() == "peak"
+}
+
+bool is_final_stage_idr() {
+	return (final_stage.toLower() == "idr") || (final_stage.toLower() == "")
+}
+
+bool is_final_stage_before_nodup_bam() {
+	return is_final_stage_bam()
+}
+
+bool is_final_stage_before_tag() {
+	return is_final_stage_bam() || is_final_stage_nodup_bam()
+}
+
+bool is_final_stage_before_xcor() {
+	return is_final_stage_bam() || is_final_stage_nodup_bam() || is_final_stage_tag()
+}
+
+bool is_final_stage_before_peak() {
+	return is_final_stage_bam() || is_final_stage_nodup_bam() || is_final_stage_tag() \
+		|| is_final_stage_xcor()
+}
+
+bool is_final_stage_before_idr() {
+	return is_final_stage_bam() || is_final_stage_nodup_bam() || is_final_stage_tag() \
+		|| is_final_stage_xcor() || is_final_stage_peak()
+}
+
+string get_task_info( int ctl, int rep ) {
+	return ( (ctl>0) ? "ctl_" : "") + "rep" + rep
+}
+
+bool is_data_available( int ctl, int rep ) {
+	if ( is_input_fastq() ) {
+		return get_fastqs( ctl, rep ).size() > 0
+	}
+	else if ( is_input_bam() || is_input_nodup_bam() ) {
+		return get_bam( ctl, rep ) != ""
+	}
+	else if ( is_input_tag() ) {
+		return get_tag( ctl, rep ) != ""
+	}
+	else {
+		return false
 	}
 }

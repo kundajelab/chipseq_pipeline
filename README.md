@@ -8,15 +8,15 @@ Taking advandatge of the powerful pipeline language BigDataScript (http://pcingo
 ```
 1) One-command-line installation for all dependencies for ChIP-Seq pipeline.
 2) One command line (or one configuration file) to run the whole pipeline.
-3) Starting the pipeline from fastq, bam or tagalign inputs.
-4) Resuming from the point of failure.
+3) Starting the pipeline from fastq, bam, tagalign and peak.
+4) Resuming from the point of failure without re-doing finished stages.
 5) Automatically optimizing parallel jobs for the pipeline.
 6) Sun Grid Engine cluster support.
 7) Realtime HTML Progress reports to monitor pipeline jobs.
 ```
 
 
-### Installation instruction (pipelines and their dependencies)
+### Installation instruction
 
 Get the latest version of chipseq pipelines and install dependencies.
 ```
@@ -40,13 +40,12 @@ export PATH=$PATH:$HOME/.bds
 
 ### Installation instruction (for Kundaje lab members)
 
-For Kundaje lab members, all dependencies have already been installed on lab servers. Do not run install_dependencies.sh on Kundaje lab servers.
-Get the latest version of BigDataScript.
+For Kundaje lab members, BDS and all dependencies have already been installed on lab servers. Do not run install_dependencies.sh on Kundaje lab servers.
+
+Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
 ```
-$ cd $HOME
-$ wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate
-$ tar zxvf bds_Linux.tgz
-$ rm -f bds_Linux.tgz
+$ mkdir -p $HOME/.bds
+$ cp bds.config $HOME/.bds/
 ```
 
 Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
@@ -54,432 +53,249 @@ Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
 export PATH=$PATH:$HOME/.bds
 ```
 
-Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
+For Kundaje lab servers (mitra, nandi, amold and wotan), the pipeline provides a flag to automatically set shell environments.
 ```
-$ git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
-$ cd ENCODE_chipseq_pipeline
-$ cp bds.config $HOME/.bds/
-```
-
-For Kundaje lab servers (mitra, nandi, amold and wotan), the pipeline provides flags to automatically set environments for all required softwares.
-```
-# Add the following to the command line argument
-$ bds -s sge chipseq.bds \
-...
--kundaje_lab true
-
-# Add the following to the configuration file
-$ bds -s sge [CONF_FILE]
-
-$ cat [CONF_FILE]
-...
-KUNDAJE_LAB= true
+$ bds -s sge chipseq.bds [...] -kundaje_lab true
 ```
 
 
-### Usage (starting from fastq inputs)
+### Usage
 
-There are two ways to define parameters for ChIP-Seq pipelines. For most of the parameters, they already have default values. If they are not defined in command line argument or in a configuration file, default value will be used. Take a look at example commands and configuration files (./examples). IMPORTANT! For generating bwa index, we recommend to use bwa 0.7.3.
-
-The following examples are for single ended data set. For paired end one, take a look at the next chapter.
+There are two ways to define parameters for ChIP-Seq pipelines.
+Default values are already given for most of them.
+Take a look at example commands and configuration files (./examples).
 
 1) From command line arguments 
+
 ```
-# general usage
-$ bds chipseq.bds [OPTS_FOR_PIPELINE]
+$ bds chipseq.bds [OPTS]
+```
 
-# help for parameters
-$ bds chipseq.bds -h
-
-# example cmd. line args 
-#  -single ended fastqs input, no replicate-2 control fastq
-#  -using spp as peak calling method
-#  -using Anshul Kundaje's IDR code
-
+Example (for single ended fastqs):
+```
 $ bds chipseq.bds \
--prefix ENCSR000EGM \
 -fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
 -ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
--idx_bwa /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
--peakcall spp \
--idr_nboley false 	# if false, use A. Kundaje's IDR code
+-bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
 ```
 
 2) From a configuration file
+
 ```
 $ bds chipseq.bds [CONF_FILE]
+```
 
-#  -single ended fastqs input, no replicate-2 control fastq
-#  -using spp as peak calling method
-#  -using Nathan Boley's IDR code
-
+Example configuriation file:
+```
 $ cat [CONF_FILE]
 
-PREFIX= ENCSR000EGM
-INPUT_TYPE= fastq
-INPUT_FASTQ_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
-INPUT_FASTQ_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
-INPUT_FASTQ_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
-BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
-PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
-			// for histone chipesq, use macs2
-USE_IDR_NBOLEY= true 	// if true, use Nathan Boley's IDR code
+INPUT= fastq
+FASTQ1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
+FASTQ2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
+CTL_FASTQ1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
+BWA_IDX= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 ```
 
 
-### Usage (starting from bam inputs)
+### Input data type and final stage
 
-1) From command line arguments 
-
+The ENCODE ChIP-Seq pipeline can start from various types of data.
 ```
-#  -single ended bam input (add -bam_PE false)
-#  -single ended control bam input (add -bam_ctl_PE false), no replicate-2 control bam
-#  -using spp as peak calling method
-#  -using Anshul Kundaje's IDR code
+1) fastq 
+2) bam
+3) nodup_bam	(it's bam but dupes are removed)
+4) tag
+5) peak
+```
 
+It can also stop immediately after a specified stage (-final_stage [STAGE])
+```
+1) bam  	: fastq -> bam
+2) nodup_bam 	: bam -> bam (dupe removed)
+3) tag 		: bam -> tagalign
+4) xcor 	: cross-correlation analysis
+5) peak 	: peak calling
+6) idr 		: IDR
+```
+
+Example:
+If you want to start from bam files and stop right after cross-correlation analysis.
+```
+$ bds chipseq.bds [...] -input bam [...] -final_stage xcor
+...
+
+
+### How to define input data type and path
+
+Define input data type with -input [DATA_TYPE]. Choose [DATA_TYPE] in [fastq, bam, nodup_bam, tag, peak].
+
+For inputs:
+Define data path with -[DATA_TYPE][REPLICATE_ID].
+
+For contols:
+Define data path with -ctl_[DATA_TYPE][REPLICATE_ID].
+
+1) Starting from fastqs (see the example in the previous chapter)
+
+2) Starting from bams
+```
 $ bds chipseq.bds \
--prefix ENCSR000EGM \
 -input bam \
--bam_PE false \
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--bam_ctl_PE false \
--ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
--peakcall spp \
--idr_nboley false
+-ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRBbam \
 ```
 
-2) From a configuration file
+3) Starting from bams (nodup_bam: dupe removed)
 ```
-$ bds chipseq.bds [CONF_FILE]
-
-#  -single ended bam input (set BAM_PE= false)
-#  -single ended control bam input (set BAM_CTL_PE= false), no replicate-2 control bam
-#  -using spp as peak calling method
-#  -using Nathan Boley's IDR code
-
-$ cat [CONF_FILE]
-
-PREFIX= ENCSR000EGM
-INPUT_TYPE= BAM
-BAM_PE= false
-INPUT_BAM_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.bam
-INPUT_BAM_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.bam
-BAM_CTL_PE= false
-INPUT_BAM_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam
-PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
-			// for histone chipesq, use macs2
-USE_IDR_NBOLEY= true
-```
-
-
-### Usage (starting from tagalign inputs)
-
-1) From command line arguments 
-
-```
-#  -single ended tagalign input (add -tagalign_PE false)
-#  -single ended control tagalign input (add -tagalign_ctl_PE false), no replicate-2 control tagalign
-#  -using spp as peak calling method
-#  -using Anshul Kundaje's IDR code
-
 $ bds chipseq.bds \
--prefix ENCSR000EGM \
--input tagalign \
--tagalign_PE false \
--tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
--tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
--tagalign_ctl_PE false \
--ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
--peakcall spp \
--idr_nboley false
-```
-
-2) From a configuration file
-```
-$ bds chipseq.bds [CONF_FILE]
-
-#  -single ended tagalign input (set TAGALIGN_PE= false)
-#  -single ended control tagalign input (set TAGALIGN_CTL_PE= false), no replicate-2 control tagalign
-#  -using spp as peak calling method
-#  -using Nathan Boley's IDR code
-
-$ cat [CONF_FILE]
-
-PREFIX= ENCSR000EGM
-INPUT_TYPE= tagalign
-TAGALIGN_PE= false
-INPUT_TAGALIGN_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.tagalign
-INPUT_TAGALIGN_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.tagalign
-TAGALIGN_CTL_PE= false
-INPUT_TAGALIGN_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign
-PEAKCALL_METHOD= spp 	// options: spp, macs2 and gem (idr only for spp)
-			// for histone chipesq, use macs2
-USE_IDR_NBOLEY= true
-```
-
-### For paired end data set
-
-1) For fastqs (-input fastq in command line argument or INPUT_TYPE==fastq in a configuration file):
-The pipeline automatically determines if fastqs are single end or paired end by the number (and key name) of fastqs defined in command line argument or in a configuration file. Key name must be 'fastq?' for single ended fastq and 'fastq?_#' for paired end fastqs where ? and # mean the index of each replicate and pairing index, respectively.
-
-```
-# inputs and control are single ended
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--input fastq \
--fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
--fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
--ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
-...
-
-# inputs and control are paired end
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--input fastq \
--fastq1_1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
--fastq1_2 /DATA/ENCSR000EGM/ENCFF000YLW2.fastq.gz \
--fastq2_1 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
--fastq2_2 /DATA/ENCSR000EGM/ENCFF000YLY2.fastq.gz \
--ctl_fastq1_1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
--ctl_fastq1_2 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB2.fastq.gz \
-...
-
-# inputs are paired end control is single ended
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--input fastq \
--fastq1_1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
--fastq1_2 /DATA/ENCSR000EGM/ENCFF000YLW2.fastq.gz \
--fastq2_1 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
--fastq2_2 /DATA/ENCSR000EGM/ENCFF000YLY2.fastq.gz \
--ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
-...
-```
-
-2) For bams (-input bam in command line argument or INPUT_TYPE==bam in a configuration file):
-The pipeline take additional parameters (-bam_PE and -bam_ctl_PE for command line argument, BAM_PE and BAM_CTL_PE for a configuration file) to determines if data set is single end or paired end.
-
-```
-# inputs and control are single ended
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--input bam \
--bam_PE false \
+-input nodup_bam
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--bam_ctl_PE false \
 -ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
-...
-
-# inputs and control are paired-end
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--input bam \
--bam_ctl_PE true \
--bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
--bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--bam_ctl_PE true \
--ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
-...
-
-# inputs are paired end and control is single ended
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--input bam \
--bam_ctl_PE true \
--bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
--bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--bam_ctl_PE false \
--ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
-...
 ```
 
-3) For tagaligns (-input tagalign in command line argument or INPUT_TYPE==tagalign in a configuration file):
-The pipeline take additional parameters (-tagalign_PE and -tagalign_ctl_PE for command line argument, TAGALIGN_PE and TAGALIGN_CTL_PE for a configuration file) to determines if data set is single end or paired end.
-
+4) Starting from tagaligns
 ```
-# inputs and control are single ended
 $ bds chipseq.bds \
--prefix ENCSR000EGM \
--input tagalign \
--tagalign_PE false \
--tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
--tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
--tagalign_ctl_PE false \
--ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
-...
-
-# inputs and control are paired-end
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--input tagalign \
--tagalign_ctl_PE true \
--tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
--tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
--tagalign_ctl_PE true \
--ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
-...
-
-# inputs are paired end and control is single ended
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--input tagalign \
--tagalign_ctl_PE true \
--tagalign1 /DATA/ENCSR000EGM/ENCFF000YLW.tagalign \
--tagalign2 /DATA/ENCSR000EGM/ENCFF000YLY.tagalign \
--tagalign_ctl_PE false \
--ctl_tagalign1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagalign \
-...
+-input tag \
+-tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
+-tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
+-ctl_tag1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
 ```
 
-4) For peaks (-input peak in command line argument or INPUT_TYPE==peak in a configuration file):
+5) Starting from peak files
+```
+$ bds chipseq.bds \
+-input peak
+-peak1 /DATA/Example1.narrowPeak.gz \
+-peak2 /DATA/Example2.narrowPeak.gz \
+-pooled /DATA/Example.pooled.narrowPeak.gz \
+```
+
+
+### How to define single ended (SE) and paired-end (PE) data set
+
+You can mix up SE and PE data set.
+
+1) Starting from fastqs
+
+For inputs:
+Define data path as -fastq[REPLICATE_ID], then it's SE.
+Define data path as -fastq[REPLICATE_ID]_[PAIRING_ID], then it's PE.
+
+For controls:
+Define data path as -ctl_fastq[REPLICATE_ID], it's SE.
+Define data path as -ctl_fastq[REPLICATE_ID]_[PAIRING_ID], it's PE.
+
+Example:
+Replicate 1 and control replicate 2 are SE.
+Replicate 2 and control replicate 1 are PE.
 
 ```
 $ bds chipseq.bds \
--input peak \
--peak1 /DATA/rep1_regionpeak.gz \
--peak2 /DATA/rep2_regionpeak.gz \
--pooled /DATA/pooled_regionpeak.gz \
--idr_nboley false 	# if false, use A. Kundaje's IDR code
+-fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
+-fastq2_1 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
+-fastq2_2 /DATA/ENCSR769ZTN/ENCFF002ELK.fastq.gz \
+-ctl_fastq1_1 /DATA/ENCSR000EGM/Ctl/Ctl/ENCFF002EFQ.fastq.gz \
+-ctl_fastq1_2 /DATA/ENCSR000EGM/Ctl/Ctl/ENCFF002EFT.fastq.gz \
+-ctl_fastq2 /DATA/ENCSR000EGM/Ctl/Ctl/ENCFF002EFS.fastq.gz \
+-ctl_fastq2 /DATA/ENCSR000EGM/Ctl/Ctl/ENCFF002EFU.fastq.gz \
+-bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 ```
 
-### Alignment only mode without peak calling
+2) Starting from others (bam, nodup_bam and tag)
 
-Without peak calling, data for multiple number of replicates can be processed to generate desired outputs only (bam, tagalign and cross correlation score/plot). Pipeline stages are: bam -> tagalign -> xcor. Also, you can start from any input type (fastq, bam or tagalign).
+For inputs:
+Add a parameter "-[DATA_TYPE][REPLICATE_ID]_PE true" if it's PE
 
-Take a look at the following examples.
+For controls:
+Add a parameter "-ctl_[DATA_TYPE][REPLICATE_ID]_PE true" if it's PE
 
-1) Starting from fastqs, final stage is bam generation
+Example:
+Repliacte 1 and control replicate 1 are SE.
+Replicate 2 is PE.
 
+```
+$ bds chipseq.bds \
+-input tag \
+-tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
+-tag2_PE true \
+-tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
+-ctl_tag1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
+```
+
+
+### Choose peak calling
+
+1) Peak calling 
+
+Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]
+
+Example for gem:
+Define additional parameters (-chrsz, -seq)
+```
+$ bds chipseq.bds \
+...
+-peakcall gem
+-chrsz /DATA/hg19.chrom.sizes \
+-seq /DATA/encodeHg19Male
+```
+
+Example for macs2:
+Define additional parameters (-chrsz)
+```
+$ bds chipseq.bds \
+...
+-peakcall gem
+-chrsz /DATA/hg19.chrom.sizes
+-gensz hs
+```
+
+Seq is the directory where reference genome files exist. Chrsz is ChromeSize file. Gensz is hs for human and mm for mouse.
+
+
+### Choose IDR method
+
+There are two versions of IDR. IDR works after spp and gem peak calling only.
+
+1) IDR1
+
+No additional parameter required.
+
+2) IDR2
+
+```
+$ bds chipseq.bds \
+...
+-use_idr1 false
+```
+
+
+### Alignment only mode (without peak calling and IDR)
+
+You can align more than 2 replicates. This special mode only works with a configuration file (not from command line argument).
 ```
 $ bds chipseq.bds [CONF_FILE]
-
-$ cat [CONF_FILE]
-
-PREFIX= ENCSR000EGM
-FINAL_STAGE= bam 	// choose final stage to stop the pipeline (options: bam, tagalign and xcor)
-NUM_REP= 5 		// number of replicates you want to align
-INPUT_TYPE= fastq 	// starting from fastq inputs
-INPUT_FASTQ_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
-INPUT_FASTQ_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
-INPUT_FASTQ_REP3= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
-INPUT_FASTQ_REP4= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
-INPUT_FASTQ_REP5= /DATA/ENCSR000EGM/ENCFF000???.fastq.gz
-BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa 	// don't forget to inlcude bwa idx if starting from fastqs
 ```
 
-1) Starting from bams, final stage is cross-correlation score/plot.
+Example: 
+You have 10 fastqs for 10 replicates. Final output is tagalign.
 
 ```
-$ bds chipseq.bds [CONF_FILE]
-
 $ cat [CONF_FILE]
 
-PREFIX= ENCSR000EGM
-FINAL_STAGE= xcor 	// choose final stage to stop the pipeline (options: bam, tagalign and xcor)
-NUM_REP= 25 		// number of replicates you want to align
-INPUT_TYPE= bam 	// starting from bam inputs
-INPUT_BAM_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.bam
-INPUT_BAM_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.bam
+FINAL_STAGE= bam 	// choose final stage to stop the pipeline (bam, nodup_bam, tag, xcor)
+NUM_REP= 10 		// number of replicates you want to align
+FASTQ1= /DATA/ENCFF000YLW.fastq.gz
+FASTQ2= /DATA/ENCFF000YLY.fastq.gz
+FASTQ3= /DATA/ENCFF000???.fastq.gz
+FASTQ4= /DATA/ENCFF000???.fastq.gz
+FASTQ5= /DATA/ENCFF000???.fastq.gz
 ...
-INPUT_BAM_REP25= /DATA/ENCSR000EGM/ENCFF000???.bam
+BWA_IDX= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa 	// don't forget to inlcude bwa idx if starting from fastqs
 ```
-
-
-### Usage (GEM peak calling)
-
-GEM (http://cgs.csail.mit.edu/gem/) is very memory dependent (at least 16GB). Please make sure that your memory setting for GEM is correct. You can start from any input types (fastq, bam and tagalign).
-
-1) From command line arguments 
-```
-# general usage
-$ bds chipseq.bds [OPTS_FOR_PIPELINE]
-
-#  -single ended fastqs input, no replicate-2 control fastq
-#  -using gem as peak calling method
-
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
--fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
--ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
--idx_bwa /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
--peakcall gem \
--chr_sz /DATA/hg19.chrom.sizes \
--seq_dir /DATA/encodeHg19Male \ 
--nth_gem 2 \
--mem_gem 16000 		# in megabytes. For big files, set it 32000
-```
-
-2) From a configuration file
-```
-$ bds chipseq.bds [CONF_FILE]
-
-#  -single ended fastqs input, no replicate-2 control fastq
-#  -using gem as peak calling method
-
-$ cat [CONF_FILE]
-
-PREFIX= ENCSR000EGM
-INPUT_TYPE= fastq
-INPUT_FASTQ_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
-INPUT_FASTQ_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
-INPUT_FASTQ_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
-BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
-PEAKCALL_METHOD= gem 	// options: spp, macs2 and gem (idr only for spp)
-			// for histone chipesq, use macs2
-CHROM_SIZES= /DATA/hg19.chrom.sizes 	// tab separated chrom size file
-SEQ_DIR= /DATA/encodeHg19Male 		// directory for reference sequence files (chr*.fa)
-NTHREADS_GEM= 2 	// multi threading for gem
-MEMORY_GEM= 16000 	// in megabytes. For big files, set it 32000
-```
-
-
-### Usage (MACS2 peak calling)
-
-You can start from any input types (fastq, bam and tagalign). No IDR for MACS2 peak calling.
-
-1) From command line arguments 
-```
-# general usage
-$ bds chipseq.bds [OPTS_FOR_PIPELINE]
-
-#  -single ended fastqs input, no replicate-2 control fastq
-#  -using macs2 as peak calling method
-
-$ bds chipseq.bds \
--prefix ENCSR000EGM \
--fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
--fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
--ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
--idx_bwa /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
--peakcall macs2 \
--chr_sz /DATA/hg19.chrom.sizes \
--nth_macs2 2
-```
-
-2) From a configuration file
-```
-$ bds chipseq.bds [CONF_FILE]
-
-#  -single ended fastqs input, no replicate-2 control fastq
-#  -using gem as peak calling method
-
-$ cat [CONF_FILE]
-
-PREFIX= ENCSR000EGM
-INPUT_TYPE= fastq
-INPUT_FASTQ_REP1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
-INPUT_FASTQ_REP2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
-INPUT_FASTQ_CTL_REP1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
-BWA_INDEX_NAME= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
-PEAKCALL_METHOD= macs2	// for histone chipesq, use macs2
-CHROM_SIZES= /DATA/hg19.chrom.sizes 	// tab separated chrom size file
-NTHREADS_MACS2= 2 	// multi threading for macs2
-```
-
 
 ### For desktops with limited memory (< 16GB)
 
@@ -489,40 +305,19 @@ The minimum memory requirement for the pipeline is 8GB, but we recommend to run 
 
 1) (SLOW BUT STABLE) Turn off parallelization by using the flag "-no_par_job true" in command line argument or "NO_PARALLEL_JOB=true" in a configuration file. However, individual jobs can still use multiple number of processors so increase the number of threads to speed up the pipeline.
 
+Example: for desktop with 4 cores
 ```
-# For desktop with 4 cores
 $ bds chipseq.bds -no_par_job true -nth_bwa_aln 4 -nth_spp 4 ...
-
-or
-
-$ bds chipseq.bds [CONF_FILE]
-
-$ cat [CONF_FILE]
-NO_PARALLEL_JOB=true
-NTHREADS_BWA_ALN=4
-NTHREADS_SPP=4
-...
 ```
 
 2) (FAST BUT UNSTABLE) Do not turn off paralleization but just increase the number of threads for BIG-MEMORY bottleneck jobs (bwa and spp) to your computer's maximum so that no BIG-MEMORY jobs will be parallelized.
 
+Example: for desktop with 4 cores
 ```
-# For desktop with 4 cores
 $ bds chipseq.bds -nth_bwa_aln 4 -nth_spp 4 ...
-
-or
-
-$ bds chipseq.bds [CONF_FILE]
-
-$ cat [CONF_FILE]
-NO_PARALLEL_JOB=false
-NTHREADS_BWA_ALN=4
-NTHREADS_SPP=4
-...
 ```
 
 An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):
- 
 ```
 [bam_header_read] EOF marker is absent. The input is probably truncated.
 [bwa_read_seq] 0.0% bases are trimmed.
@@ -539,7 +334,7 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 Add "-s sge" to the command line.
 
 ```
-$ bds -s sge chipseq.bds ...
+$ bds -s sge chipseq.bds [...]
 ```
 
 
@@ -551,7 +346,6 @@ There are two kinds of HTML reports provided by the pipeline:
 
 Located at the working folder with name chipseq_[TIMESTAMP]_report.html.
 This report is automatically generated by BigDataScript and is useful for debugging since it shows summary, timeline, Stdout and Stderr for each job.
-
 
 2) ChIP-Seq pipeline report for QC and result
 
@@ -579,256 +373,35 @@ For better debugging, an HTML progress report in the working directory (where yo
 ### Signal track generation
 
 Add the following command line argument to generate signal tracks for tagalign outputs.
-
 ```
-# to generate wig or bedgraph, and convert bedgraph to bigwig. if you don't want wig, remove -wig true \
-bds chipseq.bds \
-... \
--wig true \
--bedgraph true \
--bigwig true \
+$ bds chipseq.bds \
+... 
+-make_wig true \
+-make_bedgraph true \
+-make_bigwig true \
 -seq /DATA/encodeHg19Male \
 -umap /DATA/encodeHg19Male/globalmap_k20tok54 \
 -chrsz /DATA/hg19.chrom.sizes
 ```
 
-Or add the following lines to the configuration file (for human, hg19).
-```
-CREATE_WIG= true 	// to create wig
-CREATE_BEDGRAPH= true	// to create bedgraph
-CONVERT_TO_BIGWIG= true	// to convert bedgraph to bigwig
-
-SEQ_DIR=/DATA/encodeHg19Male 		// hg19 example
-UMAP_DIR=/DATA/encodeHg19Male/globalmap_k20tok54 // get this from https://sites.google.com/site/anshulkundaje/projects/mappability
-CHROM_SIZES=/DATA/hg19.chrom.sizes
-```
-
-Seq_dir is the directory where reference genome files exist. Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/
+Seq is the directory where reference genome files exist.
+Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/.
 
 
 ### List of all parameters for ChIP-Seq pipelines
 
-For advanced users, all command line parameters for the pipeline is listed and explained below:
+For advanced users, all command line parameters for the pipeline will be listed if you run bds chipseq.bds without any arguments.
 
 ```
-# Flags for Kundaje lab
-	-kundaje_lab <bool>      : Set it true if you run the pipeline on Kundaje lab servers (automatically set environments, default: false)
-
-# general
-	-c <string>              : Configuration file path (if not specified, define parameters in command line argument).
-	-prefix <string>         : Prefix for all outputs.
-	-o <string>              : Output directory. (default: out)
-	-tmp <string>            : Temporary directory for intermediate files. (default: tmp).
-	-wt <int>                : Default walltime in seconds for all cluster jobs (default: 10800).
-	-nth <int>               : Default number of threads for all cluster jobs (default: 1).
-	-mem <int>               : Default max. memory in MB for all cluster jobs (default: 4000).
-
-# handling environment variables
-	-mod <string>            : Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
-	-shcmd <string>          : Shell cmds separated by ;. Env. vars should be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test").
-	-addpath <string>        : Path to be PREPENDED to env. var. PATH. Multiple paths should be separated by ; (example: "/bin/test:/bin/test2")
-
-# inputs
-	-input <string>          : Input file type: three options (fastq, bam and tagalign)
-
-	# if inputs are fastqs
-	-fastq1 <string>         : Path for fastq for replicate 1 (single ended).
-	-fastq2 <string>         : Path for fastq for replicate 2 (single ended).
-	-ctl_fastq1 <string>     : Path for control fastq for replicate 1 (single ended).
-	-ctl_fastq2 <string>     : Path for control fastq for replicate 2 (single ended, if not exists leave this blank).
-
-	-fastq1_1 <string>       : Path for fastq for replicate 1 pair 1 (paired-end).
-	-fastq1_2 <string>       : Path for fastq for replicate 1 pair 2 (paired-end).
-	-fastq2_1 <string>       : Path for fastq for replicate 2 pair 1 (paired-end).
-	-fastq2_2 <string>       : Path for fastq for replicate 2 pair 2 (paired-end).
-	-ctl_fastq1_1 <string>   : Path for control fastq for replicate 1 pair 1 (paired-end).
-	-ctl_fastq1_2 <string>   : Path for control fastq for replicate 1 pair 2 (paired-end).
-	-ctl_fastq2_1 <string>   : Path for control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).
-	-ctl_fastq2_2 <string>   : Path for control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).
-
-	# if inputs are bams
-	-bam_PE <bool>           : Set it true if bams are paired end (default: false).
-	-bam1 <string>           : Path for bam for replicate 1.
-	-bam2 <string>           : Path for bam for replicate 2.	
-	-bam_ctl_PE <bool>       : Set it true if control bams are paired end (default: false).
-	-ctl_bam1 <string>       : Path for control bam for replicate 1.
-	-ctl_bam2 <string>       : Path for control bam for replicate 2 (if not exists leave this blank).
-
-	# if inputs are tagaligns
-	-tagalign_PE <bool>      : Set it true if tagaligns are paired end (default: false).
-	-tagalign1 <string>      : Path for tagAlign for replicate 1.
-	-tagalign2 <string>      : Path for tagAlign for replicate 2.	
-	-tagalign_ctl_PE <bool>  : Set it true if control tagaligns are paired end (default: false).
-	-ctl_tagalign1 <string>  : Path for control tagAlign for replicate 1.
-	-ctl_tagalign2 <string>  : Path for control tagAlign for replicate 2 (if not exists leave this blank).
-
-	# if inputs are peaks
-	-peak1 <string>          : Path for peak for replicate 1.
-	-peak2 <string>          : Path for peak for replicate 2.	
-	-pooled <string>         : Path for pooled peak.
-
-# bwa
-	-idx_bwa <string>        : Path for bwa index.
-	-param_bwa <string>      : Parameters for bwa align (default: "-q 5 -l 32 -k 2").
-	-nth_bwa_aln <int>       : Number of threads for bwa aln (default: 2).
-	-wt_bwa_aln <int>        : Walltime in seconds for bwa aln (default: 36000).
-	-mem_bwa_aln <int>       : Max. memory in MB for bwa aln (default: 8000).
-	-wt_bwa_sam <int>        : Walltime in seconds for bwa sampe/samse (default: 36000).
-	-mem_bwa_sam <int>       : Max. memory in MB for bwa sampe/samse (default: 8000).
-
-# signal track generation
-	-wig <bool>              : Set it true to create wig (default: false).
-	-bedgraph <bool>         : Set it true to create bedgraph (default: false).
-	-bigwig <bool>           : Set it true to convert bedgraph to bigwig signal track (default: false).
-	-umap <string>           : Path for unique mappability tracks (https://sites.google.com/site/anshulkundaje/projects/mappability).
-	-seq <string>            : Path for sequence files (directory where chr*.fa exist).
-	-chrsz <string>          : Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
-
-# etc.	
-	-mapq_thresh <int>       : MAPQ_THRESH (default: 30).
-	-nreads <int>            : NREADS (default. 15000000).
-
-# spp	
-	-nth_spp <int>           : Number of threads for spp (run_spp.R) (default: 2).
-	-wt_spp <int>            : Walltime in seconds for spp (default: 40000).
-	-mem_spp <int>           : Max. memory in MB for spp (default: 8000).
-	-npeak <int>             : Parameter for -npeak in phantompeakqual tool run_spp.R (default: 300000).
-
-# macs2	
-	-nth_macs2 <int>         : Number of threads for macs2 (default: 2).
-	-wt_macs2 <int>          : Walltime in seconds for macs2 (default: 40000).
-	-mem_macs2 <int>         : Max. memory in MB for macs2 (default: 8000).
-	-chrsz <string>          : Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
-
-# gem	
-	-nth_gem <int>           : Number of threads for gem (default: 2).
-	-wt_gem <int>            : Walltime in seconds for gem (default: 40000).
-	-mem_gem <int>           : Max. memory in MB for gem (default: 16000).
-	-seq <string>            : Path for sequence files (directory where chr*.fa exist).
-	-chrsz <string>          : Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
-
-# idr	
-	-idr_thresh <string>     : IDR threshold (default: 0.02).
-	-idr_nboley <bool>       : Use Nathan Boley's code for IDR, otherwise Anshul Kundaje's code (default: true)	
-
-# alignment only mode
-	-final_stage <string>    : If specified, control data will be ignored and the pipeline will stop right after specified stage (bam, tagalign or xcor (cross-correlation score) ). (default: blank).
-	-num_rep <int>           : Number of replicates, define it for non-blank final_stage only. (default: 2).
-```
-
-Equivalent parameters in a configuration file is listed and explained below:
-
-```
-# Flags for Kundaje lab
-	KUNDAJE_LAB             : Set it true if you run the pipeline on Kundaje lab servers (automatically set environments, default: false)
-
-# general
-	PREFIX 			: Prefix for all outputs.
-	OUTPUT_DIR 		: Output directory. (default: out)
-	TMP_DIR 		: Temporary directory for intermediate files. (default: tmp).
-
-	WALLTIME 		: Default walltime in seconds for all cluster jobs (default: 10800).
-	NTHREADS 		: Default number of threads for all cluster jobs (default: 1).
-	MEMORY 			: Default max. memory in MB for all cluster jobs (default: 4000).
-
-# handling environment variables
-	MODULE 			: Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
-	SHELLCMD		: Shell cmds separated by ;. Env. vars should be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test")
-	ADDPATH			: Paths to be added to env. var. PATH separated by ; or :. (a quicker way to add PATH)
-
-# inputs
-	INPUT_TYPE              : Input file type: three options (fastq, bam and tagalign)
-
-	# if inputs are fastqs
-	INPUT_FASTQ_REP1        : Path for input fastq for replicate 1 (single ended).
-	INPUT_FASTQ_REP2        : Path for input fastq for replicate 2 (single ended).
-	INPUT_FASTQ_CTL_REP1    : Path for control fastq for replicate 1 (single ended).
-	INPUT_FASTQ_CTL_REP2    : Path for control fastq for replicate 2 (single ended, if not exists leave this blank).).
-
-	INPUT_FASTQ_REP1_PE1    : Path for input fastq for replicate 1 pair 1 (paired-end).
-	INPUT_FASTQ_REP1_PE2    : Path for input fastq for replicate 1 pair 2 (paired-end).
-	INPUT_FASTQ_REP2_PE1    : Path for input fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).
-	INPUT_FASTQ_REP2_PE2    : Path for input fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).
-	INPUT_FASTQ_CTL_REP1_PE1: Path for control fastq for replicate 1 pair 1 (paired-end).
-	INPUT_FASTQ_CTL_REP1_PE2: Path for control fastq for replicate 1 pair 2 (paired-end).
-	INPUT_FASTQ_CTL_REP2_PE1: Path for control fastq for replicate 2 pair 1 (paired-end).
-	INPUT_FASTQ_CTL_REP2_PE2: Path for control fastq for replicate 2 pair 2 (paired-end).
-
-	# if inputs are tagaligns
-	BAM_PE                  : Set it true if bams are paired end
-	INPUT_BAM_REP1          : Path for input bam for replicate 1.
-	INPUT_BAM_REP2          : Path for input bam for replicate 2.
-	BAM_CTL_PE              : Set it true if control bams are paired end
-	INPUT_BAM_CTL_REP1      : Path for control bam for replicate 1.
-	INPUT_BAM_CTL_REP2      : Path for control bam for replicate 2 (if not exists, leave this blank).
-
-	# if inputs are tagaligns
-	TAGALIGN_PE             : Set it true if tagaligns are paired end
-	INPUT_TAGALIGN_REP1     : Path for input tagalign for replicate 1.
-	INPUT_TAGALIGN_REP2     : Path for input tagalign for replicate 2.
-	TAGALIGN_CTL_PE         : Set it true if control tagaligns are paired end
-	INPUT_TAGALIGN_CTL_REP1 : Path for control tagalign for replicate 1.
-	INPUT_TAGALIGN_CTL_REP2 : Path for control tagalign for replicate 2 (if not exists, leave this blank).
-
-	INPUT_PEAK_REP1         : Path for peak for replicate 1.
-	INPUT_PEAK_REP1         : Path for peak for replicate 2.	
-	INPUT_PEAK_POOLED       : Path for pooled peak.
-
-# bwa
-	BWA_INDEX_NAME          : Path for bwa index.
-	BWA_ALN_PARAM           : Parameters for bwa align (default: "-q 5 -l 32 -k 2").
-	NTHREADS_BWA_ALN        : Number of threads for bwa aln (default: 2).
-	WALLTIME_BWA_ALN        : Walltime in seconds for bwa aln (default: 36000).
-	MEMORY_BWA_ALN          : Max. memory in MB for bwa aln (default: 8000).
-	WALLTIME_BWA_SAM        : Walltime in seconds for bwa sampe/samse (default: 36000).
-	MEMORY_BWA_SAM          : Max. memory in MB for bwa sampe/samse (default: 8000).
-
-# signal track generation
-	CREATE_WIG             : Set it true to create wig (default: false).
-	CREATE_BEDGRAPH        : Set it true to create bedgraph (default: false).
-	CONVERT_TO_BIGWIG      : Set it true to convert bedgraph to bigwig signal track (default: false).
-	UMAP_DIR               : Path for unique mappability tracks (https://sites.google.com/site/anshulkundaje/projects/mappability).
-	SEQ_DIR                : Path for sequence files (directory where chr*.fa exist).
-	CHROM_SIZES            : Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
-
-# etc.	
-	MAPQ_THRESH            : MAPQ_THRESH (default: 30).
-	NREADS                 : NREADS (default. 15000000).
-
-# spp	
-	NTHREADS_SPP           : Number of threads for spp (run_spp.R) (default: 2).
-	WALLTIME_SPP           : Walltime in seconds for spp (default: 40000).
-	MEMORY_SPP             : Max. memory in MB for spp (default: 8000).
-	NPEAK                  : Parameter for -npeak in phantompeakqual tool run_spp.R (default: 300000).
-
-# macs2	
-	NTHREADS_MACS2         : Number of threads for macs2 (default: 2).
-	WALLTIME_MACS2         : Walltime in seconds for macs2 (default: 40000).
-	MEMORY_MACS2           : Max. memory in MB for macs2 (default: 8000).
-	CHROM_SIZES            : Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
-
-# gem	
-	NTHREADS_GEM           : Number of threads for gem (default: 2).
-	WALLTIME_GEM           : Walltime in seconds for gem (default: 40000).
-	MEMORY_GEM             : Max. memory in MB for gem (default: 16000).
-	SEQ_DIR                : Path for sequence files (directory where chr*.fa exist).
-	CHROM_SIZES            : Path for chrom sizes file for your sequence files (use fetchChromSizes from UCSC tools).
-
-# idr	
-	IDR_THRESH             : IDR threshold (default: 0.02).
-	USE_IDR_NBOLEY         : Use Nathan Boley's code for IDR, otherwise Anshul Kundaje's code (default: true)	
-
-# alignment only mode
-	FINAL_STAGE            : If specified, control data will be ignored and the pipeline will stop right after specified stage (bam, tagalign or xcor (cross-correlation score) ). (default: blank).
-	NUM_REP                : Number of replicates, define it for non-blank final_stage only. (default: 2).
+$ bds chipseq.bds
 ```
 
 
-### What are MODULE, SHELLCMD and ADDPATH? (handling environment variables)
+### How to set shell environments (What are MOD, SHCMD and ADDPATH?)
 
-It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. MODULE, SHELLCMD and ADDPATH are three convenient ways to define environment variables. Environment variables defined with MODULE, SHELLCMD and ADDPATH are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with MODULE. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
+It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. MOD, SHCMD and ADDPATH are three convenient ways to define environment variables. Environment variables defined with MOD, SHCMD and ADDPATH are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with MOD. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
 
-1) MODULE
+1) MOD
 
 There are different versions of bioinformatics softwares (eg. samtools, bedtools and bwa) and <a href="http://modules.sourceforge.net/">Enviroment Modules</a> is the best way to manage environemt variables for them. For example, if you want to add environment variables for bwa 0.7.3 by using Environment Modules. You can simply type the following:
 
@@ -838,36 +411,36 @@ $ module add bwa/0.7.3;
 
 The equivalent setting in the pipeline configuration file should look like:
 ```
-MODULE= bwa/0.7.3;
+MOD= bwa/0.7.3;
 ```
 
-You can have multiple lines for MODULE since any suffix is allowed. Use ; as a delimiter.
+You can have multiple lines for MOD since any suffix is allowed. Use ; as a delimiter.
 ```
-MODULE_BIO= bwa/0.7.3; bedtools/2.x.x; samtools/1.2
-MODULE_LANG= r/2.15.1; java/latest
+MOD_BIO= bwa/0.7.3; bedtools/2.x.x; samtools/1.2
+MOD_LANG= r/2.15.1; java/latest
 ```
 
-2) SHELLCMD
+2) SHCMD
 
 If you have softwares locally installed on your home, you may need to add to them environment variables like $PATH, $LD_LIBRARY_PATH and so on. <b>IMPORTANT!</b> Note that any pre-defined enviroment variables (like $PATH) should be referred in a curly bracket like ${PATH}. This is because BDS distinguishes environment variables from BDS variables by a curly bracket ${}.
 ```
-SHELLCMD= export PATH=${PATH}:path_to_your_program
+SHCMD= export PATH=${PATH}:path_to_your_program
 ```
 
-You can have multiple lines for SHELLCMD since any suffix is allowed. Use ; as a delimiter. 
+You can have multiple lines for SHCMD since any suffix is allowed. Use ; as a delimiter. 
 ```
-SHELLCMD_R= export PATH=${PATH}:/home/userid/R-2.15.1;
-SHELLCMD_LIB= export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/R-2.15.1/lib
+SHCMD_R= export PATH=${PATH}:/home/userid/R-2.15.1;
+SHCMD_LIB= export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/R-2.15.1/lib
 ```
 
-SHELLCMD is not just for adding environemt variables. It can execute any bash shell commands prior to any jobs on the pipeline. For example, to give all jobs peaceful 10 seconds before running.
+SHCMD is not just for adding environemt variables. It can execute any bash shell commands prior to any jobs on the pipeline. For example, to give all jobs peaceful 10 seconds before running.
 ```
-SHELLCMD_SLEEP_TEN_SECS_FOR_ALL_JOBS= echo "I am sleeping..."; sleep 10
+SHCMD_SLEEP_TEN_SECS_FOR_ALL_JOBS= echo "I am sleeping..."; sleep 10
 ```
 
 3) ADDPATH
 
-If you just want to add something to your $PATH, use ADDPATH instead of SHELLCMD. It's much simpler. Use : or ; as a delimiter.
+If you just want to add something to your $PATH, use ADDPATH instead of SHCMD. It's much simpler. Use : or ; as a delimiter.
 
 ```
 ADDPATH= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin/test
@@ -876,11 +449,12 @@ ADDPATH= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin
 
 ### What are -mod, -shcmd and -addpath?
 
-They are command line argument versions of MODULE, SHELLCMD and ADDPATH. For example,
+They are command line argument versions of MOD, SHCMD and ADDPATH. For example,
 
 ```
 $ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin'
 ```
+
 
 ### Troubleshooting
 
@@ -954,7 +528,7 @@ succeeded:
 0.6.2 0.7.1 0.7.2 0.7.3
 
 failed:
-0.7.4 0.7.5 0.7.7 0.7.3 0.7.11 0.7.12
+0.7.4 0.7.5 0.7.7 0.7.8 0.7.11 0.7.12
 ```
 
 
