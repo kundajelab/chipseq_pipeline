@@ -28,6 +28,7 @@ string gensz 		= "hs"		help Genome size; hs for human, mm for mouse (default: hs
 
 string init_mod 	= "/etc/profile.d/modules.sh"
 
+string _VS_ 		= "_x_"	// for _VS_ in peak filenames
 
 
 // IMPORTANT! Shell command executed prior to all BigDataScript tasks (use this for setting environemts)
@@ -229,8 +230,15 @@ string concat_basename_wo_ext( string file1, string file2, string ext ) {
 }
 
 string make_vs_basename( string file1, string file2, string suffix ) {
-	return rm_str_at_end( get_basename( file1 ),".gz" ) + \
-		"_VS_" + rm_str_at_end( get_basename( file2 ),".gz" ) + suffix
+	ret := rm_str_at_end( get_basename( file1 ),".gz" ) + \
+		_VS_ + rm_str_at_end( get_basename( file2 ),".gz" ) + suffix
+
+	// linux filename length limitation is 255
+	if ( ret.length() > 210 ) {
+		ret = ret.substr(0, 210)
+	}
+
+	return ret
 }
 
 void save_data( string file, string[] data ) { // ; separated array

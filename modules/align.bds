@@ -19,6 +19,9 @@ string mem_bwa_sam	= "8G"			help Max. memory for bwa sampe/samse (default: 8G).
 // xcor
 int nreads 		= 15000000		help Number of reads to be subsampled for cross corr. analysis (default. 15000000).
 
+// tagaligns
+bool rm_chr_ 		= false 		help Remove chromosomes with '_' from tagaligns
+
 // bowtie2
 string bwt_idx		= ""			help Path for bowtie index
 
@@ -57,7 +60,7 @@ IMPORTANT!: legacy softwares compatibility (make the code work with legacy samto
 	- java -Xmx4G -Xms256M -jar ${PICARDROOT}/[METHOD].jar  for new picard
 */
 
-string[] _align( string[] data, string type, string final_stage, string out_dir, string info ) {
+string[] _align( string[] data, string type, string final_stage, bool is_ctl, string out_dir, string info ) {
 
 	string bam, qc // make bam and map_qc with using bwa
 	if ( is_data_type_before( type, "bam" ) ) {
@@ -108,15 +111,16 @@ string[] _align( string[] data, string type, string final_stage, string out_dir,
 		if ( final_stage.toLower() == "xcor" ) return [xcor_score, xcor_plot]
 	}
 
-	string tag_pr1, tag_pr2 // make self pseudo replicate	
-	(tag_pr1, tag_pr2) = _spr( tag, out_dir, info )
+	string tag_pr1, tag_pr2 // make self pseudo replicate
+
+	if ( !is_ctl ) (tag_pr1, tag_pr2) = _spr( tag, out_dir, info )
 
 	save_data( "$out_dir/data_tag_$info", [tag, tag_pr1, tag_pr2] )
 
 	return [tag, tag_pr1, tag_pr2]
 }
 
-string[] _align_PE( string[] data, string type, string final_stage, string out_dir, string info ) {
+string[] _align_PE( string[] data, string type, string final_stage, bool is_ctl, string out_dir, string info ) {
 
 	string bam, qc // make bam and map_qc with using bwa
 	if ( is_data_type_before( type, "bam" ) ) {
@@ -183,11 +187,13 @@ string[] _align_PE( string[] data, string type, string final_stage, string out_d
 
 	string tag_pr1, tag_pr2 // make self pseudo replicate	
 
-	if ( type.toLower() == "tag" ) { // if started from tag, we don't have bedpe file, use SE version
-		(tag_pr1, tag_pr2) = _spr( tag, out_dir, info )	
-	}
-	else {
-		(tag_pr1, tag_pr2) = _spr_PE( bedpe, out_dir, info )
+	if ( !is_ctl ) {
+		if ( type.toLower() == "tag" ) { // if started from tag, we don't have bedpe file, use SE version
+			(tag_pr1, tag_pr2) = _spr( tag, out_dir, info )	
+		}
+		else {
+			(tag_pr1, tag_pr2) = _spr_PE( bedpe, out_dir, info )
+		}
 	}
 
 	save_data( "$out_dir/data_tag_$info", [tag, tag_pr1, tag_pr2] )
@@ -575,6 +581,12 @@ string _bam_to_tag( string bam, string out_dir, string info ) {
 	in 		:= [ bam ]
 	out 		:= tag
 
+	string RM_CHR_ = "echo"	
+	if ( rm_chr_ ) {
+		RM_CHR_ = "zcat $tag | grep -P -v 'other|ribo|mito|_' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
+	}
+
+
 	task( taskName:= "bam_to_tag "+info, \
 		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
 		out<-in ) {
@@ -583,6 +595,8 @@ string _bam_to_tag( string bam, string out_dir, string info ) {
 	
 		//# Create SE tagAlign file
 		sys bedtools bamtobed -i $bam | awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}' | gzip -c > $tag
+
+		sys $RM_CHR_
 	}
 
 	return out
@@ -766,6 +780,27 @@ string[] _spr( string tag, string out_dir, string info ) {
 		sys rm -f $prefix.00
 		sys gzip -c $prefix.01 > $tag_pr2
 		sys rm -f $prefix.01
+	}
+
+	return out
+}
+
+// make spr(self_pseudo_replicate)
+string _pool_tag( string tag1, string tag2, string out_dir, string info ) {
+
+	prefix 		:= "$out_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )	
+
+	tag_pooled 	:= "$prefix"+"_pooled.tagAlign.gz"
+
+	in 		:= [ tag1, tag2 ]
+	out 		:= tag_pooled
+
+	task( taskName:= "pool_tag "+info, \
+		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		out<-in ) {
+
+		sys $SHCMD_INIT
+		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled		
 	}
 
 	return out
