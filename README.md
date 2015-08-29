@@ -359,7 +359,7 @@ This report shows all QC and result files including plots (qc, txt, log, pdf, pn
 Don't forget to move linked files (pdf, png, jpg and so on) together with HTML.
 
 
-### Debugging, logging and HTML report for the pipeline
+### Debugging a pipeline
 
 ```
 # make BDS verbose
@@ -371,9 +371,6 @@ $ bds -d chipseq.bds ...
 # test run (this actually does nothing) to check input/output file names and commands
 $ bds -dryRun chipseq.bds ...
 ```
-
-For better debugging, an HTML progress report in the working directory (where you run the pipeline command) will be useful. You can monitor your BDS jobs real time.
-
 
 ### Signal track generation
 
