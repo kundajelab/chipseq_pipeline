@@ -560,24 +560,6 @@ void peakcall_idr() {
 
 		idr_out_dir := mkdir_path( use_idr1 ? "$peak_out_dir/idr1" : "$peak_out_dir/idr2" )
 
-		// naming for idr outputs
-		prefix_rep1_vs_rep2 		:= peak_out_dir + "/"+ make_vs_basename_wo_gz( tag_rep1, tag_rep2, "" )
-		prefix_ppr1_vs_ppr2 		:= peak_out_dir + "/"+ make_vs_basename_wo_gz( tag_ppr1, tag_ppr2, "" )
-		prefix_rep1_pr1_vs_rep1_pr2 	:= peak_out_dir + "/"+ make_vs_basename_wo_gz( tag_rep1_pr1, tag_rep1_pr1, "" )
-		prefix_rep2_pr1_vs_rep2_pr2 	:= peak_out_dir + "/"+ make_vs_basename_wo_gz( tag_rep2_pr1, tag_rep2_pr1, "" )
-
-/*
-		_idr( peak_rep1, peak_rep2, peak_pooled, prefix_rep1_vs_rep2, "Rep1_vs_Rep2" )
-		if ( no_par_job ) wait
-
-		_idr( peak_ppr1, peak_ppr2, peak_pooled, prefix_ppr1_vs_ppr2, "PPR1_vs_PPR2" )
-		if ( no_par_job ) wait
-
-		_idr( peak_rep1_pr1, peak_rep1_pr2, peak_rep1, prefix_rep1_pr1_vs_rep1_pr2, "Rep1_PR1_vs_Rep1_PR2" )
-		if ( no_par_job ) wait
-
-		_idr( peak_rep2_pr1, peak_rep2_pr2, peak_rep2, prefix_rep2_pr1_vs_rep2_pr2, "Rep2_PR1_vs_Rep2_PR2" )
-*/		
 		_idr( peak_rep1, peak_rep2, peak_pooled, idr_out_dir, "Rep1_vs_Rep2" )
 		if ( no_par_job ) wait
 
@@ -592,6 +574,7 @@ void peakcall_idr() {
 
 	wait
 }
+
 
 void write_report() {
 	_write_report( html_rpt_title, "$out_dir/$html_rpt_file", out_dir )

@@ -7,7 +7,7 @@ string peakcall 	= "spp"		help Choose peak calling method: spp, macs2 and gem (d
 //spp
 int npeak 		= 300000 	help Parameter for -npeak in spp (phantompeakqual tool run_spp.R) (default: 300000).
 int nth_spp 		= 2		help Number of threads for spp (run_spp.R) (default: 2).
-string wt_spp		= "10h"		help Walltime for spp (default: 10h, 10:00:00).
+string wt_spp		= "15h"		help Walltime for spp (default: 10h, 10:00:00).
 string mem_spp		= "8G" 		help Max. memory for spp (default: 8G).
 
 //macs2
@@ -72,7 +72,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string out_dir, strin
 		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -c > $rpeakfile
 		
 		sys rm -f $npeakfile_vs
-		sys rm -f $npeakfile_vs
+		sys rm -f $rpeakfile_vs
 
 		sys mv $pdf_tmp $pdf
 	}
