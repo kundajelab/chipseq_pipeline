@@ -387,9 +387,10 @@ string[] _bam_to_nodup_bam( string bam, string out_dir, string info ) {
 		//# Index Final BAM file
 		sys samtools index $nodup_bam
 		
-		sys if [ "$nodup_bam.bai" != "$nodup_bam_idx" ]; then \
-			mv $nodup_bam.bai $nodup_bam_idx; \
-			fi
+		//sys if [ "$nodup_bam.bai" != "$nodup_bam_idx" ]; then \
+		//	mv $nodup_bam.bai $nodup_bam_idx; \
+		//	fi
+		sys cp $nodup_bam.bai $nodup_bam_idx
 
 		sys samtools flagstat $nodup_bam > $map_qc
 

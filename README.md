@@ -174,6 +174,11 @@ $ bds chipseq.bds \
 -pooled /DATA/Example.pooled.narrowPeak.gz \
 ```
 
+### Starting pipeline from the point of failure
+
+The pipeline automatically determines if each task has finished or not (comparing timestamps of input/output files for each task).
+There is no additional parameter. Just run the pipeline with the same command that you started the pipeline with.
+
 
 ### How to define single ended (SE) and paired-end (PE) data set
 
