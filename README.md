@@ -262,15 +262,20 @@ There are two versions of IDR. IDR works after spp and gem peak calling only.
 
 1) IDR1
 
-No additional parameter required.
-
-2) IDR2
+Based on <a href= "https://sites.google.com/site/anshulkundaje/projects/idr" target="_blank">https://sites.google.com/site/anshulkundaje/projects/idr</a>.
 
 ```
 $ bds chipseq.bds \
 ...
--use_idr1 false
+-use_idr1 true
 ```
+
+2) IDR2 (default)
+
+Based on <a href= "https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>.
+No additional parameter required. 
+
+
 
 
 ### Alignment only mode (without peak calling and IDR)

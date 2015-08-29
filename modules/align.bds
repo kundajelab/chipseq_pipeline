@@ -11,22 +11,22 @@ string bwa_idx 		= ""			help Path for bwa index.
 string param_bwa_aln	= "-q 5 -l 32 -k 2" 	help Parameters for bwa align (default: "-q 5 -l 32 -k 2").
 
 int nth_bwa_aln		= 2 			help Number of threads for bwa aln (default: 2).
-string wt_bwa_aln	= "10h"			help Walltime for bwa aln (default: 10h).
+string wt_bwa_aln	= "10h"			help Walltime for bwa aln (default: 10h, 10:00:00).
 string mem_bwa_aln	= "8G"	 		help Max. memory for bwa aln (default: 8G).
-string wt_bwa_sam	= "12h"			help Walltime for bwa sampe/samse (default: 12h).
+string wt_bwa_sam	= "12h"			help Walltime for bwa sampe/samse (default: 12h, 12:00:00).
 string mem_bwa_sam	= "8G"			help Max. memory for bwa sampe/samse (default: 8G).
 
 // xcor
-int nreads 		= 15000000		help Number of reads to be subsampled for cross corr. analysis (default. 15000000).
+int nreads 		= 15000000		help Number of reads to be subsampled for cross corr. analysis (default: 15000000).
 
-// tagaligns
-bool rm_chr_ 		= false 		help Remove chromosomes with '_' from tagaligns
+// filetering tagaligns
+string rm_chr_from_tag	= "" 			help If defined, remove lines including it from all tagaligns. (example: 'other|ribo|mito|_', '_', default: blank)
 
 // bowtie2
 string bwt_idx		= ""			help Path for bowtie index
 
 int nth_bwt2		= 2 			help Number of threads for bowtie2 (default: 2).
-string wt_bwt2		= "10h"			help Walltime for bowtie2 (default: 10h).
+string wt_bwt2		= "10h"			help Walltime for bowtie2 (default: 10h, 10:00:00).
 string mem_bwt2		= "12G"	 		help Max. memory for bowtie2 (default: 8G).
 
 // vplot
@@ -581,11 +581,11 @@ string _bam_to_tag( string bam, string out_dir, string info ) {
 	in 		:= [ bam ]
 	out 		:= tag
 
-	string RM_CHR_ = "echo"	
-	if ( rm_chr_ ) {
-		RM_CHR_ = "zcat $tag | grep -P -v 'other|ribo|mito|_' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
-	}
+	RM_CHR_ := "echo"	
 
+	if ( rm_chr_from_tag != "" ) {
+		RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
+	}
 
 	task( taskName:= "bam_to_tag "+info, \
 		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
@@ -785,27 +785,6 @@ string[] _spr( string tag, string out_dir, string info ) {
 	return out
 }
 
-// make spr(self_pseudo_replicate)
-string _pool_tag( string tag1, string tag2, string out_dir, string info ) {
-
-	prefix 		:= "$out_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )	
-
-	tag_pooled 	:= "$prefix"+"_pooled.tagAlign.gz"
-
-	in 		:= [ tag1, tag2 ]
-	out 		:= tag_pooled
-
-	task( taskName:= "pool_tag "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
-		out<-in ) {
-
-		sys $SHCMD_INIT
-		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled		
-	}
-
-	return out
-}
-
 string[] _spr_PE( string bedpe, string out_dir, string info ) {
 	
 	prefix 	:= change_dir( remove_ext( bedpe, ["bedpe","bed","tagAlign"] ), out_dir )
@@ -843,24 +822,25 @@ string[] _spr_PE( string bedpe, string out_dir, string info ) {
 }
 
 // make psr(pooled pseudo replicate)
-string[] _ppr( string[] tags, string[] tags_pr1, string[] tags_pr2, string out_dir, string info ) {
+//string[] _ppr( string[] tags, string[] tags_pr1, string[] tags_pr2, string out_dir, string info ) {
+string[] _ppr( string tag1, string tag1_pr1, string tag1_pr2, string tag2, string tag2_pr1, string tag2_pr2, string out_dir, string info ) {
 
-	tag1 := tags[0]
-	tag2 := (tags.size()>=2) ? tags[1] : ""
+	tag_pooled 	:= _pool_tag( tag1, tag2, out_dir, info )
+	tag_ppr1 	:= _pool_tag( tag1_pr1, tag2_pr1, out_dir, info )
+	tag_ppr2 	:= _pool_tag( tag1_pr2, tag2_pr2, out_dir, info )
 
-	tag1_pr1 := tags_pr1[0]
-	tag2_pr1 := (tags_pr1.size()>=2) ? tags_pr1[1] : ""
+	out 	:= [ tag_pooled, tag_ppr1, tag_ppr2 ]
 
-	tag1_pr2 := tags_pr2[0]
-	tag2_pr2 := (tags_pr2.size()>=2) ? tags_pr2[1] : ""
-
+	wait
+/*
 	prefix 	:= "$out_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )	
-
 	tag_pooled 	:= "$prefix"+"_pooled.tagAlign.gz"
 	tag_ppr1 	:= "$prefix"+"_pooled.pr1.tagAlign.gz"
 	tag_ppr2 	:= "$prefix"+"_pooled.pr2.tagAlign.gz"
-
-	out 	:= [ tag_pooled, tag_ppr1, tag_ppr2 ]
+*/
+	return out
+}
+	/*
 
 	if ( tags.size()>=2 ) { // if two replicates, pool them
 
@@ -895,7 +875,27 @@ string[] _ppr( string[] tags, string[] tags_pr1, string[] tags_pr2, string out_d
 		}
 		return out
 	}
+	*/
 
+
+string _pool_tag( string tag1, string tag2, string out_dir, string info ) {
+
+	prefix 		:= "$out_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )	
+
+	tag_pooled 	:= "$prefix"+"_pooled.tagAlign.gz"
+
+	in 		:= [ tag1, tag2 ]
+	out 		:= tag_pooled
+
+	task( taskName:= "pool_tag "+info, \
+		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		out<-in ) {
+
+		sys $SHCMD_INIT
+		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled		
+	}
+
+	return out
 }
 
 string[] _trim_adapters( string fastq1, string fastq2, string out_dir, string info ) {
