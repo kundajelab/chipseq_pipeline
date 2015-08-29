@@ -231,7 +231,7 @@ $ bds chipseq.bds \
 
 1) Peak calling 
 
-Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]
+Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default.
 
 Example for gem:
 Define additional parameters (-chrsz, -seq)
@@ -248,7 +248,7 @@ Define additional parameters (-chrsz)
 ```
 $ bds chipseq.bds \
 ...
--peakcall gem
+-peakcall macs
 -chrsz /DATA/hg19.chrom.sizes
 -gensz hs
 ```
@@ -262,7 +262,7 @@ There are two versions of IDR. IDR works after spp and gem peak calling only.
 
 1) IDR1
 
-Based on <a href= "https://sites.google.com/site/anshulkundaje/projects/idr" target="_blank">https://sites.google.com/site/anshulkundaje/projects/idr</a>.
+Based on <a href="https://sites.google.com/site/anshulkundaje/projects/idr" target="_blank">https://sites.google.com/site/anshulkundaje/projects/idr</a>.
 
 ```
 $ bds chipseq.bds \
@@ -272,7 +272,7 @@ $ bds chipseq.bds \
 
 2) IDR2 (default)
 
-Based on <a href= "https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>.
+Based on <a href="https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>.
 No additional parameter required. 
 
 

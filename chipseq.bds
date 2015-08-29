@@ -686,6 +686,7 @@ void help() {
 		print(" \n")
 		print(" === align\n")
 		print(" -bwa_idx \t\tPath for bwa index.\n")
+		print(" -rm_chr_from_tag \tIf defined, remove lines including it from all tagaligns. (example: 'other|ribo|mito|_', '_', default: blank).\n")
 		print(" \n")
 		print(" === peakcall\n")
 		print(" -peakcall \t\tChoose peak calling method: spp, macs2 and gem (default: spp).\n")
