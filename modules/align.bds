@@ -60,7 +60,7 @@ IMPORTANT!: legacy softwares compatibility (make the code work with legacy samto
 	- java -Xmx4G -Xms256M -jar ${PICARDROOT}/[METHOD].jar  for new picard
 */
 
-string[] _align( string[] data, string type, string final_stage, bool is_ctl, string out_dir, string info ) {
+string[] _align_bwa( string[] data, string type, string final_stage, bool is_ctl, string out_dir, string info ) {
 
 	string bam, qc // make bam and map_qc with using bwa
 	if ( is_data_type_before( type, "bam" ) ) {
@@ -120,7 +120,7 @@ string[] _align( string[] data, string type, string final_stage, bool is_ctl, st
 	return [tag, tag_pr1, tag_pr2]
 }
 
-string[] _align_PE( string[] data, string type, string final_stage, bool is_ctl, string out_dir, string info ) {
+string[] _align_bwa_PE( string[] data, string type, string final_stage, bool is_ctl, string out_dir, string info ) {
 
 	string bam, qc // make bam and map_qc with using bwa
 	if ( is_data_type_before( type, "bam" ) ) {

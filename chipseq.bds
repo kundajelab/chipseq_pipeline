@@ -362,15 +362,15 @@ void align() {
 			if ( is_single_ended( ctl, rep ) ) {
 				
 				if ( no_par_job ) \
-					_align( data, input, final_stage, (ctl==1), align_out_dir, info ) // go serial 
+					_align_bwa( data, input, final_stage, (ctl==1), align_out_dir, info ) // go serial 
 				else \
-					par _align( data, input, final_stage, (ctl==1), align_out_dir, info ) // go parallel
+					par _align_bwa( data, input, final_stage, (ctl==1), align_out_dir, info ) // go parallel
 			}
 			else {
 				if ( no_par_job ) \
-					_align_PE( data, input, final_stage, (ctl==1), align_out_dir, info ) // go serial 
+					_align_bwa_PE( data, input, final_stage, (ctl==1), align_out_dir, info ) // go serial 
 				else \
-					par _align_PE( data, input, final_stage, (ctl==1), align_out_dir, info ) // go parallel
+					par _align_bwa_PE( data, input, final_stage, (ctl==1), align_out_dir, info ) // go parallel
 			}
 		}
 	}
