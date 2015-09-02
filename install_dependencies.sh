@@ -15,6 +15,7 @@ openssl
 libssl-dev
 libfreetype6-dev
 liblapack-dev
+pkg-config
 )
 #libboost-all-dev
 
@@ -295,6 +296,7 @@ mkdir ucsc_tools
 cd ucsc_tools
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
+wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
 chmod 755 *
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/ucsc_tools")
 add_to_bashrc
@@ -412,6 +414,8 @@ rm -f Python-2.7.2.tgz
 cd Python-2.7.2
 ./configure --prefix=$SOFTWARE/python2.7
 make altinstall prefix=$SOFTWARE/python2.7 exec-prefix=$SOFTWARE/python2.7
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" setuptools
+$SOFTWARE/python2.7/bin/pip2.7 install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" setuptools
 wget http://cython.org/release/Cython-0.22.tar.gz
 tar zxvf Cython-0.22.tar.gz
 cd Cython-0.22
@@ -419,9 +423,12 @@ $SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
 ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python2
 cd $SOFTWARE
 cd python2.7/bin
-get https://bootstrap.pypa.io/get-pip.py
+wget https://bootstrap.pypa.io/get-pip.py
 ./python2 get-pip.py
 $SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" numpy
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" matplotlib
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" pysam
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" deeptools
 
 cd $SOFTWARE
 git clone git://github.com/numpy/numpy.git numpy
@@ -487,6 +494,8 @@ CONTENTS=(
 add_to_bashrc
 
 # deepTools (signal track gen.)
+source ~/.bashrc
+cd $SOFTWARE
 git clone https://github.com/fidelram/deepTools
 cd deepTools
 git checkout tags/1.6.0
