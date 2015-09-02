@@ -412,17 +412,36 @@ $ bds -dryRun chipseq.bds ...
 
 ### Signal track generation
 
-Add the following command line argument to generate signal tracks for tagalign outputs.
+Define with -sigtrk [SIG_TRK_GEN_METHOD: aln2rawsig, macs2, deeptools)
+If you don't want to define parameters like seq, umap, chrsz for every pipeline run, use species file.
+Define all species specific parameters in the species file and add parameter '-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]'.
+
+1) using align2rawsignal ( inputs: tagalign, requirements: cross correlation analysis )
 ```
 $ bds chipseq.bds \
 ... 
--make_wig \
--make_bedgraph \
--make_bigwig \
+-sigtrk aln2rawsig -make_bw \
 -seq /DATA/encodeHg19Male \
 -umap /DATA/encodeHg19Male/globalmap_k20tok54 \
 -chrsz /DATA/hg19.chrom.sizes
 ```
+
+2) using macs2 ( inputs: nodup_bam, requirements: cross correlation analysis )
+```
+$ bds chipseq.bds \
+... 
+-sigtrk macs2 -make_bw \
+-chrsz /DATA/hg19.chrom.sizes \
+-gensz hs
+```
+
+3) using deepTools (bamCoverage) (inputs: nodup_bam, requirements: bam index )
+```
+$ bds chipseq.bds \
+... 
+-sigtrk deeptools -make_bw
+```
+
 
 Seq is the directory where reference genome files exist.
 Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/.

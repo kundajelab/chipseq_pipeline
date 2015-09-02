@@ -486,6 +486,15 @@ CONTENTS=(
 )
 add_to_bashrc
 
+# deepTools (signal track gen.)
+git clone https://github.com/fidelram/deepTools
+cd deepTools
+git checkout tags/1.6.0
+$SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/deepTools/bin")
+add_to_bashrc
+
+
 # WARNING
 echo
 echo "Done Installing all dependencies for ChIP-Seq pipeline"

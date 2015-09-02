@@ -56,7 +56,7 @@ peak1 		:= ""		help Peak 1
 peak2 		:= ""		help Peak 2
 pooled2 	:= ""		help Pooled peak
 
-help Alignment only mode. Define '-final_stage xcor' and '-num_rep [NO_REPS]' (stage: fastq, bam, nodup_bam, tag or peak)
+help Alignment only mode. Define '-final_stage [bam,nodup_bam,tag,xcor]' and '-num_rep [NO_REPS]' (stage: fastq, bam, nodup_bam, tag or peak)
 
 final_stage	:= "" 		help Final stage that pipeline stops after (default: blank).
 num_rep 	:= 2		help # replicates, define '-final_stage' first. (default: 2).
@@ -65,29 +65,39 @@ help Peakcalling method (spp, macs2 and gem)
 
 peakcall 	:= "spp"	help Choose peak calling method: spp, macs2 and gem (default: spp).
 
+help Signal track generation method (aln2rawsig, macs2 and deeptools (or deep) )
+
+sigtrk 		:= ""		help Choose signal track generation method: aln2rawsig, macs2 and deeptools (default: aln2rawsig).
+make_wig 	:= false	help Add it to create wig (only for -sigtrk aln2rawsig) (default: false).
+make_bw		:= false	help Add it to create bigwig (default: false).
+
 
 num_ctl 	:= 1
 html_rpt_title 	:= "ChIP-Seq Pipeline HTML Report"
 html_rpt_file 	:= "Report.html"	
 
+// Ugly global variables for peak calling (BDS cannot have return value for parallel function)
+string tag_rep1, tag_rep1_pr1, tag_rep1_pr2
+string tag_rep2, tag_rep2_pr1, tag_rep2_pr2
+
+string ctl_tag_rep1, ctl_tag_rep2
+string fraglen_rep1, fraglen_rep2
+
 
 
 // chipseq pipeline starts here
-help() // show help if no parameters are given
+
+help()
 
 init_chipseq() // read configruation file if exists
 
 chk_input_data() // check input files are valid
 
-set_shell_env() // initialization (mkdir out_dir. and set shell environment)
+set_shell_env()
 
 align() // align
 
-write_report()
-
-signal_trk() // signal track generation (tagalign -> wig, bedgraph or bigwig), this goes in parallel with peackcall_idr()
-
-peakcall_idr() // peakcalling (spp, gem or macs2) and idr (no idr after macs2)
+peakcall_idr()
 
 write_report()
 
@@ -105,28 +115,34 @@ void init_chipseq() {
 		input 		= get_conf_val( input, 			["INPUT_TYPE", "INPUT"] )
 
 		peakcall	= get_conf_val( peakcall, 		["PEAKCALL_METHOD", "PEAKCALL"] )
+
+		sigtrk 		= get_conf_val( sigtrk, 		["SIGTRK", "SIG_TRK", "SIGTRK_METHOD"] )
+		make_wig	= get_conf_val_bool( make_wig, 		["CREATE_WIG", "MAKE_WIG"] )
+		make_bw		= get_conf_val_bool( make_bw, 		["CONVERT_TO_BIGWIG", "MAKE_BIGWIG", "MAKE_BW"] )
 	}
 
 	if ( v ) { // verbose
 		print("\n")
-		print_if_not_null( "Final stage for ChIP-Seq", "$final_stage" )
-		print_if_not_default( "# replicates to align", "$num_rep", 2)
-		print_if_not_default( "Input data type", "$input", "fastq")
-		print_if_not_null( "Peak calling method", "$peakcall" )
+		print( "Final stage for ChIP-Seq\t: $final_stage\n" )
+		print( "# replicates to align\t\t: $num_rep\n" )
+		print( "Input data type\t\t\t: $input\n")
+		print( "Peak calling method\t\t: $peakcall\n" )
+		print( "Sig. trk. generation method\t: $sigtrk\n" )
+		print( "Create wig\t\t\t: $make_wig\n" )
+		print( "Create bigwig\t\t\t: $make_bw\n" )
 	}	
+		
+	if ( is_align_only_mode() ) { // if no data for control rep1 and final stage is before peak calling
+		// this must be aligment only mode, so ignore all control from here
 
-	// if no data for control rep1 and final stage is before peak calling
-	// this should be aligment only mode, so ignore all control from here
-	if ( is_align_only_mode() ) {
 		print("\n\nAlign only mode for $num_rep replicates (no control data found)!\n\n")
 		num_ctl = 0
 	}
 	else {
 		num_rep = 2 // # of replicates should be 2 if not align only mode
 	}
-
-	// create output directory
-	out_dir = mkdir_path( out_dir ) // mkdir and get absolute path	
+	
+	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it
 }
 
 void chk_input_data() {
@@ -219,61 +235,11 @@ void chk_input_data() {
 		print( "\n====== Final stage : $final_stage \n\n" );
 }
 
-void set_shell_env() {
-
-	// set shell environments automatically
-	dir_sw_BDS  := "$HOME/software_bds" // location of dependencies installed by the script "install_dependencies.sh"
-
-	if ( kundaje_lab ) {
-
-		print("\nAutomatically adding environment variables... (Kundaje lab cluster found) \n\n")
-
-		SHCMD_INIT = SHCMD_INIT + " . /etc/profile.d/modules.sh; module add bwa/0.7.3 samtools/0.1.19 bedtools/2.19.1 ucsc_tools/3.0.9 picard-tools/1.92;" \
-					+ " module add phantompeakqualtools/default idr/latest align2rawsignal/2.0 MACS2/2.1.0 java/latest r/2.15.1 gem/2.6;" \
-					+ " export PATH=${PATH}:/software/idrCode; " \
-					+ " export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4"
-
-                SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
-
-	}
-	else if ( dir_sw_BDS.exists() ) { // automatically add software binaries to shell env. vars like PATH
-
-		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
-		print("Automatically adding environment variables...\n\n")
-
-		path := " export PATH=" \
-			+ "$dir_sw_BDS/bwa-0.7.3:$dir_sw_BDS/samtools-0.1.19:$dir_sw_BDS/bedtools2-2.19.1/bin:" \
-			+ "$dir_sw_BDS/ucsc_tools:$dir_sw_BDS/picard-tools-1.92:$dir_sw_BDS/R-2.15.1/bin:" \
-			+ "$dir_sw_BDS/phantompeakqualtools:$dir_sw_BDS/idr/bin:$dir_sw_BDS/python3.4/bin:" \
-			+ "$dir_sw_BDS/align2rawsignal/bin:$dir_sw_BDS/idrCode:$dir_sw_BDS/python2.7/bin:" \
-			+ "$dir_sw_BDS/MACS/bin:$dir_sw_BDS/gem:" \
-			+ "\${PATH}"
-
-		shellcmd := "export PICARDROOT=$dir_sw_BDS/picard-tools-1.92; export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
-				+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; " \
-
-		shellcmd = shellcmd \
-			+ "MCRROOT=$dir_sw_BDS/MATLAB_Compiler_Runtime/v714;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64;" \
-			+ "MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/native_threads;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/server;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE};" \
-			+ "XAPPLRESDIR=\${MCRROOT}/X11/app-defaults;" \
-			+ "export LD_LIBRARY_PATH;" \
-			+ "export XAPPLRESDIR;"
-
-		SHCMD_INIT = SHCMD_INIT + ";" + path + ";" + shellcmd
-		SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
-	}
-}
-
 void align() {
 
 	// parallel jobs for align() for each replicate and each control
 	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through inputs (ctl==0 : input, ctl==1 : control)	
-		
+	
 		for ( int rep=1; rep <= num_rep; rep++) {
 
 			if ( !is_data_available( ctl, rep ) ) continue
@@ -313,63 +279,22 @@ void align() {
 			if ( is_single_ended( ctl, rep ) ) {
 				
 				if ( no_par_job ) \
-					_align_bwa( data, input, final_stage, (ctl==1), align_out_dir, info ) // go serial 
+					_align_bwa( data, input, final_stage, ctl, rep, align_out_dir, info ) // go serial 
 				else \
-					par _align_bwa( data, input, final_stage, (ctl==1), align_out_dir, info ) // go parallel
+					par _align_bwa( data, input, final_stage, ctl, rep, align_out_dir, info ) // go parallel
 			}
 			else {
 				if ( no_par_job ) \
-					_align_bwa_PE( data, input, final_stage, (ctl==1), align_out_dir, info ) // go serial 
+					_align_bwa_PE( data, input, final_stage, ctl, rep, align_out_dir, info ) // go serial 
 				else \
-					par _align_bwa_PE( data, input, final_stage, (ctl==1), align_out_dir, info ) // go parallel
+					par _align_bwa_PE( data, input, final_stage, ctl, rep, align_out_dir, info ) // go parallel
 			}
 		}
 	}
 
 	wait
-}
 
-void signal_trk() {
-
-	if ( is_input_peak() ) {
-		return
-	}
-
-	if ( is_final_stage_before_xcor() ) {
-		print("\nWarning: Signal track generation requires cross-corr. analysis (xcor), but final_stage is $final_stage.\n")
-		return
-	}
-
-	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through relicates (0: not control, 1: control)
-
-		for ( int rep=1; rep <= num_rep; rep++) {
-
-			if ( !is_data_available( ctl, rep ) ) continue
-
-			string[] tags
-
-			// suffix for task name
-			info 	:= get_task_info( ctl, rep )
-
-			// align output directory
-			align_out_dir := mkdir_path( "$out_dir/align_$info" )
-
-			// load tagalign and its self pseudo replicates
-			string tag, tag_pr1, tag_pr2
-			(tag, tag_pr1, tag_pr2) = load_data( "$align_out_dir/data_tag_$info" )
-
-			// load fraglen
-			o := load_data( "$align_out_dir/data_fraglen_$info" )
-			fraglen := o[0]
-
-			if ( no_par_job )  \
-				_signal_trk( tag, fraglen, out_dir, info )
-			else \
-				par _signal_trk( tag, fraglen, out_dir, info )
-		}
-	}
-
-	if ( no_par_job ) wait	
+	write_report()
 }
 
 void peakcall_idr() {
@@ -381,124 +306,83 @@ void peakcall_idr() {
 	 // mkdir and get absolute path
 
 	if ( is_input_peak() ) {
-		// idr
 
 		peak_out_dir := mkdir_path( "$out_dir/peaks/" + use_idr1 ? "idr1" : "idr2" )
-		
-		pooled := get_peak(0)
-		peak1  := get_peak(1)
-		peak2  := get_peak(2)
-		
-		//prefix := peak_out_dir + "/"+ make_vs_basename_wo_gz( peak1, peak2, "" )
-		//_idr( peak1, peak2, pooled, prefix, "IDR" )
+		pooled := get_peak(0); 	peak1  := get_peak(1); 	peak2  := get_peak(2)
+				
 		_idr( peak1, peak2, pooled, peak_out_dir, "IDR" )
 		wait
 
 		return
 	}
+	
+	peak_out_dir := mkdir_path( "$out_dir/peaks"+"_$peakcall") // peak directory structure 
 
-	// peak directory structure 
-	peak_out_dir := mkdir_path( "$out_dir/peaks"+"_$peakcall")
 	rep_dir := mkdir_path( "$peak_out_dir/true_replicates" )
 	pr_dir 	:= mkdir_path( "$peak_out_dir/pseudo_replicates" )
 	ppr_dir := mkdir_path( "$peak_out_dir/pooled_pseudoreplicates" )
 
-	// prepare for file names needed for peak calling(index 0:non-control 1:control)
-
-	string tag_rep1, tag_rep1_pr1, tag_rep1_pr2
-	string tag_rep2, tag_rep2_pr1, tag_rep2_pr2
-	string tag_pooled, tag_ppr1, tag_ppr2
-
-	string ctl_tag_rep1
-	string ctl_tag_rep2
-	string ctl_tag_pooled
-
-	string info, tmp
-
-	// read rep1 tagalign
-	info = get_task_info( 0, 1 )
-	(tag_rep1, tag_rep1_pr1, tag_rep1_pr2) = load_data( "$out_dir/align_$info/data_tag_$info" )
-
-	// read rep2 tagalign
-	info = get_task_info( 0, 2 )
-	(tag_rep2, tag_rep2_pr1, tag_rep2_pr2) = load_data( "$out_dir/align_$info/data_tag_$info" )
- 
  	align_pooled_dir := mkdir_path( "$out_dir/align_pooled" )
 
-	// ppr 
+	// create ppr (pooled pseudoreplicates) before peak calling
+
+	string tag_pooled, tag_ppr1, tag_ppr2
 	(tag_pooled, tag_ppr1, tag_ppr2 ) = _ppr( tag_rep1, tag_rep1_pr1, tag_rep1_pr2, \
 						  tag_rep2, tag_rep2_pr1, tag_rep2_pr2, align_pooled_dir, "" ) // make pooled psudo replicate
 	wait
 
-	// read ctl_rep1 tagalign
-	info = get_task_info( 1, 1 )
-	(ctl_tag_rep1, tmp) = load_data( "$out_dir/align_$info/data_tag_$info" )
-
-	// if ctl_rep2 exists
-	if ( is_data_available( 1, 2 ) ) { 
-
-		info = get_task_info( 1, 2 )
-		(ctl_tag_rep2, tmp) = load_data( "$out_dir/align_$info/data_tag_$info" )
+	string ctl_tag_pooled
+	
+	if ( is_data_available( 1, 2 ) ) { // if ctl_rep2 exists
 
 		ctl_tag_pooled 	= _pool_tag( ctl_tag_rep1, ctl_tag_rep2, out_dir, "ctl" )
-
 		wait
 	}
-	else {		
+	else { // otherwise, no pooling. just use ctl rep1 data
 		ctl_tag_rep2 	= ctl_tag_rep1
-
 		ctl_tag_pooled 	= ctl_tag_rep1
 	}
-
-	// load fraglen info for rep1
-	info = get_task_info( 0, 1 )
-	o1 := load_data( "$out_dir/align_$info/data_fraglen_" + info )
-
-	fraglen_rep1 := o1[0]
-
-	// load fraglen info for rep2
-	info = get_task_info( 0, 2 )
-	o2 := load_data( "$out_dir/align_$info/data_fraglen_" + info )
-
-	fraglen_rep2 := o2[0]
-
-	// compute fraglen mean for pooled
-	real frgln1 	= fraglen_rep1.parseReal()
+	
+	real frgln1 	= fraglen_rep1.parseReal() 
 	real frgln2 	= fraglen_rep2.parseReal()
-	string fraglen_mean 	= round( (frgln1+frgln2)*0.5 )
+	string fraglen_mean 	= round( (frgln1+frgln2)*0.5 ) // compute fraglen mean for pooled
 
+/*
+print("DEBUG_REP1"+[tag_rep1, tag_rep1_pr1, tag_rep1_pr2] + "\n")
+print("DEBUG_REP2"+[tag_rep2, tag_rep2_pr1, tag_rep2_pr2] + "\n")
+print("DEBUG_CTL"+[ctl_tag_rep1, ctl_tag_pooled] + "\n")
+print("DEBUG_PPR"+[tag_pooled, tag_ppr1, tag_ppr2] + "\n")
+print("FRAGLEN"+[fraglen_rep1, fraglen_rep2, fraglen_mean] + "\n")
+exit
+*/
 
 	// peak calling
 
-	string peak_rep1, peak_rep2, peak_pooled
-	string peak_rep1_pr1, peak_rep1_pr2, peak_rep2_pr1, peak_rep2_pr2
-	string peak_ppr1, peak_ppr2
-
-	(peak_rep1, tmp)   	= _peakcall( tag_rep1, ctl_tag_rep1, fraglen_rep1, rep_dir, "Rep1" )
+	peak_rep1 := _peakcall( tag_rep1, ctl_tag_rep1, fraglen_rep1, rep_dir, "Rep1" )
 	if ( no_par_job ) wait
 
-	(peak_rep2, tmp)   	= _peakcall( tag_rep2, ctl_tag_rep2, fraglen_rep2, rep_dir, "Rep2" )
+	peak_rep2 := _peakcall( tag_rep2, ctl_tag_rep2, fraglen_rep2, rep_dir, "Rep2" )
 	if ( no_par_job ) wait
 
-	(peak_pooled, tmp) 	= _peakcall( tag_pooled, ctl_tag_pooled, fraglen_mean, rep_dir, "Pooled" )
+	peak_pooled := _peakcall( tag_pooled, ctl_tag_pooled, fraglen_mean, rep_dir, "Pooled" )
 	if ( no_par_job ) wait
 
-	(peak_rep1_pr1, tmp) 	= _peakcall( tag_rep1_pr1, ctl_tag_rep1, fraglen_rep1, pr_dir, "Rep1_PR1" )
+	peak_rep1_pr1 := _peakcall( tag_rep1_pr1, ctl_tag_rep1, fraglen_rep1, pr_dir, "Rep1_PR1" )
 	if ( no_par_job ) wait
 
-	(peak_rep1_pr2, tmp) 	= _peakcall( tag_rep1_pr2, ctl_tag_rep1, fraglen_rep1, pr_dir, "Rep1_PR2" )
+	peak_rep1_pr2 := _peakcall( tag_rep1_pr2, ctl_tag_rep1, fraglen_rep1, pr_dir, "Rep1_PR2" )
 	if ( no_par_job ) wait
 
-	(peak_rep2_pr1, tmp) 	= _peakcall( tag_rep2_pr1, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR1" )
+	peak_rep2_pr1 := _peakcall( tag_rep2_pr1, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR1" )
 	if ( no_par_job ) wait
 
-	(peak_rep2_pr2, tmp) 	= _peakcall( tag_rep2_pr2, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR2" )
+	peak_rep2_pr2 := _peakcall( tag_rep2_pr2, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR2" )
 	if ( no_par_job ) wait
 
-	(peak_ppr1, tmp) 	= _peakcall( tag_ppr1, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR1" )
+	peak_ppr1 := _peakcall( tag_ppr1, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR1" )
 	if ( no_par_job ) wait
 
-	(peak_ppr2, tmp) 	= _peakcall( tag_ppr2, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR2" )
+	peak_ppr2 := _peakcall( tag_ppr2, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR2" )
 	if ( no_par_job ) wait
 
 	wait
@@ -526,9 +410,349 @@ void peakcall_idr() {
 	wait
 }
 
+void _align_bwa( string[] data, string type, string final_stage, int ctl, int rep, string out_dir, string info ) {
+
+	string bam, qc // make bam and map_qc with using bwa
+	if ( is_data_type_before( type, "bam" ) ) {
+
+		fastq := data[0]
+
+		(bam, qc) = _bwa( fastq, out_dir, info )
+		wait
+
+		if ( final_stage.toLower() == "bam" ) return
+	}
+
+	string nodup_bam, nodup_bam_idx, nmsrt_bam // remove dupes and make nodup.bam and name sorted bam
+	if ( is_data_type_before( type, "nodup_bam" ) ) {
+
+		if ( type.toLower() == "bam" ) bam = data[0]
+
+		(nodup_bam, nodup_bam_idx) = _bam_to_nodup_bam( bam, out_dir, info )
+		wait
+
+		if ( final_stage.toLower() == "nodup_bam" ) return
+	}
+	
+	if ( is_sigtrk_deeptools() ) { // signal track generation (deeptools)
+
+		if ( make_bw ) {
+			if ( nodup_bam != "" ) \
+				bigwig := _nodup_bam_to_bw_bam_cvrg( nodup_bam, out_dir, info )
+			else \
+				print("\nWarning: Signal trk. generation with deepTools needs nodup_bam. Skipping...\n\n")
+		}
+	}
+
+	string tag // make tagalign
+	if ( is_data_type_before( type, "tag" ) ) {
+
+		if ( type.toLower() == "nodup_bam" ) nodup_bam = data[0]
+
+		tag = _bam_to_tag( nodup_bam, out_dir, info )
+		wait
+
+		if ( final_stage.toLower() == "tag" ) return
+	}
+
+	string xcor_score, xcor_plot // make cross correlation score and plot	
+	if ( is_data_type_before( type, "xcor" ) ) {
+
+		if ( type.toLower() == "tag" ) tag = data[0]
+
+		subsampled_tag := _subsample_tag( tag, out_dir, info )
+		wait
+
+		(xcor_score, xcor_plot) = _xcor( subsampled_tag, out_dir, info )
+		wait
+
+	}
+
+	fraglen := get_fraglen(xcor_score)
+
+	if ( is_sigtrk_aln2rawsig() ) { // signal track generation (align2rawsignal)	
+
+		_sigtrk_aln2rawsig( tag, fraglen, out_dir, info )
+		//wait
+	}
+
+	if ( is_sigtrk_macs2() ) {
+
+		if ( nodup_bam != "" ) \
+			_sigtrk_macs2( nodup_bam, fraglen, out_dir, info )
+		else \
+			print("\nWarning: Signal trk. generation with macs2 needs nodup_bam. Skipping...\n\n")
+		//wait
+	}	
+
+	if ( final_stage.toLower() == "xcor" ) return
+
+	if ( ctl==0 ) {
+
+		string tag_pr1, tag_pr2 // make self pseudo replicate
+		(tag_pr1, tag_pr2) = _spr( tag, out_dir, info )
+		wait
+
+		if ( rep==1 ) {
+			tag_rep1 = tag; 	tag_rep1_pr1 = tag_pr1; 	tag_rep1_pr2 = tag_pr2
+			fraglen_rep1 = fraglen
+		}
+		if ( rep==2 ) {
+			tag_rep2 = tag; 	tag_rep2_pr1 = tag_pr1; 	tag_rep2_pr2 = tag_pr2
+			fraglen_rep2 = fraglen
+		}
+	}
+	else {
+		if ( rep==1 ) {
+			ctl_tag_rep1 = tag
+		}
+		if ( rep==2 ) {
+			ctl_tag_rep2 = tag
+		}
+	}	
+}
+
+void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int rep, string out_dir, string info ) {
+
+	string bam, qc // make bam and map_qc with using bwa
+	if ( is_data_type_before( type, "bam" ) ) {
+
+		fastq1 := data[0]
+		fastq2 := data[1]
+		(bam, qc) = _bwa_PE( fastq1, fastq2, out_dir, info )
+		wait
+
+		if ( final_stage.toLower() == "bam" ) return
+	}
+
+	string nodup_bam, nodup_bam_idx // remove dupes and make nodup.bam
+	if ( is_data_type_before( type, "nodup_bam" ) ) {
+
+		if ( type.toLower() == "bam" ) bam = data[0]
+
+		(nodup_bam, nodup_bam_idx) = _bam_to_nodup_bam_PE( bam, out_dir, info )
+		wait
+
+		if ( final_stage.toLower() == "nodup_bam" ) return
+	}
+	
+	if ( is_sigtrk_deeptools() ) { // signal track generation (deeptools)
+
+		if ( make_bw ) {
+			if ( nodup_bam != "" ) \
+				bigwig := _nodup_bam_to_bw_bam_cvrg( nodup_bam, out_dir, info )
+			else \
+				print("\nWarning: Signal trk. generation with deepTools needs nodup_bam. Skipping...\n\n")
+		}
+	}
+
+	string tag // make tagalign
+	if ( is_data_type_before( type, "tag" ) ) {
+
+		if ( type.toLower() == "nodup_bam" ) nodup_bam = data[0]
+
+		tag = _bam_to_tag( nodup_bam, out_dir, info )
+		wait
+
+		if ( final_stage.toLower() == "tag" ) return
+	}
+
+	string bedpe, xcor_score, xcor_plot // make cross correlation score and plot	
+	if ( is_data_type_before( type, "xcor" ) ) {
+
+		string subsampled_tag
+
+		if ( type.toLower() == "tag" ) {
+			tag = data[0]
+
+			subsampled_tag = _subsample_tag( tag, out_dir, info )
+			wait
+		}
+		else {
+			nmsrt_bam := _bam_to_nmsrt_bam( nodup_bam, out_dir, info )
+			wait
+
+			bedpe = _bam_to_bedpe( nmsrt_bam, out_dir, info )
+			wait 
+
+			subsampled_tag = _subsample_bedpe( bedpe, out_dir, info )
+			wait
+		}
+
+		(xcor_score, xcor_plot) = _xcor( subsampled_tag, out_dir, info )
+		wait
+	}
+
+	fraglen := get_fraglen(xcor_score)
+
+	if ( is_sigtrk_aln2rawsig() ) {
+
+		_sigtrk_aln2rawsig( tag, fraglen, out_dir, info )
+		//wait
+	}
+
+	if ( is_sigtrk_macs2() ) {
+
+		if ( nodup_bam != "" ) \
+			_sigtrk_macs2( nodup_bam, fraglen, out_dir, info )
+		else \
+			print("\nWarning: Signal trk. generation with macs2 needs nodup_bam. Skipping...\n\n")
+		//wait
+	}
+
+	if ( final_stage.toLower() == "xcor" ) return
+
+	if ( ctl==0 ) {
+
+		string tag_pr1, tag_pr2 // make self pseudo replicate	
+
+		if ( type.toLower() == "tag" ) { // if started from tag, we don't have bedpe file, use SE version
+			(tag_pr1, tag_pr2) = _spr( tag, out_dir, info )	
+		}
+		else {
+			(tag_pr1, tag_pr2) = _spr_PE( bedpe, out_dir, info )
+		}
+		wait
+
+		if ( rep==1 ) {
+			tag_rep1 = tag; 	tag_rep1_pr1 = tag_pr1; 	tag_rep1_pr2 = tag_pr2
+			fraglen_rep1 = fraglen
+		}
+		if ( rep==2 ) {
+			tag_rep2 = tag; 	tag_rep2_pr1 = tag_pr1; 	tag_rep2_pr2 = tag_pr2
+			fraglen_rep2 = fraglen
+		}
+	}
+	else {
+		if ( rep==1 ) {
+			ctl_tag_rep1 = tag
+		}
+		if ( rep==2 ) {
+			ctl_tag_rep2 = tag
+		}
+	}
+}
+
+void _sigtrk_aln2rawsig( string tag, string fraglen, string out_dir, string info ) {
+	
+	if ( make_wig ) {
+
+		_tag_to_wig_aln2rawsig( tag, fraglen, out_dir, info )
+	}
+
+	if ( make_bw ) {
+
+		prefix 	:= change_dir( remove_ext( tag, ["tagAlign","tag","bed"] ), out_dir )
+		bigwig 	:= "$prefix.bigwig"
+
+		in 	:= tag
+		out 	:= bigwig
+
+		if ( out <- in ) { // if bigwig is newer than tag
+			bedgraph := _tag_to_bdg_aln2rawsig( tag, fraglen, out_dir, info )
+			wait
+
+			bigwig  = _bdg_to_bw( bedgraph, out_dir, info )
+			wait
+
+			bedgraph.rm()
+		}
+	}
+}
+
+void _sigtrk_macs2( string nodup_bam, string fraglen, string out_dir, string info ) {
+	
+	if ( make_bw ) {
+		prefix 		:= change_dir( remove_ext( nodup_bam, ["bam"] ), out_dir ) + ".pf"
+		fc_bigwig 	:= "$prefix.fc.signal.bigwig"
+		pval_bigwig 	:= "$prefix.pval.signal.bigwig"
+
+		in 	:= nodup_bam
+		out 	:= [ fc_bigwig, pval_bigwig ]
+
+		if ( out <- in ) { // if bigwig is newer than tag
+
+			bed := _bam_to_bed_non_chrM( nodup_bam, out_dir, info )
+			wait
+			
+			string peakfile
+			(peakfile, fc_bigwig, pval_bigwig ) = _macs2_bed( bed, fraglen, out_dir, info )
+
+			bed.rm()
+			peakfile.rm()
+		}
+	}
+}
+
+string _peakcall( string tag, string ctl_tag, string fraglen, string out_dir, string info ) {
+
+	string peakfile, tmp
+
+	if ( is_peakcall_spp() ) {
+		(peakfile, tmp) = _spp( tag, ctl_tag, fraglen, out_dir, info )
+	}
+	else if ( is_peakcall_macs2() ) {
+		(peakfile, tmp) = _macs2( tag, ctl_tag, fraglen, out_dir, info )
+	}
+	else if ( is_peakcall_gem() ) {
+		(peakfile, tmp) = _gem( tag, ctl_tag, out_dir, info )
+	}
+
+	return peakfile
+}
 
 void write_report() {
 	_write_report( html_rpt_title, "$out_dir/$html_rpt_file", out_dir )
+}
+
+void set_shell_env() {
+
+	// set shell environments automatically
+	dir_sw_BDS  := "$HOME/software_bds" // location of dependencies installed by the script "install_dependencies.sh"
+
+	if ( kundaje_lab ) {
+
+		print("\nAutomatically adding environment variables... (Kundaje lab cluster found) \n\n")
+
+		SHCMD_INIT = SHCMD_INIT + " . /etc/profile.d/modules.sh; module add bwa/0.7.3 samtools/0.1.19 bedtools/2.19.1 ucsc_tools/3.0.9 picard-tools/1.92;" \
+					+ " module add phantompeakqualtools/default idr/latest align2rawsignal/2.0 MACS2/2.1.0 java/latest r/2.15.1 gem/2.6 deepTools/latest;" \
+					+ " export PATH=${PATH}:/software/idrCode; " \
+					+ " export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4"
+
+                SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
+
+	}
+	else if ( dir_sw_BDS.exists() ) { // automatically add software binaries to shell env. vars like PATH
+
+		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
+		print("Automatically adding environment variables...\n\n")
+
+		path := " export PATH=" \
+			+ "$dir_sw_BDS/bwa-0.7.3:$dir_sw_BDS/samtools-0.1.19:$dir_sw_BDS/bedtools2-2.19.1/bin:" \
+			+ "$dir_sw_BDS/ucsc_tools:$dir_sw_BDS/picard-tools-1.92:$dir_sw_BDS/R-2.15.1/bin:" \
+			+ "$dir_sw_BDS/phantompeakqualtools:$dir_sw_BDS/idr/bin:$dir_sw_BDS/python3.4/bin:" \
+			+ "$dir_sw_BDS/align2rawsignal/bin:$dir_sw_BDS/idrCode:$dir_sw_BDS/python2.7/bin:" \
+			+ "$dir_sw_BDS/MACS/bin:$dir_sw_BDS/gem:$dir_sw_BDS/deepTools/bin" \
+			+ "\${PATH}"
+
+		shellcmd := "export PICARDROOT=$dir_sw_BDS/picard-tools-1.92; export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
+				+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; " \
+
+		shellcmd = shellcmd \
+			+ "MCRROOT=$dir_sw_BDS/MATLAB_Compiler_Runtime/v714;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64;" \
+			+ "MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/native_threads;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/server;" \
+			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE};" \
+			+ "XAPPLRESDIR=\${MCRROOT}/X11/app-defaults;" \
+			+ "export LD_LIBRARY_PATH;" \
+			+ "export XAPPLRESDIR;"
+
+		SHCMD_INIT = SHCMD_INIT + ";" + path + ";" + shellcmd
+		SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
+	}
 }
 
 void help() {
@@ -585,32 +809,25 @@ void help() {
 	}
 }
 
-string[] _peakcall( string tag, string ctl_tag, string fraglen, string out_dir, string info ) {
-
-	if ( is_peakcall_spp() ) {
-		return _spp( tag, ctl_tag, fraglen, out_dir, info )
-	}
-	else if ( is_peakcall_macs2() ) {
-		return _macs2( tag, ctl_tag, fraglen, out_dir, info )
-	}
-	else if ( is_peakcall_gem() ) {
-		return _gem( tag, ctl_tag, out_dir, info )
-	}
-}
+// misc. functions
 
 bool is_peakcall_spp() {
+
 	return peakcall.toLower()=="spp"
 }
 
 bool is_peakcall_gem() {
+
 	return peakcall.toLower()=="gem"
 }
 
 bool is_peakcall_macs2() {
+
 	return peakcall.toLower()=="macs2"
 }
 
 void init_cmd_arg() {
+
 	if ( fastq1 != "" ) fastq1_1 = fastq1
 	if ( fastq2 != "" ) fastq2_1 = fastq2
 	if ( ctl_fastq1 != "" ) ctl_fastq1_1 = ctl_fastq1
@@ -618,6 +835,7 @@ void init_cmd_arg() {
 }
 
 string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], elseif single-end else return [PE1], else []	
+
 	string[] ret
 	for ( int pe=1; pe<=2; pe++ ) {
 		str := get_fastq( ctl, rep, pe )
@@ -769,10 +987,12 @@ string get_peak( int rep ) { // rep0 = pooled peak
 }
 
 bool is_align_only_mode() {
+
 	return !is_input_peak() && !is_data_available( 1, 1 )
 }
 
 bool is_rep2_exist( int ctl ) {
+
 	if ( is_input_fastq() ) {
 		fastqs := get_fastqs( ctl, 2 )
 		return fastqs.size()>0
@@ -789,6 +1009,7 @@ bool is_rep2_exist( int ctl ) {
 }
 
 bool is_bam_paired_end( int ctl, int rep ) {
+
 	key := ( ctl > 0 ? "CTL_BAM" : "BAM" ) + rep + "_PE"
 
 	if ( conf.hasKey( key ) ) {
@@ -812,18 +1033,22 @@ bool is_bam_paired_end( int ctl, int rep ) {
 }
 
 bool is_bam_single_ended( int ctl, int rep ) {
+
 	return !is_bam_paired_end( ctl, rep )
 }
 
 bool is_bam_PE( int ctl, int rep ) {
+
 	return is_bam_paired_end( ctl, rep )
 }
 
 bool is_bam_SE( int ctl, int rep ) {
+
 	return is_bam_single_ended( ctl, rep )
 }
 
 bool is_tag_paired_end( int ctl, int rep ) {
+
 	key := ( ctl > 0 ? "CTL_TAG" : "TAG" ) + rep + "_PE"
 
 	if ( conf.hasKey( key ) ) {
@@ -847,14 +1072,17 @@ bool is_tag_paired_end( int ctl, int rep ) {
 }
 
 bool is_tag_single_ended( int ctl, int rep ) {
+
 	return !is_tag_paired_end( ctl, rep )
 }
 
 bool is_tag_PE( int ctl, int rep ) {
+
 	return is_tag_paired_end( ctl, rep )
 }
 
 bool is_tag_SE( int ctl, int rep ) {
+
 	return is_tag_single_ended( ctl, rep )
 }
 
@@ -889,80 +1117,117 @@ bool is_single_ended( int ctl, int rep ) {
 }
 
 bool is_SE( int ctl, int rep ) {
+
 	return is_single_ended( ctl, rep )
 }
 
 bool is_PE( int ctl, int rep ) {
+
 	return is_paired_end( ctl, rep )
 }
 
 bool is_input_fastq() {
+
 	return input.toLower() == "fastq"
 }
 
 bool is_input_bam() {
+
 	return input.toLower() == "bam"
 }
 
 bool is_input_nodup_bam() {
+
 	return input.toLower() == "nodup_bam"
 }
 
 bool is_input_tag() {
+
 	return input.toLower() == "tag" || input.toLower() == "tagalign"
 }
 
 bool is_input_peak() {
+
 	return input.toLower() == "peak"
 }
 
 bool is_final_stage_bam() {
+
 	return final_stage.toLower() == "bam"
 }
 
 bool is_final_stage_nodup_bam() {
+
 	return final_stage.toLower() == "nodup_bam"
 }
 
 bool is_final_stage_tag() {
+
 	return final_stage.toLower() == "tag" || final_stage.toLower() == "tagalign"
 }
 
 bool is_final_stage_xcor() {
+
 	return final_stage.toLower() == "xcor"
 }
 
 bool is_final_stage_peak() {
+
 	return final_stage.toLower() == "peak"
 }
 
 bool is_final_stage_idr() {
+
 	return (final_stage.toLower() == "idr") || (final_stage.toLower() == "")
 }
 
 bool is_final_stage_before_nodup_bam() {
+
 	return is_final_stage_bam()
 }
 
 bool is_final_stage_before_tag() {
+
 	return is_final_stage_bam() || is_final_stage_nodup_bam()
 }
 
 bool is_final_stage_before_xcor() {
+
 	return is_final_stage_bam() || is_final_stage_nodup_bam() || is_final_stage_tag()
 }
 
 bool is_final_stage_before_peak() {
+
 	return is_final_stage_bam() || is_final_stage_nodup_bam() || is_final_stage_tag() \
 		|| is_final_stage_xcor()
 }
 
 bool is_final_stage_before_idr() {
+
 	return is_final_stage_bam() || is_final_stage_nodup_bam() || is_final_stage_tag() \
 		|| is_final_stage_xcor() || is_final_stage_peak()
 }
 
+bool is_data_type_before( string type, string stage ) {
+
+	if ( stage.toLower() == "bam" ) {
+		return is_in_array( type, ["fastq"] )
+	}
+	else if ( stage.toLower() == "nodup_bam" ) {
+		return is_in_array( type, ["fastq","bam"] )
+	}
+	else if ( stage.toLower() == "tag" || stage.toLower() == "tagalign" ) {
+		return is_in_array( type, ["fastq","bam","nodup_bam"] ) 	
+	}
+	else if ( stage.toLower() == "xcor" ) {
+		return is_in_array( type, ["fastq","bam","nodup_bam","tag","tagalign"] )
+	}
+
+	return false
+}
+
 string get_task_info( int ctl, int rep ) {
+
 	return ( (ctl>0) ? "ctl_" : "") + "rep" + rep
 }
 
@@ -982,4 +1247,19 @@ bool is_data_available( int ctl, int rep ) {
 	else {
 		return false
 	}
+}
+
+bool is_sigtrk_aln2rawsig() {
+
+	return sigtrk.toLower().startsWith( "aln2" ) || sigtrk.toLower().startsWith( "align" )
+}
+
+bool is_sigtrk_macs2() {
+
+	return sigtrk.toLower().startsWith( "macs2" )
+}
+
+bool is_sigtrk_deeptools() {
+
+	return sigtrk.toLower().startsWith( "deep" )
 }
