@@ -663,7 +663,7 @@ void _sigtrk_aln2rawsig( string tag, string fraglen, string out_dir, string info
 void _sigtrk_macs2( string nodup_bam, string fraglen, string out_dir, string info ) {
 	
 	if ( make_bw ) {
-		prefix 		:= change_dir( remove_ext( nodup_bam, ["bam"] ), out_dir ) + ".pf"
+		prefix 		:= change_dir( remove_ext( nodup_bam, ["bam"] ), out_dir ) + ".nonchrM.tn5.pf"
 		fc_bigwig 	:= "$prefix.fc.signal.bigwig"
 		pval_bigwig 	:= "$prefix.pval.signal.bigwig"
 
