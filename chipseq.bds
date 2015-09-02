@@ -1,81 +1,85 @@
 #!/usr/bin/env bds
 
-helpUnsorted := true // help( $ bds chipseq.bds -h ) will not be sorted
-
-include "modules/align.bds"
-include "modules/peakcall.bds"
+include "modules/align_bwa.bds"
+include "modules/peakcall_spp.bds"
+include "modules/peakcall_macs2.bds"
+include "modules/peakcall_gem.bds"
 include "modules/idr.bds"
 include "modules/signal.bds"
 include "modules/report.bds"
-include "modules/conf.bds"
 
 
-bool kundaje_lab 	= false		help Set it true if you run the pipeline on Kundaje lab servers (automatically set environments, default: false)
+help ENCODE ChIP-Seq Pipeline input files (type: fastq, bam, nodup_bam, tag or peak)
 
-string input 		= "fastq"	help Input file type: 5 options (fastq, bam, nodup_bam, tag or peak)
+input 		:= "fastq"	help Input file type (deafult: fastq).
 
 // for fastqs (SE)
-string fastq1 		= "" 		help Path for fastq for replicate 1 (single ended).
-string fastq2 		= "" 		help Path for fastq for replicate 2 (single ended).
-string ctl_fastq1 	= "" 		help Path for control fastq for replicate 1 (single ended).
-string ctl_fastq2 	= "" 		help Path for control fastq for replicate 2 (single ended, if not exists leave this blank).
+fastq1 		:= "" 		help Fastq for replicate 1 (single ended).
+fastq2 		:= "" 		help Fastq for replicate 2 (single ended).
+ctl_fastq1 	:= "" 		help Control fastq for replicate 1 (single ended).
+ctl_fastq2 	:= "" 		help Control fastq for replicate 2 (single ended, if not exists leave this blank).
 
 // for fasqts (PE)
-string fastq1_1		= "" 		help Path for fastq for replicate 1 pair 1 (paired-end).
-string fastq1_2		= "" 		help Path for fastq for replicate 1 pair 2 (paired-end).
-string fastq2_1 	= "" 		help Path for fastq for replicate 2 pair 1 (paired-end).
-string fastq2_2 	= "" 		help Path for fastq for replicate 2 pair 2 (paired-end).
-string ctl_fastq1_1	= "" 		help Path for control fastq for replicate 1 pair 1 (paired-end).
-string ctl_fastq1_2	= "" 		help Path for control fastq for replicate 1 pair 2 (paired-end).
-string ctl_fastq2_1 	= "" 		help Path for control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).
-string ctl_fastq2_2 	= "" 		help Path for control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).
+fastq1_1	:= "" 		help Fastq for replicate 1 pair 1 (paired-end).
+fastq1_2	:= "" 		help Fastq for replicate 1 pair 2 (paired-end).
+fastq2_1 	:= "" 		help Fastq for replicate 2 pair 1 (paired-end).
+fastq2_2 	:= "" 		help Fastq for replicate 2 pair 2 (paired-end).
+ctl_fastq1_1	:= "" 		help Control fastq for replicate 1 pair 1 (paired-end).
+ctl_fastq1_2	:= "" 		help Control fastq for replicate 1 pair 2 (paired-end).
+ctl_fastq2_1 	:= "" 		help Control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).
+ctl_fastq2_2 	:= "" 		help Control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).
 
 // for bam data set
-string bam1 		= ""		help Path for bam or nodup_bam for replicate 1.
-string bam2 		= ""		help Path for bam or nodup_bam for replicate 2.
-string ctl_bam1 	= "" 		help Path for control bam or nodup_bam for replicate 1.
-string ctl_bam2 	= "" 		help Path for control bam or nodup_bam for replicate 2 (if not exists leave this blank).
+bam1 		:= ""		help Bam or nodup_bam for replicate 1.
+bam2 		:= ""		help Bam or nodup_bam for replicate 2.
+ctl_bam1 	:= "" 		help Control bam or nodup_bam for replicate 1.
+ctl_bam2 	:= "" 		help Control bam or nodup_bam for replicate 2 (if not exists leave this blank).
 
-bool bam1_PE 		= false 	help Set it true if bam replicate 1 is paired end (default: false).
-bool bam2_PE 		= false 	help Set it true if bam replicate 2 is paired end (default: false).
-bool ctl_bam1_PE 	= false 	help Set it true if bam control replicate 1 is paired end (default: false).
-bool ctl_bam2_PE 	= false 	help Set it true if bam control replicate 2 is paired end (default: false).
+bam1_PE 	:= false 	help Add it if bam replicate 1 is paired end (default: false).
+bam2_PE 	:= false 	help Add it if bam replicate 2 is paired end (default: false).
+ctl_bam1_PE 	:= false 	help Add it if bam control replicate 1 is paired end (default: false).
+ctl_bam2_PE 	:= false 	help Add it if bam control replicate 2 is paired end (default: false).
 
 // for tag data set
-string tag1 		= ""		help Path for tagalign for replicate 1.
-string tag2 		= ""		help Path for tagalign for replicate 2.
-string ctl_tag1 	= "" 		help Path for control tagalign for replicate 1.
-string ctl_tag2 	= "" 		help Path for control tagalign for replicate 2 (if not exists leave this blank).
+tag1 		:= ""		help Tagalign for replicate 1.
+tag2 		:= ""		help Tagalign for replicate 2.
+ctl_tag1 	:= "" 		help Control tagalign for replicate 1.
+ctl_tag2 	:= "" 		help Control tagalign for replicate 2 (if not exists leave this blank).
 
-bool tag1_PE 		= false 	help Set it true if tagalign replicate 1 is paired end (default: false).
-bool tag2_PE 		= false 	help Set it true if tagalign replicate 2 is paired end (default: false).
-bool ctl_tag1_PE 	= false 	help Set it true if tagalign control replicate 1 is paired end (default: false).
-bool ctl_tag2_PE 	= false 	help Set it true if tagalign control replicate 2 is paired end (default: false).
+tag1_PE 	:= false 	help Add it if tagalign replicate 1 is paired end (default: false).
+tag2_PE 	:= false 	help Add it if tagalign replicate 2 is paired end (default: false).
+ctl_tag1_PE 	:= false 	help Add it if tagalign control replicate 1 is paired end (default: false).
+ctl_tag2_PE 	:= false 	help Add it if tagalign control replicate 2 is paired end (default: false).
 
 // for peak data set
-string peak1 		= ""		help Path for peak 1
-string peak2 		= ""		help Path for peak 2
-string pooled2 		= ""		help Path for pooled peak
+peak1 		:= ""		help Peak 1
+peak2 		:= ""		help Peak 2
+pooled2 	:= ""		help Pooled peak
 
-string final_stage	= "" 		help Pipeline will stop after producing final output (bam, nodup_bam, tag, xcor (cross-corr. analysis), peak ). (default: blank).
-int num_rep 		= 2		help Number of replicates, define it for non-blank final_stage only. (default: 2).
-int num_ctl 		= 1
+help Alignment only mode. Define '-final_stage xcor' and '-num_rep [NO_REPS]' (stage: fastq, bam, nodup_bam, tag or peak)
 
-string html_rpt_title 	= "ChIP-Seq Pipeline HTML Report"
-string html_rpt_file 	= "Report.html"	
+final_stage	:= "" 		help Final stage that pipeline stops after (default: blank).
+num_rep 	:= 2		help # replicates, define '-final_stage' first. (default: 2).
 
-init_cmd_arg()
+help Peakcalling method (spp, macs2 and gem)
+
+peakcall 	:= "spp"	help Choose peak calling method: spp, macs2 and gem (default: spp).
+
+
+num_ctl 	:= 1
+html_rpt_title 	:= "ChIP-Seq Pipeline HTML Report"
+html_rpt_file 	:= "Report.html"	
 
 
 
 // chipseq pipeline starts here
 help() // show help if no parameters are given
 
-read_conf() // read configruation file if exists
+init_chipseq() // read configruation file if exists
 
-chk_input_data()
+chk_input_data() // check input files are valid
 
-init() // initialization (mkdir out_dir. and set shell environment)
+set_shell_env() // initialization (mkdir out_dir. and set shell environment)
 
 align() // align
 
@@ -89,71 +93,27 @@ write_report()
 
 
 
-void read_conf() {
+void init_chipseq() {
+
+	init_cmd_arg()
 
 	if ( conf_file_exists() ) {
 
-		// kundaje lab support (automatic shell env. settings)
-		kundaje_lab 	= get_conf_val_bool( kundaje_lab,	["KUNDAJE_LAB"] )
-
-		// final stage
 		final_stage	= get_conf_val( final_stage, 		["FINAL_STAGE", "FINAL_OUT"] )
 		num_rep 	= get_conf_val_int( num_rep, 		["NUM_REP", "NUMREP"] )
 
-		// inputs
 		input 		= get_conf_val( input, 			["INPUT_TYPE", "INPUT"] )
 
-		// align	
-		mapq_thresh 	= get_conf_val_int( mapq_thresh,	["MAPQ_THRESH"] )
-		nreads 		= get_conf_val_int( nreads,		["NREADS"] )
-
-		bwa_idx 	= get_conf_val( bwa_idx, 		["BWA_INDEX_NAME", "BWA_IDX", "BWA_IDX_NAME"] )
-		param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["BWA_ALN_PARAM", "PARAM_BWA_ALN"] )
-
-		nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["NTHREADS_BWA_ALN", "NTH_BWA_ALN", "CPU_BWA_ALN"] )
-		wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["WALLTIME_BWA_ALN", "WT_BWA_ALN", "TIMEOUT_BWA_ALN"] )
-		mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["MEMORY_BWA_ALN", "MEM_BWA_ALN"] )
-
-		wt_bwa_sam	= get_conf_val( wt_bwa_sam, 		["WALLTIME_BWA_SAM", "WT_BWA_SAM", "TIMEOUT_BWA_SAM"] )
-		mem_bwa_sam 	= get_conf_val( mem_bwa_sam, 		["MEMORY_BWA_SAM", "MEM_BWA_SAM"] )
-
-		//signal track genenration
-		make_wig	= get_conf_val_bool( make_wig, 		["CREATE_WIG", "MAKE_WIG", "WIG"] )
-		make_bedgraph	= get_conf_val_bool( make_bedgraph, 	["CREATE_BEDGRAPH", "MAKE_BEDGRAPH", "BEDGRAPH"] )
-		make_bigwig	= get_conf_val_bool( make_bigwig, 	["CONVERT_TO_BIGWIG", "MAKE_BIGWIG", "BIGWIG"] )
-
-		umap		= get_conf_val( umap, 			["UMAP_DIR", "UMAP"] )
-		gensz		= get_conf_val( gensz, 			["GENSZ", "GENOMESIZE", "GENOME_SIZE", "GENOME_SZ", "GEN_SZ"] )
-		chrsz		= get_conf_val( chrsz, 			["CHROM_SIZES", "CHRSZ", "CHR_SZ"] )
-
-		// peakcalling
 		peakcall	= get_conf_val( peakcall, 		["PEAKCALL_METHOD", "PEAKCALL"] )
-
-		npeak 		= get_conf_val_int( npeak,		["NPEAK"] )
-
-		nth_spp 	= get_conf_val_int( nth_spp,		["NTHREADS_SPP", "NTH_SPP", "CPU_SPP"] )
-		wt_spp 		= get_conf_val( wt_spp, 		["WALLTIME_SPP", "WT_SPP", "TIMEOUT_SPP"] )
-		mem_spp 	= get_conf_val( mem_spp, 		["MEMORY_SPP", "MEM_SPP"] )
-
-		gensz		= get_conf_val( gensz, 			["GENSZ", "GENOMESIZE", "GENOME_SIZE", "GENOME_SZ", "GEN_SZ"] )
-
-		nth_macs2 	= get_conf_val_int( nth_macs2,		["NTHREADS_MACS2", "NTH_MACS2", "CPU_MACS2"] )
-		wt_macs2 	= get_conf_val( wt_macs2, 		["WALLTIME_MACS2", "WT_MACS2", "TIMEOUT_MACS2"] )
-		mem_macs2 	= get_conf_val( mem_macs2, 		["MEMORY_MACS2", "MEM_MACS2"] )
-
-		seq 		= get_conf_val( seq,			["SEQ_DIR", "SEQ"] )
-
-		nth_gem 	= get_conf_val_int( nth_gem,		["NTHREADS_GEM", "NTH_GEM", "CPU_GEM"] )
-		wt_gem 		= get_conf_val( wt_gem, 		["WALLTIME_GEM", "WT_GEM", "TIMEOUT_GEM"] )
-		mem_gem 	= get_conf_val( mem_gem, 		["MEMORY_GEM", "MEM_GEM"] )
-
-		// idr
-		use_idr1 	= get_conf_val_bool( use_idr1, 		["USE_IDR1"] )
-		idr_thresh 	= get_conf_val( idr_thresh, 		["IDR_THRESH"] )
-
-		no_par_job	= get_conf_val_bool( no_par_job, 	["NO_PAR_JOB", "NO_PARALLEL", "NO_PAR"] )
-
 	}
+
+	if ( v ) { // verbose
+		print("\n")
+		print_if_not_null( "Final stage for ChIP-Seq", "$final_stage" )
+		print_if_not_default( "# replicates to align", "$num_rep", 2)
+		print_if_not_default( "Input data type", "$input", "fastq")
+		print_if_not_null( "Peak calling method", "$peakcall" )
+	}	
 
 	// if no data for control rep1 and final stage is before peak calling
 	// this should be aligment only mode, so ignore all control from here
@@ -164,11 +124,14 @@ void read_conf() {
 	else {
 		num_rep = 2 // # of replicates should be 2 if not align only mode
 	}
+
+	// create output directory
+	out_dir = mkdir_path( out_dir ) // mkdir and get absolute path	
 }
 
 void chk_input_data() {
 
-	print( "\n\n====== Checking inputs (data type = $input) ...\n\n" );
+	print( "\n====== Checking inputs (data type = $input) ...\n\n" );
 
 	if ( is_input_peak() ) {
 
@@ -253,20 +216,17 @@ void chk_input_data() {
 	}
 
 	if ( final_stage != "" ) \
-		print( "\n\n====== Final stage : $final_stage \n\n" );
+		print( "\n====== Final stage : $final_stage \n\n" );
 }
 
-void init() {
-
-	// create output dir.	
-	out_dir = mkdir_path( out_dir ) // mkdir and get absolute path
+void set_shell_env() {
 
 	// set shell environments automatically
 	dir_sw_BDS  := "$HOME/software_bds" // location of dependencies installed by the script "install_dependencies.sh"
 
 	if ( kundaje_lab ) {
 
-		print("\n\nAutomatically adding environment variables... (kundaje_lab == true) \n\n")
+		print("\nAutomatically adding environment variables... (Kundaje lab cluster found) \n\n")
 
 		SHCMD_INIT = SHCMD_INIT + " . /etc/profile.d/modules.sh; module add bwa/0.7.3 samtools/0.1.19 bedtools/2.19.1 ucsc_tools/3.0.9 picard-tools/1.92;" \
 					+ " module add phantompeakqualtools/default idr/latest align2rawsignal/2.0 MACS2/2.1.0 java/latest r/2.15.1 gem/2.6;" \
@@ -278,24 +238,15 @@ void init() {
 	}
 	else if ( dir_sw_BDS.exists() ) { // automatically add software binaries to shell env. vars like PATH
 
-		print("\n\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
-		print("\nAutomatically adding environment variables...\n\n")
+		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
+		print("Automatically adding environment variables...\n\n")
 
 		path := " export PATH=" \
-			+ "$dir_sw_BDS/bwa-0.7.3:" \
-			+ "$dir_sw_BDS/samtools-0.1.19:" \
-			+ "$dir_sw_BDS/bedtools2-2.19.1/bin:" \
-			+ "$dir_sw_BDS/ucsc_tools:" \
-			+ "$dir_sw_BDS/picard-tools-1.92:" \
-			+ "$dir_sw_BDS/R-2.15.1/bin:" \
-			+ "$dir_sw_BDS/phantompeakqualtools:" \
-			+ "$dir_sw_BDS/idr/bin:" \
-			+ "$dir_sw_BDS/python3.4/bin:" \
-			+ "$dir_sw_BDS/align2rawsignal/bin:" \
-			+ "$dir_sw_BDS/idrCode:" \
-			+ "$dir_sw_BDS/python2.7/bin:" \
-			+ "$dir_sw_BDS/MACS/bin:" \
-			+ "$dir_sw_BDS/gem:" \
+			+ "$dir_sw_BDS/bwa-0.7.3:$dir_sw_BDS/samtools-0.1.19:$dir_sw_BDS/bedtools2-2.19.1/bin:" \
+			+ "$dir_sw_BDS/ucsc_tools:$dir_sw_BDS/picard-tools-1.92:$dir_sw_BDS/R-2.15.1/bin:" \
+			+ "$dir_sw_BDS/phantompeakqualtools:$dir_sw_BDS/idr/bin:$dir_sw_BDS/python3.4/bin:" \
+			+ "$dir_sw_BDS/align2rawsignal/bin:$dir_sw_BDS/idrCode:$dir_sw_BDS/python2.7/bin:" \
+			+ "$dir_sw_BDS/MACS/bin:$dir_sw_BDS/gem:" \
 			+ "\${PATH}"
 
 		shellcmd := "export PICARDROOT=$dir_sw_BDS/picard-tools-1.92; export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
@@ -385,7 +336,7 @@ void signal_trk() {
 	}
 
 	if ( is_final_stage_before_xcor() ) {
-		print("Warning: Signal track generation requires cross-corr. analysis (xcor), but final_stage is $final_stage.\n\n")
+		print("\nWarning: Signal track generation requires cross-corr. analysis (xcor), but final_stage is $final_stage.\n")
 		return
 	}
 
@@ -602,13 +553,22 @@ void help() {
 		print("\tBWA_IDX= [BWA_INDEX]\n")
 		print("\t\t ...\n")
 		print("\n")
+		print(" Usage 3 (command line argument using species database): For example, [SPECIES]= hg19 or mm9.\n")
+		print("\n")
+		print("\t\$ bds chipseq.bds \\ \n")
+		print("\t\t -fastq1 [FASTQ_REP1] \\ \n")
+		print("\t\t -fastq2 [FASTQ_REP2] \\ \n")
+		print("\t\t -species [SPECIES] \\ \n")
+		print("\t\t -species_file [SPECIES_FILE] \\ \n")
+		print("\t\t ... \n")
+		print("\n")
 		print(" For Sun Grid Engine (SGE) cluster use\n")
 		print("\n")
 		print("\t\$ bds -s sge chipseq.bds ... \n")
 		print("\n")
-		print(" For Kundaje lab cluster use (this will automatically set shell environments.)\n")
+		print(" For Kundaje lab cluster use (this will automatically set shell environments and species file.)\n")
 		print("\n")
-		print("\t\$ bds -s sge chipseq.bds ... -kundaje_lab true \n")
+		print("\t\$ bds -s sge chipseq.bds ... -kundaje_lab\n")
 		print("\n")
 		print(" Recommended software versions\n")
 		print("\n")
@@ -617,132 +577,38 @@ void help() {
 		print("\tjava/8; r/2.15.1; python3/3.4; python2/2.7\n")
 		print("\tspp_1.10.1 (R package);\n")
 		print("\n")
-		print(" List of paramters\n")
+		print(" List of parameters\n")
 		print(" \n")
-		print(" === general === \n")
-		print(" -out_dir \t\tOutput directory. (default: out)\n")
-		print(" -no_par_job \t\tSet if true to serialize all jobs, this option is for desktops with limited memory (default: false)\n")
-		print(" \n")
-		print(" === inputs ===\n")
-		print(" -input \t\tInput file type: 5 options (fastq, bam, nodup_bam, tag or peak)\n")
-		print(" \n")
-		print(" === for fastqs (SE) === \n")
-		print(" -fastq1 \t\tPath for fastq for replicate 1 (single ended).\n")
-		print(" -fastq2 \t\tPath for fastq for replicate 2 (single ended).\n")
-		print(" -ctl_fastq1 \t\tPath for control fastq for replicate 1 (single ended).\n")
-		print(" -ctl_fastq2 \t\tPath for control fastq for replicate 2 (single ended, if not exists leave this blank).\n")
-		print(" \n")
-		print(" === for fasqts (PE) ===\n")
-		print(" -fastq1_1 \t\tPath for fastq for replicate 1 pair 1 (paired-end).\n")
-		print(" -fastq1_2 \t\tPath for fastq for replicate 1 pair 2 (paired-end).\n")
-		print(" -fastq2_1 \t\tPath for fastq for replicate 2 pair 1 (paired-end).\n")
-		print(" -fastq2_2 \t\tPath for fastq for replicate 2 pair 2 (paired-end).\n")
-		print(" -ctl_fastq1_1 \t\tPath for control fastq for replicate 1 pair 1 (paired-end).\n")
-		print(" -ctl_fastq1_2 \t\tPath for control fastq for replicate 1 pair 2 (paired-end).\n")
-		print(" -ctl_fastq2_1 \t\tPath for control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).\n")
-		print(" -ctl_fastq2_2 \t\tPath for control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).\n")
-		print(" \n")
-		print(" === for bam data set ===\n")
-		print(" -bam1 \t\t\tPath for bam for replicate 1.\n")
-		print(" -bam2 \t\t\tPath for bam for replicate 2.\n")
-		print(" -ctl_bam1 \t\tPath for control bam for replicate 1.\n")
-		print(" -ctl_bam2 \t\tPath for control bam for replicate 2 (if not exists leave this blank).\n")
-		print(" \n")
-		print(" -bam1_PE \t\tSet it true if bam replicate 1 is paired end (default: false).\n")
-		print(" -bam2_PE \t\tSet it true if bam replicate 2 is paired end (default: false).\n")
-		print(" -ctl_bam1_PE \t\tSet it true if bam control replicate 1 is paired end (default: false).\n")
-		print(" -ctl_bam2_PE \t\tSet it true if bam control replicate 2 is paired end (default: false).\n")
-		print(" \n")
-		print(" === for tag data set ===\n")
-		print(" -tag1 \t\t\tPath for tagalign for replicate 1.\n")
-		print(" -tag2 \t\t\tPath for tagalign for replicate 2.\n")
-		print(" -ctl_tag1 \t\tPath for control tagalign for replicate 1.\n")
-		print(" -ctl_tag2 \t\tPath for control tagalign for replicate 2 (if not exists leave this blank).\n")
-		print(" \n")
-		print(" -tag1_PE \t\tSet it true if tagalign replicate 1 is paired end (default: false).\n")
-		print(" -tag2_PE \t\tSet it true if tagalign replicate 2 is paired end (default: false).\n")
-		print(" -ctl_tag1_PE \t\tSet it true if tagalign control replicate 1 is paired end (default: false).\n")
-		print(" -ctl_tag2_PE \t\tSet it true if tagalign control replicate 2 is paired end (default: false).\n")
-		print(" \n")
-		print(" === for peak data set ===\n")
-		print(" -peak1 \t\tPath for peak 1\n")
-		print(" -peak2 \t\tPath for peak 2\n")
-		print(" -pooled2 \t\tPath for pooled peak\n")
-		print(" \n")
-		print(" === alignment only mode (final stage)===\n")
-		print(" -final_stage \t\tPipeline will stop after producing final output (bam, nodup_bam, tag, xcor (cross-corr. analysis), peak ). (default: blank).\n")
-		print(" -num_rep \t\tNumber of replicates, define it for non-blank final_stage only. (default: 2).\n")
-		print(" \n")
-		print(" === align\n")
-		print(" -bwa_idx \t\tPath for bwa index.\n")
-		print(" -rm_chr_from_tag \tIf defined, remove lines including it from all tagaligns. (example: 'other|ribo|mito|_', '_', default: blank).\n")
-		print(" \n")
-		print(" === peakcall\n")
-		print(" -peakcall \t\tChoose peak calling method: spp, macs2 and gem (default: spp).\n")
-		print(" -gensz \t\tGenome size; hs for human, mm for mouse (default: hs)\n")
-		print(" -chrsz \t\tPath for chrom sizes file for your ref. sequence files (use fetchChromSizes from UCSC tools).\n")
-		print(" -seq \t\t\tPath for sequence files (directory where chr*.fa exist).\n")
-		print(" \n")
-		print(" === idr\n")
-		print(" -use_idr1 \t\tIf set true, use IDR1 code. Otherwise use IDR2 code (default: false)\n")
-		print(" \n")
-		print(" === signal track generation\n")
-		print(" -make_wig \t\tSet it true to create wig (default: false).\n")
-		print(" -make_bedgraph \tSet it true to create bedgraph (default: false).\n")
-		print(" -make_bigwig \t\tSet it true to convert bedgraph to bigwig signal track (default: false).\n")
-		print(" \n")
-		print(" -umap \t\t\tPath for unique mappability tracks (https:===sites.google.com/site/anshulkundaje/projects/mappability).\n")
-		print(" -chrsz \t\tPath for chrom sizes file for your ref. sequence files (use fetchChromSizes from UCSC tools).\n")
-		print(" -seq \t\t\tPath for sequence files (directory where chr*.fa exist).\n")
-		print(" \n")
-		print(" === cluster resource for hard (bottle-necked) jobs\n")
-		print(" -nth_bwa_aln \t\tNumber of threads for bwa aln (default: 2).\n")
-		print(" -wt_bwa_aln \t\tWalltime for bwa aln (default: 10h).\n")
-		print(" -mem_bwa_aln \t\tMax. memory for bwa aln (default: 8G).\n")
-		print(" \n")
-		print(" -wt_bwa_sam \t\tWalltime for bwa sampe/samse (default: 12h).\n")
-		print(" -mem_bwa_sam \t\tMax. memory for bwa sampe/samse (default: 8G).\n")
-		print(" \n")
-		print(" -nth_spp \t\tNumber of threads for spp (run_spp.R) (default: 2).\n")
-		print(" -wt_spp	\tWalltime for spp (default: 10h).\n")
-		print(" -mem_spp \t\tMax. memory for spp (default: 8G).\n")
-		print(" \n")
-		print(" -nth_macs2 \t\tNumber of threads for MACS2 (default: 2)\n")
-		print(" -wt_macs2 \t\tWalltime for MACS2 (default: 10h).\n")
-		print(" -mem_macs2 \t\tMax. memory for MACS2 (default: 8G).\n")
-		print(" \n")
-		print(" -nth_gem \t\tNumber of threads for gem (default: 2)\n")
-		print(" -wt_gem	\tWalltime for gem (default: 20h).\n")
-		print(" -mem_gem \t\tMax. memory for gem (default: 16G).\n")
-		print(" \n")
-		print(" === cluster resource for all other jobs\n")
-		print(" -nth \t\t\tDefault number of threads for all cluster jobs (default: 1).\n")
-		print(" -wt \t\t\tDefault walltime for all cluster jobs (example: 8:10:00, 3h, 3600 , default: 6h).\n")
-		print(" -mem \t\t\tDefault max. memory for all cluster jobs (example: 4G, 100KB, default: 4G).\n")
-		print(" \n")
-		print(" === align (advanced options)\n")
-		print(" -param_bwa_aln \tParameters for bwa align (default: \"-q 5 -l 32 -k 2\").\n")
-		print(" -mapq_thresh \t\tThreshold for removing low MAPQ reads (default: 30).\n")
-		print(" -nreads \t\tNumber of reads to be subsampled for cross corr. analysis (default. 15000000).\n")
-		print(" \n")
-		print(" === idr (advanced options)\n")
-		print(" -idr_thresh \t\tIDR threshold (default: 0.02).\n")
-		print(" \n")
-		print(" === shell environment setting (advanced options)\n")
-		print(" -mod \t\t\tEnv. modules separated by ; (example: \"bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92\").\n")
-		print(" -shcmd \t\tShell cmds separated by ;. Env. vars should be written as \${VAR} not as \$VAR (example: \"export PATH=\${PATH}:/usr/test; VAR=test\"). \n")
-		print(" -addpath \t\tPath to be PREPENDED to env. var. PATH. Allows multiple paths separated by ; (example: \"/bin/test:/bin/test2\")\n")
-		print(" \n")
+		printHelp()
 
 		exit
 	}
 }
 
+string[] _peakcall( string tag, string ctl_tag, string fraglen, string out_dir, string info ) {
 
+	if ( is_peakcall_spp() ) {
+		return _spp( tag, ctl_tag, fraglen, out_dir, info )
+	}
+	else if ( is_peakcall_macs2() ) {
+		return _macs2( tag, ctl_tag, fraglen, out_dir, info )
+	}
+	else if ( is_peakcall_gem() ) {
+		return _gem( tag, ctl_tag, out_dir, info )
+	}
+}
 
+bool is_peakcall_spp() {
+	return peakcall.toLower()=="spp"
+}
 
+bool is_peakcall_gem() {
+	return peakcall.toLower()=="gem"
+}
 
-
+bool is_peakcall_macs2() {
+	return peakcall.toLower()=="macs2"
+}
 
 void init_cmd_arg() {
 	if ( fastq1 != "" ) fastq1_1 = fastq1
@@ -765,10 +631,10 @@ string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], e
 
 string get_fastq( int ctl, int rep, int pe ) {
 
-	key_wo_PE := ( ctl > 0 ? "CTL_FASTQ" : "FASTQ" ) + "_REP" + rep 
+	key_wo_PE := ( ctl > 0 ? "ctl_fastq" : "fastq" ) + "_rep" + rep 
 	key := key_wo_PE + "_PE" + pe
 
-	key_wo_PE2 := ( ctl > 0 ? "CTL_FASTQ" : "FASTQ" ) + rep 
+	key_wo_PE2 := ( ctl > 0 ? "ctl_fastq" : "fastq" ) + rep 
 	key2 := key_wo_PE2 + "_" + pe
 
 	if ( (pe==1) && conf.hasKey( key_wo_PE ) ) {
@@ -814,8 +680,8 @@ string get_fastq( int ctl, int rep, int pe ) {
 
 string get_bam( int ctl, int rep ) {
 
-	key := ( ctl > 0 ? "CTL_BAM" : "BAM" ) + "_REP" + rep
-	key2 := ( ctl > 0 ? "CTL_BAM" : "BAM" ) + rep
+	key := ( ctl > 0 ? "ctl_bam" : "bam" ) + "_rep" + rep
+	key2 := ( ctl > 0 ? "ctl_bam" : "bam" ) + rep
 
 	if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )
@@ -842,11 +708,11 @@ string get_bam( int ctl, int rep ) {
 
 string get_tag( int ctl, int rep ) {
 
-	key := ( ctl > 0 ? "CTL_TAG" : "TAG" ) + "_REP" + rep
-	key2 := ( ctl > 0 ? "CTL_TAGALIGN" : "TAGALIGN" ) + "_REP" + rep
+	key := ( ctl > 0 ? "ctl_tag" : "tag" ) + "_rep" + rep
+	key2 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" ) + "_rep" + rep
 
-	key3 := ( ctl > 0 ? "CTL_TAG" : "TAG" ) + rep
-	key4 := ( ctl > 0 ? "CTL_TAGALIGN" : "TAGALIGN" ) + rep
+	key3 := ( ctl > 0 ? "ctl_tag" : "tag" ) + rep
+	key4 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" ) + rep
 
 	if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )
@@ -879,8 +745,8 @@ string get_tag( int ctl, int rep ) {
 
 string get_peak( int rep ) { // rep0 = pooled peak
 
-	key := ( rep == 0 ? "PEAK_POOLED" : ("PEAK_REP" + rep) )
-	key2 := ( rep == 0 ? "PEAK_POOLED" : ("PEAK" + rep) )
+	key := ( rep == 0 ? "peak_pooled" : ("peak_rep" + rep) )
+	key2 := ( rep == 0 ? "peak_pooled" : ("peak" + rep) )
 
 	if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )

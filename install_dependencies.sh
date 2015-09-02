@@ -244,10 +244,19 @@ echo
 mkdir -p $SOFTWARE
 
 # Local installation for BigDataScript (latest)
+#cd $HOME
+#wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate
+#tar zxvf bds_Linux.tgz
+#rm -f bds_Linux.tgz
+
+cd $SOFTWARE
+git clone https://github.com/pcingola/BigDataScript
+cd BigDataScript
+git checkout tags/v0.9999
+cp distro/bds_Linux.tgz $HOME
 cd $HOME
-wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate
 tar zxvf bds_Linux.tgz
-rm -f bds_Linux.tgz
+
 cp $SCRIPTDIR/bds.config $HOME/.bds/
 CONTENTS=("export PATH=\$PATH:\$HOME/.bds/")
 add_to_bashrc

@@ -55,7 +55,7 @@ export PATH=$PATH:$HOME/.bds
 
 For Kundaje lab servers (mitra, nandi, amold and wotan), the pipeline provides a flag to automatically set shell environments.
 ```
-$ bds -s sge chipseq.bds [...] -kundaje_lab true
+$ bds -s sge chipseq.bds [...] -kundaje_lab
 ```
 
 
@@ -77,7 +77,7 @@ $ bds chipseq.bds \
 -fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
 -ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
--bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
+-bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa \
 ```
 
 2) From a configuration file
@@ -94,8 +94,41 @@ INPUT= fastq
 FASTQ1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
 FASTQ2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
 CTL_FASTQ1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
-BWA_IDX= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
+BWA_IDX= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ```
+
+
+### Using Species file
+
+For ChIP-Seq pipeline, there are many species specific parameters like indices (bwa, bowtie, ...), chrome sizes, sequence file and genome size. If you have multiple pipelines, it's a hard job to individually define all parameters for each pipeline. However, if you have a species file with all species specific parameters defined, then you define less parameters and share the species file with all other pipelines.
+
+```
+$ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE]
+```
+
+Example species file:
+```
+[hg19]
+chrsz   = /mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes // chrome sizes
+seq     = /mnt/data/ENCODE/sequence/encodeHg19Male // genome reference sequence
+gensz   = hs // genome size: hs for humna, mm for mouse
+umap    = /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k20tok54 // uniq. mappability tracks
+bwa_idx = /mnt/data/annotations/indexes/bwa_indexes/encodeHg19Male/v0.7.10/encodeHg19Male_bwa-0.7.10.fa
+bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
+bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
+vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.merged.ANS.bed
+
+[hg38]
+...
+
+[mm9]
+...
+
+[mm10]
+...
+```
+
+If '-kundaje_lab' flag is defined, you can skip '-species_file' on Kundaje lab clusters because 'species_kundaje_lab.conf' is already provided in the pipeline repository.
 
 
 ### Input data type and final stage
@@ -174,6 +207,7 @@ $ bds chipseq.bds \
 -pooled /DATA/Example.pooled.narrowPeak.gz \
 ```
 
+
 ### Starting pipeline from the point of failure
 
 The pipeline automatically determines if each task has finished or not (comparing timestamps of input/output files for each task).
@@ -213,10 +247,10 @@ $ bds chipseq.bds \
 2) Starting from others (bam, nodup_bam and tag)
 
 For inputs:
-Add a parameter "-[DATA_TYPE][REPLICATE_ID]_PE true" if it's PE
+Add a parameter "-[DATA_TYPE][REPLICATE_ID]_PE" if it's PE
 
 For controls:
-Add a parameter "-ctl_[DATA_TYPE][REPLICATE_ID]_PE true" if it's PE
+Add a parameter "-ctl_[DATA_TYPE][REPLICATE_ID]_PE" if it's PE
 
 Example:
 Repliacte 1 and control replicate 1 are SE.
@@ -226,7 +260,7 @@ Replicate 2 is PE.
 $ bds chipseq.bds \
 -input tag \
 -tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
--tag2_PE true \
+-tag2_PE \
 -tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
 -ctl_tag1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
 ```
@@ -272,14 +306,13 @@ Based on <a href="https://sites.google.com/site/anshulkundaje/projects/idr" targ
 ```
 $ bds chipseq.bds \
 ...
--use_idr1 true
+-use_idr1
 ```
 
 2) IDR2 (default)
 
 Based on <a href="https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>.
 No additional parameter required. 
-
 
 
 
@@ -313,11 +346,11 @@ Some bioinformatics softwares like bwa 0.7.3, samtools 0.1.12 do not return non-
 
 The minimum memory requirement for the pipeline is 8GB, but we recommend to run the pipeline on computers with more than 16GB of memory. If you have memory issues, there are two options. Try with 2) first and if it doesn't work go 1). The difference between those two options is that even single thread jobs will be serialized for 1).
 
-1) (SLOW BUT STABLE) Turn off parallelization by using the flag "-no_par_job true" in command line argument or "NO_PARALLEL_JOB=true" in a configuration file. However, individual jobs can still use multiple number of processors so increase the number of threads to speed up the pipeline.
+1) (SLOW BUT STABLE) Turn off parallelization by using the flag "-no_par_job" in command line argument or "NO_PARALLEL_JOB=true" in a configuration file. However, individual jobs can still use multiple number of processors so increase the number of threads to speed up the pipeline.
 
 Example: for desktop with 4 cores
 ```
-$ bds chipseq.bds -no_par_job true -nth_bwa_aln 4 -nth_spp 4 ...
+$ bds chipseq.bds -no_par_job -nth_bwa_aln 4 -nth_spp 4 ...
 ```
 
 2) (FAST BUT UNSTABLE) Do not turn off paralleization but just increase the number of threads for BIG-MEMORY bottleneck jobs (bwa and spp) to your computer's maximum so that no BIG-MEMORY jobs will be parallelized.
@@ -383,9 +416,9 @@ Add the following command line argument to generate signal tracks for tagalign o
 ```
 $ bds chipseq.bds \
 ... 
--make_wig true \
--make_bedgraph true \
--make_bigwig true \
+-make_wig \
+-make_bedgraph \
+-make_bigwig \
 -seq /DATA/encodeHg19Male \
 -umap /DATA/encodeHg19Male/globalmap_k20tok54 \
 -chrsz /DATA/hg19.chrom.sizes
