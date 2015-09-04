@@ -331,13 +331,13 @@ Example1: You have 5 unfiltered raw bam and want to filter them (removing dupes)
 ```
 $ bds chipseq.bds \
 -final_stage tag \
--num_rep 10
+-num_rep 10 \
 -fastq1 /DATA/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCFF000YLY.fastq.gz \
 -fastq3 /DATA/ENCFF000???.fastq.gz \
 ...
 -fastq10 /DATA/ENCFF000???.fastq.gz \
-BWA_IDX= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
+-bwa_idx= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
 -nth_bwa_aln 3   # No. of threads for bwa_aln for each replicate, 3 x 10 logical processors will be taken in total.
 ```
 
@@ -345,8 +345,8 @@ Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes)
 ```
 $ bds chipseq.bds \
 -final_stage nodup_bam \
--num_rep 5
--input bam
+-num_rep 5 \
+-input bam \
 -bam1 /DATA/ENCFF000YLW.bam \
 -bam2 /DATA/ENCFF000YLY.bam \
 -bam3 /DATA/ENCFF000???.bam \
