@@ -76,6 +76,7 @@ num_ctl 	:= 1
 html_rpt_title 	:= "ChIP-Seq Pipeline HTML Report"
 html_rpt_file 	:= "Report.html"	
 
+
 // Ugly global variables for peak calling (BDS cannot have return value for parallel function)
 string tag_rep1, tag_rep1_pr1, tag_rep1_pr2
 string tag_rep2, tag_rep2_pr1, tag_rep2_pr2
@@ -347,14 +348,6 @@ void peakcall_idr() {
 	real frgln2 	= fraglen_rep2.parseReal()
 	string fraglen_mean 	= round( (frgln1+frgln2)*0.5 ) // compute fraglen mean for pooled
 
-/*
-print("DEBUG_REP1"+[tag_rep1, tag_rep1_pr1, tag_rep1_pr2] + "\n")
-print("DEBUG_REP2"+[tag_rep2, tag_rep2_pr1, tag_rep2_pr2] + "\n")
-print("DEBUG_CTL"+[ctl_tag_rep1, ctl_tag_pooled] + "\n")
-print("DEBUG_PPR"+[tag_pooled, tag_ppr1, tag_ppr2] + "\n")
-print("FRAGLEN"+[fraglen_rep1, fraglen_rep2, fraglen_mean] + "\n")
-exit
-*/
 
 	// peak calling
 
