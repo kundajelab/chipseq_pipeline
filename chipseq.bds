@@ -860,33 +860,19 @@ string get_fastq( int ctl, int rep, int pe ) {
 	else if ( conf.hasKey( key2 ) ) {
 		return get_path( conf{ key2 } )
 	}
-	else if ( (ctl==0) && (rep==1) && (pe==1) ) {
-		return fastq1_1
+	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE ) ) {
+		return get_cmd_line_arg_val( key_wo_PE )
 	}
-	else if ( (ctl==0) && (rep==1) && (pe==2) ) {
-		return fastq1_2
+	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE2 ) ) {
+		return get_cmd_line_arg_val( key_wo_PE2 )
 	}
-	else if ( (ctl==0) && (rep==2) && (pe==1) ) {
-		return fastq2_1
+	else if ( cmd_line_arg_has_key( key ) ) {
+		return get_cmd_line_arg_val( key )
 	}
-	else if ( (ctl==0) && (rep==2) && (pe==2) ) {
-		return fastq2_2
+	else if ( cmd_line_arg_has_key( key2 ) ) {
+		return get_cmd_line_arg_val( key2 )
 	}
-	else if ( (ctl==1) && (rep==1) && (pe==1) ) {
-		return ctl_fastq1_1
-	}
-	else if ( (ctl==1) && (rep==1) && (pe==2) ) {
-		return ctl_fastq1_2
-	}
-	else if ( (ctl==1) && (rep==2) && (pe==1) ) {
-		return ctl_fastq2_1
-	}
-	else if ( (ctl==1) && (rep==2) && (pe==2) ) {
-		return ctl_fastq2_2
-	}
-	else {
-		return ""
-	}
+	return ""
 }
 
 string get_bam( int ctl, int rep ) {
@@ -900,21 +886,13 @@ string get_bam( int ctl, int rep ) {
 	else if ( conf.hasKey( key2 ) ) {
 		return get_path( conf{ key2 } )
 	}
-	else if ( (ctl==0) && (rep==1) ) {
-		return bam1
+	else if ( cmd_line_arg_has_key( key ) ) {
+		return get_cmd_line_arg_val( key )
 	}
-	else if ( (ctl==0) && (rep==2) ) {
-		return bam2
+	else if ( cmd_line_arg_has_key( key2 ) ) {
+		return get_cmd_line_arg_val( key2 )
 	}
-	else if ( (ctl==1) && (rep==1) ) {
-		return ctl_bam1
-	}
-	else if ( (ctl==1) && (rep==2) ) {
-		return ctl_bam2
-	}
-	else {
-		return ""
-	}
+	return ""
 }
 
 string get_tag( int ctl, int rep ) {
@@ -937,21 +915,19 @@ string get_tag( int ctl, int rep ) {
 	else if ( conf.hasKey( key4 ) ) {
 		return get_path( conf{ key4 } )
 	}
-	else if ( (ctl==0) && (rep==1) ) {
-		return tag1
+	else if ( cmd_line_arg_has_key( key ) ) {
+		return get_cmd_line_arg_val( key )
 	}
-	else if ( (ctl==0) && (rep==2) ) {
-		return tag2
+	else if ( cmd_line_arg_has_key( key2 ) ) {
+		return get_cmd_line_arg_val( key2 )
 	}
-	else if ( (ctl==1) && (rep==1) ) {
-		return ctl_tag1
+	else if ( cmd_line_arg_has_key( key3 ) ) {
+		return get_cmd_line_arg_val( key3 )
 	}
-	else if ( (ctl==1) && (rep==2) ) {
-		return ctl_tag2
+	else if ( cmd_line_arg_has_key( key4 ) ) {
+		return get_cmd_line_arg_val( key4 )
 	}
-	else {
-		return ""
-	}
+	return ""
 }
 
 string get_peak( int rep ) { // rep0 = pooled peak
@@ -974,9 +950,7 @@ string get_peak( int rep ) { // rep0 = pooled peak
 	else if ( rep==0 ) {
 		return pooled
 	}
-	else {
-		return ""
-	}
+	return ""
 }
 
 bool is_align_only_mode() {

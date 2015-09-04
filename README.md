@@ -318,27 +318,42 @@ No additional parameter required.
 
 ### Alignment only mode (without peak calling and IDR)
 
-You can align more than 2 replicates. This special mode only works with a configuration file (not from command line argument).
-```
-$ bds chipseq.bds [CONF_FILE]
-```
+If you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or nodup_bam) IN PARALLEL.
+Set -final_stage [FINAL STAGE] and -num_rep [# REPLICATES]. Choose your final stage among [bam, nodup_bam, tag, xcor].
+You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
 
-Example: 
-You have 10 fastqs for 10 replicates. Final output is tagalign.
+Mapping for each replicate will go IN PARALLEL! Consider your computating resources before run the pipeline.
 
+If you start the pipeline with fastqs, lots of processors will be taken due to bwa_aln.
+Lower -nth_bwa_aln if you have limited computing resources. It's 2 by default.
+
+Example1: You have 5 unfiltered raw bam and want to filter them (removing dupes).
 ```
-$ cat [CONF_FILE]
-
-FINAL_STAGE= bam 	// choose final stage to stop the pipeline (bam, nodup_bam, tag, xcor)
-NUM_REP= 10 		// number of replicates you want to align
-FASTQ1= /DATA/ENCFF000YLW.fastq.gz
-FASTQ2= /DATA/ENCFF000YLY.fastq.gz
-FASTQ3= /DATA/ENCFF000???.fastq.gz
-FASTQ4= /DATA/ENCFF000???.fastq.gz
-FASTQ5= /DATA/ENCFF000???.fastq.gz
+$ bds chipseq.bds \
+-final_stage tag \
+-num_rep 10
+-fastq1 /DATA/ENCFF000YLW.fastq.gz \
+-fastq2 /DATA/ENCFF000YLY.fastq.gz \
+-fastq3 /DATA/ENCFF000???.fastq.gz \
 ...
-BWA_IDX= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa 	// don't forget to inlcude bwa idx if starting from fastqs
+-fastq10 /DATA/ENCFF000???.fastq.gz \
+BWA_IDX= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
+-nth_bwa_aln 3   # No. of threads for bwa_aln for each replicate, 3 x 10 logical processors will be taken in total.
 ```
+
+Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes).
+```
+$ bds chipseq.bds \
+-final_stage nodup_bam \
+-num_rep 5
+-input bam
+-bam1 /DATA/ENCFF000YLW.bam \
+-bam2 /DATA/ENCFF000YLY.bam \
+-bam3 /DATA/ENCFF000???.bam \
+-bam4 /DATA/ENCFF000???.bam \
+-bam5 /DATA/ENCFF000???.bam
+```
+
 
 ### For desktops with limited memory (< 16GB)
 
