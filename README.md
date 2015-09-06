@@ -182,15 +182,7 @@ $ bds chipseq.bds \
 -ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRBbam \
 ```
 
-3) Starting from bams
-```
-$ bds chipseq.bds \
--bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
--bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
-```
-
-4) Starting from nodup_bams (nodup_bam: dupe removed)
+3) Starting from nodup_bams (nodup_bam: dupe removed)
 ```
 $ bds chipseq.bds \
 -input nodup_bam
@@ -199,7 +191,7 @@ $ bds chipseq.bds \
 -ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
 ```
 
-5) Starting from tagaligns
+4) Starting from tagaligns
 ```
 $ bds chipseq.bds \
 -tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
@@ -207,7 +199,7 @@ $ bds chipseq.bds \
 -ctl_tag1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
 ```
 
-6) Starting from peak files
+5) Starting from peak files
 ```
 $ bds chipseq.bds \
 -peak1 /DATA/Example1.narrowPeak.gz \
