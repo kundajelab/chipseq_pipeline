@@ -71,8 +71,7 @@ help Signal track generation method (aln2rawsig, macs2 and deeptools (or deep) )
 
 sigtrk 		:= ""		help Choose signal track generation method: aln2rawsig, macs2 and deeptools (default: aln2rawsig).
 make_wig 	:= false	help Add it to create wig (only for -sigtrk aln2rawsig) (default: false).
-make_bw		:= false	help Add it to create bigwig (default: false).
-
+no_bw		:= false	help Add it not to create bigwig (default: false).
 
 num_ctl 	:= 1
 html_rpt_title 	:= "ChIP-Seq Pipeline HTML Report"
@@ -121,7 +120,7 @@ void init_chipseq() {
 
 		sigtrk 		= get_conf_val( sigtrk, 		["SIGTRK", "SIG_TRK", "SIGTRK_METHOD"] )
 		make_wig	= get_conf_val_bool( make_wig, 		["CREATE_WIG", "MAKE_WIG"] )
-		make_bw		= get_conf_val_bool( make_bw, 		["CONVERT_TO_BIGWIG", "MAKE_BIGWIG", "MAKE_BW"] )
+		no_bw		= get_conf_val_bool( no_bw, 		["NO_BIGWIG", "NO_BW"] )
 	}
 
 	if ( v ) { // verbose
@@ -132,7 +131,7 @@ void init_chipseq() {
 		print( "Peak calling method\t\t: $peakcall\n" )
 		print( "Sig. trk. generation method\t: $sigtrk\n" )
 		print( "Create wig\t\t\t: $make_wig\n" )
-		print( "Create bigwig\t\t\t: $make_bw\n" )
+		print( "No bigwig\t\t\t: $no_bw\n" )
 	}	
 
 	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it
@@ -440,7 +439,7 @@ void _align_bwa( string[] data, string type, string final_stage, int ctl, int re
 	
 	if ( is_sigtrk_deeptools() ) { // signal track generation (deeptools)
 
-		if ( make_bw ) {
+		if ( !no_bw ) {
 			if ( nodup_bam != "" ) \
 				bigwig := _nodup_bam_to_bw_bam_cvrg( nodup_bam, out_dir, info )
 			else \
@@ -542,7 +541,7 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 	
 	if ( is_sigtrk_deeptools() ) { // signal track generation (deeptools)
 
-		if ( make_bw ) {
+		if ( !no_bw ) {
 			if ( nodup_bam != "" ) \
 				bigwig := _nodup_bam_to_bw_bam_cvrg( nodup_bam, out_dir, info )
 			else \
@@ -644,7 +643,7 @@ void _sigtrk_aln2rawsig( string tag, string fraglen, string out_dir, string info
 		_tag_to_wig_aln2rawsig( tag, fraglen, out_dir, info )
 	}
 
-	if ( make_bw ) {
+	if ( !no_bw ) {
 
 		prefix 	:= change_dir( remove_ext( tag, ["tagAlign","tag","bed"] ), out_dir )
 		bigwig 	:= "$prefix.bigwig"
@@ -666,7 +665,7 @@ void _sigtrk_aln2rawsig( string tag, string fraglen, string out_dir, string info
 
 void _sigtrk_macs2( string nodup_bam, string fraglen, string out_dir, string info ) {
 	
-	if ( make_bw ) {
+	if ( !no_bw ) {
 		prefix 		:= change_dir( remove_ext( nodup_bam, ["bam"] ), out_dir ) + ".nonchrM.tn5.pf"
 		fc_bigwig 	:= "$prefix.fc.signal.bigwig"
 		pval_bigwig 	:= "$prefix.pval.signal.bigwig"
