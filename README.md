@@ -170,7 +170,7 @@ $ bds chipseq.bds -bam [BAM] ... -final_stage xcor ...
 
 ### How to define input data path
 
-You can skip [REPLICATE_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, -bam_PE, -ctl_tag_PE ... )
+You can skip [REPLICATE_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, -bam_PE ... )
 
 For inputs:
 Define data path with -[DATA_TYPE][REPLICATE_ID].
@@ -268,10 +268,10 @@ Replicate 2 is PE.
 
 ```
 $ bds chipseq.bds \
--tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
--tag2_PE \
--tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
--ctl_tag1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
+-bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
+-bam2_PE \
+-bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
 ```
 
 
