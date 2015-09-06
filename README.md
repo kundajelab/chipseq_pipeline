@@ -442,7 +442,7 @@ Define all species specific parameters in the species file and add parameter '-s
 
 If you don't want to generate bigwig files, add '-no_bw'.
 
-1) using align2rawsignal ( input: tagalign )
+1) using align2rawsignal ( converts tagalign to bigwig, final_stage >= xcor )
 ```
 $ bds chipseq.bds \
 ... 
@@ -455,7 +455,7 @@ If you want to create wig instead of bigwig, then add '-make_wig -no_bw'.
 If you want both bigwig and wig, then add '-make_wig'.
 
 
-2) using macs2 ( input: nodup_bam )
+2) using macs2 ( converts nodup_bam to bigwig, final_stage >= xcor )
 ```
 $ bds chipseq.bds \
 ... 
@@ -464,7 +464,7 @@ $ bds chipseq.bds \
 -gensz hs
 ```
 
-3) using deepTools (bamCoverage) ( input: nodup_bam )
+3) using deepTools (bamCoverage) ( converts nodup_bam to bigwig, final_stage >= nodup_bam )
 ```
 $ bds chipseq.bds \
 ... 
