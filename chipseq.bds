@@ -46,10 +46,12 @@ tag2 		:= ""		help Tagalign for replicate 2.
 ctl_tag1 	:= "" 		help Control tagalign for replicate 1.
 ctl_tag2 	:= "" 		help Control tagalign for replicate 2 (if not exists leave this blank).
 
+/*
 tag1_PE 	:= false 	help Add it if tagalign replicate 1 is paired end (default: false).
 tag2_PE 	:= false 	help Add it if tagalign replicate 2 is paired end (default: false).
 ctl_tag1_PE 	:= false 	help Add it if tagalign control replicate 1 is paired end (default: false).
 ctl_tag2_PE 	:= false 	help Add it if tagalign control replicate 2 is paired end (default: false).
+*/
 
 // for peak data set
 peak1 		:= ""		help Peak 1
@@ -1052,7 +1054,7 @@ bool is_bam_SE( int ctl, int rep ) {
 }
 
 bool is_tag_paired_end( int ctl, int rep ) {
-
+/*
 	key := ( ctl > 0 ? "ctl_tag" : "tag" ) + rep + "_pe"
 	key_wo_rep := ( ctl > 0 ? "ctl_tag" : "tag" ) + "_pe"
 
@@ -1070,7 +1072,7 @@ bool is_tag_paired_end( int ctl, int rep ) {
 		val := get_cmd_line_arg_val( key_wo_rep )
 		return (val=="") || (val.parseBool())
 	}	
-
+*/
 	return false
 }
 
