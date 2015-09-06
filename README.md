@@ -90,11 +90,10 @@ Example configuriation file:
 ```
 $ cat [CONF_FILE]
 
-INPUT= fastq
-FASTQ1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
-FASTQ2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
-CTL_FASTQ1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
-BWA_IDX= /INDEX/encodeHg19Male_bwa-0.7.3.fa
+fastq1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
+fastq2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
+ctl_fastq1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
+bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ```
 
 
@@ -155,32 +154,43 @@ It can also stop immediately after a specified stage (-final_stage [STAGE])
 Example:
 If you want to start from bam files and stop right after cross-correlation analysis.
 ```
-$ bds chipseq.bds [...] -input bam [...] -final_stage xcor
+$ bds chipseq.bds -bam [BAM] ... -final_stage xcor ...
 ```
 
 
-### How to define input data type and path
+### How to define input data path
 
-Define input data type with -input [DATA_TYPE]. Choose [DATA_TYPE] in [fastq, bam, nodup_bam, tag, peak].
+You can skip [REPLICATE_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, -bam_PE, -ctl_tag_PE ... )
 
 For inputs:
 Define data path with -[DATA_TYPE][REPLICATE_ID].
 
 For contols:
 Define data path with -ctl_[DATA_TYPE][REPLICATE_ID].
+You can skip [REPLICATE_ID] if it's 1.
+
+!IMPORTANT: There is no way to automatically distinguish between bam and nodup_bam types from command line argument or keys in configuration file.
+If you want to start from nodup_bam, specify -input nodup_bam
 
 1) Starting from fastqs (see the example in the previous chapter)
 
 2) Starting from bams
 ```
 $ bds chipseq.bds \
--input bam \
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
 -ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRBbam \
 ```
 
-3) Starting from bams (nodup_bam: dupe removed)
+3) Starting from bams
+```
+$ bds chipseq.bds \
+-bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
+-bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
+```
+
+4) Starting from nodup_bams (nodup_bam: dupe removed)
 ```
 $ bds chipseq.bds \
 -input nodup_bam
@@ -189,19 +199,17 @@ $ bds chipseq.bds \
 -ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
 ```
 
-4) Starting from tagaligns
+5) Starting from tagaligns
 ```
 $ bds chipseq.bds \
--input tag \
 -tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
 -tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
 -ctl_tag1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
 ```
 
-5) Starting from peak files
+6) Starting from peak files
 ```
 $ bds chipseq.bds \
--input peak
 -peak1 /DATA/Example1.narrowPeak.gz \
 -peak2 /DATA/Example2.narrowPeak.gz \
 -pooled /DATA/Example.pooled.narrowPeak.gz \
@@ -258,7 +266,6 @@ Replicate 2 is PE.
 
 ```
 $ bds chipseq.bds \
--input tag \
 -tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
 -tag2_PE \
 -tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
@@ -346,7 +353,6 @@ Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes)
 $ bds chipseq.bds \
 -final_stage nodup_bam \
 -num_rep 5 \
--input bam \
 -bam1 /DATA/ENCFF000YLW.bam \
 -bam2 /DATA/ENCFF000YLY.bam \
 -bam3 /DATA/ENCFF000???.bam \

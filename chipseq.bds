@@ -11,7 +11,7 @@ include "modules/report.bds"
 
 help ENCODE ChIP-Seq Pipeline input files (type: fastq, bam, nodup_bam, tag or peak)
 
-input 		:= "fastq"	help Input file type (deafult: fastq).
+input 		:= ""		help Input file type (deafult: fastq).
 
 // for fastqs (SE)
 fastq1 		:= "" 		help Fastq for replicate 1 (single ended).
@@ -54,7 +54,7 @@ ctl_tag2_PE 	:= false 	help Add it if tagalign control replicate 2 is paired end
 // for peak data set
 peak1 		:= ""		help Peak 1
 peak2 		:= ""		help Peak 2
-pooled2 	:= ""		help Pooled peak
+pooled 		:= ""		help Pooled peak
 
 help Alignment only mode. Define '-final_stage [bam,nodup_bam,tag,xcor]' and '-num_rep [NO_REPS]' (stage: fastq, bam, nodup_bam, tag or peak)
 
@@ -132,8 +132,21 @@ void init_chipseq() {
 		print( "Create wig\t\t\t: $make_wig\n" )
 		print( "Create bigwig\t\t\t: $make_bw\n" )
 	}	
-		
-	if ( is_align_only_mode() ) { // if no data for control rep1 and final stage is before peak calling
+
+	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it
+}
+
+void chk_input_data() {
+
+	if ( input == "" ) {  // determine input type if input is not defined
+		if ( get_peak(1) != "" ) 	input = "peak"
+		if ( get_bam(0,1) != "" ) 	input = "bam"
+		if ( get_tag(0,1) != "" ) 	input = "tag"
+		if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
+	}
+
+	if ( is_align_only_mode() ) { 
+		// if no data for control rep1 and final stage is before peak calling
 		// this must be aligment only mode, so ignore all control from here
 
 		print("\n\nAlign only mode for $num_rep replicates (no control data found)!\n\n")
@@ -142,11 +155,6 @@ void init_chipseq() {
 	else {
 		num_rep = 2 // # of replicates should be 2 if not align only mode
 	}
-	
-	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it
-}
-
-void chk_input_data() {
 
 	print( "\n====== Checking inputs (data type = $input) ...\n\n" );
 
@@ -182,10 +190,11 @@ void chk_input_data() {
 
 			string[] data
 
-			string prefix = (ctl==1) ? "Control " : ""
+			prefix := (ctl==1) ? "Control " : ""
+			suffix := is_paired_end( ctl, rep ) ? " (PE)" : " (SE)"
 
 			if ( is_input_fastq() ) {
-				prefix = prefix + "Rep$rep fastq"
+				prefix = prefix + "Rep$rep fastq" + suffix
 				fastqs := get_fastqs( ctl, rep )
 				if ( fastqs.size()==0 ) {
 					data.push( "" )
@@ -195,15 +204,15 @@ void chk_input_data() {
 				}
 			}
 			else if ( is_input_bam() ) {
-				prefix = prefix +"Rep$rep bam"
+				prefix = prefix +"Rep$rep bam" + suffix
 				data.push( get_bam( ctl, rep ) )
 			}
 			else if ( is_input_nodup_bam() ) {
-				prefix = prefix +"Rep$rep nodup_bam"
+				prefix = prefix +"Rep$rep nodup_bam" + suffix
 				data.push( get_bam( ctl, rep ) )
 			}
 			else if ( is_input_tag() ) {
-				prefix = prefix + "Rep$rep tagalign"
+				prefix = prefix + "Rep$rep tagalign" + suffix
 				data.push( get_tag( ctl, rep ) )
 			}
 
@@ -211,7 +220,7 @@ void chk_input_data() {
 
 			for ( string s : data ) {
 				print("\t$s\n")
-				if ( (s != "") && !(s.exists()) ) error("\t\tFile not found!\n")
+				//if ( (s != "") && !(s.exists()) ) error("\t\tFile not found!\n")
 			}
 
 			// if data is missing
@@ -848,11 +857,16 @@ string get_fastq( int ctl, int rep, int pe ) {
 	key_wo_PE2 := ( ctl > 0 ? "ctl_fastq" : "fastq" ) + rep 
 	key2 := key_wo_PE2 + "_" + pe
 
+	key_wo_PE3 := ( ctl > 0 ? "ctl_fastq" : "fastq" )
+
 	if ( (pe==1) && conf.hasKey( key_wo_PE ) ) {
 		return get_path( conf{ key_wo_PE } )
 	}
 	else if ( (pe==1) && conf.hasKey( key_wo_PE2 ) ) {
 		return get_path( conf{ key_wo_PE2 } )
+	}
+	else if ( (pe==1) && (rep==1) && conf.hasKey( key_wo_PE3 ) ) {
+		return get_path( conf{ key_wo_PE3 } )
 	}
 	else if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )
@@ -865,6 +879,9 @@ string get_fastq( int ctl, int rep, int pe ) {
 	}
 	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE2 ) ) {
 		return get_cmd_line_arg_val( key_wo_PE2 )
+	}
+	else if ( (pe==1) && (rep==1) && cmd_line_arg_has_key( key_wo_PE3 ) ) {
+		return get_cmd_line_arg_val( key_wo_PE3 )
 	}
 	else if ( cmd_line_arg_has_key( key ) ) {
 		return get_cmd_line_arg_val( key )
@@ -879,6 +896,7 @@ string get_bam( int ctl, int rep ) {
 
 	key := ( ctl > 0 ? "ctl_bam" : "bam" ) + "_rep" + rep
 	key2 := ( ctl > 0 ? "ctl_bam" : "bam" ) + rep
+	key3 := ( ctl > 0 ? "ctl_bam" : "bam" )
 
 	if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )
@@ -886,11 +904,17 @@ string get_bam( int ctl, int rep ) {
 	else if ( conf.hasKey( key2 ) ) {
 		return get_path( conf{ key2 } )
 	}
+	else if ( (rep==1) && conf.hasKey( key3 ) ) {
+		return get_path( conf{ key3 } )
+	}
 	else if ( cmd_line_arg_has_key( key ) ) {
 		return get_cmd_line_arg_val( key )
 	}
 	else if ( cmd_line_arg_has_key( key2 ) ) {
 		return get_cmd_line_arg_val( key2 )
+	}
+	else if ( (rep==1) && cmd_line_arg_has_key( key3 ) ) {
+		return get_cmd_line_arg_val( key3 )
 	}
 	return ""
 }
@@ -902,6 +926,9 @@ string get_tag( int ctl, int rep ) {
 
 	key3 := ( ctl > 0 ? "ctl_tag" : "tag" ) + rep
 	key4 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" ) + rep
+
+	key5 := ( ctl > 0 ? "ctl_tag" : "tag" )
+	key6 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" )
 
 	if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )
@@ -915,6 +942,12 @@ string get_tag( int ctl, int rep ) {
 	else if ( conf.hasKey( key4 ) ) {
 		return get_path( conf{ key4 } )
 	}
+	else if ( (rep==1) && conf.hasKey( key5 ) ) {
+		return get_path( conf{ key5 } )
+	}
+	else if ( (rep==1) && conf.hasKey( key6 ) ) {
+		return get_path( conf{ key6 } )
+	}
 	else if ( cmd_line_arg_has_key( key ) ) {
 		return get_cmd_line_arg_val( key )
 	}
@@ -927,13 +960,19 @@ string get_tag( int ctl, int rep ) {
 	else if ( cmd_line_arg_has_key( key4 ) ) {
 		return get_cmd_line_arg_val( key4 )
 	}
+	else if ( (rep==1) && cmd_line_arg_has_key( key5 ) ) {
+		return get_cmd_line_arg_val( key5 )
+	}
+	else if ( (rep==1) && cmd_line_arg_has_key( key6 ) ) {
+		return get_cmd_line_arg_val( key6 )
+	}
 	return ""
 }
 
 string get_peak( int rep ) { // rep0 = pooled peak
 
-	key := ( rep == 0 ? "peak_pooled" : ("peak_rep" + rep) )
-	key2 := ( rep == 0 ? "peak_pooled" : ("peak" + rep) )
+	key := ( rep == 0 ? "pooled" : ("peak_rep" + rep) )
+	key2 := ( rep == 0 ? "pooled" : ("peak" + rep) )
 
 	if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )
@@ -977,26 +1016,24 @@ bool is_rep2_exist( int ctl ) {
 
 bool is_bam_paired_end( int ctl, int rep ) {
 
-	key := ( ctl > 0 ? "CTL_BAM" : "BAM" ) + rep + "_PE"
+	key := ( ctl > 0 ? "ctl_bam" : "bam" ) + rep + "_pe"
+	key_wo_rep := ( ctl > 0 ? "ctl_bam" : "bam" ) + "_pe"
 
 	if ( conf.hasKey( key ) ) {
 		return conf{ key }.parseBool()
 	}
-	else if ( (ctl==0) && (rep==1) ) {
-		return bam1_PE
+	else if ( (rep==1) && conf.hasKey( key_wo_rep ) ) {
+		return conf{ key_wo_rep }.parseBool()
 	}
-	else if ( (ctl==0) && (rep==2) ) {
-		return bam2_PE
+	else if ( cmd_line_arg_has_key( key ) ) {
+		val := get_cmd_line_arg_val( key )
+		return (val=="") || (val.parseBool())
 	}
-	else if ( (ctl==1) && (rep==1) ) {
-		return ctl_bam1_PE
-	}
-	else if ( (ctl==1) && (rep==2) ) {
-		return ctl_bam2_PE
-	}
-	else {
-		return false
-	}
+	else if ( (rep==1) && cmd_line_arg_has_key( key_wo_rep ) ) {
+		val := get_cmd_line_arg_val( key_wo_rep )
+		return (val=="") || (val.parseBool())
+	}	
+	return false
 }
 
 bool is_bam_single_ended( int ctl, int rep ) {
@@ -1016,26 +1053,25 @@ bool is_bam_SE( int ctl, int rep ) {
 
 bool is_tag_paired_end( int ctl, int rep ) {
 
-	key := ( ctl > 0 ? "CTL_TAG" : "TAG" ) + rep + "_PE"
+	key := ( ctl > 0 ? "ctl_tag" : "tag" ) + rep + "_pe"
+	key_wo_rep := ( ctl > 0 ? "ctl_tag" : "tag" ) + "_pe"
 
 	if ( conf.hasKey( key ) ) {
 		return conf{ key }.parseBool()
 	}
-	else if ( (ctl==0) && (rep==1) ) {
-		return tag1_PE
+	else if ( (rep==1) && conf.hasKey( key_wo_rep ) ) {
+		return conf{ key_wo_rep }.parseBool()
 	}
-	else if ( (ctl==0) && (rep==2) ) {
-		return tag2_PE
+	else if ( cmd_line_arg_has_key( key ) ) {
+		val := get_cmd_line_arg_val( key )
+		return (val=="") || (val.parseBool())
 	}
-	else if ( (ctl==1) && (rep==1) ) {
-		return ctl_tag1_PE
-	}
-	else if ( (ctl==1) && (rep==2) ) {
-		return ctl_tag2_PE
-	}
-	else {
-		return false
-	}
+	else if ( (rep==1) && cmd_line_arg_has_key( key_wo_rep ) ) {
+		val := get_cmd_line_arg_val( key_wo_rep )
+		return (val=="") || (val.parseBool())
+	}	
+
+	return false
 }
 
 bool is_tag_single_ended( int ctl, int rep ) {
