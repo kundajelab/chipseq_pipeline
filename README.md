@@ -8,11 +8,12 @@ Taking advandatge of the powerful pipeline language BigDataScript (http://pcingo
 ```
 1) One-command-line installation for all dependencies for ChIP-Seq pipeline.
 2) One command line (or one configuration file) to run the whole pipeline.
-3) Starting the pipeline from fastq, bam, tagalign and peak.
+3) Starting the pipeline from fastq, bam, tagalign and peak. You can also stop it at any stage.
 4) Resuming from the point of failure without re-doing finished stages.
-5) Automatically optimizing parallel jobs for the pipeline.
-6) Sun Grid Engine cluster support.
-7) Realtime HTML Progress reports to monitor pipeline jobs.
+5) Mapping for each replicate and peak calling go in parallel.
+6) Signal track generation (bigwig) for bam and tagalign.
+7) Sun Grid Engine cluster support.
+8) Realtime HTML Progress reports to monitor pipeline jobs.
 ```
 
 
@@ -28,12 +29,10 @@ $ ./install_dependencies.sh   # this will take longer than 30 minutes depending 
 
 Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
 ```
-# Java settings
 export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
 export MAX_JAVA_MEM="8G"
 export MALLOC_ARENA_MAX=4
 
-# BigDataScript settings
 export PATH=$PATH:$HOME/.bds
 ```
 
@@ -48,12 +47,7 @@ $ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds/
 ```
 
-Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
-```
-export PATH=$PATH:$HOME/.bds
-```
-
-For Kundaje lab servers (mitra, nandi, amold and wotan), the pipeline provides a flag to automatically set shell environments.
+For Kundaje lab servers (mitra, nandi, durga, kali, amold and wotan), the pipeline provides a flag to automatically set shell environments and species database.
 ```
 $ bds -s sge chipseq.bds [...] -kundaje_lab
 ```
@@ -61,16 +55,15 @@ $ bds -s sge chipseq.bds [...] -kundaje_lab
 
 ### Usage
 
-There are two ways to define parameters for ChIP-Seq pipelines.
-Default values are already given for most of them.
-Take a look at example commands and configuration files (./examples).
+There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (./examples).
+
+The pipeline automatically determines if each task has finished or not (comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
+
 
 1) From command line arguments 
-
 ```
 $ bds chipseq.bds [OPTS]
 ```
-
 Example (for single ended fastqs):
 ```
 $ bds chipseq.bds \
@@ -81,11 +74,9 @@ $ bds chipseq.bds \
 ```
 
 2) From a configuration file
-
 ```
 $ bds chipseq.bds [CONF_FILE]
 ```
-
 Example configuriation file:
 ```
 $ cat [CONF_FILE]
@@ -101,12 +92,23 @@ bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 
 For ChIP-Seq pipeline, there are many species specific parameters like indices (bwa, bowtie, ...), chrome sizes, sequence file and genome size. If you have multiple pipelines, it's a hard job to individually define all parameters for each pipeline. However, if you have a species file with all species specific parameters defined, then you define less parameters and share the species file with all other pipelines.
 
-If species file is not defined, pipeline looks for species.conf in the BDS script directory and working directory. Your configruation file is also treated as one of the species files.
+If species file is not defined, pipeline looks for paths in the following order:
+```
+1) Configruation file for the pipeline
+2) Species file defined by '-species_file' option
+3) [BDS_SCRIPT_PATH]/species.conf
+4) [WORK_DIR]/species.conf
+
+# If -kundaje_lab
+5) [BDS_SCRIPT_PATH]/species/species_kundaje_lab.conf
+```
 
 You can override any parameters defined in the species file by adding them to command line argument or configuration file.
-
 ```
-$ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE]
+$ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE] ... [ANY_PARAMETETRS_TO_BE_OVERRIDEN] ...
+
+# For example, if you want to override parameters for BWA index and umap:
+$ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE] ... -bwa_idx [YOUR_OWN_BWA_IDX] -umap [YOUR_OWN_UMAP]
 ```
 
 Example species file:
@@ -131,16 +133,54 @@ vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.
 ...
 ```
 
-For example, if you want to override parameters for BWA index and umap:
 
+### Pipeline stages and Mapping only mode
+
+The ENCODE ChIP-Seq pipeline goes through the following stages:
 ```
-$ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE] -bwa_idx [YOUR_OWN_BWA_IDX] -umap [YOUR_OWN_UMAP]
+1) bam          : mapping (fastq -> bam)
+2) nodup_bam    : filtering and deduping bam (bam -> nodup_bam)
+3) tag          : creating tagalign (bam -> tagalign)
+4) xcor         : cross-correlation analysis (tagalign -> xcor plot.pdf/score.txt )
+5) peak         : peak calling (tagaligns -> peaks)
+6) idr          : IDR (peaks -> IDR score and peaks)
+```
+If you define '-final_stage [STAGE]', the pipeline stops right after the stage.
+
+This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or nodup_bam) IN PARALLEL.
+Set -final_stage [FINAL STAGE] and -num_rep [# REPLICATES]. Choose your final stage.
+You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
+
+Mapping for each replicate will go IN PARALLEL! Consider your computating resources before run the pipeline.
+
+If you start the pipeline with fastqs, lots of processors will be taken due to bwa_aln.
+Lower -nth_bwa_aln if you have limited computing resources. It's 2 by default.
+
+Example1: You have 5 unfiltered raw bam and want to filter them (removing dupes).
+```
+$ bds chipseq.bds \
+-final_stage tag \
+-num_rep 10 \
+-fastq1 /DATA/ENCFF000YLW.fastq.gz \
+-fastq2 /DATA/ENCFF000YLY.fastq.gz \
+...
+-fastq10 /DATA/ENCFF000???.fastq.gz \
+-bwa_idx= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
+-nth_bwa_aln 3   # No. of threads for bwa_aln for each replicate, 3 x 10 logical processors will be taken in total.
 ```
 
-If '-kundaje_lab' flag is defined, you can skip '-species_file' on Kundaje lab clusters because '[SCRIPT_DIR]/species/species_kundaje_lab.conf' is already provided in the pipeline repository.
+Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes).
+```
+$ bds chipseq.bds \
+-final_stage nodup_bam \
+-num_rep 5 \
+-bam1 /DATA/ENCFF000YLW.bam \
+...
+-bam5 /DATA/ENCFF000???.bam
+```
 
 
-### Input data type and final stage
+### How to define input data
 
 The ENCODE ChIP-Seq pipeline can start from various types of data.
 ```
@@ -151,29 +191,9 @@ The ENCODE ChIP-Seq pipeline can start from various types of data.
 5) peak
 ```
 
-It can also stop immediately after a specified stage (-final_stage [STAGE])
-```
-1) bam  	: fastq -> bam
-2) nodup_bam 	: bam -> bam (dupe removed)
-3) tag 		: bam -> tagalign
-4) xcor 	: cross-correlation analysis
-5) peak 	: peak calling
-6) idr 		: IDR
-```
-
-Example:
-If you want to start from bam files and stop right after cross-correlation analysis.
-```
-$ bds chipseq.bds -bam [BAM] ... -final_stage xcor ...
-```
-
-
-### How to define input data path
-
-You can skip [REPLICATE_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, -bam_PE ... )
-
 For inputs:
 Define data path with -[DATA_TYPE][REPLICATE_ID].
+You can skip [REPLICATE_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, -bam_PE ... )
 
 For contols:
 Define data path with -ctl_[DATA_TYPE][REPLICATE_ID].
@@ -189,7 +209,8 @@ If you want to start from nodup_bam, specify -input nodup_bam
 $ bds chipseq.bds \
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRBbam \
+-ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRBbam \
+...
 ```
 
 3) Starting from nodup_bams (nodup_bam: dupe removed)
@@ -198,7 +219,8 @@ $ bds chipseq.bds \
 -input nodup_bam
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
+-ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
+...
 ```
 
 4) Starting from tagaligns
@@ -206,7 +228,8 @@ $ bds chipseq.bds \
 $ bds chipseq.bds \
 -tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
 -tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
--ctl_tag1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
+-ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
+...
 ```
 
 5) Starting from peak files
@@ -215,13 +238,8 @@ $ bds chipseq.bds \
 -peak1 /DATA/Example1.narrowPeak.gz \
 -peak2 /DATA/Example2.narrowPeak.gz \
 -pooled /DATA/Example.pooled.narrowPeak.gz \
+...
 ```
-
-
-### Starting pipeline from the point of failure
-
-The pipeline automatically determines if each task has finished or not (comparing timestamps of input/output files for each task).
-There is no additional parameter. Just run the pipeline with the same command that you started the pipeline with.
 
 
 ### How to define single ended (SE) and paired-end (PE) data set
@@ -254,7 +272,7 @@ $ bds chipseq.bds \
 -bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 ```
 
-2) Starting from others (bam, nodup_bam and tag)
+2) Starting from bam and nodup_bam
 
 For inputs:
 Add a parameter "-[DATA_TYPE][REPLICATE_ID]_PE" if it's PE
@@ -275,9 +293,9 @@ $ bds chipseq.bds \
 ```
 
 
-### Choose peak calling
+### Peak calling method
 
-Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default. 
+Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default.
 
 For spp, no additional parameter is required.
 
@@ -301,7 +319,7 @@ $ bds chipseq.bds \
 -gensz hs
 ```
 
-Seq is the directory where reference genome files exist. Chrsz is ChromeSize file. Gensz is hs for human and mm for mouse.
+Seq is the directory where reference genome files exist. Chrsz is chrome sizes file. Gensz is hs for human and mm for mouse.
 
 
 ### Choose IDR method
@@ -322,45 +340,6 @@ $ bds chipseq.bds \
 
 Based on <a href="https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>.
 No additional parameter required. 
-
-
-
-### Alignment only mode (without peak calling and IDR)
-
-If you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or nodup_bam) IN PARALLEL.
-Set -final_stage [FINAL STAGE] and -num_rep [# REPLICATES]. Choose your final stage among [bam, nodup_bam, tag, xcor].
-You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
-
-Mapping for each replicate will go IN PARALLEL! Consider your computating resources before run the pipeline.
-
-If you start the pipeline with fastqs, lots of processors will be taken due to bwa_aln.
-Lower -nth_bwa_aln if you have limited computing resources. It's 2 by default.
-
-Example1: You have 5 unfiltered raw bam and want to filter them (removing dupes).
-```
-$ bds chipseq.bds \
--final_stage tag \
--num_rep 10 \
--fastq1 /DATA/ENCFF000YLW.fastq.gz \
--fastq2 /DATA/ENCFF000YLY.fastq.gz \
--fastq3 /DATA/ENCFF000???.fastq.gz \
-...
--fastq10 /DATA/ENCFF000???.fastq.gz \
--bwa_idx= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
--nth_bwa_aln 3   # No. of threads for bwa_aln for each replicate, 3 x 10 logical processors will be taken in total.
-```
-
-Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes).
-```
-$ bds chipseq.bds \
--final_stage nodup_bam \
--num_rep 5 \
--bam1 /DATA/ENCFF000YLW.bam \
--bam2 /DATA/ENCFF000YLY.bam \
--bam3 /DATA/ENCFF000???.bam \
--bam4 /DATA/ENCFF000???.bam \
--bam5 /DATA/ENCFF000???.bam
-```
 
 
 ### For desktops with limited memory (< 16GB)
@@ -395,12 +374,90 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 ```
 
 
+### Signal track generation
+
+Define with -sigtrk [SIG_TRK_GEN_METHOD: aln2rawsig, macs2, deeptools) to generate signal track (bigwig).
+
+If you don't want to define parameters like seq, umap, chrsz for every pipeline run, use species file.
+Define all species specific parameters in the species file and add parameter '-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]'.
+
+If you don't want to generate bigwig files, add '-no_bw'.
+
+1) using align2rawsignal ( converts tagalign to bigwig, final_stage >= xcor )
+```
+$ bds chipseq.bds \
+...
+-sigtrk aln2rawsig \
+-seq /DATA/encodeHg19Male \
+-umap /DATA/encodeHg19Male/globalmap_k20tok54 \
+-chrsz /DATA/hg19.chrom.sizes
+```
+If you want to create wig instead of bigwig, then add '-make_wig -no_bw'.
+If you want both bigwig and wig, then add '-make_wig'.
+
+
+2) using macs2 ( converts nodup_bam to bigwig, final_stage >= xcor )
+```
+$ bds chipseq.bds \
+...
+-sigtrk macs2 \
+-chrsz /DATA/hg19.chrom.sizes \
+-gensz hs
+```
+
+3) using deepTools (bamCoverage) ( converts nodup_bam to bigwig, final_stage >= nodup_bam )
+```
+$ bds chipseq.bds \
+...
+-sigtrk deeptools
+```
+
+Seq is the directory where reference genome files exist.
+Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/.
+
+
+
 ### For cluster use (Sun Grid Engine only)
 
 Add "-s sge" to the command line.
 
 ```
 $ bds -s sge chipseq.bds [...]
+```
+
+### How to setup Sun Grid Engine for BigDataScript
+
+Add the following to grid engine configuration.
+```
+$ sudo qconf -mconf
+...
+execd_params                 ENABLE_ADDGRP_KILL=true
+...
+```
+
+Add a parallel environment shm to grid engine configuration.
+```
+$ sudo qconf -ap
+
+pe_name            shm
+slots              999
+user_lists         NONE
+xuser_lists        NONE
+start_proc_args    /bin/true
+stop_proc_args     /bin/true
+allocation_rule    $pe_slots
+control_slaves     FALSE
+job_is_first_task  FALSE
+urgency_slots      min
+accounting_summary FALSE
+```
+
+Add shm to your queue.
+```
+$ sudo qconf -mq [YOUR_MAIN_QUEUE]
+...
+pe_list               make shm
+...
 ```
 
 
@@ -420,7 +477,8 @@ This report shows all QC and result files including plots (qc, txt, log, pdf, pn
 Don't forget to move linked files (pdf, png, jpg and so on) together with HTML.
 
 
-### Debugging a pipeline
+
+### Debugging pipeline
 
 ```
 # make BDS verbose
@@ -432,48 +490,6 @@ $ bds -d chipseq.bds ...
 # test run (this actually does nothing) to check input/output file names and commands
 $ bds -dryRun chipseq.bds ...
 ```
-
-### Signal track generation
-
-Define with -sigtrk [SIG_TRK_GEN_METHOD: aln2rawsig, macs2, deeptools) to generate signal track (bigwig).
-
-If you don't want to define parameters like seq, umap, chrsz for every pipeline run, use species file.
-Define all species specific parameters in the species file and add parameter '-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]'.
-
-If you don't want to generate bigwig files, add '-no_bw'.
-
-1) using align2rawsignal ( converts tagalign to bigwig, final_stage >= xcor )
-```
-$ bds chipseq.bds \
-... 
--sigtrk aln2rawsig \
--seq /DATA/encodeHg19Male \
--umap /DATA/encodeHg19Male/globalmap_k20tok54 \
--chrsz /DATA/hg19.chrom.sizes
-```
-If you want to create wig instead of bigwig, then add '-make_wig -no_bw'.
-If you want both bigwig and wig, then add '-make_wig'.
-
-
-2) using macs2 ( converts nodup_bam to bigwig, final_stage >= xcor )
-```
-$ bds chipseq.bds \
-... 
--sigtrk macs2 \
--chrsz /DATA/hg19.chrom.sizes \
--gensz hs
-```
-
-3) using deepTools (bamCoverage) ( converts nodup_bam to bigwig, final_stage >= nodup_bam )
-```
-$ bds chipseq.bds \
-... 
--sigtrk deeptools
-```
-
-
-Seq is the directory where reference genome files exist.
-Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/.
 
 
 ### List of all parameters for ChIP-Seq pipelines
