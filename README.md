@@ -101,6 +101,10 @@ bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 
 For ChIP-Seq pipeline, there are many species specific parameters like indices (bwa, bowtie, ...), chrome sizes, sequence file and genome size. If you have multiple pipelines, it's a hard job to individually define all parameters for each pipeline. However, if you have a species file with all species specific parameters defined, then you define less parameters and share the species file with all other pipelines.
 
+If species file is not defined, pipeline looks for species.conf in the BDS script directory and working directory. Your configruation file is also treated as one of the species files.
+
+You can override any parameters defined in the species file by adding them to command line argument or configuration file.
+
 ```
 $ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE]
 ```
@@ -127,7 +131,13 @@ vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.
 ...
 ```
 
-If '-kundaje_lab' flag is defined, you can skip '-species_file' on Kundaje lab clusters because 'species_kundaje_lab.conf' is already provided in the pipeline repository.
+For example, if you want to override parameters for BWA index and umap:
+
+```
+$ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE] -bwa_idx [YOUR_OWN_BWA_IDX] -umap [YOUR_OWN_UMAP]
+```
+
+If '-kundaje_lab' flag is defined, you can skip '-species_file' on Kundaje lab clusters because '[SCRIPT_DIR]/species/species_kundaje_lab.conf' is already provided in the pipeline repository.
 
 
 ### Input data type and final stage
