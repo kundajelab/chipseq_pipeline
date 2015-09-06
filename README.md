@@ -267,9 +267,9 @@ $ bds chipseq.bds \
 
 ### Choose peak calling
 
-1) Peak calling 
+Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default. 
 
-Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default.
+For spp, no additional parameter is required.
 
 Example for gem:
 Define additional parameters (-chrsz, -seq)
@@ -282,11 +282,11 @@ $ bds chipseq.bds \
 ```
 
 Example for macs2:
-Define additional parameters (-chrsz)
+Define additional parameters (-chrsz, -gensz)
 ```
 $ bds chipseq.bds \
 ...
--peakcall macs
+-peakcall macs2
 -chrsz /DATA/hg19.chrom.sizes
 -gensz hs
 ```
