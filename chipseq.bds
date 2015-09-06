@@ -220,7 +220,7 @@ void chk_input_data() {
 
 			for ( string s : data ) {
 				print("\t$s\n")
-				//if ( (s != "") && !(s.exists()) ) error("\t\tFile not found!\n")
+				if ( (s != "") && !(s.exists()) ) error("\t\tFile not found!\n")
 			}
 
 			// if data is missing
