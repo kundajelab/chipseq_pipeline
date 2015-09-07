@@ -1,81 +1,50 @@
 #!/usr/bin/env bds
 
-include "modules/align_bwa.bds"
-include "modules/peakcall_spp.bds"
-include "modules/peakcall_macs2.bds"
-include "modules/peakcall_gem.bds"
-include "modules/idr.bds"
-include "modules/signal.bds"
-include "modules/report.bds"
+include "modules/species.bds"
 
+help Input file definition (input: fastq, bam, nodup_bam, tag or peak)
+input 		:= ""		help Input file type (automatically determined if not specified) (default: blank).
 
-help ENCODE ChIP-Seq Pipeline input files (type: fastq, bam, nodup_bam, tag or peak)
+include "modules/fastq.bds"
+include "modules/bam.bds"
+include "modules/tagalign.bds"
 
-input 		:= ""		help Input file type (deafult: fastq).
-
-// for fastqs (SE)
-fastq1 		:= "" 		help Fastq for replicate 1 (single ended).
-fastq2 		:= "" 		help Fastq for replicate 2 (single ended).
-ctl_fastq1 	:= "" 		help Control fastq for replicate 1 (single ended).
-ctl_fastq2 	:= "" 		help Control fastq for replicate 2 (single ended, if not exists leave this blank).
-
-// for fasqts (PE)
-fastq1_1	:= "" 		help Fastq for replicate 1 pair 1 (paired-end).
-fastq1_2	:= "" 		help Fastq for replicate 1 pair 2 (paired-end).
-fastq2_1 	:= "" 		help Fastq for replicate 2 pair 1 (paired-end).
-fastq2_2 	:= "" 		help Fastq for replicate 2 pair 2 (paired-end).
-ctl_fastq1_1	:= "" 		help Control fastq for replicate 1 pair 1 (paired-end).
-ctl_fastq1_2	:= "" 		help Control fastq for replicate 1 pair 2 (paired-end).
-ctl_fastq2_1 	:= "" 		help Control fastq for replicate 2 pair 1 (paired-end, if not exists leave this blank).
-ctl_fastq2_2 	:= "" 		help Control fastq for replicate 2 pair 2 (paired-end, if not exists leave this blank).
-
-// for bam data set
-bam1 		:= ""		help Bam or nodup_bam for replicate 1.
-bam2 		:= ""		help Bam or nodup_bam for replicate 2.
-ctl_bam1 	:= "" 		help Control bam or nodup_bam for replicate 1.
-ctl_bam2 	:= "" 		help Control bam or nodup_bam for replicate 2 (if not exists leave this blank).
-
-bam1_PE 	:= false 	help Add it if bam replicate 1 is paired end (default: false).
-bam2_PE 	:= false 	help Add it if bam replicate 2 is paired end (default: false).
-ctl_bam1_PE 	:= false 	help Add it if bam control replicate 1 is paired end (default: false).
-ctl_bam2_PE 	:= false 	help Add it if bam control replicate 2 is paired end (default: false).
-
-// for tag data set
-tag1 		:= ""		help Tagalign for replicate 1.
-tag2 		:= ""		help Tagalign for replicate 2.
-ctl_tag1 	:= "" 		help Control tagalign for replicate 1.
-ctl_tag2 	:= "" 		help Control tagalign for replicate 2 (if not exists leave this blank).
-
-/*
-tag1_PE 	:= false 	help Add it if tagalign replicate 1 is paired end (default: false).
-tag2_PE 	:= false 	help Add it if tagalign replicate 2 is paired end (default: false).
-ctl_tag1_PE 	:= false 	help Add it if tagalign control replicate 1 is paired end (default: false).
-ctl_tag2_PE 	:= false 	help Add it if tagalign control replicate 2 is paired end (default: false).
-*/
-
-// for peak data set
+help For IDR when starting pipeline from peaks. (-input peak)
 peak1 		:= ""		help Peak 1
 peak2 		:= ""		help Peak 2
 pooled 		:= ""		help Pooled peak
 
-help Alignment only mode. Define '-final_stage [bam,nodup_bam,tag,xcor]' and '-num_rep [NO_REPS]' (stage: fastq, bam, nodup_bam, tag or peak)
+include "modules/align_bwa.bds"
 
+// for peak data set
+
+help Subsampling tagligns
+subsmpl_tag 	:= false 	help Add it if you want to subsample tagligns for cross corr. analysis (default: false).
+
+help Alignment only mode. Define '-final_stage [bam,nodup_bam,tag,xcor]' and '-num_rep [NO_REPS]' (stage: fastq, bam, nodup_bam, tag or peak)
 final_stage	:= "" 		help Final stage that pipeline stops after (default: blank).
 num_rep 	:= 2		help # replicates, define '-final_stage' first. (default: 2).
 
 help Peakcalling method (spp, macs2 and gem)
-
 peakcall 	:= "spp"	help Choose peak calling method: spp, macs2 and gem (default: spp).
 
-help Signal track generation method (aln2rawsig, macs2 and deeptools (or deep) )
+include "modules/peakcall_spp.bds"
+include "modules/peakcall_macs2.bds"
+include "modules/peakcall_gem.bds"
+include "modules/idr.bds"
 
+help Signal track generation method (aln2rawsig, macs2 and deeptools (or deep) )
 sigtrk 		:= ""		help Choose signal track generation method: aln2rawsig, macs2 and deeptools (default: aln2rawsig).
 make_wig 	:= false	help Add it to create wig (only for -sigtrk aln2rawsig) (default: false).
 no_bw		:= false	help Add it not to create bigwig (default: false).
 
+include "modules/signal.bds"
+include "modules/report.bds"
+
 num_ctl 	:= 1
 html_rpt_title 	:= "ChIP-Seq Pipeline HTML Report"
 html_rpt_file 	:= "Report.html"	
+
 
 
 // Ugly global variables for peak calling (BDS cannot have return value for parallel function)
@@ -107,8 +76,6 @@ write_report()
 
 void init_chipseq() {
 
-	init_cmd_arg()
-
 	if ( conf_file_exists() ) {
 
 		final_stage	= get_conf_val( final_stage, 		["FINAL_STAGE", "FINAL_OUT"] )
@@ -118,9 +85,12 @@ void init_chipseq() {
 
 		peakcall	= get_conf_val( peakcall, 		["PEAKCALL_METHOD", "PEAKCALL"] )
 
+		subsmpl_tag	= get_conf_val_bool( subsmpl_tag, 	["SUBSAMPLE_TAG", "SUBSMPL_TAG","SUBSAMPLE_TAGALIGN", "SUBSMPL_TAGALIGN"] )
+
 		sigtrk 		= get_conf_val( sigtrk, 		["SIGTRK", "SIG_TRK", "SIGTRK_METHOD"] )
 		make_wig	= get_conf_val_bool( make_wig, 		["CREATE_WIG", "MAKE_WIG"] )
 		no_bw		= get_conf_val_bool( no_bw, 		["NO_BIGWIG", "NO_BW"] )
+
 	}
 
 	if ( v ) { // verbose
@@ -129,6 +99,7 @@ void init_chipseq() {
 		print( "# replicates to align\t\t: $num_rep\n" )
 		print( "Input data type\t\t\t: $input\n")
 		print( "Peak calling method\t\t: $peakcall\n" )
+		print( "Subsampling for tagaligns\t: $subsmpl_tag\n")
 		print( "Sig. trk. generation method\t: $sigtrk\n" )
 		print( "Create wig\t\t\t: $make_wig\n" )
 		print( "No bigwig\t\t\t: $no_bw\n" )
@@ -463,8 +434,15 @@ void _align_bwa( string[] data, string type, string final_stage, int ctl, int re
 
 		if ( type.toLower() == "tag" ) tag = data[0]
 
-		subsampled_tag := _subsample_tag( tag, out_dir, info )
-		wait
+		string subsampled_tag
+
+		if ( subsmpl_tag ) {
+			subsampled_tag = _subsample_tag( tag, out_dir, info )
+			wait
+		}
+		else {
+			subsampled_tag = tag
+		}
 
 		(xcor_score, xcor_plot) = _xcor( subsampled_tag, out_dir, info )
 		wait
@@ -565,21 +543,27 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 
 		string subsampled_tag
 
-		if ( type.toLower() == "tag" ) {
-			tag = data[0]
+		if ( subsmpl_tag ) {
 
-			subsampled_tag = _subsample_tag( tag, out_dir, info )
-			wait
+			if ( type.toLower() == "tag" ) {
+				tag = data[0]
+
+				subsampled_tag = _subsample_tag( tag, out_dir, info )
+				wait
+			}
+			else {
+				nmsrt_bam := _bam_to_nmsrt_bam( nodup_bam, out_dir, info )
+				wait
+
+				bedpe = _bam_to_bedpe( nmsrt_bam, out_dir, info )
+				wait 
+
+				subsampled_tag = _subsample_bedpe( bedpe, out_dir, info )
+				wait
+			}
 		}
 		else {
-			nmsrt_bam := _bam_to_nmsrt_bam( nodup_bam, out_dir, info )
-			wait
-
-			bedpe = _bam_to_bedpe( nmsrt_bam, out_dir, info )
-			wait 
-
-			subsampled_tag = _subsample_bedpe( bedpe, out_dir, info )
-			wait
+			subsampled_tag = tag			
 		}
 
 		(xcor_score, xcor_plot) = _xcor( subsampled_tag, out_dir, info )
@@ -829,147 +813,6 @@ bool is_peakcall_macs2() {
 	return peakcall.toLower()=="macs2"
 }
 
-void init_cmd_arg() {
-
-	if ( fastq1 != "" ) fastq1_1 = fastq1
-	if ( fastq2 != "" ) fastq2_1 = fastq2
-	if ( ctl_fastq1 != "" ) ctl_fastq1_1 = ctl_fastq1
-	if ( ctl_fastq2 != "" ) ctl_fastq2_1 = ctl_fastq2
-}
-
-string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], elseif single-end else return [PE1], else []	
-
-	string[] ret
-	for ( int pe=1; pe<=2; pe++ ) {
-		str := get_fastq( ctl, rep, pe )
-		if ( str.length() > 0 ) { // if not null, append
-			ret.add( str )
-		}
-	}
-
-	return ret
-}
-
-string get_fastq( int ctl, int rep, int pe ) {
-
-	key_wo_PE := ( ctl > 0 ? "ctl_fastq" : "fastq" ) + "_rep" + rep 
-	key := key_wo_PE + "_PE" + pe
-
-	key_wo_PE2 := ( ctl > 0 ? "ctl_fastq" : "fastq" ) + rep 
-	key2 := key_wo_PE2 + "_" + pe
-
-	key_wo_PE3 := ( ctl > 0 ? "ctl_fastq" : "fastq" )
-
-	if ( (pe==1) && conf.hasKey( key_wo_PE ) ) {
-		return get_path( conf{ key_wo_PE } )
-	}
-	else if ( (pe==1) && conf.hasKey( key_wo_PE2 ) ) {
-		return get_path( conf{ key_wo_PE2 } )
-	}
-	else if ( (pe==1) && (rep==1) && conf.hasKey( key_wo_PE3 ) ) {
-		return get_path( conf{ key_wo_PE3 } )
-	}
-	else if ( conf.hasKey( key ) ) {
-		return get_path( conf{ key } )
-	}
-	else if ( conf.hasKey( key2 ) ) {
-		return get_path( conf{ key2 } )
-	}
-	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE ) ) {
-		return get_cmd_line_arg_val( key_wo_PE )
-	}
-	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE2 ) ) {
-		return get_cmd_line_arg_val( key_wo_PE2 )
-	}
-	else if ( (pe==1) && (rep==1) && cmd_line_arg_has_key( key_wo_PE3 ) ) {
-		return get_cmd_line_arg_val( key_wo_PE3 )
-	}
-	else if ( cmd_line_arg_has_key( key ) ) {
-		return get_cmd_line_arg_val( key )
-	}
-	else if ( cmd_line_arg_has_key( key2 ) ) {
-		return get_cmd_line_arg_val( key2 )
-	}
-	return ""
-}
-
-string get_bam( int ctl, int rep ) {
-
-	key := ( ctl > 0 ? "ctl_bam" : "bam" ) + "_rep" + rep
-	key2 := ( ctl > 0 ? "ctl_bam" : "bam" ) + rep
-	key3 := ( ctl > 0 ? "ctl_bam" : "bam" )
-
-	if ( conf.hasKey( key ) ) {
-		return get_path( conf{ key } )
-	}
-	else if ( conf.hasKey( key2 ) ) {
-		return get_path( conf{ key2 } )
-	}
-	else if ( (rep==1) && conf.hasKey( key3 ) ) {
-		return get_path( conf{ key3 } )
-	}
-	else if ( cmd_line_arg_has_key( key ) ) {
-		return get_cmd_line_arg_val( key )
-	}
-	else if ( cmd_line_arg_has_key( key2 ) ) {
-		return get_cmd_line_arg_val( key2 )
-	}
-	else if ( (rep==1) && cmd_line_arg_has_key( key3 ) ) {
-		return get_cmd_line_arg_val( key3 )
-	}
-	return ""
-}
-
-string get_tag( int ctl, int rep ) {
-
-	key := ( ctl > 0 ? "ctl_tag" : "tag" ) + "_rep" + rep
-	key2 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" ) + "_rep" + rep
-
-	key3 := ( ctl > 0 ? "ctl_tag" : "tag" ) + rep
-	key4 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" ) + rep
-
-	key5 := ( ctl > 0 ? "ctl_tag" : "tag" )
-	key6 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" )
-
-	if ( conf.hasKey( key ) ) {
-		return get_path( conf{ key } )
-	}
-	else if ( conf.hasKey( key2 ) ) {
-		return get_path( conf{ key2 } )
-	}
-	else if ( conf.hasKey( key3 ) ) {
-		return get_path( conf{ key3 } )
-	}
-	else if ( conf.hasKey( key4 ) ) {
-		return get_path( conf{ key4 } )
-	}
-	else if ( (rep==1) && conf.hasKey( key5 ) ) {
-		return get_path( conf{ key5 } )
-	}
-	else if ( (rep==1) && conf.hasKey( key6 ) ) {
-		return get_path( conf{ key6 } )
-	}
-	else if ( cmd_line_arg_has_key( key ) ) {
-		return get_cmd_line_arg_val( key )
-	}
-	else if ( cmd_line_arg_has_key( key2 ) ) {
-		return get_cmd_line_arg_val( key2 )
-	}
-	else if ( cmd_line_arg_has_key( key3 ) ) {
-		return get_cmd_line_arg_val( key3 )
-	}
-	else if ( cmd_line_arg_has_key( key4 ) ) {
-		return get_cmd_line_arg_val( key4 )
-	}
-	else if ( (rep==1) && cmd_line_arg_has_key( key5 ) ) {
-		return get_cmd_line_arg_val( key5 )
-	}
-	else if ( (rep==1) && cmd_line_arg_has_key( key6 ) ) {
-		return get_cmd_line_arg_val( key6 )
-	}
-	return ""
-}
-
 string get_peak( int rep ) { // rep0 = pooled peak
 
 	key := ( rep == 0 ? "pooled" : ("peak_rep" + rep) )
@@ -996,98 +839,6 @@ string get_peak( int rep ) { // rep0 = pooled peak
 bool is_align_only_mode() {
 
 	return !is_input_peak() && !is_data_available( 1, 1 )
-}
-
-bool is_rep2_exist( int ctl ) {
-
-	if ( is_input_fastq() ) {
-		fastqs := get_fastqs( ctl, 2 )
-		return fastqs.size()>0
-	}
-	else if ( is_input_bam() || is_input_nodup_bam() ) {
-		bam := get_bam( ctl, 2 )
-		return bam!=""
-	}
-	else if ( is_input_tag() ) {
-		tag := get_tag( ctl, 2 )
-		return tag!=""
-	}
-	return false;
-}
-
-bool is_bam_paired_end( int ctl, int rep ) {
-
-	key := ( ctl > 0 ? "ctl_bam" : "bam" ) + rep + "_pe"
-	key_wo_rep := ( ctl > 0 ? "ctl_bam" : "bam" ) + "_pe"
-
-	if ( conf.hasKey( key ) ) {
-		return conf{ key }.parseBool()
-	}
-	else if ( (rep==1) && conf.hasKey( key_wo_rep ) ) {
-		return conf{ key_wo_rep }.parseBool()
-	}
-	else if ( cmd_line_arg_has_key( key ) ) {
-		val := get_cmd_line_arg_val( key )
-		return (val=="") || (val.parseBool())
-	}
-	else if ( (rep==1) && cmd_line_arg_has_key( key_wo_rep ) ) {
-		val := get_cmd_line_arg_val( key_wo_rep )
-		return (val=="") || (val.parseBool())
-	}	
-	return false
-}
-
-bool is_bam_single_ended( int ctl, int rep ) {
-
-	return !is_bam_paired_end( ctl, rep )
-}
-
-bool is_bam_PE( int ctl, int rep ) {
-
-	return is_bam_paired_end( ctl, rep )
-}
-
-bool is_bam_SE( int ctl, int rep ) {
-
-	return is_bam_single_ended( ctl, rep )
-}
-
-bool is_tag_paired_end( int ctl, int rep ) {
-/*
-	key := ( ctl > 0 ? "ctl_tag" : "tag" ) + rep + "_pe"
-	key_wo_rep := ( ctl > 0 ? "ctl_tag" : "tag" ) + "_pe"
-
-	if ( conf.hasKey( key ) ) {
-		return conf{ key }.parseBool()
-	}
-	else if ( (rep==1) && conf.hasKey( key_wo_rep ) ) {
-		return conf{ key_wo_rep }.parseBool()
-	}
-	else if ( cmd_line_arg_has_key( key ) ) {
-		val := get_cmd_line_arg_val( key )
-		return (val=="") || (val.parseBool())
-	}
-	else if ( (rep==1) && cmd_line_arg_has_key( key_wo_rep ) ) {
-		val := get_cmd_line_arg_val( key_wo_rep )
-		return (val=="") || (val.parseBool())
-	}	
-*/
-	return false
-}
-
-bool is_tag_single_ended( int ctl, int rep ) {
-
-	return !is_tag_paired_end( ctl, rep )
-}
-
-bool is_tag_PE( int ctl, int rep ) {
-
-	return is_tag_paired_end( ctl, rep )
-}
-
-bool is_tag_SE( int ctl, int rep ) {
-
-	return is_tag_single_ended( ctl, rep )
 }
 
 bool is_paired_end( int ctl, int rep ) {
@@ -1118,16 +869,6 @@ bool is_single_ended( int ctl, int rep ) {
 		return is_tag_SE( ctl, rep )
 	}
 	return false;
-}
-
-bool is_SE( int ctl, int rep ) {
-
-	return is_single_ended( ctl, rep )
-}
-
-bool is_PE( int ctl, int rep ) {
-
-	return is_paired_end( ctl, rep )
 }
 
 bool is_input_fastq() {
