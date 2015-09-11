@@ -199,8 +199,11 @@ void chk_input_data() {
 			if ( data[0] == "" ) {
 				if ( (rep==2) && (ctl==1) ) \
 					print( "\tWarning: Control $prefix missing! keep going...\n")
+				else if ( (rep==2) && (ctl==0) ) \
+					print( "\tWarning: $prefix missing! keep going... (peak claling for replicate 1 only)\n")
 				else \
 					error( "\t$prefix missing!\n")
+				continue
 			}
 
 			// check any duplicate input filename
@@ -309,9 +312,12 @@ void peakcall_idr() {
 	// create ppr (pooled pseudoreplicates) before peak calling
 
 	string tag_pooled, tag_ppr1, tag_ppr2
-	(tag_pooled, tag_ppr1, tag_ppr2 ) = _ppr( tag_rep1, tag_rep1_pr1, tag_rep1_pr2, \
-						  tag_rep2, tag_rep2_pr1, tag_rep2_pr2, align_pooled_dir, "" ) // make pooled psudo replicate
-	wait
+
+	if ( num_rep > 1 ) {
+		(tag_pooled, tag_ppr1, tag_ppr2 ) = _ppr( tag_rep1, tag_rep1_pr1, tag_rep1_pr2, \
+							  tag_rep2, tag_rep2_pr1, tag_rep2_pr2, align_pooled_dir, "" ) // make pooled psudo replicate
+		wait
+	}
 
 	string ctl_tag_pooled
 	
@@ -325,20 +331,16 @@ void peakcall_idr() {
 		ctl_tag_pooled 	= ctl_tag_rep1
 	}
 	
-	real frgln1 	= fraglen_rep1.parseReal() 
-	real frgln2 	= fraglen_rep2.parseReal()
-	string fraglen_mean 	= round( (frgln1+frgln2)*0.5 ) // compute fraglen mean for pooled
-
+	string fraglen_mean
+	if ( num_rep > 1 ) {
+		real frgln1 	= fraglen_rep1.parseReal() 
+		real frgln2 	= fraglen_rep2.parseReal()
+		fraglen_mean 	= round( (frgln1+frgln2)*0.5 ) // compute fraglen mean for pooled
+	}
 
 	// peak calling
 
 	peak_rep1 := _peakcall( tag_rep1, ctl_tag_rep1, fraglen_rep1, rep_dir, "Rep1" )
-	if ( no_par_job ) wait
-
-	peak_rep2 := _peakcall( tag_rep2, ctl_tag_rep2, fraglen_rep2, rep_dir, "Rep2" )
-	if ( no_par_job ) wait
-
-	peak_pooled := _peakcall( tag_pooled, ctl_tag_pooled, fraglen_mean, rep_dir, "Pooled" )
 	if ( no_par_job ) wait
 
 	peak_rep1_pr1 := _peakcall( tag_rep1_pr1, ctl_tag_rep1, fraglen_rep1, pr_dir, "Rep1_PR1" )
@@ -347,21 +349,33 @@ void peakcall_idr() {
 	peak_rep1_pr2 := _peakcall( tag_rep1_pr2, ctl_tag_rep1, fraglen_rep1, pr_dir, "Rep1_PR2" )
 	if ( no_par_job ) wait
 
-	peak_rep2_pr1 := _peakcall( tag_rep2_pr1, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR1" )
-	if ( no_par_job ) wait
 
-	peak_rep2_pr2 := _peakcall( tag_rep2_pr2, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR2" )
-	if ( no_par_job ) wait
+	string peak_rep2, peak_rep2_pr1, peak_rep2_pr2, peak_pooled, peak_ppr1, peak_ppr2
 
-	peak_ppr1 := _peakcall( tag_ppr1, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR1" )
-	if ( no_par_job ) wait
+	if ( num_rep > 1 ) {
 
-	peak_ppr2 := _peakcall( tag_ppr2, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR2" )
-	if ( no_par_job ) wait
+		peak_rep2 = _peakcall( tag_rep2, ctl_tag_rep2, fraglen_rep2, rep_dir, "Rep2" )
+		if ( no_par_job ) wait
+
+		peak_rep2_pr1 = _peakcall( tag_rep2_pr1, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR1" )
+		if ( no_par_job ) wait
+
+		peak_rep2_pr2 = _peakcall( tag_rep2_pr2, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR2" )
+		if ( no_par_job ) wait
+
+		peak_pooled = _peakcall( tag_pooled, ctl_tag_pooled, fraglen_mean, rep_dir, "Pooled" )
+		if ( no_par_job ) wait
+
+		peak_ppr1 = _peakcall( tag_ppr1, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR1" )
+		if ( no_par_job ) wait
+
+		peak_ppr2 = _peakcall( tag_ppr2, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR2" )
+		if ( no_par_job ) wait
+	}
 
 	wait
 
-	if ( !is_final_stage_idr() ) return
+	if ( !is_final_stage_idr() || num_rep < 2 ) return
 
 	// idr
 
