@@ -124,6 +124,9 @@ void chk_input_data() {
 		print("\n\nAlign only mode for $num_rep replicates (no control data found)!\n\n")
 		num_ctl = 0
 	}
+	else if ( num_rep > 2 ) {
+		error("\n\nFor peak calling, # replicates (num_rep) should be <= 2.\n\n")
+	}
 
 	print( "\n====== Checking inputs (data type = $input) ...\n\n" );
 
