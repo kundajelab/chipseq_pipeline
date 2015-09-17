@@ -754,6 +754,11 @@ void set_shell_env() {
 		SHCMD_INIT = SHCMD_INIT + ";" + path + ";" + shellcmd
 		SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
 	}
+
+       
+	if ( v ) { // verbose
+		print( "Shell cmd. for init. (chipseq)\t: $SHCMD_INIT\n" )
+	}
 }
 
 void help() {
