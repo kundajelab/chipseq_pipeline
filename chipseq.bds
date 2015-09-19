@@ -757,7 +757,7 @@ void set_shell_env() {
 
        
 	if ( v ) { // verbose
-		print( "Shell cmd. for init. (chipseq)\t: $SHCMD_INIT\n" )
+		print( "\nShell cmd. for init. (chipseq.bds)\t: $SHCMD_INIT\n\n" )
 	}
 }
 
