@@ -117,6 +117,24 @@ void chk_input_data() {
 		if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
 	}
 
+	if ( is_input_fastq() ) {
+		if ( !("$bwa_idx.bwt").exists() ) error("\nBWA index doesn't exists! ($bwa_idx.bwt)\n")
+	}
+
+	if ( is_sigtrk_macs2() || is_peakcall_macs2() ) {
+		if ( !chrsz.exists() ) error("\nChrome sizes file doesn't exists! ($chrsz)\n")	
+	}
+
+	if ( is_sigtrk_aln2rawsig() ) {
+		if ( !umap.exists() ) error("\nUmap directory doesn't exists! ($umap)\n")
+		if ( !("$seq/chr1.fa").exists() ) error("\nRef. sequence doesn't exists! ($seq/chr1.fa)\n")
+	}
+
+	if ( is_peakcall_gem() ) {
+		if ( !chrsz.exists() ) error("\nChrome sizes file doesn't exists! ($chrsz)\n")	
+		if ( !("$seq/chr1.fa").exists() ) error("\nRef. sequence doesn't exists! ($seq/chr1.fa)\n")
+	}
+
 	if ( is_align_only_mode() ) { 
 		// if no data for control rep1 and final stage is before peak calling
 		// this must be aligment only mode, so ignore all control from here
