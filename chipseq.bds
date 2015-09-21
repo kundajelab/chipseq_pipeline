@@ -1,22 +1,24 @@
 #!/usr/bin/env bds
 
 include "modules/species.bds"
-
-help Input file definition (input: fastq, bam, nodup_bam, tag or peak)
-input 		:= ""		help Input file type (automatically determined if not specified) (default: blank).
-
 include "modules/fastq.bds"
 include "modules/bam.bds"
 include "modules/tagalign.bds"
+include "modules/align_bwa.bds"
+include "modules/peakcall_spp.bds"
+include "modules/peakcall_macs2.bds"
+include "modules/peakcall_gem.bds"
+include "modules/idr.bds"
+include "modules/signal.bds"
+include "modules/report.bds"
+
+help Input file type (input: fastq, bam, nodup_bam, tag or peak)
+input 		:= ""		help Input file type (automatically determined if not specified) (default: blank).
 
 help For IDR when starting pipeline from peaks. (-input peak)
 peak1 		:= ""		help Peak 1
 peak2 		:= ""		help Peak 2
 pooled 		:= ""		help Pooled peak
-
-include "modules/align_bwa.bds"
-
-// for peak data set
 
 help Subsampling tagligns
 subsmpl_tag 	:= false 	help Add it if you want to subsample tagligns for cross corr. analysis (default: false).
@@ -28,18 +30,11 @@ num_rep 	:= 2		help # replicates, define '-final_stage' first. (default: 2).
 help Peakcalling method (spp, macs2 and gem)
 peakcall 	:= "spp"	help Choose peak calling method: spp, macs2 and gem (default: spp).
 
-include "modules/peakcall_spp.bds"
-include "modules/peakcall_macs2.bds"
-include "modules/peakcall_gem.bds"
-include "modules/idr.bds"
-
 help Signal track generation method (aln2rawsig, macs2 and deeptools (or deep) )
 sigtrk 		:= ""		help Choose signal track generation method: aln2rawsig, macs2 and deeptools (default: aln2rawsig).
 make_wig 	:= false	help Add it to create wig (only for -sigtrk aln2rawsig) (default: false).
 no_bw		:= false	help Add it not to create bigwig (default: false).
 
-include "modules/signal.bds"
-include "modules/report.bds"
 
 num_ctl 	:= 1
 html_rpt_title 	:= "ChIP-Seq Pipeline HTML Report"
@@ -78,19 +73,18 @@ void init_chipseq() {
 
 	if ( conf_file_exists() ) {
 
-		final_stage	= get_conf_val( final_stage, 		["FINAL_STAGE", "FINAL_OUT"] )
-		num_rep 	= get_conf_val_int( num_rep, 		["NUM_REP", "NUMREP"] )
+		final_stage	= get_conf_val( final_stage, 		["final_stage", "final_out"] )
+		num_rep 	= get_conf_val_int( num_rep, 		["num_rep", "numrep"] )
 
-		input 		= get_conf_val( input, 			["INPUT_TYPE", "INPUT"] )
+		input 		= get_conf_val( input, 			["input_type", "input"] )
 
-		peakcall	= get_conf_val( peakcall, 		["PEAKCALL_METHOD", "PEAKCALL"] )
+		peakcall	= get_conf_val( peakcall, 		["peakcall_method", "peakcall"] )
 
-		subsmpl_tag	= get_conf_val_bool( subsmpl_tag, 	["SUBSAMPLE_TAG", "SUBSMPL_TAG","SUBSAMPLE_TAGALIGN", "SUBSMPL_TAGALIGN"] )
+		subsmpl_tag	= get_conf_val_bool( subsmpl_tag, 	["subsample_tag", "subsmpl_tag","subsample_tagalign", "subsmpl_tagalign"] )
 
-		sigtrk 		= get_conf_val( sigtrk, 		["SIGTRK", "SIG_TRK", "SIGTRK_METHOD"] )
-		make_wig	= get_conf_val_bool( make_wig, 		["CREATE_WIG", "MAKE_WIG"] )
-		no_bw		= get_conf_val_bool( no_bw, 		["NO_BIGWIG", "NO_BW"] )
-
+		sigtrk 		= get_conf_val( sigtrk, 		["sigtrk", "sig_trk", "sigtrk_method"] )
+		make_wig	= get_conf_val_bool( make_wig, 		["create_wig", "make_wig"] )
+		no_bw		= get_conf_val_bool( no_bw, 		["no_bigwig", "no_bw"] )
 	}
 
 	if ( v ) { // verbose
@@ -133,10 +127,8 @@ void chk_input_data() {
 		if ( !umap.exists() ) error("\nUmap directory doesn't exists! ($umap)\n")
 	}
 
-	if ( is_align_only_mode() ) { 
-		// if no data for control rep1 and final stage is before peak calling
-		// this must be aligment only mode, so ignore all control from here
-
+	if ( is_align_only_mode() ) { 	// if no data for control rep1 and final stage is before peak calling
+					// this must be aligment only mode, so ignore all control from here
 		print("\n\nAlign only mode for $num_rep replicates (no control data found)!\n\n")
 		num_ctl = 0
 	}
@@ -416,23 +408,23 @@ void peakcall_idr() {
 
 void _align_bwa( string[] data, string type, string final_stage, int ctl, int rep, string out_dir, string info ) {
 
-	string bam, qc // make bam and map_qc with using bwa
+	string bam
 	if ( is_data_type_before( type, "bam" ) ) {
 
 		fastq := data[0]
 
-		(bam, qc) = _bwa( fastq, out_dir, info )
+		bam = _bwa( fastq, out_dir, info )
 		wait
 
 		if ( final_stage.toLower() == "bam" ) return
 	}
 
-	string nodup_bam, nodup_bam_idx, nmsrt_bam // remove dupes and make nodup.bam and name sorted bam
+	string nodup_bam // remove dupes and make nodup.bam and name sorted bam
 	if ( is_data_type_before( type, "nodup_bam" ) ) {
 
 		if ( type.toLower() == "bam" ) bam = data[0]
 
-		(nodup_bam, nodup_bam_idx) = _bam_to_nodup_bam( bam, out_dir, info )
+		nodup_bam = _bam_to_nodup_bam( bam, out_dir, info )
 		wait
 
 		if ( final_stage.toLower() == "nodup_bam" ) return
@@ -525,23 +517,23 @@ void _align_bwa( string[] data, string type, string final_stage, int ctl, int re
 
 void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int rep, string out_dir, string info ) {
 
-	string bam, qc // make bam and map_qc with using bwa
+	string bam // make bam
 	if ( is_data_type_before( type, "bam" ) ) {
 
 		fastq1 := data[0]
 		fastq2 := data[1]
-		(bam, qc) = _bwa_PE( fastq1, fastq2, out_dir, info )
+		bam = _bwa_PE( fastq1, fastq2, out_dir, info )
 		wait
 
 		if ( final_stage.toLower() == "bam" ) return
 	}
 
-	string nodup_bam, nodup_bam_idx // remove dupes and make nodup.bam
+	string nodup_bam
 	if ( is_data_type_before( type, "nodup_bam" ) ) {
 
 		if ( type.toLower() == "bam" ) bam = data[0]
 
-		(nodup_bam, nodup_bam_idx) = _bam_to_nodup_bam_PE( bam, out_dir, info )
+		nodup_bam = _bam_to_nodup_bam_PE( bam, out_dir, info )
 		wait
 
 		if ( final_stage.toLower() == "nodup_bam" ) return
@@ -568,7 +560,7 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 		if ( final_stage.toLower() == "tag" ) return
 	}
 
-	string bedpe, xcor_score, xcor_plot // make cross correlation score and plot	
+	string bedpe, xcor_score, xcor_plot, nmsrt_bam // make cross correlation score and plot	
 	if ( is_data_type_before( type, "xcor" ) ) {
 
 		string subsampled_tag

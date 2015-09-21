@@ -38,14 +38,14 @@ void init_align_bwa() {
 	}	
 }
 
-string[] _bwa( string fastq, string out_dir, string info ) {
+string _bwa( string fastq, string out_dir, string info ) {
 
-	prefix 	:= change_dir( remove_ext( fastq, "fastq" ), out_dir )
+	prefix 	:= change_dir( remove_ext( fastq, ["fastq","fq"] ), out_dir )
 	bam 	:= "$prefix.bam"
 	qc 	:= "$prefix.flagstat.qc"
 
 	in 	:= [ fastq ]
-	out 	:= [ bam, qc ]
+	out 	:= bam
 
 	if ( out <- in ) { // compare file timestamps of in and out (to check if job is already done or not)
 		sai := _bwa_aln( fastq, out_dir, info )
@@ -60,16 +60,16 @@ string[] _bwa( string fastq, string out_dir, string info ) {
 	return out
 }
 
-string[] _bwa_PE( string fastq1, string fastq2, string out_dir, string info ) {
+string _bwa_PE( string fastq1, string fastq2, string out_dir, string info ) {
 
 	//prefix 	:= "$out_dir/" + concat_basename_wo_ext( fastq1, fastq2, "fastq" )
-	prefix 	:= change_dir( remove_ext( fastq1, "fastq" ), out_dir ) + ".PE2SE"
+	prefix 	:= change_dir( remove_ext( fastq1, ["fastq","fq"] ), out_dir ) + ".PE2SE"
 
 	bam 	:= "$prefix.bam"
 	qc 	:= "$prefix.flagstat.qc"
 
 	in 	:= [ fastq1, fastq2 ]
-	out 	:= [ bam, qc ]
+	out 	:= bam
 
 	if ( out <- in ) { // compare file timestamps of in and out (to check if job is already done or not)
 
@@ -111,7 +111,7 @@ string _bwa_aln( string fastq, string out_dir, string info ) {
 	return out
 }
 
-string[] _bwa_sam( string fastq, string sai, string out_dir, string info ) {
+string _bwa_sam( string fastq, string sai, string out_dir, string info ) {
 
 	prefix 	:= change_dir( remove_ext( fastq, "fastq" ), out_dir )
 
@@ -119,7 +119,7 @@ string[] _bwa_sam( string fastq, string sai, string out_dir, string info ) {
 	qc	:= "$prefix.flagstat.qc"
 
 	in 	:= [ fastq, sai ]
-	out 	:= [ bam, qc ]
+	out 	:= bam
 
 	task( taskName:= "bwa_sam "+info, \
 		cpus:=nth, mem:=parse_mem(mem_bwa_sam), timeout:=parse_time(wt_bwa_sam), \
@@ -134,7 +134,7 @@ string[] _bwa_sam( string fastq, string sai, string out_dir, string info ) {
 	return out
 }
 
-string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, string out_dir, string info ) {
+string _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, string out_dir, string info ) {
 
 	//prefix 	:= "$out_dir/" + concat_basename_wo_ext( fastq1, fastq2, "fastq" )
 	prefix 	:= change_dir( remove_ext( fastq1, "fastq" ), out_dir ) + ".PE2SE"
@@ -145,7 +145,7 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 	qc	:= "$prefix.flagstat.qc"
 
 	in 	:= [ fastq1, fastq2, sai1, sai2 ]
-	out 	:= [ bam, qc ]
+	out 	:= bam
 
 	task( taskName:= "bwa_sam_PE "+info, \
 		cpus:=nth, mem:=parse_mem(mem_bwa_sam), timeout:=parse_time(wt_bwa_sam), \
