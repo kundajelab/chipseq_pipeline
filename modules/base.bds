@@ -7,7 +7,7 @@ helpUnsorted := true
 //		or executables like .py .sh .R in the BDS script path if they are not defined globally in env. var. $PATH
 // 	Add more relative path here if you want to keep your .py .sh .R in subdirectories (or parent) of your BDS script directory.
 
-rel_script_file_paths := [".","..","modules","../modules","species","../species"]
+rel_script_file_paths := [".","..","modules","../chipseq/modules","species","../chipseq/species"]
 
 
 // command line argument functions
