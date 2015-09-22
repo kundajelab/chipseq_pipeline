@@ -36,7 +36,7 @@ SHCMD_INIT 	:= ""  // IMPORTANT! Shell command executed prior to all BigDataScri
 
 init_base()
 init_shell_env()
-
+print_cmd_line_params() 
 
 
 void init_base() { 
@@ -168,4 +168,19 @@ void init_shell_env() {
 	if ( v ) { // verbose
 		print( "Shell cmd. for init.\t: $SHCMD_INIT\n" )
 	}		
+}
+
+void print_cmd_line_params() {
+
+	string line
+	for ( string arg : args ) {
+		line = line + arg + " "
+	}
+
+	if ( args.size() > 0 ) {
+
+		print( "\nCommand line arguments\t: $line\n\n")
+
+		sys DATE=$(date "+%Y%m%d_%H%M%S"); echo $line > cmd_line_parameters.${DATE}.txt
+	}
 }
