@@ -2,6 +2,7 @@
 
 include "species.bds"
 
+
 // has functions related to tagalign, and helps getting tagalign from configruation file or command line argument
 
 help Tagalign definition
@@ -12,7 +13,6 @@ tag1 		:= ""		help Tagalign for replicate 1. For control, use '-ctl_tag1'
 tag2 		:= ""		help Tagalign for replicate 2. For more tagaligns, use '-tag[REP_NO]'
 
 help Alignment settings for tagalign
-
 nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
 
 

@@ -4,8 +4,7 @@ include "species.bds"
 
 
 help Preseq analysis settings
-
-xmax 		:= 500		help Maximum # of reads for preseq analysis (default: 500)
+xmax 		:= 500		help Maximum # of reads for preseq analysis (default: 500).
 
 
 init_peakcall_etc()

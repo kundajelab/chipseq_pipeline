@@ -2,10 +2,11 @@
 
 include "species.bds"
 
-help IDR settings
 
+help IDR settings
 use_idr1	:= false	help Add it use IDR-1 code (default: false).
 idr_thresh 	:= "0.02"	help IDR threshold ( -log_10 (score) ) (default: 0.02).
+
 
 idr_summary 	:= "NPEAKS_IDR.txt"	// file basename for summary of number of peaks found
 

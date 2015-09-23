@@ -2,6 +2,7 @@
 
 include "species.bds"
 
+
 help Fastq definition
 help      Single-ended : To define fastqs use '-fastq[REP_NO]', For control use '-ctl_fastq[REP_NO]'
 help      Paired end : To define fastqs use '-fastq[REP_NO]_[PE_NO]', For control use '-ctl_fastq[REP_NO]_[REP_NO]'
@@ -15,6 +16,7 @@ fastq1_1	:= "" 		help Fastq for replicate 1 pair 1 (paired-end).
 fastq1_2	:= "" 		help Fastq for replicate 1 pair 2 (paired-end). 
 fastq2_1 	:= "" 		help Fastq for replicate 2 pair 1 (paired-end).
 fastq2_2 	:= "" 		help Fastq for replicate 2 pair 2 (paired-end).
+
 
 
 string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], elseif single-end else return [PE1], else []	

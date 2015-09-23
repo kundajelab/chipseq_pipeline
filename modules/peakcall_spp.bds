@@ -3,9 +3,8 @@
 include "species.bds"
 
 
-help Peakcalling settings : spp (phantompeakqual tool: run_SPP.R)
-
-npeak 		:= 300000 	help -npeak in spp (phantompeakqual tool run_spp.R) (default: 300000).
+help Peakcalling settings for spp (phantompeakqual tool: run_SPP_nodups.R)
+npeak 		:= 300000 	help -npeak in spp (phantompeakqual tool run_spp_nodups.R) (default: 300000).
 nth_spp 	:= 2		help # threads for spp (run_spp.R) (default: 2).
 wt_spp		:= "15h"	help Walltime for spp (default: 10h, 10:00:00).
 mem_spp		:= "8G" 	help Max. memory for spp (default: 8G).

@@ -3,8 +3,7 @@
 include "species.bds"
 
 
-help Peakcalling settings : gem
-
+help Peakcalling settings for gem
 nth_gem		:= 2 		help # threads for gem (default: 2)
 wt_gem		:= "20h"	help Walltime for gem (default: 20h, 20:00:00).
 mem_gem		:= "16G" 	help Max. memory for gem (default: 16G).

@@ -1,4 +1,4 @@
-Pipelines in Kundaje Lab based on BigDataScript (BDS)
+Pipelines in Kundaje lab based on BigDataScript (BDS)
 ===============================================
 
 Taking advandatge of the powerful pipeline language BigDataScript (http://pcingola.github.io/BigDataScript/index.html), Pipelines in Kundaje lab have the following features:
@@ -32,7 +32,7 @@ export PATH=$PATH:$HOME/.bds
 ```
 
 
-### Installation instruction for Kundaje lab members
+### Installation instruction for BDS (on Kundaje lab clusters)
 
 For Kundaje lab members, BDS and all dependencies have already been installed on lab servers. Do not run install_dependencies.sh on Kundaje lab servers. Get the latest version of pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
 ```
@@ -70,9 +70,7 @@ $ bds -s sge [PIPELINE_BDS]
 
 ### How to define parameters?
 
-There are two ways to define parameters for pipelines. Default values are already given for most of parameters. Take a look at example commands and configuration files (./examples).
-
-Both methods share the same key names.
+There are two ways to define parameters for pipelines. Default values are already given for most of parameters. Take a look at example commands and configuration files (./examples). Both methods share the same key names.
 
 1) From command line arguments 
 ```
@@ -122,20 +120,19 @@ Example species file looks like the following. You can define your own species.
 ```
 [hg19]
 chrsz   = /mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes // chrome sizes
-seq     = /mnt/data/ENCODE/sequence/encodeHg19Male // genome reference sequence
+seq     = /mnt/data/ENCODE/sequence/encodeHg19Male 			// genome reference sequence
 gensz   = hs // genome size: hs for humna, mm for mouse
-umap    = /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k20tok54 // uniq. mappability tracks
+umap    = /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k1tok1000 	// uniq. mappability tracks
+umap_hic= /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k20tok54 	// uniq. mappability tracks
 bwa_idx = /mnt/data/annotations/indexes/bwa_indexes/encodeHg19Male/v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
 bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
 vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.merged.ANS.bed
 
+# your own definition for species
 [hg19_custom]
 chrsz   = ...
 seq     = ...
-...
-
-[hg38]
 ...
 
 [mm9]
@@ -143,6 +140,19 @@ seq     = ...
 
 [mm10]
 ...
+```
+
+Description for parameters in a species file.
+```
+chrsz               : Chrome sizes file path (use fetchChromSizes from UCSC tools).
+seq                 : Reference genome sequence directory path (where chr*.fa exist).
+gensz               : Genome size; hs for human, mm for mouse (default: hs).
+umap                : Unique mappability tracks directory path (https://sites.google.com/site/anshulkundaje/projects/mappability).
+umap_hic            : Unique mappability tracks directory path (for HiC, DO NOT USE all-mappable umap track starting from 1bp)
+bwa_idx             : BWA index (full path prefix of [].bwt file) .
+bwt_idx             : Bowtie index (full path prefix of [].1.ebwt file).
+bwt2_idx            : Bowtie2 index (full path prefix of [].1.bt2 file).
+vplot_idx           : V plot index (full path for bed file).
 ```
 
 
@@ -173,7 +183,7 @@ $ bds -dryRun [PIPELINE_BDS] ...
 
 ### How to set shell environments (What are MOD, shcmd and addpath?)
 
-Ignore this section if you are working on Kundaje lab clusters.
+Ignore this section if you are working on Kundaje lab clusters (just add a flag '-kundaje_lab' to the command line).
 
 It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. MOD, shcmd and addpath are three convenient ways to define environment variables. Environment variables defined with MOD, shcmd and addpath are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with MOD. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
 

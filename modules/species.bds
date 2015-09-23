@@ -5,18 +5,19 @@ include "general.bds"
 
 help Species settings
 
-species			:= "" 		help Species. If added, also specify '-species_file' (default: blank).
-species_file		:= ""		help Species configuration file path (default: blank).
+species			:= "" 		help Species. If defined without '-kundaje_lab' flag, specify '-species_file' too.
+species_file		:= ""		help Species file path.
 
 chrsz 			:= "" 		help Chrome sizes file path (use fetchChromSizes from UCSC tools).
-seq 			:= ""		help Reference sequence file path (where chr*.fa exist).
+seq 			:= ""		help Reference genome sequence directory path (where chr*.fa exist).
 gensz 			:= "hs"		help Genome size; hs for human, mm for mouse (default: hs).
-umap 			:= "" 		help Unique mappability tracks path (https://sites.google.com/site/anshulkundaje/projects/mappability).
+umap 			:= "" 		help Unique mappability tracks directory path (https://sites.google.com/site/anshulkundaje/projects/mappability).
+umap_hic		:= "" 		help Unique mappability tracks directory path (for HiC, DO NOT USE all-mappable umap track starting from 1bp)
 
-bwa_idx 		:= ""		help bwa index.
-bwt_idx			:= ""		help bowtie index
-bwt2_idx		:= ""		help bowtie2 index
-vplot_idx 		:= "" 		help V plot index.
+bwa_idx 		:= ""		help BWA index (full path prefix of [].bwt file) .
+bwt_idx			:= ""		help Bowtie index (full path prefix of [].1.ebwt file).
+bwt2_idx		:= ""		help Bowtie2 index (full path prefix of [].1.bt2 file).
+vplot_idx 		:= "" 		help V plot index (full path for bed file).
 
 species_basename 		:= "species.conf"
 species_basename_kundaje_lab  	:= "species_kundaje_lab.conf"
@@ -79,28 +80,30 @@ void read_species() { // check for species configruation files
 				//print("\nDEBUG: $path\t$species\n")
 				if ( _conf.size() == 0 ) continue // no species section (like [hg19], [mm9], ...) found, keep going with next
 
-				gensz		= get_conf_val( gensz, 		["GENSZ", "GENOMESIZE", "GENOME_SIZE", "GENOME_SZ", "GEN_SZ"], _conf )
-				chrsz		= get_conf_val( chrsz, 		["CHROMSIZE","CHROMSIZES","CHROM_SIZES", "CHRSZ", "CHR_SZ"], _conf )
-				seq 		= get_conf_val( seq, 		["SEQ_DIR", "SEQ"], _conf )
+				gensz		= get_conf_val( gensz, 		["gensz", "genomesize", "genome_size", "genome_sz", "gen_sz"], _conf )
+				chrsz		= get_conf_val( chrsz, 		["chromsize","chromsizes","chrom_sizes", "chrsz", "chr_sz"], _conf )
+				seq 		= get_conf_val( seq, 		["seq_dir", "seq"], _conf )
 
-				umap		= get_conf_val( umap, 		["UMAP_DIR", "UMAP"], _conf )
+				umap		= get_conf_val( umap, 		["umap_dir", "umap"], _conf )
+				umap_hic	= get_conf_val( umap_hic,	["umap_dir_hic", "umap_hic"], _conf )
 
-				bwa_idx 	= get_conf_val( bwa_idx, 	["BWA_INDEX_NAME", "BWA_IDX", "BWA_IDX_NAME"], _conf )
+				bwa_idx 	= get_conf_val( bwa_idx, 	["bwa_index_name", "bwa_idx", "bwa_idx_name"], _conf )
 
-				bwt_idx 	= get_conf_val( bwt_idx, 	["BWT_INDEX_NAME", "BWT_IDX", "BWT_IDX_NAME", "BOWTIE_IDX", "BOWTIE_INDEX"], _conf )
-				bwt2_idx 	= get_conf_val( bwt2_idx, 	["BWT2_INDEX_NAME", "BWT2_IDX", "BWT2_IDX_NAME", "BOWTIE2_IDX", "BOWTIE2_INDEX"], _conf )
+				bwt_idx 	= get_conf_val( bwt_idx, 	["bwt_index_name", "bwt_idx", "bwt_idx_name", "bowtie_idx", "bowtie_index"], _conf )
+				bwt2_idx 	= get_conf_val( bwt2_idx, 	["bwt2_index_name", "bwt2_idx", "bwt2_idx_name", "bowtie2_idx", "bowtie2_index"], _conf )
 
-				vplot_idx 	= get_conf_val( vplot_idx, 	["VPLOTINDEX", "VPLOT_INDEX", "VPLOTIDX", "VPLOT_IDX", "V_INDEX"], _conf )
+				vplot_idx 	= get_conf_val( vplot_idx, 	["vplotindex", "vplot_index", "vplotidx", "vplot_idx", "v_index"], _conf )
 			}
 		}
 	}
 
 	if ( v ) { // verbose
 		print("\n")
-		print( "Chromesizes file\t: $chrsz\n" )
+		print( "Chr. sizes file\t: $chrsz\n" )
 		print( "Genome size (hs,mm)\t: $gensz\n" )
 		print( "Sequence dir.\t\t: $seq\n" )
 		print( "Umap dir.\t\t: $umap\n" )
+		print( "Umap dir. (HiC)\t: $umap_hic\n" )
 		print( "BWA index\t\t: $bwa_idx\n" )
 		print( "Bowtie index\t\t: $bwt_idx\n" )
 		print( "Bowtie2 index\t\t: $bwt2_idx\n" )

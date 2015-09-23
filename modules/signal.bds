@@ -2,10 +2,10 @@
 
 include "species.bds"
 
-help Signal track generation settings : bamCoverage (deelTools)
 
-param_bam_cvrg 	:= "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10"	help Parameters for deepTools bigwig generation from nodup_bam (default: "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10")
-nth_bam_cvrg	:= 3 		help # threads for bamCoverage (deepTools) (default: 3)
+help Signal track generation settings for bamCoverage (deelTools)
+param_bam_cvrg 	:= "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10"	help Parameters for deepTools bigwig generation from nodup_bam (default: "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10").
+nth_bam_cvrg	:= 3 		help # threads for bamCoverage (deepTools) (default: 3).
 wt_bam_cvrg	:= "5h"		help Walltime for bamCoverage (deepTools) (default: 5h, 5:00:00).
 mem_bam_cvrg	:= "8G" 	help Max. memory for bamCoverage (deepTools) (default: 8G).
 
