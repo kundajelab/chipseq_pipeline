@@ -3,12 +3,6 @@
 include "species.bds"
 
 
-help Alignment settings : 
-
-make_vplot 	:= "makeVPlot.py" 	// IMPORTANT! chmod 755 to this file to allow $which finds the location for this
-trim_adapters 	:= "trimAdapters.py" 	// IMPORTANT! chmod 755 to this file to allow $which finds the location for this
-
-
 
 string[] _trim_adapters( string fastq1, string fastq2, string out_dir, string info ) {
 
@@ -31,7 +25,7 @@ string[] _trim_adapters( string fastq1, string fastq2, string out_dir, string in
 		sys $SHCMD_INIT
 
 		sys cd $out_dir
-		sys python $(which $trim_adapters) -a $fastq1 -b $fastq2
+		sys python $(which trimAdapters.py) -a $fastq1 -b $fastq2
 		sys gzip $p1
 		sys gzip $p2
 	}
@@ -61,7 +55,7 @@ string _vplot( string srt_bam, string out_dir, string info ) {
 		sys echo "Generating V Plot..."
 
 		//# this script must be in PATH (didn't work with 20 thread, so reduce it to 4)
-		sys python $(which $make_vplot) -a $srt_bam -b $vplot_idx -e 2000 -p ends -c 4 -v -u
+		sys python $(which makeVPlot.py) -a $srt_bam -b $vplot_idx -e 2000 -p ends -c 4 -v -u
 	}
 
 	return out
