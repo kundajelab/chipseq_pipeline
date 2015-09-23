@@ -46,6 +46,12 @@ $ bds [PIPELINE_BDS] [...] -kundaje_lab -species [SPECIES: hg19, mm9, ...]
 ```
 
 
+### How to resume pipeline from the point of failure?
+
+Pipelines automatically determine if each stage has finished or not (comparing timestamps of input/output files for each stage). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
+
+
+
 ### How to get help for all parameters?
 
 Run the pipeline without additional command line argument.
@@ -65,8 +71,6 @@ $ bds -s sge [PIPELINE_BDS]
 ### How to define parameters?
 
 There are two ways to define parameters for pipelines. Default values are already given for most of parameters. Take a look at example commands and configuration files (./examples).
-
-Pipelines automatically determine if each task has finished or not (comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
 
 Both methods share the same key names.
 
