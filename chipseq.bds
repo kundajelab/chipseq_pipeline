@@ -112,19 +112,19 @@ void chk_input_data() {
 	}
 
 	if ( is_input_fastq() ) {
-		if ( !("$bwa_idx.bwt").exists() ) error("\nBWA index doesn't exists! ($bwa_idx.bwt)\n")
+		if ( !path_exists("$bwa_idx.bwt") ) error("\nBWA index doesn't exists! ($bwa_idx.bwt)\n")
 	}
 
 	if ( is_sigtrk_macs2() || is_peakcall_macs2() || is_peakcall_gem() ) {
-		if ( !chrsz.exists() ) error("\nChrome sizes file doesn't exists! ($chrsz)\n")	
+		if ( !path_exists( chrsz ) ) error("\nChrome sizes file doesn't exists! ($chrsz)\n")	
 	}
 
 	if ( is_sigtrk_aln2rawsig() || is_peakcall_gem() ) {
-		if ( !("$seq/chr1.fa").exists() ) error("\nRef. sequence doesn't exists! ($seq/chr1.fa)\n")
+		if ( !path_exists("$seq/chr1.fa") ) error("\nRef. sequence doesn't exists! ($seq/chr1.fa)\n")
 	}
 
 	if ( is_sigtrk_aln2rawsig() ) {
-		if ( !umap.exists() ) error("\nUmap directory doesn't exists! ($umap)\n")
+		if ( !path_exists( umap ) ) error("\nUmap directory doesn't exists! ($umap)\n")
 	}
 
 	if ( is_align_only_mode() ) { 	// if no data for control rep1 and final stage is before peak calling
@@ -146,17 +146,17 @@ void chk_input_data() {
 
 		if ( pooled == "" ) error( "Pooled peak input file missing!\n")
 		print( "\tPooled peak: $pooled\n")
-		if ( !pooled.exists() ) \
+		if ( !path_exists( pooled ) ) \
 			error( "\t\tFile not found!\n")
 
 		if ( peak1 == "" ) error( "Peak 1 input file missing!\n")
 		print( "\tPeak1: $peak1\n")
-		if ( !peak1.exists() ) \
+		if ( !path_exists( peak1 ) ) \
 			error( "\t\tFile not found!\n")
 
 		if ( peak2 == "" ) error( "Peak 2 input file missing!\n")
 		print( "\tPeak2: $peak2\n")
-		if ( !peak2.exists() ) \
+		if ( !path_exists( peak2 ) ) \
 			error( "\t\tFile not found!\n")	
 
 		return
@@ -200,7 +200,7 @@ void chk_input_data() {
 
 			for ( string s : data ) {
 				print("\t$s\n")
-				if ( (s != "") && !(s.exists()) ) error("\t\tFile not found!\n")
+				if ( (s != "") && !path_exists(s) ) error("\t\tFile not found!\n")
 			}
 
 			// if data is missing
@@ -731,7 +731,7 @@ void set_shell_env() {
                 SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
 
 	}
-	else if ( dir_sw_BDS.exists() ) { // automatically add software binaries to shell env. vars like PATH
+	else if ( path_exists( dir_sw_BDS ) ) { // automatically add software binaries to shell env. vars like PATH
 
 		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
 		print("Automatically adding environment variables...\n\n")

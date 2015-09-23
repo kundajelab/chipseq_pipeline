@@ -103,7 +103,7 @@ void read_species() { // check for species configruation files
 		print( "Genome size (hs,mm)\t: $gensz\n" )
 		print( "Sequence dir.\t\t: $seq\n" )
 		print( "Umap dir.\t\t: $umap\n" )
-		print( "Umap dir. (HiC)\t: $umap_hic\n" )
+		print( "Umap dir. (HiC)\t\t: $umap_hic\n" )
 		print( "BWA index\t\t: $bwa_idx\n" )
 		print( "Bowtie index\t\t: $bwt_idx\n" )
 		print( "Bowtie2 index\t\t: $bwt2_idx\n" )
