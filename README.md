@@ -450,11 +450,12 @@ urgency_slots      min
 accounting_summary FALSE
 ```
 
-Add shm to your queue.
+Add shm to your queue and set your shell as bash.
 ```
 $ sudo qconf -mq [YOUR_MAIN_QUEUE]
 ...
 pe_list               make shm
+shell                 /bin/bash
 ...
 ```
 
