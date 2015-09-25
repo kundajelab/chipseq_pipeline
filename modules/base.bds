@@ -380,6 +380,20 @@ string mkdir_path( string str ) {
 	}
 }
 
+bool path_exists( string path ) {
+	if ( path!="" ) {
+		if ( path.exists() ) {
+			if ( path.isFile() ) {
+				if ( path.size() > 0 ) return true
+			}
+			else {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 string[] get_script_file_paths( string suffix ) {
 	script_file 	:= "$ppwd/$programPath"	// path of your BDS script
 

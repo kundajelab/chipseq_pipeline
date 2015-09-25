@@ -223,8 +223,3 @@ bool conf_file_exists() {
 	if ( conf_file!="" ) return conf_file.exists()
 	return false
 }
-
-bool path_exists( string path ) {
-	if ( path!="" ) return path.exists()
-	return false
-}
