@@ -104,7 +104,7 @@ void init_shell_env() {
 			if ( (k.indexOf("mod_")>=0) || (k=="mod") ) {
 
 				if ( init_mod != "" ) {
-					trimmed := val.trim().replace("module add ","").replace( ":", " " ).replace( ";", " " ).trim()
+					trimmed := val.trim().replace("module add ","").replace( ":", " " ).replace( ";", " " ).replace( ",", " " ).trim()
 					trimmed = trimmed.replace( "   ", " ").replace( "  ", " ")
 					module = module + " " + trimmed
 				}
@@ -115,7 +115,7 @@ void init_shell_env() {
 			}
 			else if ( k.indexOf("addpath")>=0 ) {
 
-				path = path + val.trim().replace(";",":").replace(" ",":").replace(":::",":").replace("::",":") + ":"
+				path = path + val.trim().replace(",",":").replace(";",":").replace(" ",":").replace(":::",":").replace("::",":") + ":"
 			}
 		}
 	}
@@ -125,7 +125,7 @@ void init_shell_env() {
 
 		if ( init_mod != "" ) { // if /etc/profile.d/modules.sh exists
 
-			trimmed := mod.trim().replace("module add ","").replace( ":", " " ).replace( ";", " " ).trim()
+			trimmed := mod.trim().replace("module add ","").replace( ":", " " ).replace( ";", " " ).replace(","," " ).trim()
 			trimmed = trimmed.replace( "   ", " ").replace( "  ", " ")
 			module = module + " " + trimmed
 		}
@@ -135,7 +135,7 @@ void init_shell_env() {
 	}
 
 	if ( addpath!="" ) {
-		path = path + addpath.trim().replace(";",":").replace(" ",":").replace(":::",":").replace("::",":") + ":"
+		path = path + addpath.trim().replace(",",":").replace(";",":").replace(" ",":").replace(":::",":").replace("::",":") + ":"
 	}
 
 	// finally concat all
