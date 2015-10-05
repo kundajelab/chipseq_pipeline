@@ -179,7 +179,8 @@ void print_cmd_line_params() {
 
 bool is_scg3() {
 	name := hostname.toLower()
-	return name.startsWith( "scg3" ) && name.endsWith( ".stanford.edu" )
+	return  name.endsWith( ".stanford.edu" ) && \
+		( name.startsWith( "carmack" ) || name.startsWith( "crick" ) || name.startsWith( "scg3" ) )
 }
 
 bool is_kundaje_lab() {
