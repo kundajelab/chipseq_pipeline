@@ -5,7 +5,7 @@ include "general.bds"
 
 help Species settings
 
-species			:= "" 		help Species. If defined without '-kundaje_lab' flag, specify '-species_file' too.
+species			:= "" 		help Species. If not on kundaje lab servers, specify '-species_file' too.
 species_file		:= ""		help Species file path.
 
 chrsz 			:= "" 		help Chrome sizes file path (use fetchChromSizes from UCSC tools).
@@ -50,7 +50,7 @@ void read_species() { // check for species configruation files
 	species_paths = concat( species_paths, get_script_file_paths( "/" + species_basename ) )
 
 	// add kundaje lab species file
-	if ( kundaje_lab ) \
+	if ( is_kundaje_lab() ) \
 		species_paths = concat( species_paths, get_script_file_paths( "/" + species_basename_kundaje_lab ) )
 
 	// add default species file on working directory
@@ -73,7 +73,22 @@ void read_species() { // check for species configruation files
 
 			for (int i=1; i<=loop; i++) {
 
-				_conf := read_conf( path, (i==2) ? "" : species )
+				string{} _conf
+
+				if ( i==2 ) {
+					_conf = read_conf( path, "" ) // read configuration file
+				}
+				else {
+					_conf = read_conf( path, species ) // read species file
+/*
+					if ( is_scg3() && !species.toLower().endsWith("_scg3") ) { // if on scg3, check if SPECIES_scg3 exists.
+
+						_conf2 := read_conf( path, species+"_scg3" )
+
+						if ( _conf2.size() > 0 ) _conf = _conf2
+					}
+				*/
+				}
 
 				print("\nSpecies (or configuration) file found ($path,$i).\n")
 

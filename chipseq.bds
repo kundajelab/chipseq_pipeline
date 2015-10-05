@@ -719,19 +719,7 @@ void set_shell_env() {
 	// set shell environments automatically
 	dir_sw_BDS  := "$HOME/software_bds" // location of dependencies installed by the script "install_dependencies.sh"
 
-	if ( kundaje_lab ) {
-
-		print("\nAutomatically adding environment variables... (Kundaje lab cluster found) \n\n")
-
-		SHCMD_INIT = SHCMD_INIT + " . /etc/profile.d/modules.sh; module add bwa/0.7.3 samtools/0.1.19 bedtools/2.19.1 ucsc_tools/3.0.9 picard-tools/1.92;" \
-					+ " module add phantompeakqualtools/default idr/latest align2rawsignal/2.0 MACS2/2.1.0 java/latest r/2.15.1 gem/2.6 deepTools/latest;" \
-					+ " export PATH=${PATH}:/software/idrCode; " \
-					+ " export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4"
-
-                SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
-
-	}
-	else if ( path_exists( dir_sw_BDS ) ) { // automatically add software binaries to shell env. vars like PATH
+	if ( path_exists( dir_sw_BDS ) ) { // automatically add software binaries to shell env. vars like PATH
 
 		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
 		print("Automatically adding environment variables...\n\n")
@@ -763,6 +751,28 @@ void set_shell_env() {
 		SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
 	}
 
+	if ( is_kundaje_lab() ) {
+
+		print("\nAutomatically adding environment variables... (Kundaje_lab: $hostname) \n\n")
+
+		if ( SHCMD_INIT.indexOf( init_mod ) < 0  ) { // if not module init. cmd found, then add it
+			SHCMD_INIT = SHCMD_INIT + " . /etc/profile.d/modules.sh;"
+		}
+
+		if ( is_scg3() ) {
+			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.7 gem/1.5.2;"
+		}
+		else {
+			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.3 gem/2.6 r/2.15.1 deepTools/latest align2rawsignal/2.0 phantompeakqualtools/default idr/latest;"
+			SHCMD_INIT = SHCMD_INIT + " export PATH=${PATH}:/software/idrCode;"
+		}
+
+		SHCMD_INIT = SHCMD_INIT + " module add samtools/0.1.19 bedtools/2.19.1 ucsc_tools/3.0.9 picard-tools/1.92 MACS2/2.1.0 java/latest;"
+		SHCMD_INIT = SHCMD_INIT + " export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4"
+
+		SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
+
+	}
        
 	if ( v ) { // verbose
 		print( "\nShell cmd. for init. (chipseq.bds)\t: $SHCMD_INIT\n\n" )

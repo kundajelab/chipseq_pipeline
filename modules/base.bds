@@ -439,6 +439,22 @@ string[] load_data( string file ) {
 	return file.read().split(";")
 }
 
+string get_stdout( string cmd ) {
+	cmd_ := "cmd_"+randInt()
+	sys $cmd 1> $cmd_
+	ret := cmd_.read()
+	cmd_.delete()
+	return ret
+}
+
+string get_shell_var( string var ) {
+	var_ := "var_$var"
+	sys echo "${$var}" > $var_
+	ret := var_.read()
+	var_.delete()
+	return ret
+}
+
 /*
 bool assert_in_out( string in, string out ) {
 
