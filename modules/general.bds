@@ -14,7 +14,7 @@ help General cluster resource settings
 
 nth		:= 1 		help # threads for all cluster jobs (default: 1).
 wt 		:= "11h"	help Walltime for all cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
-mem 		:= "4G"		help Max. memory for all cluster jobs (example: 4G, 1000MB, default: 4G).
+mem 		:= "8G"		help Max. memory for all cluster jobs (example: 8G, 1000MB, default: 8G).
 
 help Shell environment settings
 
