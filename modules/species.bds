@@ -80,14 +80,16 @@ void read_species() { // check for species configruation files
 				}
 				else {
 					_conf = read_conf( path, species ) // read species file
-/*
+
 					if ( is_scg3() && !species.toLower().endsWith("_scg3") ) { // if on scg3, check if SPECIES_scg3 exists.
 
 						_conf2 := read_conf( path, species+"_scg3" )
 
-						if ( _conf2.size() > 0 ) _conf = _conf2
+						if ( _conf2.size() > 0 ) {
+							print("Found section $species"+"_scg3, use this instead of $species\n")
+							_conf = _conf2
+						}
 					}
-				*/
 				}
 
 				print("\nSpecies (or configuration) file found ($path,$i).\n")
