@@ -414,22 +414,23 @@ rm -f Python-2.7.2.tgz
 cd Python-2.7.2
 ./configure --prefix=$SOFTWARE/python2.7
 make altinstall prefix=$SOFTWARE/python2.7 exec-prefix=$SOFTWARE/python2.7
+cd $SOFTWARE
+cd python2.7/bin
+wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate
+./python2 get-pip.py
 $SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" setuptools
 $SOFTWARE/python2.7/bin/pip2.7 install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" setuptools
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" numpy
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" matplotlib
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" pysam
+$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" deeptools
+cd $SOFTWARE
 wget http://cython.org/release/Cython-0.22.tar.gz
 tar zxvf Cython-0.22.tar.gz
 cd Cython-0.22
 $SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
 ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python2
-cd $SOFTWARE
-cd python2.7/bin
-wget https://bootstrap.pypa.io/get-pip.py
-./python2 get-pip.py
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" numpy
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" matplotlib
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" pysam
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" deeptools
-
+ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python
 cd $SOFTWARE
 git clone git://github.com/numpy/numpy.git numpy
 cd numpy

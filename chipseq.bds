@@ -57,9 +57,9 @@ help()
 
 init_chipseq() // read configruation file if exists
 
-chk_input_data() // check input files are valid
-
 set_shell_env()
+
+chk_input_data() // check input files are valid
 
 align() // align
 
@@ -721,6 +721,8 @@ void set_shell_env() {
 
 	if ( path_exists( dir_sw_BDS ) ) { // automatically add software binaries to shell env. vars like PATH
 
+		if ( is_kundaje_lab() ) error("Remove $dir_sw_BDS if you run chipseq on SCG3 or Kundaje lab clusters\n")
+
 		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
 		print("Automatically adding environment variables...\n\n")
 
@@ -760,7 +762,34 @@ void set_shell_env() {
 		}
 
 		if ( is_scg3() ) {
-			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.7 gem/1.5.2;"
+			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.7;"
+
+			dir_sw_BDS = "/srv/gsfs0/scratch/leepc12/software"
+
+			path := " export PATH=" \
+				+ "$dir_sw_BDS/R-2.15.1/bin:" \
+				+ "$dir_sw_BDS/phantompeakqualtools:$dir_sw_BDS/idr/bin:$dir_sw_BDS/python3.4/bin:" \
+				+ "$dir_sw_BDS/align2rawsignal/bin:$dir_sw_BDS/idrCode:$dir_sw_BDS/python2.7/bin:" \
+				+ "$dir_sw_BDS/gem:$dir_sw_BDS/deepTools/bin" \
+				+ "\${PATH}"
+
+			shellcmd := "export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
+					+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; " \
+
+			shellcmd = shellcmd \
+				+ "MCRROOT=$dir_sw_BDS/MATLAB_Compiler_Runtime/v714;" \
+				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64;" \
+				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64;" \
+				+ "MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64;" \
+				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/native_threads;" \
+				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/server;" \
+				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE};" \
+				+ "XAPPLRESDIR=\${MCRROOT}/X11/app-defaults;" \
+				+ "export LD_LIBRARY_PATH;" \
+				+ "export XAPPLRESDIR;"			
+
+			SHCMD_INIT = SHCMD_INIT + ";" + path + ";" + shellcmd
+			SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
 		}
 		else {
 			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.3 gem/2.6 r/2.15.1 deepTools/latest align2rawsignal/2.0 phantompeakqualtools/default idr/latest;"
@@ -775,7 +804,7 @@ void set_shell_env() {
 	}
        
 	if ( v ) { // verbose
-		print( "\nShell cmd. for init. (chipseq.bds)\t: $SHCMD_INIT\n\n" )
+		print( "\nFinal shell cmd. for init.\t: $SHCMD_INIT\n\n" )
 	}
 }
 
