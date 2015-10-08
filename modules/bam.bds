@@ -15,9 +15,11 @@ bam1_PE 	:= false 	help Add it if bam replicate 1 is paired end (default: false)
 bam2_PE 	:= false 	help Add it if bam replicate 2 is paired end (default: false).
 
 help Alignment settings for bam
+wt_markdup 	:= "24h" 	help Walltime for Picardtools MarkDuplicate (default: 24h, 24:00:00).
+mem_markdup	:= "16G" 	help Max. memory for Picardtools MarkDuplicate (default: 16G).
+mapq_thresh	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
+rm_chr_from_tag := "" 		help If defined, remove lines including it from all tagalign files. (example: 'other|ribo|mito|_', '_', default: blank)
 
-mapq_thresh 	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
-rm_chr_from_tag	:= "" 		help If defined, remove lines including it from all tagalign files. (example: 'other|ribo|mito|_', '_', default: blank)
 
 /*
 IMPORTANT!: legacy softwares compatibility (make the code work with legacy samtools, picard-tools)
@@ -41,14 +43,19 @@ init_bam()
 void init_bam() {
 
 	if ( conf_file_exists() ) {
-		mapq_thresh 	= get_conf_val_int( mapq_thresh,	["MAPQ_THRESH"] )
-		rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["RM_CHR_FROM_TAG", "REMOVE_CHR_FROM_TAG", "RM_CHR_FROM_TAGALIGN", "REMOVE_CHR_FROM_TAGALIGN"] )		
+		mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
+		rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag", "remove_chr_from_tag", "rm_chr_from_tagalign", "remove_chr_from_tagalign"] )		
+
+		wt_markdup 	= get_conf_val( wt_markdup, 		["walltime_markdup", "wt_markdup", "timeout_markdup"] )
+		mem_markdup 	= get_conf_val( mem_markdup, 		["memory_markdup", "mem_markdup"] )
 	}
 
 	if ( v ) { // verbose
 		print("\n")		
 		print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")
 		print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
+		print( "Walltime (picard markdup)\t: $wt_markdup\n")
+		print( "Max. memory (picard markdup)\t: $mem_markdup\n")
 	}	
 }
 
@@ -68,7 +75,7 @@ string _bam_to_nodup_bam( string bam, string out_dir, string info ) {
 	out 		:= nodup_bam
 
 	task( taskName:= "bam_to_nodup_bam "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem(mem_markdup), timeout:=parse_time(wt_markdup), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -148,7 +155,7 @@ string _bam_to_nodup_bam_PE( string bam, string out_dir, string info ) {
 	out 		:= nodup_bam
 
 	task( taskName:= "bam_to_nodup_bam_PE "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem(mem_markdup), timeout:=parse_time(wt_markdup), \
 		out<-in ) {
 		sys $SHCMD_INIT
 

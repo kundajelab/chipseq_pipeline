@@ -20,11 +20,13 @@ void init_align_bwa() {
 
 	if ( conf_file_exists() ) {
 
-		param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["BWA_ALN_PARAM", "PARAM_BWA_ALN"] )
+		param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["bwa_aln_param", "param_bwa_aln"] )
 
-		nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["NTHREADS_BWA_ALN", "NTH_BWA_ALN", "CPU_BWA_ALN"] )
-		wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["WALLTIME_BWA_ALN", "WT_BWA_ALN", "TIMEOUT_BWA_ALN"] )
-		mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["MEMORY_BWA_ALN", "MEM_BWA_ALN"] )
+		nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["nthreads_bwa_aln", "nth_bwa_aln", "cpu_bwa_aln"] )
+		wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["walltime_bwa_aln", "wt_bwa_aln", "timeout_bwa_aln"] )
+		mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["memory_bwa_aln", "mem_bwa_aln"] )
+		wt_bwa_sam 	= get_conf_val( wt_bwa_sam, 		["walltime_bwa_sam", "wt_bwa_sam", "timeout_bwa_sam"] )
+		mem_bwa_sam 	= get_conf_val( mem_bwa_sam, 		["memory_bwa_sam", "mem_bwa_sam"] )
 	}
 
 	if ( v ) { // verbose
