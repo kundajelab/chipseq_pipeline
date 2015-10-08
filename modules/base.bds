@@ -7,7 +7,8 @@ helpUnsorted := true
 //		or executables like .py .sh .R in the BDS script path if they are not defined globally in env. var. $PATH
 // 	Add more relative path here if you want to keep your .py .sh .R in subdirectories (or parent) of your BDS script directory.
 
-rel_script_file_paths := [".","..","modules","../chipseq/modules","species","../chipseq/species"]
+rel_script_file_paths 	:= [".","..","modules","../chipseq/modules"]
+rel_species_file_paths 	:= [".","..","species","../chipseq/species"]
 
 
 // command line argument functions
@@ -415,6 +416,28 @@ string[] get_script_file_paths() {
 	return get_script_file_paths( "" )
 }
 
+
+string[] get_species_file_paths( string suffix ) {
+	species_file 	:= "$ppwd/$programPath"	// path of your BDS species
+
+	if (!species_file.exists()) species_file = "$programPath"
+
+	species_path := species_file.dirName()
+
+	string[] ret
+
+	for ( string path : rel_species_file_paths ) {
+		path = "$species_path/$path"
+		if ( path.exists() ) ret.add( path + suffix )
+	}
+
+	return ret
+}
+
+string[] get_species_file_paths() {
+	return get_species_file_paths( "" )
+}
+
 void save_data( string file, string[] data ) { // ; separated array
 	string str
 	for( string val : data ) { str = str + val + ";" }
@@ -453,6 +476,10 @@ string get_shell_var( string var ) {
 	ret := var_.read()
 	var_.delete()
 	return ret
+}
+
+void print_log() {
+
 }
 
 /*

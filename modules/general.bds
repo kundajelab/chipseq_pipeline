@@ -4,19 +4,18 @@ include "conf.bds"
 
 
 help General pipeline settings
-
 v 		:= true 	help Verbose (default: true).
 out_dir 	:= "out"	help Output directory. (default: out).
 no_par_job	:= false	help Add it to serialize all jobs for desktops with limited resources (default: false).
 
 help General cluster resource settings
-
 nth		:= 1 		help # threads for all cluster jobs (default: 1).
 wt 		:= "11h"	help Walltime for all cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
 mem 		:= "8G"		help Max. memory for all cluster jobs (example: 8G, 1000MB, default: 8G).
+default_resource:= false 	help Walltime
+
 
 help Shell environment settings
-
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
 shcmd 		:= ""		help Shell cmds separated by ;. Shell var. must be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test"). 
 addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (example: "/bin/test:${HOME}/utils").
@@ -27,6 +26,7 @@ init_paths 	:= ["/bin","/usr/bin","/usr/local/bin"] // basic unix paths and BigD
 
 hostname_kundaje:= ["nandi.stanford.edu","mitra.stanford.edu","kali.stanford.edu","vayu.stanford.edu",\
 		    "wotan.stanford.edu","durga.stanford.edu","amold.stanford.edu","dhara.stanford.edu"]
+		    
 // get full hostname including domain name (http://serverfault.com/questions/367141/how-to-get-the-fully-qualified-name-fqn-on-unix-in-a-bash-script)
 hostname 	:= get_stdout("fqn=$(host -TtA $(hostname)|grep 'has address'|awk '{print $1}'); if [[ '${fqn}' == '' ]] ; then fqn=$(hostname) ; fi ; echo ${fqn}").replace("\n","") // get host name
 

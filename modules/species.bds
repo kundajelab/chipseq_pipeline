@@ -47,11 +47,11 @@ void read_species() { // check for species configruation files
 	string[] species_paths
 
 	// add bds script path
-	species_paths = concat( species_paths, get_script_file_paths( "/" + species_basename ) )
+	species_paths = concat( species_paths, get_species_file_paths( "/" + species_basename ) )
 
 	// add kundaje lab species file
 	if ( is_kundaje_lab() ) \
-		species_paths = concat( species_paths, get_script_file_paths( "/" + species_basename_kundaje_lab ) )
+		species_paths = concat( species_paths, get_species_file_paths( "/" + species_basename_kundaje_lab ) )
 
 	// add default species file on working directory
 	species_paths.add( species_basename ) 
