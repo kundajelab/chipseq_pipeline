@@ -753,7 +753,7 @@ void set_shell_env() {
 		SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
 	}
 
-	if ( is_kundaje_lab() ) {
+	if ( is_kundaje_lab() || is_scg3() ) {
 
 		print("\nAutomatically adding environment variables... (Kundaje_lab: $hostname) \n\n")
 
