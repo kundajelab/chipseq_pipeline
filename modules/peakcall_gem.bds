@@ -16,9 +16,9 @@ void init_peakcall_gem() {
 
 	if ( conf_file_exists() ) {
 
-		nth_gem 	= get_conf_val_int( nth_gem,		["NTHREADS_GEM", "NTH_GEM", "CPU_GEM"] )
-		wt_gem 		= get_conf_val( wt_gem, 		["WALLTIME_GEM", "WT_GEM", "TIMEOUT_GEM"] )
-		mem_gem 	= get_conf_val( mem_gem, 		["MEMORY_GEM", "MEM_GEM"] )
+		nth_gem 	= get_conf_val_int( nth_gem,		["nthreads_gem", "nth_gem", "cpu_gem"] )
+		wt_gem 		= get_conf_val( wt_gem, 		["walltime_gem", "wt_gem", "timeout_gem"] )
+		mem_gem 	= get_conf_val( mem_gem, 		["memory_gem", "mem_gem"] )
 	}
 
 	if ( v ) { // verbose

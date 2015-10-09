@@ -16,9 +16,9 @@ void init_peakcall_macs2() {
 
 	if ( conf_file_exists() ) {
 
-		nth_macs2 	= get_conf_val_int( nth_macs2,		["NTHREADS_MACS2", "NTH_MACS2", "CPU_MACS2"] )
-		wt_macs2 	= get_conf_val( wt_macs2, 		["WALLTIME_MACS2", "WT_MACS2", "TIMEOUT_MACS2"] )
-		mem_macs2 	= get_conf_val( mem_macs2, 		["MEMORY_MACS2", "MEM_MACS2"] )
+		nth_macs2 	= get_conf_val_int( nth_macs2,		["nthreads_macs2", "nth_macs2", "cpu_macs2"] )
+		wt_macs2 	= get_conf_val( wt_macs2, 		["walltime_macs2", "wt_macs2", "timeout_macs2"] )
+		mem_macs2 	= get_conf_val( mem_macs2, 		["memory_macs2", "mem_macs2"] )
 	}
 
 	if ( v ) { // verbose

@@ -17,10 +17,10 @@ void init_peakcall_spp() {
 
 	if ( conf_file_exists() ) {
 
-		npeak 		= get_conf_val_int( npeak,		["NPEAK"] )
-		nth_spp 	= get_conf_val_int( nth_spp,		["NTHREADS_SPP", "NTH_SPP", "CPU_SPP"] )
-		wt_spp 		= get_conf_val( wt_spp, 		["WALLTIME_SPP", "WT_SPP", "TIMEOUT_SPP"] )
-		mem_spp 	= get_conf_val( mem_spp, 		["MEMORY_SPP", "MEM_SPP"] )
+		npeak 		= get_conf_val_int( npeak,		["npeak"] )
+		nth_spp 	= get_conf_val_int( nth_spp,		["nthreads_spp", "nth_spp", "cpu_spp"] )
+		wt_spp 		= get_conf_val( wt_spp, 		["walltime_spp", "wt_spp", "timeout_spp"] )
+		mem_spp 	= get_conf_val( mem_spp, 		["memory_spp", "mem_spp"] )
 	}
 
 	if ( v ) { // verbose

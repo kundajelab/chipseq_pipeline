@@ -17,10 +17,10 @@ void init_signal() {
 
 	if ( conf_file_exists() ) {
 		//signal track genenration
-		param_bam_cvrg	= get_conf_val( param_bam_cvrg, 	["PARAM_BAM_CVRG", "PARAM_BAM_COVERAGE"] )
-		nth_bam_cvrg 	= get_conf_val_int( nth_bam_cvrg,	["NTHREADS_BAM_CVRG", "NTH_BAM_CVRG", "CPU_BAM_CVRG"] )
-		wt_bam_cvrg 	= get_conf_val( wt_bam_cvrg, 		["WALLTIME_BAM_CVRG", "WT_BAM_CVRG", "TIMEOUT_BAM_CVRG"] )
-		mem_bam_cvrg 	= get_conf_val( mem_bam_cvrg, 		["MEMORY_BAM_CVRG", "MEM_BAM_CVRG"] )
+		param_bam_cvrg	= get_conf_val( param_bam_cvrg, 	["param_bam_cvrg", "param_bam_coverage"] )
+		nth_bam_cvrg 	= get_conf_val_int( nth_bam_cvrg,	["nthreads_bam_cvrg", "nth_bam_cvrg", "cpu_bam_cvrg"] )
+		wt_bam_cvrg 	= get_conf_val( wt_bam_cvrg, 		["walltime_bam_cvrg", "wt_bam_cvrg", "timeout_bam_cvrg"] )
+		mem_bam_cvrg 	= get_conf_val( mem_bam_cvrg, 		["memory_bam_cvrg", "mem_bam_cvrg"] )
 	}
 
 	if ( v ) { // verbose

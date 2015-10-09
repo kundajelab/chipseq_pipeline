@@ -23,7 +23,7 @@ void init_tag() {
 
 	if ( conf_file_exists() ) {
 
-		nreads 		= get_conf_val_int( nreads,		["NREADS"] )
+		nreads 		= get_conf_val_int( nreads,		["nreads"] )
 	}
 
 	if ( v ) { // verbose
