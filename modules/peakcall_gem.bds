@@ -46,7 +46,7 @@ string[] _gem( string tag, string ctl_tag, string out_dir, string info ) {
 	out 	:= [peak, ksm, pfm, html ]
 
 	task( taskName:= "gem "+info, \
-		cpus:=nth_gem, mem:=parse_mem(mem_gem), timeout:=parse_time(wt_gem), \
+		cpus:=nth_gem, mem:=parse_mem_or_skip(mem_gem), timeout:=parse_time_or_skip(wt_gem), \
 		out<-in ) {
 
 		sys $SHCMD_INIT

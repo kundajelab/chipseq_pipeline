@@ -63,7 +63,7 @@ string[] _idr1( string peak1, string peak2, string pooled, string out_dir, strin
 	out 	:= [ idr_output, pooled_common_peaks, common_rep1_match, common_rep2_match, recal_pooled_common_peaks, pooled_common_peaks_idr ]
 
 	task( taskName:= "idr1 "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -156,7 +156,7 @@ string[] _idr2( string peak1, string peak2, string pooled, string out_dir, strin
 	in 	:= [peak1, peak2, pooled]
 	out 	:= [idr_output, peak]
 
-	task( taskName:= "idr2 "+info, cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), out<-in ) {
+	task( taskName:= "idr2 "+info, cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), out<-in ) {
 		sys $SHCMD_INIT
 
 		sys idr --samples $peak1 $peak2 --peak-list $pooled --input-file-type narrowPeak \

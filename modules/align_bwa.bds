@@ -101,7 +101,7 @@ string _bwa_aln( string fastq, string out_dir, string info ) {
 	out 	:= sai
 
 	task( taskName:= "bwa_aln "+info, \
-		cpus:=nth_bwa_aln, mem:=parse_mem(mem_bwa_aln), timeout:=parse_time(wt_bwa_aln), \
+		cpus:=nth_bwa_aln, mem:=parse_mem_or_skip(mem_bwa_aln), timeout:=parse_time_or_skip(wt_bwa_aln), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -124,7 +124,7 @@ string _bwa_sam( string fastq, string sai, string out_dir, string info ) {
 	out 	:= bam
 
 	task( taskName:= "bwa_sam "+info, \
-		cpus:=nth, mem:=parse_mem(mem_bwa_sam), timeout:=parse_time(wt_bwa_sam), \
+		cpus:=nth, mem:=parse_mem_or_skip(mem_bwa_sam), timeout:=parse_time_or_skip(wt_bwa_sam), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -150,7 +150,7 @@ string _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, stri
 	out 	:= bam
 
 	task( taskName:= "bwa_sam_PE "+info, \
-		cpus:=nth, mem:=parse_mem(mem_bwa_sam), timeout:=parse_time(wt_bwa_sam), \
+		cpus:=nth, mem:=parse_mem_or_skip(mem_bwa_sam), timeout:=parse_time_or_skip(wt_bwa_sam), \
 		out<-in ) {
 
 		sys $SHCMD_INIT

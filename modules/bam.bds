@@ -75,7 +75,7 @@ string _bam_to_nodup_bam( string bam, string out_dir, string info ) {
 	out 		:= nodup_bam
 
 	task( taskName:= "bam_to_nodup_bam "+info, \
-		cpus:=nth, mem:=parse_mem(mem_markdup), timeout:=parse_time(wt_markdup), \
+		cpus:=nth, mem:=parse_mem_or_skip(mem_markdup), timeout:=parse_time_or_skip(wt_markdup), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -155,7 +155,7 @@ string _bam_to_nodup_bam_PE( string bam, string out_dir, string info ) {
 	out 		:= nodup_bam
 
 	task( taskName:= "bam_to_nodup_bam_PE "+info, \
-		cpus:=nth, mem:=parse_mem(mem_markdup), timeout:=parse_time(wt_markdup), \
+		cpus:=nth, mem:=parse_mem_or_skip(mem_markdup), timeout:=parse_time_or_skip(wt_markdup), \
 		out<-in ) {
 		sys $SHCMD_INIT
 
@@ -244,7 +244,7 @@ string _bam_to_nmsrt_bam( string bam, string out_dir, string info ) {
 	out 		:= nmsrt_bam
 
 	task( taskName:= "bam_to_nmsrt_bam "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -267,7 +267,7 @@ string _bam_to_srt_bam( string bam, string out_dir, string info ) {
 	out 		:= srt_bam
 
 	task( taskName:= "bam_to_srt_bam "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -303,7 +303,7 @@ string _bam_to_tag( string bam, string out_dir, string info ) {
 	}
 
 	task( taskName:= "bam_to_tag "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -327,7 +327,7 @@ string _bam_to_bedpe( string nmsrt_bam, string out_dir, string info ) {
 	out 		:= bedpe
 
 	task( taskName:= "bam_to_bedpe "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -354,7 +354,7 @@ string _bam_to_bed_non_chrM( string nodup_bam, string out_dir, string info ) {
 	out 	:= bed //, mito_bam, non_mito_bam, non_mito_bam_hist_grp ]
 
 	task( taskName:= "bam_to_bed_non_chrM "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT

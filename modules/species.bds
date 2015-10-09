@@ -57,8 +57,8 @@ void read_species() { // check for species configruation files
 	species_paths.add( species_basename ) 
 
 	// add conf file
-	if ( conf_file != "" ) \
-		species_paths.add( conf_file ) 
+	if ( c != "" ) \
+		species_paths.add( c ) 
 
 	// add conf file
 	if ( species_file != "" ) \
@@ -69,7 +69,7 @@ void read_species() { // check for species configruation files
 
 		if ( path.exists() ) {
 
-			loop := (path==conf_file) ? 2 : 1 // look in configuration file two times
+			loop := (path==c) ? 2 : 1 // look in configuration file two times
 
 			for (int i=1; i<=loop; i++) {
 

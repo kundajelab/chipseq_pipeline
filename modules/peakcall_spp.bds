@@ -53,7 +53,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string out_dir, strin
 	out 	:= [ npeakfile, rpeakfile ] ////, pdf, ccscore ]
 
 	task( taskName:= "spp "+info, \
-		cpus:=nth_spp, mem:=parse_mem(mem_spp), timeout:=parse_time(wt_spp), \
+		cpus:=nth_spp, mem:=parse_mem_or_skip(mem_spp), timeout:=parse_time_or_skip(wt_spp), \
 		out<-in ) {
 
 		sys $SHCMD_INIT

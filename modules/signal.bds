@@ -41,7 +41,7 @@ string _tag_to_wig_aln2rawsig( string tag, string fraglen, string out_dir, strin
 	out 	:= wig
 
 	task( taskName:= "tag to wig a2rs "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -61,7 +61,7 @@ string _tag_to_bdg_aln2rawsig( string tag, string fraglen, string out_dir, strin
 	out 	:= bedgraph
 
 	task( taskName:= "tag to bdg a2rs "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -81,7 +81,7 @@ string _nodup_bam_to_bw_bam_cvrg( string nodup_bam, string out_dir, string info 
 	out 	:= bigwig
 
 	task( taskName:= "bam cvrg "+info, \
-		cpus:=nth_bam_cvrg, mem:=parse_mem(mem_bam_cvrg), timeout:=parse_time(wt_bam_cvrg), \
+		cpus:=nth_bam_cvrg, mem:=parse_mem_or_skip(mem_bam_cvrg), timeout:=parse_time_or_skip(wt_bam_cvrg), \
 		out<-in ) {
 
 		sys $SHCMD_INIT
@@ -104,7 +104,7 @@ string _bdg_to_bw( string bedgraph, string out_dir, string info ) {
 	out 	:= bigwig
 
 	task( taskName:= "bdg to bw "+info, \
-		cpus:=nth, mem:=parse_mem(mem), timeout:=parse_time(wt), \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
 		sys $SHCMD_INIT

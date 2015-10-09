@@ -7,6 +7,8 @@ helpUnsorted := true
 //		or executables like .py .sh .R in the BDS script path if they are not defined globally in env. var. $PATH
 // 	Add more relative path here if you want to keep your .py .sh .R in subdirectories (or parent) of your BDS script directory.
 
+hostname 	:= get_hostname()
+
 rel_script_file_paths 	:= [".","..","modules","../chipseq/modules"]
 rel_species_file_paths 	:= [".","..","species","../chipseq/species"]
 
@@ -478,8 +480,45 @@ string get_shell_var( string var ) {
 	return ret
 }
 
-void print_log() {
+string get_hostname() { 
+	// get full hostname including domain name (http://serverfault.com/questions/367141/how-to-get-the-fully-qualified-name-fqn-on-unix-in-a-bash-script)
+	return get_stdout("fqn=$(host -TtA $(hostname)|grep 'has address'|awk '{print $1}'); if [[ '${fqn}' == '' ]] ; then fqn=$(hostname) ; fi ; echo ${fqn}").replace("\n","")
+}
 
+bool is_system_sge() {
+
+	return system == "sge"
+}
+
+bool is_system_local() {
+
+	return system == "local"
+}
+
+bool is_system_generic() {
+
+	return system == "generic"
+}
+
+bool is_scg3() {
+
+	name := hostname.toLower()
+
+	return  name.endsWith( ".stanford.edu" ) && \
+		( name.startsWith( "carmack" ) || name.startsWith( "crick" ) || name.startsWith( "scg3" ) )
+}
+
+bool is_kundaje_lab() {
+
+	name := hostname.toLower()
+
+	hostname_kundaje:= ["nandi.stanford.edu","mitra.stanford.edu","kali.stanford.edu","vayu.stanford.edu",\
+			    "wotan.stanford.edu","durga.stanford.edu","amold.stanford.edu","dhara.stanford.edu"]
+
+	for ( string name_ : hostname_kundaje ) {
+		if ( name == name_ ) return true
+	}
+	return false
 }
 
 /*
