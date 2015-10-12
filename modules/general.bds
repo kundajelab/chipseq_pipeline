@@ -22,7 +22,7 @@ addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (exampl
 init_mod 	:= "" // module init. shell script found
 SHCMD_INIT 	:= ""  // IMPORTANT! Shell command executed prior to all BigDataScript tasks (use this for setting environemts)
 
-walltimeout 	:= -1 // BigDataScript internal variable (if it's negative, BigDataScript can wait forever for jobs queued on a cluster to be executed)
+walltimeout 	:= 3600*24*100 // BigDataScript internal variable
 
 
 init_base()
