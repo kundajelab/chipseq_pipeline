@@ -39,7 +39,7 @@ export PATH=$PATH:$HOME/.bds
 
 ### Installation instruction (for Kundaje lab members)
 
-For Kundaje lab members, BDS and all dependencies have already been installed on lab servers. Do not run install_dependencies.sh on Kundaje lab servers.
+For Kundaje lab members, BDS and all dependencies have already been installed on lab servers (including SCG3). Do not run install_dependencies.sh on Kundaje lab servers.
 
 Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
 ```
@@ -47,20 +47,18 @@ $ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds/
 ```
 
-For Kundaje lab servers (mitra, nandi, durga, kali, amold and wotan), the pipeline provides a flag to automatically set shell environments and species database.
+For Kundaje lab servers (mitra, nandi, durga, kali, vayu, amold and wotan) and SCG3 (carmack*, crick*, scg3*), the pipeline automatically determines the type of servers and set shell environments and species database.
 ```
-$ bds -s sge chipseq.bds [...] -kundaje_lab
+$ bds -s sge chipseq.bds [...]
 ```
 
 
 ### Usage
 
-There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (./examples).
-
-The pipeline automatically determines if each task has finished or not (comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
+There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (./examples). Two methods share the same key names.
 
 
-1) From command line arguments 
+1) Parameters from command line arguments: 
 ```
 $ bds chipseq.bds [OPTS]
 ```
@@ -73,10 +71,15 @@ $ bds chipseq.bds \
 -bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa \
 ```
 
-2) From a configuration file
+2) Parameters from a configuration file:
 ```
 $ bds chipseq.bds [CONF_FILE]
 ```
+or
+```
+$ bds chipseq.bds -c [CONF_FILE]
+```
+
 Example configuriation file:
 ```
 $ cat [CONF_FILE]
@@ -86,6 +89,9 @@ fastq2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
 ctl_fastq1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
 bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ```
+
+The pipeline automatically determines if each task has finished or not (comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
+
 
 
 ### Using Species file
@@ -99,7 +105,7 @@ If species file is not defined, pipeline looks for paths in the following order:
 3) [BDS_SCRIPT_PATH]/species.conf
 4) [WORK_DIR]/species.conf
 ```
-If -kundaje_lab is define.
+If on Kundaje lab cluster,
 ```
 5) [BDS_SCRIPT_PATH]/species/species_kundaje_lab.conf
 ```
@@ -126,13 +132,7 @@ bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg1
 bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
 vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.merged.ANS.bed
 
-[hg38]
-...
-
 [mm9]
-...
-
-[mm10]
 ...
 ```
 
@@ -500,11 +500,11 @@ $ bds chipseq.bds
 ```
 
 
-### How to set shell environments (What are MOD, SHCMD and ADDPATH?)
+### How to set shell environments (What are mod, shcmd and addpath?)
 
-It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. MOD, SHCMD and ADDPATH are three convenient ways to define environment variables. Environment variables defined with MOD, SHCMD and ADDPATH are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with MOD. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
+It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. mod, shcmd and addpath are three convenient ways to define environment variables. Environment variables defined with mod, shcmd and addpath are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with mod. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
 
-1) MOD
+1) mod
 
 There are different versions of bioinformatics softwares (eg. samtools, bedtools and bwa) and <a href="http://modules.sourceforge.net/">Enviroment Modules</a> is the best way to manage environemt variables for them. For example, if you want to add environment variables for bwa 0.7.3 by using Environment Modules. You can simply type the following:
 
@@ -514,45 +514,45 @@ $ module add bwa/0.7.3;
 
 The equivalent setting in the pipeline configuration file should look like:
 ```
-MOD= bwa/0.7.3;
+mod= bwa/0.7.3;
 ```
 
-You can have multiple lines for MOD since any suffix is allowed. Use ; as a delimiter.
+You can have multiple lines for mod since any suffix is allowed. Use ; as a delimiter.
 ```
-MOD_BIO= bwa/0.7.3; bedtools/2.x.x; samtools/1.2
-MOD_LANG= r/2.15.1; java/latest
+mod_BIO= bwa/0.7.3; bedtools/2.x.x; samtools/1.2
+mod_LANG= r/2.15.1; java/latest
 ```
 
-2) SHCMD
+2) shcmd
 
 If you have softwares locally installed on your home, you may need to add to them environment variables like $PATH, $LD_LIBRARY_PATH and so on. <b>IMPORTANT!</b> Note that any pre-defined enviroment variables (like $PATH) should be referred in a curly bracket like ${PATH}. This is because BDS distinguishes environment variables from BDS variables by a curly bracket ${}.
 ```
-SHCMD= export PATH=${PATH}:path_to_your_program
+shcmd= export PATH=${PATH}:path_to_your_program
 ```
 
-You can have multiple lines for SHCMD since any suffix is allowed. Use ; as a delimiter. 
+You can have multiple lines for shcmd since any suffix is allowed. Use ; as a delimiter. 
 ```
-SHCMD_R= export PATH=${PATH}:/home/userid/R-2.15.1;
-SHCMD_LIB= export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/R-2.15.1/lib
-```
-
-SHCMD is not just for adding environemt variables. It can execute any bash shell commands prior to any jobs on the pipeline. For example, to give all jobs peaceful 10 seconds before running.
-```
-SHCMD_SLEEP_TEN_SECS_FOR_ALL_JOBS= echo "I am sleeping..."; sleep 10
+shcmd_R= export PATH=${PATH}:/home/userid/R-2.15.1;
+shcmd_LIB= export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/R-2.15.1/lib
 ```
 
-3) ADDPATH
+shcmd is not just for adding environemt variables. It can execute any bash shell commands prior to any jobs on the pipeline. For example, to give all jobs peaceful 10 seconds before running.
+```
+shcmd_SLEEP_TEN_SECS_FOR_ALL_JOBS= echo "I am sleeping..."; sleep 10
+```
 
-If you just want to add something to your $PATH, use ADDPATH instead of SHCMD. It's much simpler. Use : or ; as a delimiter.
+3) addpath
+
+If you just want to add something to your $PATH, use addpath instead of shcmd. It's much simpler. Use : or ; as a delimiter.
 
 ```
-ADDPATH= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin/test
+addpath= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin/test
 ```
 
 
 ### What are -mod, -shcmd and -addpath?
 
-They are command line argument versions of MOD, SHCMD and ADDPATH. For example,
+They are command line argument versions of mod, shcmd and addpath. For example,
 
 ```
 $ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin'
@@ -661,7 +661,9 @@ If see the following error when you submit jobs to Sun Grid Enginee,
 /bin/bash: module: line 1: syntax error: unexpected end of file
 ```
 
-Remove the following line in you module initialization scripts ($MODULESHOME/init/bash or /etc/profile.d/modules.sh).
+Check if your $HOME/.bashrc has any errorneous lines.
+
+Remove the following line in you module initialization scripts ($modULESHOME/init/bash or /etc/profile.d/modules.sh).
 ```
 export -f module
 ```
