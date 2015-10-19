@@ -37,6 +37,7 @@ export PATH=$PATH:$HOME/.bds
 ```
 
 
+
 ### Installation instruction (for Kundaje lab members)
 
 For Kundaje lab members, BDS and all dependencies have already been installed on lab servers (including SCG3). Do not run install_dependencies.sh on Kundaje lab servers.
@@ -51,6 +52,7 @@ For Kundaje lab servers (mitra, nandi, durga, kali, vayu, amold and wotan) and S
 ```
 $ bds -s sge chipseq.bds [...]
 ```
+
 
 
 ### Usage
@@ -91,6 +93,8 @@ bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ```
 
 The pipeline automatically determines if each task has finished or not (comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
+
+
 
 
 

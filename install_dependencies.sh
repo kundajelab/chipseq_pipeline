@@ -337,7 +337,7 @@ cd R-2.15.1
 make
 cd $SOFTWARE
 #wget http://compbio.med.harvard.edu/Supplements/ChIP-seq/spp_1.10.tar.gz
-wget http://mitra.stanford.edu/kundaje/software/spp_1.13.tar.gz
+wget http://mitra.stanford.edu/kundaje/software/1.13.tar.gz
 echo > tmp.R
   echo 'install.packages("snow", repos="http://cran.us.r-project.org")' >> tmp.R
   echo 'install.packages("snowfall", repos="http://cran.us.r-project.org")' >> tmp.R
@@ -347,7 +347,7 @@ echo > tmp.R
   echo 'source("http://bioconductor.org/biocLite.R")' >> tmp.R
   echo 'biocLite("Rsamtools",suppressUpdates=TRUE)' >> tmp.R
 #  echo 'install.packages("./phantompeakqualtools/spp_1.10.1.tar.gz")' >> tmp.R
-  echo 'install.packages("./spp_1.13.tar.gz")' >> tmp.R
+  echo 'install.packages("./1.13.tar.gz")' >> tmp.R
 $SOFTWARE/R-2.15.1/bin/Rscript tmp.R
 rm -f tmp.R
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/R-2.15.1/bin")

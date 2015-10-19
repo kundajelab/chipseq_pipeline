@@ -12,7 +12,7 @@ help General cluster resource settings
 nth		:= 1 		help # threads for all cluster jobs (default: 1).
 wt 		:= "11h"	help Walltime for all cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
 memory 		:= "8G"		help Max. memory for all cluster jobs (example: 8G, 1000MB, default: 8G).
-skip_wt_memory 	:= false 	help Add it to use default resource settings of your computer/cluster (default: false).
+skip_wt_mem 	:= false 	help Add it to use default resource settings of your computer/cluster (default: false).
 
 help Shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
@@ -42,8 +42,10 @@ void init_base() {
 
 		nth 		= get_conf_val_int( nth, 		["nthreads","nth","cpu"] )
 		wt 		= get_conf_val( wt, 			["walltime","wt","timeout"] )
-		memory 		= get_conf_val( memory, 		["memory","memory"] )
+		memory 		= get_conf_val( memory, 		["mem","memory"] )
 	}
+
+	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
 	if ( v ) { // verbose
 		print("\n")
@@ -176,7 +178,7 @@ void print_cmd_line_params() {
 }
 
 bool is_skip_wt_and_memory() {
-	return skip_wt_memory || is_system_local() || is_kundaje_lab()
+	return skip_wt_mem || is_system_local() || is_kundaje_lab()
 }
 
 int parse_time_or_skip( string str ) {
