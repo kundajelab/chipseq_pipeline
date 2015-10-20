@@ -305,7 +305,7 @@ string rm_comment( string str ) { // remove substring after double slash "//"
 		trimmed = trimmed.substr(0,pos2-1).trim()
 	}
 
-	int pos3 = trimmed.indexOf("\t//")
+	int pos3 = trimmed.indexOf(" //")
 
 	if ( pos3>=0 ) {
 		trimmed = trimmed.substr(0,pos3-1).trim()
