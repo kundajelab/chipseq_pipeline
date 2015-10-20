@@ -176,12 +176,16 @@ string get_conf_val( string curr_val, string key, string{} _conf ) {
 	if ( cmd_line_arg_has_key( key ) ) return curr_val
 
 	if ( _conf.size() == 0 ) {
-		if ( conf.hasKey( key ) ) \
-			return (conf{ key } != "") ? conf{ key } : curr_val
+		if ( conf.hasKey( key ) ) {
+			
+			return (conf{ key } != "") ? rm_comment( conf{ key } ) : curr_val
+		}
 	}
 	else {
-		if ( _conf.hasKey( key ) ) \
-			return (_conf{ key } != "") ? _conf{ key } : curr_val
+		if ( _conf.hasKey( key ) ) {
+			
+			return (_conf{ key } != "") ? rm_comment( _conf{ key } ) : curr_val
+		}
 	}
 	return curr_val
 }

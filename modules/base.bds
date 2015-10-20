@@ -276,42 +276,52 @@ int parse_mem( string str ) {
 
 int parse_int( string str ) {
 
-	return rm_comment( str ).parseInt()
+	return str.trim().parseInt()
 }
 
 bool parse_bool( string str ) {
 
-	return rm_comment( str ).parseBool()
+	return str.trim().parseBool()
 }
 
 real parse_real( string str ) {
 
-	return rm_comment( str ).parseReal()
+	return str.trim().parseReal()
 }
 
 string rm_comment( string str ) { // remove substring after double slash "//"
 
 	trimmed := str.trim()
 
-	//int pos = trimmed.lastIndexOf("//")
 	int pos = trimmed.indexOf("//")
 
-    	if ( pos>=0 ) {
+	if ( pos==0 ) {
 		trimmed = trimmed.substr(0,pos-1).trim()
 	}
 
-	//int pos2 = trimmed.lastIndexOf("#")
 	int pos2 = trimmed.indexOf("#")
 
 	if ( pos2>=0 ) {
 		trimmed = trimmed.substr(0,pos2-1).trim()
 	}
 
+	int pos3 = trimmed.indexOf("\t//")
+
+	if ( pos3>=0 ) {
+		trimmed = trimmed.substr(0,pos3-1).trim()
+	}
+
+	int pos4 = trimmed.indexOf("\t//")
+
+	if ( pos4>=0 ) {
+		trimmed = trimmed.substr(0,pos4-1).trim()
+	}
+
 	return trimmed
 }
 
 string rm_str_at_end( string str, string rm ) {
-	trimmed := rm_comment( str )
+	trimmed := str.trim()
 	
 	if ( trimmed.substr( trimmed.length()-rm.length() ).toLower() == rm.toLower() ) {
 		return trimmed.substr( 0, trimmed.length()-rm.length() )
