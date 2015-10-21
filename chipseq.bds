@@ -206,9 +206,9 @@ void chk_input_data() {
 			// if data is missing
 			if ( data[0] == "" ) {
 				if ( (rep==2) && (ctl==1) ) \
-					print( "\tWarning: Control $prefix missing! keep going...\n")
+					print( "\tWarning: $prefix missing! keep going...\n")
 				else if ( (rep==2) && (ctl==0) ) \
-					print( "\tWarning: $prefix missing! keep going... (peak claling for replicate 1 only)\n")
+					print( "\tWarning: $prefix missing! keep going... (peak calling for replicate 1 only)\n")
 				else \
 					error( "\t$prefix missing!\n")
 				continue
@@ -308,6 +308,13 @@ void peakcall_idr() {
 
 		return
 	}
+
+	if ( ctl_tag_rep1 == "" ) { // if there is no control
+		if ( is_peakcall_macs2() ) \
+			print("\n\nIMPORTANT! call peaks with MACS2 without control data\n")
+		else \
+			error("Cannot call peaks without control data! Instead choose MACS2 peak calling (add -peakcall macs2 to cmd. line).\n")
+	} 
 	
 	peak_out_dir := mkdir_path( "$out_dir/peaks"+"_$peakcall") // peak directory structure 
 
