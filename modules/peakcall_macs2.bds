@@ -42,10 +42,14 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string out_dir, str
 	pval_bedgraph 	:= "$prefix.pval.signal.bedgraph"
 	pval_bigwig 	:= "$prefix.pval.signal.bw"
 
- 	in 	:= [ tag, ctl_tag ]
+	prefix_basename	:= get_basename( prefix )
+
+	in 	:= (ctl_tag != "") ? [ tag, ctl_tag ] : [ tag ]
  	out 	:= [ npeakfile, bpeakfile, gpeakfile, fc_bigwig, pval_bigwig ]
 
-	prefix_basename	:= get_basename( prefix )
+ 	ctl 	:= (ctl_tag != "") ? "-c $ctl_tag" : ""
+	sval_line := (ctl_tag != "") ?	"sval=$(echo \"${chipReads} ${controlReads}\" | awk '$1>$2{printf \"%f\",$2} $1<=$2{printf \"%f\",$1}');" : \
+					"sval=$(echo \"${chipReads}\" | awk '{printf \"%f\",$1}');"
 
 	task( taskName:= "macs2 "+info, \
 		cpus:=nth_macs2, mem:=parse_mem_or_skip(mem_macs2), timeout:=parse_time_or_skip(wt_macs2), \
@@ -56,7 +60,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string out_dir, str
 		//==========================================
 		//# Generate narrow peaks and preliminary signal tracks
 		//============================================
-		sys macs2 callpeak -t $tag -c $ctl_tag -f BED -n $out_dir/$prefix_basename -g $gensz -p 1e-2 --nomodel --shift 0 --extsize $fraglen --keep-dup all -B --SPMR
+		sys macs2 callpeak -t $tag $ctl -f BED -n $out_dir/$prefix_basename -g $gensz -p 1e-2 --nomodel --shift 0 --extsize $fraglen --keep-dup all -B --SPMR
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $npeakfile
@@ -69,7 +73,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string out_dir, str
 		//===========================================
 		//# Generate Broad and Gapped Peaks
 		//============================================
-		sys macs2 callpeak -t $tag -c $ctl_tag -f BED -n $out_dir/$prefix_basename -g $gensz -p 1e-2 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
+		sys macs2 callpeak -t $tag $ctl -f BED -n $out_dir/$prefix_basename -g $gensz -p 1e-2 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
 
 		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $bpeakfile
@@ -108,7 +112,8 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string out_dir, str
 
 		sys controlReads=$(zcat $ctl_tag | wc -l | awk '{printf "%f", $1/1000000}');
 
-		sys sval=$(echo "${chipReads} ${controlReads}" | awk '$1>$2{printf "%f",$2} $1<=$2{printf "%f",$1}');
+		//sys sval=$(echo "${chipReads} ${controlReads}" | awk '$1>$2{printf "%f",$2} $1<=$2{printf "%f",$1}');
+		sys $sval_line
 
 		sys macs2 bdgcmp -t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg --outdir $out_dir -o "$prefix_basename"_ppois.bdg -m ppois -S "${sval}"
 
