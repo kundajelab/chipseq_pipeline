@@ -50,7 +50,7 @@ void read_species() { // check for species configruation files
 	species_paths = concat( species_paths, get_species_file_paths( "/" + species_basename ) )
 
 	// add kundaje lab species file
-	if ( is_kundaje_lab() ) \
+	if ( is_kundaje_lab() || is_scg3() ) \
 		species_paths = concat( species_paths, get_species_file_paths( "/" + species_basename_kundaje_lab ) )
 
 	// add default species file on working directory
