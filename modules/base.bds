@@ -296,25 +296,25 @@ string rm_comment( string str ) { // remove substring after double slash "//"
 	int pos = trimmed.indexOf("//")
 
 	if ( pos==0 ) {
-		trimmed = trimmed.substr(0,pos-1).trim()
+		trimmed = trimmed.substr(0,pos).trim()
 	}
 
 	int pos2 = trimmed.indexOf("#")
 
 	if ( pos2>=0 ) {
-		trimmed = trimmed.substr(0,pos2-1).trim()
+		trimmed = trimmed.substr(0,pos2).trim()
 	}
 
 	int pos3 = trimmed.indexOf(" //")
 
 	if ( pos3>=0 ) {
-		trimmed = trimmed.substr(0,pos3-1).trim()
+		trimmed = trimmed.substr(0,pos3).trim()
 	}
 
 	int pos4 = trimmed.indexOf("\t//")
 
 	if ( pos4>=0 ) {
-		trimmed = trimmed.substr(0,pos4-1).trim()
+		trimmed = trimmed.substr(0,pos4).trim()
 	}
 
 	return trimmed
