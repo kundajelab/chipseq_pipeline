@@ -587,7 +587,7 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 				bedpe = _bam_to_bedpe( nmsrt_bam, out_dir, info )
 				wait 
 
-				subsampled_tag = _subsample_bedpe( bedpe, out_dir, info )
+				subsampled_tag = _subsample_bedpe_to_tag( bedpe, out_dir, info )
 				wait
 			}
 		}

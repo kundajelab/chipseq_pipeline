@@ -56,7 +56,7 @@ string _subsample_tag( string tag, string out_dir, string info ) {
 	return out
 }
 
-string _subsample_bedpe( string bedpe, string out_dir, string info ) {
+string _subsample_bedpe_to_tag( string bedpe, string out_dir, string info ) {
 	
 	prefix 		:= change_dir( remove_ext( bedpe, ["bedpe","bed"] ), out_dir )
 
@@ -66,7 +66,7 @@ string _subsample_bedpe( string bedpe, string out_dir, string info ) {
 	in 		:= [ bedpe ]
 	out 		:= subsampled_tag
 
-	task( taskName:= "subsample_bedpe "+info, \
+	task( taskName:= "subsample_bedpe2tag"+info, \
 		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
 		out<-in ) {
 
@@ -77,6 +77,71 @@ string _subsample_bedpe( string bedpe, string out_dir, string info ) {
 		sys zcat $bedpe | \
 			grep -v "chrM" | shuf -n $nreads | \
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$3,"N","1000",$9}' | gzip -c > $subsampled_tag
+	}
+
+	return out
+}
+
+string _subsample_bedpe( string bedpe, string out_dir, string info ) {
+	
+	prefix 		:= change_dir( remove_ext( bedpe, ["bedpe","bed"] ), out_dir )
+
+	nreads_per_mill := (nreads/1000000)
+	subsampled_bedpe:= "$prefix.$nreads_per_mill.bedpe.gz"
+
+	in 		:= [ bedpe ]
+	out 		:= subsampled_bedpe
+
+	task( taskName:= "subsample_bedpe "+info, \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
+		out<-in ) {
+
+		sys $SHCMD_INIT
+
+		sys zcat $bedpe | grep -v "chrM" | shuf -n $nreads | gzip -c > $subsampled_bedpe
+	}
+
+	return out
+}
+
+string _bedpe_to_tag( string bedpe, string out_dir, string info ) {
+	
+	prefix 		:= change_dir( remove_ext( bedpe, ["bedpe","bed"] ), out_dir )
+
+	tag 		:= "$prefix.tagAlign.gz"
+
+	in 		:= [ bedpe ]
+	out 		:= tag
+
+	task( taskName:= "bedpe_to_tag "+info, \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
+		out<-in ) {
+
+		sys $SHCMD_INIT
+
+		sys zcat $bedpe | awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}' | \
+			gzip -c > $tag
+	}
+
+	return out
+}
+
+string _shift_tag( string tag, string out_dir, string info ) {
+	
+	prefix 		:= change_dir( remove_ext( tag, ["tagAlign","tag","bed"] ), out_dir )
+
+	shifted_tag 	:= "$prefix.shifted.tagAlign.gz"
+
+	in 		:= [ tag ]
+	out 		:= shifted_tag
+
+	task( taskName:= "shift_tag "+info, \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
+		out<-in ) {
+
+		sys $SHCMD_INIT
+
+		sys zcat $tag | awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' | gzip -c > $shifted_tag
 	}
 
 	return out
