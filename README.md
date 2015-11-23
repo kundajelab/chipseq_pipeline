@@ -1,7 +1,7 @@
-ENCODE ChIP-Seq Pipelines
+ENCODE Transcription Factor ChIP-Seq Pipelines
 ===============================================
 
-ENCODE ChIP-Seq pipelines are based on https://docs.google.com/document/d/1lG_Rd7fnYgRpSIqrIfuVlAz2dW1VaSQThzk836Db99c/edit# .
+ENCODE Transcription Factor ChIP-Seq pipeline is based on https://docs.google.com/document/d/1lG_Rd7fnYgRpSIqrIfuVlAz2dW1VaSQThzk836Db99c/edit# .
 
 Taking advandatge of the powerful pipeline language BigDataScript (http://pcingola.github.io/BigDataScript/index.html), ENCODE ChIP-Seq pipelines have the following features:
 
