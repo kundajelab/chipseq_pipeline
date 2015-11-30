@@ -572,28 +572,36 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 
 		string subsampled_tag
 
-		if ( subsmpl_tag ) {
+		if ( type.toLower() == "tag" ) {
+			error("Cannot start a pipeline from paired-end tagaligns!")
+			/*
+			tag = data[0]
 
-			if ( type.toLower() == "tag" ) {
-				tag = data[0]
-
+			if ( subsmpl_tag ) {
 				subsampled_tag = _subsample_tag( tag, out_dir, info )
 				wait
 			}
 			else {
-				nmsrt_bam := _bam_to_nmsrt_bam( nodup_bam, out_dir, info )
-				wait
+				subsampled_tag = tag
+			}
+			*/
+		}
+		else {
+			nmsrt_bam := _bam_to_nmsrt_bam( nodup_bam, out_dir, info )
+			wait
 
-				bedpe = _bam_to_bedpe( nmsrt_bam, out_dir, info )
-				wait 
+			bedpe = _bam_to_bedpe( nmsrt_bam, out_dir, info )
+			wait
 
+			if ( subsmpl_tag ) {
 				subsampled_tag = _subsample_bedpe_to_tag( bedpe, out_dir, info )
 				wait
 			}
+			else {
+				subsampled_tag = tag
+			}
 		}
-		else {
-			subsampled_tag = tag			
-		}
+
 
 		(xcor_score, xcor_plot) = _xcor( subsampled_tag, out_dir, info )
 		wait
@@ -623,7 +631,8 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 		string tag_pr1, tag_pr2 // make self pseudo replicate	
 
 		if ( type.toLower() == "tag" ) { // if started from tag, we don't have bedpe file, use SE version
-			(tag_pr1, tag_pr2) = _spr( tag, out_dir, info )	
+			error("Cannot start a pipeline from paired-end tagaligns!")
+			//(tag_pr1, tag_pr2) = _spr( tag, out_dir, info )	
 		}
 		else {
 			(tag_pr1, tag_pr2) = _spr_PE( bedpe, out_dir, info )

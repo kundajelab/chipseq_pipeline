@@ -11,6 +11,8 @@ help      To define tagalign use '-tag[REP_NO]', For control use '-ctl_tag[REP_N
 // Dummy variables for HELP context (tag)
 tag1 		:= ""		help Tagalign for replicate 1. For control, use '-ctl_tag1'
 tag2 		:= ""		help Tagalign for replicate 2. For more tagaligns, use '-tag[REP_NO]'
+tag1_PE 	:= false 	help Add it if tagalign for replicate 1 is paired end (default: false).
+tag2_PE 	:= false 	help Add it if tagalign for replicate 2 is paired end (default: false).
 
 help Alignment settings for tagalign
 nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
@@ -343,7 +345,7 @@ string get_tag( int ctl, int rep ) {
 }
 
 bool is_tag_paired_end( int ctl, int rep ) {
-/*
+
 	key := ( ctl > 0 ? "ctl_tag" : "tag" ) + rep + "_pe"
 	key_wo_rep := ( ctl > 0 ? "ctl_tag" : "tag" ) + "_pe"
 
@@ -361,7 +363,7 @@ bool is_tag_paired_end( int ctl, int rep ) {
 		val := get_cmd_line_arg_val( key_wo_rep )
 		return (val=="") || (val.parseBool())
 	}	
-*/
+
 	return false
 }
 
