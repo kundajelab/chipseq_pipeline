@@ -1,9 +1,9 @@
-ENCODE Transcription Factor ChIP-Seq Pipelines
+AQUAS (Automated quality control, peak calling and reproducibility analysis of Transcription factor ChIP-seq data) 
 ===============================================
 
-ENCODE Transcription Factor ChIP-Seq pipeline is based on https://docs.google.com/document/d/1lG_Rd7fnYgRpSIqrIfuVlAz2dW1VaSQThzk836Db99c/edit# .
+The AQUAS pipeline is based off the ENCODE (phase-3) transcription factor ChIP-seq pipeline specifications (by Anshul Kundaje) in this google doc https://docs.google.com/document/d/1lG_Rd7fnYgRpSIqrIfuVlAz2dW1VaSQThzk836Db99c/edit# . However, please note that this is NOT the official ENCODE (phase-3) pipeline but rather a free and open-source implementation that adheres to the specifications. The official ENCODE (phase-3) pipeline is being implemented by the ENCODE DCC on a cloud computing platform knows as DNAnexus.It will be released shortly by the ENCODE DCC and will be linked to from this site as well. The official DNAnexus pipeline is open-source as well. However, users need to create an account on DNAnexus and pay for cloud compute. We have created this free version as an alternative for those who might have access to local compute infrastructure and not necessarily want to pay for DNAnexus cloud compute. We have run extensive tests to make sure the output of AQUAS and the official DNAnexus pipeline match exactly. We plan to continue making sure AQUAS and the DNAnexus implementation continue to remain in sync.
 
-Taking advandatge of the powerful pipeline language BigDataScript (http://pcingola.github.io/BigDataScript/index.html), ENCODE ChIP-Seq pipelines have the following features:
+AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pcingola.github.io/BigDataScript/index.html) in order to provide a complete end-to-end solution that you can run on a variety of compute infrastructures. AQUAS has the following features.
 
 ```
 1) One-command-line installation for all dependencies for ChIP-Seq pipeline.
@@ -143,7 +143,7 @@ vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.
 
 ### Pipeline stages and Mapping only mode
 
-The ENCODE ChIP-Seq pipeline goes through the following stages:
+The AQUAS transcription factor ChIP-Seq pipeline goes through the following stages:
 ```
 1) bam          : mapping (fastq -> bam)
 2) nodup_bam    : filtering and deduping bam (bam -> nodup_bam)
