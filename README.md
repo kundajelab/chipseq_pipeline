@@ -237,9 +237,32 @@ $ bds chipseq.bds \
 5) Starting from peak files
 ```
 $ bds chipseq.bds \
--peak1 /DATA/Example1.narrowPeak.gz \
--peak2 /DATA/Example2.narrowPeak.gz \
--pooled /DATA/Example.pooled.narrowPeak.gz \
+-peak1 /DATA/Example1.regionPeak.gz \
+-peak2 /DATA/Example2.regionPeak.gz \
+-peak_pooled /DATA/Example.pooled.regionPeak.gz \
+...
+```
+If you want do perform full IDR including pseudo-replicates and pooled pseudo-replicates, add the following:
+
+For IDR on pseduro replicates of replicate 1:
+```
+...
+-peak1_pr1 /DATA/Example1_PR1.regionPeak.gz \
+-peak1_pr2 /DATA/Example1_PR2.regionPeak.gz \
+...
+```
+For IDR on pseduro replicates of replicate 2:
+```
+...
+-peak2_pr1 /DATA/Example2_PR1.regionPeak.gz \
+-peak2_pr2 /DATA/Example2_PR2.regionPeak.gz \
+...
+```
+For IDR on pooled pseduro replicates:
+```
+...
+-peak_ppr1 /DATA/Example_PPR1.regionPeak.gz \
+-peak_ppr2 /DATA/Example_PPR2.regionPeak.gz \
 ...
 ```
 

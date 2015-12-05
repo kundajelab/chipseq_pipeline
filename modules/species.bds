@@ -19,6 +19,8 @@ bwt_idx			:= ""		help Bowtie index (full path prefix of [].1.ebwt file).
 bwt2_idx		:= ""		help Bowtie2 index (full path prefix of [].1.bt2 file).
 vplot_idx 		:= "" 		help V plot index (full path for bed file).
 
+blacklist_idr 		:= "" 		help Blacklist for IDR peaks (full path for bed file).
+
 species_basename 		:= "species.conf"
 species_basename_kundaje_lab  	:= "species_kundaje_lab.conf"
 
@@ -110,6 +112,7 @@ void read_species() { // check for species configruation files
 				bwt2_idx 	= get_conf_val( bwt2_idx, 	["bwt2_index_name", "bwt2_idx", "bwt2_idx_name", "bowtie2_idx", "bowtie2_index"], _conf )
 
 				vplot_idx 	= get_conf_val( vplot_idx, 	["vplotindex", "vplot_index", "vplotidx", "vplot_idx", "v_index"], _conf )
+				blacklist_idr 	= get_conf_val( blacklist_idr, 	["blacklist_idr"], _conf )
 			}
 		}
 	}
@@ -125,5 +128,6 @@ void read_species() { // check for species configruation files
 		print( "Bowtie index\t\t: $bwt_idx\n" )
 		print( "Bowtie2 index\t\t: $bwt2_idx\n" )
 		print( "V-Plot index\t\t: $vplot_idx\n" )
+		print( "Black list for IDR\t: $blacklist_idr\n" )
 	}
 }

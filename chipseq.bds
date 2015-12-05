@@ -208,7 +208,7 @@ void chk_input_data() {
 			// if data is missing
 			if ( data[0] == "" ) {
 				if ( (rep==2) && (ctl==1) ) \
-					print( "\tWarning: $prefix missing! keep going...\n")
+					print( "\tWarning: $prefix missing! keep going... (using control replicate 1 for calling peaks on replicate 2)\n")
 				else if ( (rep==2) && (ctl==0) ) \
 					print( "\tWarning: $prefix missing! keep going... (peak calling for replicate 1 only)\n")
 				else \
@@ -465,16 +465,22 @@ void peakcall_idr() {
 
 		idr_out_dir := mkdir_path( use_idr1 ? "$peak_out_dir/idr1" : "$peak_out_dir/idr2" )
 
-		_idr( peak_rep1, peak_rep2, peak_pooled, idr_out_dir, "Rep1_vs_Rep2" )
+		idr_Nt := _idr( peak_rep1, peak_rep2, peak_pooled, idr_out_dir, "true_rep_Rep1_vs_Rep2" )
 		if ( no_par_job ) wait
 
-		_idr( peak_ppr1, peak_ppr2, peak_pooled, idr_out_dir, "PPR1_vs_PPR2" )
+		idr_Np := _idr( peak_ppr1, peak_ppr2, peak_pooled, idr_out_dir, "pooled_pseudo_rep_PPR1_vs_PPR2" )
 		if ( no_par_job ) wait
 
-		_idr( peak_rep1_pr1, peak_rep1_pr2, peak_rep1, idr_out_dir, "Rep1_PR1_vs_Rep1_PR2" )
+		idr_N1 := _idr( peak_rep1_pr1, peak_rep1_pr2, peak_rep1, idr_out_dir, "pseudo_rep_Rep1_PR1_vs_Rep1_PR2" )
 		if ( no_par_job ) wait
 
-		_idr( peak_rep2_pr1, peak_rep2_pr2, peak_rep2, idr_out_dir, "Rep2_PR1_vs_Rep2_PR2" )
+		idr_N2 := _idr( peak_rep2_pr1, peak_rep2_pr2, peak_rep2, idr_out_dir, "pseudo_rep_Rep2_PR1_vs_Rep2_PR2" )
+
+		wait
+
+		// second output of _idr is narrowpeak.gz
+		// get final idr qc scoreuse idr final idr narrow peak files from true, pseudo and pooled pseudo reps
+		idr_final_score := _idr_final_qc( idr_Nt[1], idr_N1[1], idr_N2[1], idr_Np[1], idr_out_dir, "" )
 	}
 
 	wait
