@@ -60,8 +60,10 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string out_dir, strin
 
 		sys Rscript $(which run_spp_nodups.R) -c=$tag -p=$nth_spp -i=$ctl_tag \
 			-npeak=$npeak -odir=$out_dir -speak=$fraglen -savn -savr -savp -rf -out=$ccscore
+		//sys /users/leepc12/tmp_sw/R-2.15.1/bin/Rscript /software/phantompeakqualtools/2.0/run_spp_nodups.R -c=$tag -p=$nth_spp -i=$ctl_tag \
+		//	-npeak=$npeak -odir=$out_dir -speak=$fraglen -savn -savr -savp -rf -out=$ccscore
 
-		// Bug fix (we have floating point representation of chr coord., possible bug in run_spp.R?):
+		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
 		// chr3    153999636       1.54e+08        .       0       .       4.47152214284156        -1      -0.0118951365772202     18
 		sys zcat $npeakfile_vs | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -c > $npeakfile
 		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -c > $rpeakfile

@@ -5,6 +5,7 @@ include "modules/fastq.bds"
 include "modules/bam.bds"
 include "modules/tagalign.bds"
 include "modules/align_bwa.bds"
+include "modules/peak.bds"
 include "modules/peakcall_spp.bds"
 include "modules/peakcall_macs2.bds"
 include "modules/peakcall_gem.bds"
@@ -14,11 +15,6 @@ include "modules/report.bds"
 
 help Input file type (input: fastq, bam, nodup_bam, tag or peak)
 input 		:= ""		help Input file type (automatically determined if not specified) (default: blank).
-
-help For IDR when starting pipeline from peaks. (-input peak)
-peak1 		:= ""		help Peak 1
-peak2 		:= ""		help Peak 2
-pooled 		:= ""		help Pooled peak
 
 help Subsampling tagligns
 subsmpl_tag 	:= false 	help Add it if you want to subsample tagligns for cross corr. analysis (default: false).
@@ -35,6 +31,8 @@ sigtrk 		:= ""		help Choose signal track generation method: aln2rawsig, macs2 an
 make_wig 	:= false	help Add it to create wig (only for -sigtrk aln2rawsig) (default: false).
 no_bw		:= false	help Add it not to create bigwig (default: false).
 
+help Pooling control tagaligns
+ctl_rep_depth_ratio := 1.2 	help Cut-off ratio of two control tagaligns for pooling control tagaligns (default: 1.2).
 
 num_ctl 	:= 1
 html_rpt_title 	:= "ChIP-Seq Pipeline HTML Report"
@@ -47,7 +45,12 @@ string tag_rep1, tag_rep1_pr1, tag_rep1_pr2
 string tag_rep2, tag_rep2_pr1, tag_rep2_pr2
 
 string ctl_tag_rep1, ctl_tag_rep2
+
 string fraglen_rep1, fraglen_rep2
+string fraglen_rep1_pr1, fraglen_rep1_pr2
+string fraglen_rep2_pr1, fraglen_rep2_pr2
+string fraglen_ppr1, fraglen_ppr2
+
 
 
 
@@ -85,6 +88,8 @@ void init_chipseq() {
 		sigtrk 		= get_conf_val( sigtrk, 		["sigtrk", "sig_trk", "sigtrk_method"] )
 		make_wig	= get_conf_val_bool( make_wig, 		["create_wig", "make_wig"] )
 		no_bw		= get_conf_val_bool( no_bw, 		["no_bigwig", "no_bw"] )
+
+		ctl_rep_depth_ratio = get_conf_val_real( ctl_rep_depth_ratio, ["ctl_rep_depth_ratio"])
 	}
 
 	if ( v ) { // verbose
@@ -97,6 +102,7 @@ void init_chipseq() {
 		print( "Sig. trk. generation method\t: $sigtrk\n" )
 		print( "Create wig\t\t\t: $make_wig\n" )
 		print( "No bigwig\t\t\t: $no_bw\n" )
+		print( "Control rep. depth ratio\t: $ctl_rep_depth_ratio\n" )
 	}	
 
 	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it
@@ -105,7 +111,7 @@ void init_chipseq() {
 void chk_input_data() {
 
 	if ( input == "" ) {  // determine input type if input is not defined
-		if ( get_peak(1) != "" ) 	input = "peak"
+		if ( get_peak(1,0) != "" ) 	input = "peak"
 		if ( get_bam(0,1) != "" ) 	input = "bam"
 		if ( get_tag(0,1) != "" ) 	input = "tag"
 		if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
@@ -140,24 +146,20 @@ void chk_input_data() {
 
 	if ( is_input_peak() ) {
 
-		pooled := get_peak(0)
-		peak1 := get_peak(1)
-		peak2 := get_peak(2)
+		for ( int rep=0; rep<3; rep++) {
 
-		if ( pooled == "" ) error( "Pooled peak input file missing!\n")
-		print( "\tPooled peak: $pooled\n")
-		if ( !path_exists( pooled ) ) \
-			error( "\t\tFile not found!\n")
+			for (int pse=0; pse<3; pse++) {
 
-		if ( peak1 == "" ) error( "Peak 1 input file missing!\n")
-		print( "\tPeak1: $peak1\n")
-		if ( !path_exists( peak1 ) ) \
-			error( "\t\tFile not found!\n")
+				peak := get_peak(rep,pse)
+				prefix := (rep==0 ? "pooled " : "") + (pse==0 ? "replicate $rep" : "pseudo-replicate $pse for replicate $rep")
+				
+				print( "$prefix: \n\t$peak\n")
+			}
+		}
 
-		if ( peak2 == "" ) error( "Peak 2 input file missing!\n")
-		print( "\tPeak2: $peak2\n")
-		if ( !path_exists( peak2 ) ) \
-			error( "\t\tFile not found!\n")	
+		if ( !can_do_idr_for_true_rep() ) {
+			error("\n\nCannot do IDR for true repliactes. Check your peak inputs.\n")
+		}
 
 		return
 	}
@@ -295,15 +297,39 @@ void peakcall_idr() {
 	if ( is_align_only_mode() ) return
 
 	if ( !is_final_stage_peak() && !is_final_stage_idr() ) return
-
-	 // mkdir and get absolute path
-
+	
 	if ( is_input_peak() ) {
 
-		peak_out_dir := mkdir_path( "$out_dir/peaks/" + use_idr1 ? "idr1" : "idr2" )
-		pooled := get_peak(0); 	peak1  := get_peak(1); 	peak2  := get_peak(2)
-				
-		_idr( peak1, peak2, pooled, peak_out_dir, "IDR" )
+		idr_out_dir := mkdir_path( "$out_dir/" + (use_idr1 ? "idr1" : "idr2") )
+
+		if ( can_do_idr_for_true_rep() ) {
+
+			_idr( get_peak(1,0), get_peak(2,0), get_peak(0,0), idr_out_dir, "Rep1_vs_Rep2" )
+
+			if ( no_par_job ) wait
+		}				
+
+		if ( can_do_idr_for_pseudo_rep( 1 ) ) {
+
+			_idr( get_peak(1,1), get_peak(1,2), get_peak(1,0), idr_out_dir, "Rep1_PR1_vs_Rep1_PR2" )
+
+			if ( no_par_job ) wait
+		}		
+
+		if ( can_do_idr_for_pseudo_rep( 2 ) ) { 
+
+			_idr( get_peak(2,1), get_peak(2,2), get_peak(2,0), idr_out_dir, "Rep2_PR1_vs_Rep2_PR2" )
+
+			if ( no_par_job ) wait
+		}		
+
+		if ( can_do_idr_for_pooled_pseudo_rep() ) {
+
+			_idr( get_peak(0,1), get_peak(0,2), get_peak(0,0), idr_out_dir, "PPR1_vs_PPR2" )
+
+			if ( no_par_job ) wait
+		}
+
 		wait
 
 		return
@@ -332,14 +358,56 @@ void peakcall_idr() {
 		(tag_pooled, tag_ppr1, tag_ppr2 ) = _ppr( tag_rep1, tag_rep1_pr1, tag_rep1_pr2, \
 							  tag_rep2, tag_rep2_pr1, tag_rep2_pr2, align_pooled_dir, "" ) // make pooled psudo replicate
 		wait
+	
+		// xcor to get fragment of ppr's
+
+		xcor_ppr1 := _xcor( tag_ppr1, align_pooled_dir, "ppr1" )
+		if ( no_par_job ) wait
+		xcor_ppr2 := _xcor( tag_ppr2, align_pooled_dir, "ppr2" )
+		wait
+
+		fraglen_ppr1 = get_fraglen(xcor_ppr1[0])
+		fraglen_ppr2 = get_fraglen(xcor_ppr2[0])
 	}
 
 	string ctl_tag_pooled
 	
 	if ( is_data_available( 1, 2 ) ) { // if ctl_rep2 exists
 
-		ctl_tag_pooled 	= _pool_tag( ctl_tag_rep1, ctl_tag_rep2, out_dir, "ctl" )
+		ctl_tag_pooled 	= _pool_tag( ctl_tag_rep1, ctl_tag_rep2, align_pooled_dir, "ctl" )
 		wait
+
+		real ntags_rep1 = get_no_lines( tag_rep1 )
+		real ntags_rep2 = get_no_lines( tag_rep2 )		
+		real ntags_ctl1 = get_no_lines( ctl_tag_rep1 )
+		real ntags_ctl2 = get_no_lines( ctl_tag_rep2 )
+		wait
+
+		ratio_ctl_reads := ntags_ctl1/ntags_ctl2
+
+		if ( ratio_ctl_reads < 1.0 ) {
+			ratio_ctl_reads = 1.0/ratio_ctl_reads
+		}
+		
+		if ( ratio_ctl_reads > ctl_rep_depth_ratio ) {
+
+			print("\n\nNumber of reads in controls differ by a factor of $ctl_rep_depth_ratio. Using pooled controls.\n" )
+			ctl_tag_rep1 = ctl_tag_pooled
+			ctl_tag_rep2 = ctl_tag_pooled
+		}
+		else {
+			if ( ntags_ctl1 < ntags_rep1 ) {
+
+				print("\n\nFewer reads in control replicate 1 than experiment replicate 1. Using pooled controls for replicate 1.\n")
+				ctl_tag_rep1 = ctl_tag_pooled
+			}
+			if ( ntags_ctl2 < ntags_rep2 ) {
+
+				print("\n\nFewer reads in control replicate 2 than experiment replicate 2. Using pooled controls for replicate 2.\n")
+				ctl_tag_rep2 = ctl_tag_pooled
+			}
+		}
+
 	}
 	else { // otherwise, no pooling. just use ctl rep1 data
 		ctl_tag_rep2 	= ctl_tag_rep1
@@ -358,12 +426,11 @@ void peakcall_idr() {
 	peak_rep1 := _peakcall( tag_rep1, ctl_tag_rep1, fraglen_rep1, rep_dir, "Rep1" )
 	if ( no_par_job ) wait
 
-	peak_rep1_pr1 := _peakcall( tag_rep1_pr1, ctl_tag_rep1, fraglen_rep1, pr_dir, "Rep1_PR1" )
+	peak_rep1_pr1 := _peakcall( tag_rep1_pr1, ctl_tag_rep1, fraglen_rep1_pr1, pr_dir, "Rep1_PR1" )
 	if ( no_par_job ) wait
 
-	peak_rep1_pr2 := _peakcall( tag_rep1_pr2, ctl_tag_rep1, fraglen_rep1, pr_dir, "Rep1_PR2" )
+	peak_rep1_pr2 := _peakcall( tag_rep1_pr2, ctl_tag_rep1, fraglen_rep1_pr2, pr_dir, "Rep1_PR2" )
 	if ( no_par_job ) wait
-
 
 	string peak_rep2, peak_rep2_pr1, peak_rep2_pr2, peak_pooled, peak_ppr1, peak_ppr2
 
@@ -372,19 +439,19 @@ void peakcall_idr() {
 		peak_rep2 = _peakcall( tag_rep2, ctl_tag_rep2, fraglen_rep2, rep_dir, "Rep2" )
 		if ( no_par_job ) wait
 
-		peak_rep2_pr1 = _peakcall( tag_rep2_pr1, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR1" )
+		peak_rep2_pr1 = _peakcall( tag_rep2_pr1, ctl_tag_rep2, fraglen_rep2_pr1, pr_dir, "Rep2_PR1" )
 		if ( no_par_job ) wait
 
-		peak_rep2_pr2 = _peakcall( tag_rep2_pr2, ctl_tag_rep2, fraglen_rep2, pr_dir, "Rep2_PR2" )
+		peak_rep2_pr2 = _peakcall( tag_rep2_pr2, ctl_tag_rep2, fraglen_rep2_pr2, pr_dir, "Rep2_PR2" )
 		if ( no_par_job ) wait
 
 		peak_pooled = _peakcall( tag_pooled, ctl_tag_pooled, fraglen_mean, rep_dir, "Pooled" )
 		if ( no_par_job ) wait
 
-		peak_ppr1 = _peakcall( tag_ppr1, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR1" )
+		peak_ppr1 = _peakcall( tag_ppr1, ctl_tag_pooled, fraglen_ppr1, ppr_dir, "PPR1" )
 		if ( no_par_job ) wait
 
-		peak_ppr2 = _peakcall( tag_ppr2, ctl_tag_pooled, fraglen_mean, ppr_dir, "PPR2" )
+		peak_ppr2 = _peakcall( tag_ppr2, ctl_tag_pooled, fraglen_ppr2, ppr_dir, "PPR2" )
 		if ( no_par_job ) wait
 	}
 
@@ -503,13 +570,29 @@ void _align_bwa( string[] data, string type, string final_stage, int ctl, int re
 		(tag_pr1, tag_pr2) = _spr( tag, out_dir, info )
 		wait
 
+		// xcor for pseudo replicates
+		xcor_pr1 := _xcor( tag_pr1, out_dir, info+"_pr1" )
+		if ( no_par_job ) wait		
+		xcor_pr2 := _xcor( tag_pr2, out_dir, info+"_pr2" )
+		wait
+
 		if ( rep==1 ) {
-			tag_rep1 = tag; 	tag_rep1_pr1 = tag_pr1; 	tag_rep1_pr2 = tag_pr2
-			fraglen_rep1 = fraglen
+			tag_rep1 	= tag
+			tag_rep1_pr1 	= tag_pr1
+			tag_rep1_pr2 	= tag_pr2
+
+			fraglen_rep1 	= fraglen
+			fraglen_rep1_pr1 = get_fraglen(xcor_pr1[0])
+			fraglen_rep1_pr2 = get_fraglen(xcor_pr2[0])
 		}
 		if ( rep==2 ) {
-			tag_rep2 = tag; 	tag_rep2_pr1 = tag_pr1; 	tag_rep2_pr2 = tag_pr2
-			fraglen_rep2 = fraglen
+			tag_rep2 	= tag
+			tag_rep2_pr1 	= tag_pr1
+			tag_rep2_pr2 	= tag_pr2
+
+			fraglen_rep2 	= fraglen
+			fraglen_rep2_pr1 = get_fraglen(xcor_pr1[0])
+			fraglen_rep2_pr2 = get_fraglen(xcor_pr2[0])
 		}
 	}
 	else {
@@ -602,7 +685,6 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 			}
 		}
 
-
 		(xcor_score, xcor_plot) = _xcor( subsampled_tag, out_dir, info )
 		wait
 	}
@@ -639,13 +721,29 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 		}
 		wait
 
+		// xcor for pseudo replicates
+		xcor_pr1 := _xcor( tag_pr1, out_dir, info+"_pr1" )
+		if ( no_par_job ) wait
+		xcor_pr2 := _xcor( tag_pr2, out_dir, info+"_pr2" )
+		wait
+
 		if ( rep==1 ) {
-			tag_rep1 = tag; 	tag_rep1_pr1 = tag_pr1; 	tag_rep1_pr2 = tag_pr2
-			fraglen_rep1 = fraglen
+			tag_rep1 	= tag
+			tag_rep1_pr1 	= tag_pr1
+			tag_rep1_pr2 	= tag_pr2
+
+			fraglen_rep1 	= fraglen
+			fraglen_rep1_pr1 = get_fraglen(xcor_pr1[0])
+			fraglen_rep1_pr2 = get_fraglen(xcor_pr2[0])
 		}
 		if ( rep==2 ) {
-			tag_rep2 = tag; 	tag_rep2_pr1 = tag_pr1; 	tag_rep2_pr2 = tag_pr2
-			fraglen_rep2 = fraglen
+			tag_rep2 	= tag
+			tag_rep2_pr1 	= tag_pr1
+			tag_rep2_pr2 	= tag_pr2
+
+			fraglen_rep2 	= fraglen
+			fraglen_rep2_pr1 = get_fraglen(xcor_pr1[0])
+			fraglen_rep2_pr2 = get_fraglen(xcor_pr2[0])
 		}
 	}
 	else {
@@ -714,7 +812,8 @@ string _peakcall( string tag, string ctl_tag, string fraglen, string out_dir, st
 	string peakfile, tmp
 
 	if ( is_peakcall_spp() ) {
-		(peakfile, tmp) = _spp( tag, ctl_tag, fraglen, out_dir, info )
+		// use regionpeak instead of narrowpeak
+		(tmp, peakfile) = _spp( tag, ctl_tag, fraglen, out_dir, info )
 	}
 	else if ( is_peakcall_macs2() ) {
 		(peakfile, tmp) = _macs2( tag, ctl_tag, fraglen, out_dir, info )
@@ -808,7 +907,8 @@ void set_shell_env() {
 			SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
 		}
 		else {
-			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.3 gem/2.6 r/2.15.1 deepTools/latest align2rawsignal/2.0 phantompeakqualtools/default idr/latest;"
+			//SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.3 gem/2.6 r/2.15.1 deepTools/latest align2rawsignal/2.0 phantompeakqualtools/default idr/latest;"
+			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.10 gem/2.6 r/2.15.1 deepTools/latest align2rawsignal/2.0 phantompeakqualtools/default idr/latest;"
 			SHCMD_INIT = SHCMD_INIT + " export PATH=${PATH}:/software/idrCode;"
 		}
 
@@ -893,29 +993,6 @@ bool is_peakcall_gem() {
 bool is_peakcall_macs2() {
 
 	return peakcall.toLower()=="macs2"
-}
-
-string get_peak( int rep ) { // rep0 = pooled peak
-
-	key := ( rep == 0 ? "pooled" : ("peak_rep" + rep) )
-	key2 := ( rep == 0 ? "pooled" : ("peak" + rep) )
-
-	if ( conf.hasKey( key ) ) {
-		return get_path( conf{ key } )
-	}
-	else if ( conf.hasKey( key2 ) ) {
-		return get_path( conf{ key2 } )
-	}
-	else if ( rep==1 ) {
-		return peak1
-	}
-	else if ( rep==2 ) {
-		return peak2
-	}
-	else if ( rep==0 ) {
-		return pooled
-	}
-	return ""
 }
 
 bool is_align_only_mode() {
@@ -1090,3 +1167,4 @@ bool is_sigtrk_deeptools() {
 
 	return sigtrk.toLower().startsWith( "deep" )
 }
+

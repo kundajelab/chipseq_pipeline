@@ -8,12 +8,6 @@ include "species.bds"
 help Tagalign definition
 help      To define tagalign use '-tag[REP_NO]', For control use '-ctl_tag[REP_NO]'
 
-// Dummy variables for HELP context (tag)
-tag1 		:= ""		help Tagalign for replicate 1. For control, use '-ctl_tag1'
-tag2 		:= ""		help Tagalign for replicate 2. For more tagaligns, use '-tag[REP_NO]'
-tag1_PE 	:= false 	help Add it if tagalign for replicate 1 is paired end (default: false).
-tag2_PE 	:= false 	help Add it if tagalign for replicate 2 is paired end (default: false).
-
 help Alignment settings for tagalign
 nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
 
@@ -299,13 +293,7 @@ string get_tag( int ctl, int rep ) {
 	key5 := ( ctl > 0 ? "ctl_tag" : "tag" )
 	key6 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" )
 
-	if ( (ctl==0) && (rep==1) && ( tag1 != "") ) {
-		return tag1
-	}
-	else if ( (ctl==0) && (rep==2) && ( tag2 != "") ) {
-		return tag2
-	}
-	else if ( cmd_line_arg_has_key( key ) ) {
+	if ( cmd_line_arg_has_key( key ) ) {
 		return get_cmd_line_arg_val( key )
 	}
 	else if ( cmd_line_arg_has_key( key2 ) ) {

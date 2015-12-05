@@ -8,12 +8,6 @@ help Bam definition
 help      Single-ended : To define bam use '-bam[REP_NO]', For control use '-ctl_bam[REP_NO]'
 help      Paired end : To define bam use '-bam[REP_NO] -bam[REP_NO]_PE', For control use '-ctl_bam[REP_NO]_[REP_NO] -ctl_bam[REP_NO]_PE'
 
-// Dummy variables for HELP context (bam)
-bam1 		:= ""		help Bam or nodup_bam for replicate 1.
-bam2 		:= ""		help Bam or nodup_bam for replicate 2.
-bam1_PE 	:= false 	help Add it if bam replicate 1 is paired end (default: false).
-bam2_PE 	:= false 	help Add it if bam replicate 2 is paired end (default: false).
-
 help Alignment settings for bam
 wt_markdup 	:= "24h" 	help Walltime for Picardtools MarkDuplicate (default: 24h, 24:00:00).
 mem_markdup	:= "16G" 	help Max. memory for Picardtools MarkDuplicate (default: 16G).
@@ -391,13 +385,7 @@ string get_bam( int ctl, int rep ) {
 	key2 := ( ctl > 0 ? "ctl_bam" : "bam" ) + rep
 	key3 := ( ctl > 0 ? "ctl_bam" : "bam" )
 
-	if ( (ctl==0) && (rep==1) && ( bam1 != "") ) {
-		return bam1
-	}
-	else if ( (ctl==0) && (rep==2) && ( bam2 != "") ) {
-		return bam2
-	}
-	else if ( cmd_line_arg_has_key( key ) ) {
+	if ( cmd_line_arg_has_key( key ) ) {
 		return get_cmd_line_arg_val( key )
 	}
 	else if ( cmd_line_arg_has_key( key2 ) ) {

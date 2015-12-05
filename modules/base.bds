@@ -476,6 +476,7 @@ string[] load_data( string file ) {
 string get_stdout( string cmd ) {
 	cmd_ := "cmd_"+randInt()
 	sys $cmd 1> $cmd_
+	wait
 	ret := cmd_.read()
 	cmd_.delete()
 	return ret
@@ -484,9 +485,27 @@ string get_stdout( string cmd ) {
 string get_shell_var( string var ) {
 	var_ := "var_$var"
 	sys echo "${$var}" > $var_
+	wait
 	ret := var_.read()
 	var_.delete()
 	return ret
+}
+
+int get_no_lines( string file ) {
+	
+	if ( !path_exists( file ) ) {
+		error("get_no_lines(): File doesn't exist! ($file)")
+	}
+	else {
+		// check if compressed or not
+
+		if ( file.toLower().endsWith(".gz") ) {
+			return get_stdout( "zcat $file | wc -l" ).parseInt()
+		}
+		else {
+			return get_stdout( "cat $file | wc -l" ).parseInt()
+		}
+	}
 }
 
 string get_hostname() { 
