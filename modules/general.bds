@@ -173,7 +173,7 @@ void print_cmd_line_params() {
 
 		print( "\nCommand line arguments\t: $line\n\n")
 
-		sys DATE=$(date "+%Y%m%d_%H%M%S"); echo $line > cmd_line_parameters.${DATE}.txt
+		//sys DATE=$(date "+%Y%m%d_%H%M%S"); echo $line > cmd_line_parameters.${DATE}.txt
 	}
 }
 
