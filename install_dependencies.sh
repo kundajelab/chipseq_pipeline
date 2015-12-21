@@ -118,7 +118,7 @@ fi
 
 if [ $(which git | wc -l) == 0 ]; then
   echo
-  echo " * Git not found your system."
+  echo " * Git not found on your system."
   echo "   Please install git using the following commmand or ask administrator."
   echo "   ============================================================="
   if [ ${LINUX_ID_LIKE} == debian ]; then
@@ -134,7 +134,7 @@ if [ $(which git | wc -l) == 0 ]; then
   EXIT=1
 else
   echo
-  echo " * Git found your system."
+  echo " * Git found on your system."
 fi
 
 NEED_JAVA_INSTALL=0
