@@ -21,8 +21,8 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 
 Get the latest version of chipseq pipelines and install dependencies.
 ```
-$ git clone https://github.com/kundajelab/ENCODE_chipseq_pipeline
-$ cd ENCODE_chipseq_pipeline
+$ git clone https://github.com/kundajelab/TF_chipseq_pipeline
+$ cd TF_chipseq_pipeline
 
 $ ./install_dependencies.sh   # this will take longer than 30 minutes depending on your system
 ```
