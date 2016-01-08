@@ -347,10 +347,6 @@ void peakcall_idr() {
 	
 	peak_out_dir := mkdir_path( "$out_dir/peaks"+"_$peakcall") // peak directory structure 
 
-	rep_dir := mkdir_path( "$peak_out_dir/true_replicates" )
-	pr_dir 	:= mkdir_path( "$peak_out_dir/pseudo_replicates" )
-	ppr_dir := mkdir_path( "$peak_out_dir/pooled_pseudoreplicates" )
-
  	align_pooled_dir := mkdir_path( "$out_dir/align_pooled" )
 
 	// create ppr (pooled pseudoreplicates) before peak calling
@@ -425,13 +421,19 @@ void peakcall_idr() {
 	}
 
 	// peak calling
+	rep_dir := mkdir_path( "$peak_out_dir/true_replicates" )
 
 	peak_rep1 := _peakcall( tag_rep1, ctl_tag_rep1, fraglen_rep1, rep_dir, "Rep1" )
 	if ( no_par_job ) wait
 
 	string peak_rep1_pr1, peak_rep1_pr2
 
+	string pr_dir, ppr_dir
+
 	if ( !peak_for_true_rep ) {
+		pr_dir 	= mkdir_path( "$peak_out_dir/pseudo_replicates" )
+		ppr_dir = mkdir_path( "$peak_out_dir/pooled_pseudoreplicates" )
+
 		peak_rep1_pr1 = _peakcall( tag_rep1_pr1, ctl_tag_rep1, fraglen_rep1_pr1, pr_dir, "Rep1_PR1" )
 		if ( no_par_job ) wait
 
