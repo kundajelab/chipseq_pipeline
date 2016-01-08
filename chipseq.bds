@@ -25,9 +25,10 @@ num_rep 	:= 2		help # replicates, define '-final_stage' first. (default: 2).
 
 help Peakcalling method (spp, macs2 and gem)
 peakcall 	:= "spp"	help Choose peak calling method: spp, macs2 and gem (default: spp).
+peak_for_true_rep := false	help Add it to call peaks on true/pooled replicates only (default: false).
 
 help Signal track generation method (aln2rawsig, macs2 and deeptools (or deep) )
-sigtrk 		:= ""		help Choose signal track generation method: aln2rawsig, macs2 and deeptools (default: aln2rawsig).
+sigtrk 		:= ""		help Choose signal track generation method: aln2rawsig and deeptools (default: aln2rawsig).
 make_wig 	:= false	help Add it to create wig (only for -sigtrk aln2rawsig) (default: false).
 no_bw		:= false	help Add it not to create bigwig (default: false).
 
@@ -82,7 +83,8 @@ void init_chipseq() {
 		input 		= get_conf_val( input, 			["input_type", "input"] )
 
 		peakcall	= get_conf_val( peakcall, 		["peakcall_method", "peakcall"] )
-
+		peak_for_true_rep = get_conf_val_bool( peak_for_true_rep, 	["peak_for_true_rep"] )
+		
 		subsmpl_tag	= get_conf_val_bool( subsmpl_tag, 	["subsample_tag", "subsmpl_tag","subsample_tagalign", "subsmpl_tagalign"] )
 
 		sigtrk 		= get_conf_val( sigtrk, 		["sigtrk", "sig_trk", "sigtrk_method"] )
@@ -98,6 +100,7 @@ void init_chipseq() {
 		print( "# replicates to align\t\t: $num_rep\n" )
 		print( "Input data type\t\t\t: $input\n")
 		print( "Peak calling method\t\t: $peakcall\n" )
+		print( "Peak calling for true replicates only?: $peak_for_true_rep\n" )
 		print( "Subsampling for tagaligns\t: $subsmpl_tag\n")
 		print( "Sig. trk. generation method\t: $sigtrk\n" )
 		print( "Create wig\t\t\t: $make_wig\n" )
@@ -426,11 +429,15 @@ void peakcall_idr() {
 	peak_rep1 := _peakcall( tag_rep1, ctl_tag_rep1, fraglen_rep1, rep_dir, "Rep1" )
 	if ( no_par_job ) wait
 
-	peak_rep1_pr1 := _peakcall( tag_rep1_pr1, ctl_tag_rep1, fraglen_rep1_pr1, pr_dir, "Rep1_PR1" )
-	if ( no_par_job ) wait
+	string peak_rep1_pr1, peak_rep1_pr2
 
-	peak_rep1_pr2 := _peakcall( tag_rep1_pr2, ctl_tag_rep1, fraglen_rep1_pr2, pr_dir, "Rep1_PR2" )
-	if ( no_par_job ) wait
+	if ( !peak_for_true_rep ) {
+		peak_rep1_pr1 = _peakcall( tag_rep1_pr1, ctl_tag_rep1, fraglen_rep1_pr1, pr_dir, "Rep1_PR1" )
+		if ( no_par_job ) wait
+
+		peak_rep1_pr2 = _peakcall( tag_rep1_pr2, ctl_tag_rep1, fraglen_rep1_pr2, pr_dir, "Rep1_PR2" )
+		if ( no_par_job ) wait
+	}
 
 	string peak_rep2, peak_rep2_pr1, peak_rep2_pr2, peak_pooled, peak_ppr1, peak_ppr2
 
@@ -439,20 +446,23 @@ void peakcall_idr() {
 		peak_rep2 = _peakcall( tag_rep2, ctl_tag_rep2, fraglen_rep2, rep_dir, "Rep2" )
 		if ( no_par_job ) wait
 
-		peak_rep2_pr1 = _peakcall( tag_rep2_pr1, ctl_tag_rep2, fraglen_rep2_pr1, pr_dir, "Rep2_PR1" )
-		if ( no_par_job ) wait
-
-		peak_rep2_pr2 = _peakcall( tag_rep2_pr2, ctl_tag_rep2, fraglen_rep2_pr2, pr_dir, "Rep2_PR2" )
-		if ( no_par_job ) wait
-
 		peak_pooled = _peakcall( tag_pooled, ctl_tag_pooled, fraglen_mean, rep_dir, "Pooled" )
 		if ( no_par_job ) wait
 
-		peak_ppr1 = _peakcall( tag_ppr1, ctl_tag_pooled, fraglen_ppr1, ppr_dir, "PPR1" )
-		if ( no_par_job ) wait
+		if ( !peak_for_true_rep ) {
 
-		peak_ppr2 = _peakcall( tag_ppr2, ctl_tag_pooled, fraglen_ppr2, ppr_dir, "PPR2" )
-		if ( no_par_job ) wait
+			peak_rep2_pr1 = _peakcall( tag_rep2_pr1, ctl_tag_rep2, fraglen_rep2_pr1, pr_dir, "Rep2_PR1" )
+			if ( no_par_job ) wait
+
+			peak_rep2_pr2 = _peakcall( tag_rep2_pr2, ctl_tag_rep2, fraglen_rep2_pr2, pr_dir, "Rep2_PR2" )
+			if ( no_par_job ) wait
+
+			peak_ppr1 = _peakcall( tag_ppr1, ctl_tag_pooled, fraglen_ppr1, ppr_dir, "PPR1" )
+			if ( no_par_job ) wait
+
+			peak_ppr2 = _peakcall( tag_ppr2, ctl_tag_pooled, fraglen_ppr2, ppr_dir, "PPR2" )
+			if ( no_par_job ) wait
+		}
 	}
 
 	wait
@@ -468,19 +478,21 @@ void peakcall_idr() {
 		idr_Nt := _idr( peak_rep1, peak_rep2, peak_pooled, idr_out_dir, "true_rep_Rep1_vs_Rep2" )
 		if ( no_par_job ) wait
 
-		idr_Np := _idr( peak_ppr1, peak_ppr2, peak_pooled, idr_out_dir, "pooled_pseudo_rep_PPR1_vs_PPR2" )
-		if ( no_par_job ) wait
+		if ( !peak_for_true_rep ) {
+			idr_Np := _idr( peak_ppr1, peak_ppr2, peak_pooled, idr_out_dir, "pooled_pseudo_rep_PPR1_vs_PPR2" )
+			if ( no_par_job ) wait
 
-		idr_N1 := _idr( peak_rep1_pr1, peak_rep1_pr2, peak_rep1, idr_out_dir, "pseudo_rep_Rep1_PR1_vs_Rep1_PR2" )
-		if ( no_par_job ) wait
+			idr_N1 := _idr( peak_rep1_pr1, peak_rep1_pr2, peak_rep1, idr_out_dir, "pseudo_rep_Rep1_PR1_vs_Rep1_PR2" )
+			if ( no_par_job ) wait
 
-		idr_N2 := _idr( peak_rep2_pr1, peak_rep2_pr2, peak_rep2, idr_out_dir, "pseudo_rep_Rep2_PR1_vs_Rep2_PR2" )
+			idr_N2 := _idr( peak_rep2_pr1, peak_rep2_pr2, peak_rep2, idr_out_dir, "pseudo_rep_Rep2_PR1_vs_Rep2_PR2" )
 
-		wait
+			wait
 
-		// second output of _idr is narrowpeak.gz
-		// get final idr qc scoreuse idr final idr narrow peak files from true, pseudo and pooled pseudo reps
-		idr_final_score := _idr_final_qc( idr_Nt[1], idr_N1[1], idr_N2[1], idr_Np[1], idr_out_dir, "" )
+			// second output of _idr is narrowpeak.gz
+			// get final idr qc scoreuse idr final idr narrow peak files from true, pseudo and pooled pseudo reps
+			idr_final_score := _idr_final_qc( idr_Nt[1], idr_N1[1], idr_N2[1], idr_Np[1], idr_out_dir, "" )
+		}
 	}
 
 	wait
@@ -558,7 +570,7 @@ void _align_bwa( string[] data, string type, string final_stage, int ctl, int re
 		_sigtrk_aln2rawsig( tag, fraglen, out_dir, info )
 		//wait
 	}
-
+/*
 	if ( is_sigtrk_macs2() ) {
 
 		if ( nodup_bam != "" ) \
@@ -567,7 +579,7 @@ void _align_bwa( string[] data, string type, string final_stage, int ctl, int re
 			print("\nWarning: Signal trk. generation with macs2 needs nodup_bam. Skipping...\n\n")
 		//wait
 	}	
-
+*/
 	if ( final_stage.toLower() == "xcor" ) return
 
 	if ( ctl==0 ) {
@@ -702,7 +714,7 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 		_sigtrk_aln2rawsig( tag, fraglen, out_dir, info )
 		//wait
 	}
-
+/*
 	if ( is_sigtrk_macs2() ) {
 
 		if ( nodup_bam != "" ) \
@@ -711,7 +723,7 @@ void _align_bwa_PE( string[] data, string type, string final_stage, int ctl, int
 			print("\nWarning: Signal trk. generation with macs2 needs nodup_bam. Skipping...\n\n")
 		//wait
 	}
-
+*/
 	if ( final_stage.toLower() == "xcor" ) return
 
 	if ( ctl==0 ) {
@@ -792,6 +804,8 @@ void _sigtrk_aln2rawsig( string tag, string fraglen, string out_dir, string info
 void _sigtrk_macs2( string nodup_bam, string fraglen, string out_dir, string info ) {
 	
 	if ( !no_bw ) {
+		error("Use '-peakcall macs2' for signal track generation by using MACS2!\n\n")
+
 		prefix 		:= change_dir( remove_ext( nodup_bam, ["bam"] ), out_dir ) + ".nonchrM.tn5.pf"
 		fc_bigwig 	:= "$prefix.fc.signal.bigwig"
 		pval_bigwig 	:= "$prefix.pval.signal.bigwig"

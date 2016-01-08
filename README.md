@@ -321,6 +321,7 @@ $ bds chipseq.bds \
 ### Peak calling method
 
 Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default.
+If you want to on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate), use '-peak_for_true_rep'.
 
 For spp, no additional parameter is required.
 
@@ -369,12 +370,14 @@ No additional parameter required.
 
 ### Signal track generation
 
-Define with -sigtrk [SIG_TRK_GEN_METHOD: aln2rawsig, macs2, deeptools) to generate signal track (bigwig).
+Define with -sigtrk [SIG_TRK_GEN_METHOD: aln2rawsig, deeptools) to generate signal track (bigwig).
 
 If you don't want to define parameters like seq, umap, chrsz for every pipeline run, use species file.
 Define all species specific parameters in the species file and add parameter '-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]'.
 
 If you don't want to generate bigwig files, add '-no_bw'.
+
+In order to generate signal track using macs2 do not use '-sigtrk macs2'. Use '-peakcall macs2' instead.
 
 1) using align2rawsignal ( converts tagalign to bigwig, final_stage >= xcor )
 ```
@@ -389,16 +392,7 @@ If you want to create wig instead of bigwig, then add '-make_wig -no_bw'.
 If you want both bigwig and wig, then add '-make_wig'.
 
 
-2) using macs2 ( converts nodup_bam to bigwig, final_stage >= xcor )
-```
-$ bds chipseq.bds \
-...
--sigtrk macs2 \
--chrsz /DATA/hg19.chrom.sizes \
--gensz hs
-```
-
-3) using deepTools (bamCoverage) ( converts nodup_bam to bigwig, final_stage >= nodup_bam )
+2) using deepTools (bamCoverage) ( converts nodup_bam to bigwig, final_stage >= nodup_bam )
 ```
 $ bds chipseq.bds \
 ...
