@@ -548,33 +548,3 @@ bool is_kundaje_lab() {
 	}
 	return false
 }
-
-/*
-bool assert_in_out( string in, string out ) {
-
-	if ( !in.exists() ) error ("$in does not exist!\n\n")
-	return out<-in
-}
-
-bool assert_in_out( string in, string[] out ) {
-
-	if ( !in.exists() ) error ("$in does not exist!\n\n")
-	return out<-in
-}
-
-bool assert_in_out( string[] in, string out ) {
-
-	for( string path : in ) {
-		if ( !path.exists() ) error ("$path does not exist!\n\n")
-	}
-	return out<-in
-}
-
-bool assert_in_out( string[] in, string[] out ) {
-
-	for( string path : in ) {
-		if ( !path.exists() ) error ("$path does not exist!\n\n")
-	}
-	return out<-in
-}
-*/

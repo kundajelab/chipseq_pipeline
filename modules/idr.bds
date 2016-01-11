@@ -140,6 +140,8 @@ string[] _idr1( string peak1, string peak2, string pooled, string out_dir, strin
 		sys echo -e "$info\t${NPEAKS_IDR}" >> $npeaks_file
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -172,6 +174,8 @@ string[] _idr2( string peak1, string peak2, string pooled, string out_dir, strin
 		sys echo -e "$info\t$(zcat $peak | wc -l)" >> $npeaks_file
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -188,6 +192,8 @@ string _filter_idr_peak( string idr_peak, string out_dir, string info ) {
 
 		sys bedtools intersect -v -a $idr_peak -b $blacklist_idr | gzip -c > $filt
 	}
+
+	wait_par()
 
 	return out
 }
@@ -236,6 +242,8 @@ string _idr_final_qc( string idr_Nt, string idr_N1, string idr_N2, string idr_Np
 		sys echo -e "Nt\tN1\tN2\tNp\tconservative_set\toptimal_set\trescue_ratio\tself_consistency_ratio\treproducibility" > $qc
 		sys echo -e "$Nt\t$N1\t$N2\t$Np\t$conservative_set\t$optimal_set\t$rescue_ratio\t$self_consistency_ratio\t$reproducibility" >> $qc
 	}
+
+	wait_par()
 
 	return out
 }

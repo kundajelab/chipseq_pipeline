@@ -59,6 +59,8 @@ string _bwa( string fastq, string out_dir, string info ) {
 		sai.rm() // delete intermediate file sai		
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -88,6 +90,8 @@ string _bwa_PE( string fastq1, string fastq2, string out_dir, string info ) {
 		sai2.rm()
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -109,6 +113,8 @@ string _bwa_aln( string fastq, string out_dir, string info ) {
 		//# Map reads to create raw SAM file
 		sys bwa aln $param_bwa_aln -t $nth_bwa_aln $bwa_idx $fastq > $sai
 	}
+
+	wait_par()
 
 	return out
 }
@@ -132,6 +138,8 @@ string _bwa_sam( string fastq, string sai, string out_dir, string info ) {
 		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su - | samtools sort - $prefix
 		sys samtools flagstat $bam > $qc
 	}
+
+	wait_par()
 
 	return out
 }
@@ -174,6 +182,8 @@ string _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, stri
 		sys samtools flagstat $bam > $qc
 		sys rm -f $badcigar $sam
 	}
+
+	wait_par()
 
 	return out
 }

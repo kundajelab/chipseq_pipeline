@@ -73,5 +73,7 @@ string[] _gem( string tag, string ctl_tag, string out_dir, string info ) {
 		sys mv "$prefix/$prefix_basename"_result.htm $html
 	}
 
+	wait_par()
+
 	return out
 }

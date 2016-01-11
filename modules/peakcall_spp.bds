@@ -72,5 +72,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string out_dir, strin
 		sys mv $pdf_tmp $pdf
 	}
 
+	wait_par()
+
 	return out
 }

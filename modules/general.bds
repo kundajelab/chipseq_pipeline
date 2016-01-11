@@ -190,3 +190,8 @@ int parse_mem_or_skip( string str ) {
 
 	return is_skip_wt_and_memory() ? -1 : parse_mem( str )
 }
+
+void wait_par() {
+	
+	if ( no_par_job ) wait //barrier for parallel tasks
+}

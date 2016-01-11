@@ -7,6 +7,9 @@ help Fastq definition
 help      Single-ended : To define fastqs use '-fastq[REP_NO]', For control use '-ctl_fastq[REP_NO]'
 help      Paired end : To define fastqs use '-fastq[REP_NO]_[PE_NO]', For control use '-ctl_fastq[REP_NO]_[REP_NO]'
 
+// Dummy variables for atac.bds (for legacy input method)
+fastq1_1	:= "" 		help 
+fastq1_2	:= "" 		help 
 
 string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], elseif single-end else return [PE1], else []	
 
@@ -31,7 +34,13 @@ string get_fastq( int ctl, int rep, int pe ) {
 
 	key_wo_PE3 := ( ctl > 0 ? "ctl_fastq" : "fastq" )
 
-	if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE ) ) {
+	if ( (ctl==0) && (rep==1) && (pe==1) && (fastq1_1 != "") ) {
+		return fastq1_1
+	}
+	else if ( (ctl==0) && (rep==1) && (pe==2) && (fastq1_2 != "") ) {
+		return fastq1_2
+	}
+	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE ) ) {
 		return get_cmd_line_arg_val( key_wo_PE )
 	}
 	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE2 ) ) {

@@ -125,6 +125,8 @@ string _bam_to_nodup_bam( string bam, string out_dir, string info ) {
 		sys rm -f $tmp_filt_bam
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -224,6 +226,8 @@ string _bam_to_nodup_bam_PE( string bam, string out_dir, string info ) {
 		sys rm -f $tmp_filt_bam
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -245,6 +249,8 @@ string _bam_to_nmsrt_bam( string bam, string out_dir, string info ) {
 
 		sys samtools sort -n $bam $nmsrt_bam_prefix
 	}
+
+	wait_par()
 
 	return out	
 }
@@ -276,7 +282,9 @@ string _bam_to_srt_bam( string bam, string out_dir, string info ) {
 		sys if [ "$srt_bam.bai" != "$srt_bam_idx" ]; then \
 			cp $srt_bam.bai $srt_bam_idx; \
 			fi
-		}
+	}
+
+	wait_par()
 
 	return out	
 }
@@ -308,6 +316,8 @@ string _bam_to_tag( string bam, string out_dir, string info ) {
 		sys $RM_CHR_
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -329,6 +339,8 @@ string _bam_to_bedpe( string nmsrt_bam, string out_dir, string info ) {
 		//# Create BEDPE file
 		sys bedtools bamtobed -bedpe -mate1 -i $nmsrt_bam | gzip -c > $bedpe
 	}
+
+	wait_par()
 
 	return out
 }
@@ -375,6 +387,8 @@ string _bam_to_bed_non_chrM( string nodup_bam, string out_dir, string info ) {
 				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
 			fi
 	}
+
+	wait_par()
 
 	return out
 }

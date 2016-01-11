@@ -49,6 +49,8 @@ string _subsample_tag( string tag, string out_dir, string info ) {
 			grep -v "chrM" | shuf -n $nreads | gzip -c > $subsampled_tag
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -75,6 +77,8 @@ string _subsample_bedpe_to_tag( string bedpe, string out_dir, string info ) {
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$3,"N","1000",$9}' | gzip -c > $subsampled_tag
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -96,6 +100,8 @@ string _subsample_bedpe( string bedpe, string out_dir, string info ) {
 
 		sys zcat $bedpe | grep -v "chrM" | shuf -n $nreads | gzip -c > $subsampled_bedpe
 	}
+
+	wait_par()
 
 	return out
 }
@@ -119,6 +125,8 @@ string _bedpe_to_tag( string bedpe, string out_dir, string info ) {
 			gzip -c > $tag
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -139,6 +147,8 @@ string _shift_tag( string tag, string out_dir, string info ) {
 
 		sys zcat $tag | awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' | gzip -c > $shifted_tag
 	}
+
+	wait_par()
 
 	return out
 }
@@ -168,6 +178,8 @@ string[] _xcor( string tag, string out_dir, string info ) {
 		sys sed -r 's/,[^\t]+//g' $xcor_score > $xcor_score.tmp
 		sys mv $xcor_score.tmp $xcor_score
 	}
+
+	wait_par()
 
 	return out
 }
@@ -203,6 +215,8 @@ string[] _spr( string tag, string out_dir, string info ) {
 		sys gzip -c $prefix.01 > $tag_pr2
 		sys rm -f $prefix.01
 	}
+
+	wait_par()
 
 	return out
 }
@@ -240,6 +254,8 @@ string[] _spr_PE( string bedpe, string out_dir, string info ) {
 		sys rm -f $prefix.01
 	}
 	
+	wait_par()
+
 	return out
 }
 
@@ -252,7 +268,7 @@ string[] _ppr( string tag1, string tag1_pr1, string tag1_pr2, string tag2, strin
 
 	out 	:= [ tag_pooled, tag_ppr1, tag_ppr2 ]
 
-	wait
+	wait_par()
 
 	return out
 }
@@ -273,6 +289,8 @@ string _pool_tag( string tag1, string tag2, string out_dir, string info ) {
 		sys $SHCMD_INIT
 		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled		
 	}
+
+	wait_par()
 
 	return out
 }

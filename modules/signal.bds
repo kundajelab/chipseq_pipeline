@@ -49,6 +49,8 @@ string _tag_to_wig_aln2rawsig( string tag, string fraglen, string out_dir, strin
 		sys align2rawsignal -i=$tag -o=$wig -s=$seq -u=$umap -of=wig -l=$fraglen -mm=4
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -69,6 +71,8 @@ string _tag_to_bdg_aln2rawsig( string tag, string fraglen, string out_dir, strin
 		sys align2rawsignal -i=$tag -o=$bedgraph -s=$seq -u=$umap -of=bg -l=$fraglen -mm=4
 	}
 
+	wait_par()
+
 	return out
 }
 
@@ -88,6 +92,8 @@ string _nodup_bam_to_bw_bam_cvrg( string nodup_bam, string out_dir, string info 
 
 		sys bamCoverage -v -b $nodup_bam -o $bigwig -of bigwig -p $nth_bam_cvrg $param_bam_cvrg
 	}
+
+	wait_par()
 
 	return out
 }
@@ -114,6 +120,8 @@ string _bdg_to_bw( string bedgraph, string out_dir, string info ) {
 		sys bedGraphToBigWig $sorted_bg $chrsz $bigwig
 		sys rm -f $sorted_bg
 	}
+
+	wait_par()
 
 	return out
 }
