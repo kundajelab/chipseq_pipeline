@@ -136,6 +136,10 @@ void chk_input_data() {
 		if ( !path_exists( umap ) ) error("\nUmap directory doesn't exists! ($umap)\n")
 	}
 
+	if ( !is_data_available( 1, 1 ) && is_peakcall_macs2() ) { // can call peaks with macs2 without control
+		num_ctl = 0 
+	}
+
 	if ( is_align_only_mode() ) { 	// if no data for control rep1 and final stage is before peak calling
 					// this must be aligment only mode, so ignore all control from here
 		print("\n\nAlign only mode for $num_rep replicates (no control data found)!\n\n")
@@ -988,7 +992,7 @@ bool is_peakcall_macs2() {
 
 bool is_align_only_mode() {
 
-	return !is_input_peak() && !is_data_available( 1, 1 )
+	return !is_input_peak() && !is_data_available( 1, 1 ) && !is_peakcall_macs2()
 }
 
 bool is_paired_end( int ctl, int rep ) {
