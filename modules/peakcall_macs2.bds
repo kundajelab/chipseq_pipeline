@@ -31,7 +31,8 @@ void init_peakcall_macs2() {
 
 string[] _macs2( string tag, string ctl_tag, string fraglen, string out_dir, string info ) {
 
-	prefix 		:= "$out_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
+	prefix 		:= (ctl_tag != "") ? 	("$out_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
+						: change_dir( remove_ext( tag, "tagAlign" ), out_dir )
 
 	npeakfile	:= "$prefix.narrowPeak.gz"
 	bpeakfile	:= "$prefix.broadPeak.gz"
