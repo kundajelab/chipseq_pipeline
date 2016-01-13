@@ -138,7 +138,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string out_dir, str
 	return out
 }
 
-string[] _macs2_bed( string non_mito_bed, string fraglen, string out_dir, string info ) {
+string _macs2_atac( string non_mito_bed, string fraglen, string out_dir, string info ) {
 
 	prefix 	:= change_dir( remove_ext( non_mito_bed, "bed" ), out_dir ) + ".pf"
 
@@ -149,7 +149,7 @@ string[] _macs2_bed( string non_mito_bed, string fraglen, string out_dir, string
 	pval_bigwig 	:= "$prefix.pval.signal.bigwig"
 
 	in 	:= [ non_mito_bed ]
-	out 	:= [ peakfile, fc_bigwig, pval_bigwig ]
+	out 	:= peakfile
 
 	task( taskName:= "macs2_bed "+info, \
 		cpus:=nth_macs2, mem:=parse_mem_or_skip(mem_macs2), timeout:=parse_time_or_skip(wt_macs2), \
