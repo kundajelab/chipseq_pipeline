@@ -151,7 +151,7 @@ string _macs2_atac( string non_mito_bed, string fraglen, string out_dir, string 
 	in 	:= [ non_mito_bed ]
 	out 	:= peakfile
 
-	task( taskName:= "macs2_bed "+info, \
+	task( taskName:= "macs2_atac "+info, \
 		cpus:=nth_macs2, mem:=parse_mem_or_skip(mem_macs2), timeout:=parse_time_or_skip(wt_macs2), \
 		out<-in ) {
 	

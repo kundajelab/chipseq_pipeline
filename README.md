@@ -154,7 +154,7 @@ The AQUAS transcription factor ChIP-Seq pipeline goes through the following stag
 ```
 If you define '-final_stage [STAGE]', the pipeline stops right after the stage.
 
-This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or nodup_bam) IN PARALLEL. Set -final_stage [FINAL STAGE] and -num_rep [# REPLICATES]. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
+This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or nodup_bam) IN PARALLEL. Set -final_stage [FINAL STAGE]. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
 
 Mapping for each replicate will go IN PARALLEL! Consider your computating resources before running the pipeline. If you start the pipeline with fastqs, lots of processors will be taken due to bwa_aln. Lower -nth_bwa_aln if you have limited computing resources. It's 2 by default.
 
@@ -162,12 +162,11 @@ Example1: You have 5 unfiltered raw bam and want to filter them (removing dupes)
 ```
 $ bds chipseq.bds \
 -final_stage tag \
--num_rep 10 \
 -fastq1 /DATA/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCFF000YLY.fastq.gz \
 ...
 -fastq10 /DATA/ENCFF000???.fastq.gz \
--bwa_idx= /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
+-bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
 -nth_bwa_aln 3   # No. of threads for bwa_aln for each replicate, 3 x 10 logical processors will be taken in total.
 ```
 
@@ -175,7 +174,6 @@ Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes)
 ```
 $ bds chipseq.bds \
 -final_stage nodup_bam \
--num_rep 5 \
 -bam1 /DATA/ENCFF000YLW.bam \
 ...
 -bam5 /DATA/ENCFF000???.bam
@@ -199,7 +197,7 @@ Define data path with -[DATA_TYPE][REPLICATE_ID].
 For contols:
 Define data path with -ctl_[DATA_TYPE][REPLICATE_ID].
 
-You can skip [REPLICATE_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, -bam_PE ... )
+You can skip [REPLICATE_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, ... )
 
 !IMPORTANT: There is no way to automatically distinguish between bam and nodup_bam types from command line argument or keys in configuration file.
 If you want to start from nodup_bam, specify -input nodup_bam
@@ -267,14 +265,12 @@ For IDR on pooled pseduro replicates:
 ```
 
 
-### How to define single ended (SE) and paired-end (PE) data set
-
-You can mix up SE and PE data set.
+### How to define paired-end (PE) data set
 
 1) Starting from fastqs
 
-For inputs:
-Define data path as -fastq[REPLICATE_ID], then it's SE.
+For replicates:
+Define data path as -fastq[REPLICATE_ID], then it's SE (single ended).
 Define data path as -fastq[REPLICATE_ID]_[PAIRING_ID], then it's PE.
 
 For controls:
@@ -282,39 +278,35 @@ Define data path as -ctl_fastq[REPLICATE_ID], it's SE.
 Define data path as -ctl_fastq[REPLICATE_ID]_[PAIRING_ID], it's PE.
 
 Example:
-Replicate 1 and control replicate 2 are SE.
-Replicate 2 and control replicate 1 are PE.
-
+SE: 2 replicates and 1 control replicate
 ```
 $ bds chipseq.bds \
 -fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
--fastq2_1 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
--fastq2_2 /DATA/ENCSR769ZTN/ENCFF002ELK.fastq.gz \
--ctl_fastq1_1 /DATA/ENCSR000EGM/Ctl/Ctl/ENCFF002EFQ.fastq.gz \
--ctl_fastq1_2 /DATA/ENCSR000EGM/Ctl/Ctl/ENCFF002EFT.fastq.gz \
--ctl_fastq2 /DATA/ENCSR000EGM/Ctl/Ctl/ENCFF002EFS.fastq.gz \
--ctl_fastq2 /DATA/ENCSR000EGM/Ctl/Ctl/ENCFF002EFU.fastq.gz \
+-fastq2 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
+-ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFQ.fastq.gz \
 -bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 ```
 
-2) Starting from bam and nodup_bam
-
-For inputs:
-Add a parameter "-[DATA_TYPE][REPLICATE_ID]_PE" if it's PE
-
-For controls:
-Add a parameter "-ctl_[DATA_TYPE][REPLICATE_ID]_PE" if it's PE
-
-Example:
-Repliacte 1 and control replicate 1 are SE.
-Replicate 2 is PE.
-
+PE: 2 replicates and 2 control replicates
 ```
 $ bds chipseq.bds \
--bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
--bam2_PE \
--bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--ctl_bam1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
+-fastq1_1 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
+-fastq1_2 /DATA/ENCSR769ZTN/ENCFF002ELK.fastq.gz \
+-fastq2_1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
+-fastq2_2 /DATA/ENCSR769ZTN/ENCFF002ELM.fastq.gz \
+-ctl_fastq1_1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFQ.fastq.gz \
+-ctl_fastq1_2 /DATA/ENCSR000EGM/Ctl/ENCFF002EFR.fastq.gz \
+-ctl_fastq2_1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFS.fastq.gz \
+-ctl_fastq2_2 /DATA/ENCSR000EGM/Ctl/ENCFF002EFT.fastq.gz \
+-bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
+```
+
+2) Starting from other input types (bam, nodup_bam, tag)
+
+Just add the following flag to the command line.
+
+```
+-paired_end
 ```
 
 

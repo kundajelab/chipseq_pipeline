@@ -72,3 +72,12 @@ string get_fastq( int ctl, int rep, int pe ) {
 	}
 	return ""
 }
+
+int get_num_rep_fastq() {
+
+	rep := 1
+
+	while( get_fastqs( 0, rep ).size() > 0 ) rep++
+
+	return rep-1
+}
