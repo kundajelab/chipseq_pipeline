@@ -267,7 +267,12 @@ For IDR on pooled pseduro replicates:
 
 ### How to define paired-end (PE) data set
 
-1) Starting from fastqs
+Add the following flag to the command line.
+```
+-paired_end
+```
+
+For fastqs, you do not need to add '-paired_end' since the pipeline will automatically determine if SE or PE.
 
 For replicates:
 Define data path as -fastq[REPLICATE_ID], then it's SE (single ended).
@@ -299,14 +304,6 @@ $ bds chipseq.bds \
 -ctl_fastq2_1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFS.fastq.gz \
 -ctl_fastq2_2 /DATA/ENCSR000EGM/Ctl/ENCFF002EFT.fastq.gz \
 -bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
-```
-
-2) Starting from other input types (bam, nodup_bam, tag)
-
-Just add the following flag to the command line.
-
-```
--paired_end
 ```
 
 
