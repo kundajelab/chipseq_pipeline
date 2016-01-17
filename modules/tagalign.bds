@@ -310,7 +310,7 @@ string[] _spr_tag_PE( string tag, string out_dir, string info ) {
 		sys $SHCMD_INIT
 
 		// join consecutive two lines into one
-		sys zcat $tag | sed 'N;s/\\n/\\t/' > $joined
+		sys zcat $tag | sed 'N;s/\n/\t/' > $joined
 
 		//# Get total number of read pairs
 		sys nlines=$( cat $joined | wc -l )
@@ -328,7 +328,7 @@ string[] _spr_tag_PE( string tag, string out_dir, string info ) {
 			gzip -c > $tag_pr2
 		sys rm -f $prefix.01
 
-		sys rm -f $joined
+		//sys rm -f $joined
 	}
 	
 	wait_par()
