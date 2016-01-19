@@ -50,25 +50,8 @@ $ cp bds.config $HOME/.bds/
 
 For Kundaje lab servers (mitra, nandi, durga, kali, vayu, amold and wotan) and SCG3 (carmack*, crick*, scg3*), the pipeline automatically determines the type of servers and set shell environments and species database.
 ```
-$ bds -s sge chipseq.bds [...]
+$ bds chipseq.bds [...]
 ```
-
-
-### Running pipelines with a cluster engine
-
-You can run BDS pipeline with a specified cluster engine. Choose your cluster system (local: UNIX threads, sge: Sun Grid Engine, ...).
-```
-$ bds -s [SYSTEM] [PIPELINE.BDS] ...
-```
-
-Modify `$HOME./.bds/bds.config` to change your default system. The following example is to use Sun Grid Engine (sge) as your default system. Then you no longer need to add `-s sge` to the command line.
-```
-#system = local
-system = sge
-```
-
-You need additional modification on bds.config to correctly configure your cluster engine. Read more on <a href="http://pcingola.github.io/BigDataScript/bigDataScript_manual.html" target="_blank">http://pcingola.github.io/BigDataScript/bigDataScript_manual.html</a>. For Kundaje lab clusters and SCG3, it's already set up for Sun Grid Engine.
-
 
 
 ### Usage
@@ -441,13 +424,6 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 ```
 
 
-### For cluster use (Sun Grid Engine only)
-
-Add "-s sge" to the command line.
-
-```
-$ bds -s sge chipseq.bds [...]
-```
 
 ### How to setup Sun Grid Engine for BigDataScript
 
