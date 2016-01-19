@@ -54,6 +54,22 @@ $ bds -s sge chipseq.bds [...]
 ```
 
 
+### Running pipelines with a cluster engine
+
+You can run BDS pipeline with a specified cluster engine. Choose your cluster system (local: UNIX threads, sge: Sun Grid Engine, ...).
+```
+$ bds -s [SYSTEM] [PIPELINE.BDS] ...
+```
+
+Modify `$HOME./.bds/bds.config` to change your default system. The following example is to use Sun Grid Engine (sge) as your default system. Then you no longer need to add `-s sge` to the command line.
+```
+#system = local
+system = sge
+```
+
+You need additional modification on bds.config to correctly configure your cluster engine. Read more on <a href="http://pcingola.github.io/BigDataScript/bigDataScript_manual.html" target="_blank">http://pcingola.github.io/BigDataScript/bigDataScript_manual.html</a>. For Kundaje lab clusters and SCG3, it's already set up for Sun Grid Engine.
+
+
 
 ### Usage
 
