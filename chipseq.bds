@@ -451,7 +451,7 @@ void peakcall_idr() {
 
 	// idr
 
-	if ( is_peakcall_spp() || is_peakcall_gem() ) {
+	//if ( is_peakcall_spp() || is_peakcall_gem() ) {
 
 		idr_out_dir := mkdir_path( use_idr1 ? "$peak_out_dir/idr1" : "$peak_out_dir/idr2" )
 
@@ -468,7 +468,7 @@ void peakcall_idr() {
 			// get final idr qc scoreuse idr final idr narrow peak files from true, pseudo and pooled pseudo reps
 			idr_final_score := _idr_final_qc( idr_Nt[1], idr_N1[1], idr_N2[1], idr_Np[1], idr_out_dir, "" )
 		}
-	}
+	//}
 
 	wait
 }
