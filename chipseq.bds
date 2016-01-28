@@ -207,7 +207,7 @@ void chk_input_data() {
 			// if data is missing
 			if ( data[0] == "" ) {
 				if ( (rep==2) && (ctl==1) ) \
-					print( "\tWarning: $prefix missing! keep going... (using control replicate 1 for calling peaks on replicate 2)\n")
+					print( "\tWarning: $prefix missing! keep going... (using control 1 for calling peaks on replicate 2)\n")
 				else if ( (rep==2) && (ctl==0) ) \
 					print( "\tWarning: $prefix missing! keep going... (peak calling for replicate 1 only)\n")
 				else \
@@ -232,7 +232,7 @@ void chk_input_data() {
 void align() {
 
 	// parallel jobs for align() for each replicate and each control
-	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through inputs (ctl==0 : input, ctl==1 : control)	
+	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)	
 	
 		for ( int rep=1; rep <= get_num_rep(); rep++) {
 
@@ -273,15 +273,15 @@ void align() {
 			if ( is_single_ended( ctl, rep ) ) {
 				
 				if ( no_par_job ) \
-					_align_bwa( data, final_stage, ctl, rep, align_out_dir, info ) // go serial 
+					_align_SE( data, final_stage, ctl, rep, align_out_dir, info ) // go serial 
 				else \
-					par _align_bwa( data, final_stage, ctl, rep, align_out_dir, info ) // go parallel
+					par _align_SE( data, final_stage, ctl, rep, align_out_dir, info ) // go parallel
 			}
 			else {
 				if ( no_par_job ) \
-					_align_bwa_PE( data, final_stage, ctl, rep, align_out_dir, info ) // go serial 
+					_align_PE( data, final_stage, ctl, rep, align_out_dir, info ) // go serial 
 				else \
-					par _align_bwa_PE( data, final_stage, ctl, rep, align_out_dir, info ) // go parallel
+					par _align_PE( data, final_stage, ctl, rep, align_out_dir, info ) // go parallel
 			}
 		}
 	}
@@ -473,7 +473,7 @@ void peakcall_idr() {
 	wait
 }
 
-void _align_bwa( string[] data, string final_stage, int ctl, int rep, string out_dir, string info ) {
+void _align_SE( string[] data, string final_stage, int ctl, int rep, string out_dir, string info ) {
 
 	string bam
 	if ( is_data_type_before( input, "bam" ) ) {
@@ -570,7 +570,7 @@ void _align_bwa( string[] data, string final_stage, int ctl, int rep, string out
 	}	
 }
 
-void _align_bwa_PE( string[] data, string final_stage, int ctl, int rep, string out_dir, string info ) {
+void _align_PE( string[] data, string final_stage, int ctl, int rep, string out_dir, string info ) {
 
 	string bam // make bam
 	if ( is_data_type_before( input, "bam" ) ) {
@@ -715,32 +715,6 @@ void _sigtrk_aln2rawsig( string tag, string fraglen, string out_dir, string info
 			wait
 
 			bedgraph.rm()
-		}
-	}
-}
-
-void _sigtrk_macs2( string nodup_bam, string fraglen, string out_dir, string info ) {
-	
-	if ( !no_bw ) {
-		error("Use '-peakcall macs2' for signal track generation by using MACS2!\n\n")
-
-		prefix 		:= change_dir( remove_ext( nodup_bam, ["bam"] ), out_dir ) + ".nonchrM.tn5.pf"
-		fc_bigwig 	:= "$prefix.fc.signal.bigwig"
-		pval_bigwig 	:= "$prefix.pval.signal.bigwig"
-
-		in 	:= nodup_bam
-		out 	:= [ fc_bigwig, pval_bigwig ]
-
-		if ( out <- in ) { // if bigwig is newer than tag
-
-			bed := _bam_to_bed_atac( nodup_bam, out_dir, info )
-			wait
-			
-			string peakfile
-			(peakfile, fc_bigwig, pval_bigwig ) = _macs2_atac( bed, fraglen, out_dir, info )
-
-			bed.rm()
-			peakfile.rm()
 		}
 	}
 }
