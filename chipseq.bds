@@ -1,11 +1,13 @@
 #!/usr/bin/env bds
 
 include "modules/species.bds"
-include "modules/fastq.bds"
-include "modules/bam.bds"
-include "modules/tagalign.bds"
+include "modules/input_fastq.bds"
+include "modules/input_bam.bds"
+include "modules/input_tagalign.bds"
 include "modules/align_bwa.bds"
-include "modules/peak.bds"
+include "modules/postalign_bam.bds"
+include "modules/postalign_bed.bds"
+include "modules/input_peak.bds"
 include "modules/peakcall_spp.bds"
 include "modules/peakcall_macs2.bds"
 include "modules/peakcall_gem.bds"

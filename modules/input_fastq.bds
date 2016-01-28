@@ -11,6 +11,7 @@ help      Paired end : To define fastqs use '-fastq[REP_NO]_[PE_NO]', For contro
 fastq1_1	:= ""
 fastq1_2	:= ""
 
+
 string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], elseif single-end else return [PE1], else []	
 
 	string[] ret
