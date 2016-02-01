@@ -3,7 +3,7 @@
 include "species.bds"
 
 
-help Signal track generation settings for bamCoverage (deelTools)
+help Signal track generation settings : bamCoverage
 param_bam_cvrg 	:= "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10"	help Parameters for deepTools bigwig generation from nodup_bam (default: "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10").
 nth_bam_cvrg	:= 3 		help # threads for bamCoverage (deepTools) (default: 3).
 wt_bam_cvrg	:= "5h"		help Walltime for bamCoverage (deepTools) (default: 5h, 5:00:00).
@@ -32,7 +32,7 @@ void init_signal() {
 	}	
 }
 
-string _tag_to_wig_aln2rawsig( string tag, string fraglen, string out_dir, string info ) {
+string _tag_to_wig( string tag, string fraglen, string out_dir, string info ) {
 
 	prefix 	:= change_dir( remove_ext( tag, ["tag", "tagAlign", "bed"] ), out_dir )
 	wig 	:= "$prefix.wig"
@@ -54,7 +54,7 @@ string _tag_to_wig_aln2rawsig( string tag, string fraglen, string out_dir, strin
 	return out
 }
 
-string _tag_to_bdg_aln2rawsig( string tag, string fraglen, string out_dir, string info ) {
+string _tag_to_bdg( string tag, string fraglen, string out_dir, string info ) {
 
 	prefix 		:= change_dir( remove_ext( tag, ["tag", "tagAlign", "bed"] ), out_dir )
 	bedgraph 	:= "$prefix.bedgraph"
@@ -76,7 +76,7 @@ string _tag_to_bdg_aln2rawsig( string tag, string fraglen, string out_dir, strin
 	return out
 }
 
-string _nodup_bam_to_bw_bam_cvrg( string nodup_bam, string out_dir, string info ) { // deeptools
+string _bam_to_bw( string nodup_bam, string out_dir, string info ) { // deeptools
 
 	prefix 	:= change_dir( remove_ext( nodup_bam, ["bam"] ), out_dir )
 	bigwig 	:= "$prefix.bigwig"

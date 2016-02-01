@@ -2,11 +2,10 @@
 
 include "species.bds"
 
-// has functions related to bam, and helps getting bam from configruation file or command line argument
 
-help Bam definition
-help      Single-ended : To define bam use '-bam[REP_NO]', For control use '-ctl_bam[REP_NO]'
-help      Paired end : To define bam use '-bam[REP_NO] -bam[REP_NO]_PE', For control use '-ctl_bam[REP_NO]_[REP_NO] -ctl_bam[REP_NO]_PE'
+help Bam input (raw or filtered) definition :
+help      Raw bam : For replicate '-bam[REP_ID]', For control '-ctl_bam[REP_ID]'.
+help      Filtered bam : For replicate '-filt_bam[REP_ID]', For control '-ctl_filt_bam[REP_ID]'.
 
 
 string get_bam( int ctl, int rep ) {
@@ -36,42 +35,31 @@ string get_bam( int ctl, int rep ) {
 	return ""
 }
 
-bool is_bam_paired_end( int ctl, int rep ) {
+string get_filt_bam( int ctl, int rep ) {
 
-	key := ( ctl > 0 ? "ctl_bam" : "bam" ) + rep + "_pe"
-	key_wo_rep := ( ctl > 0 ? "ctl_bam" : "bam" ) + "_pe"
+	key := ( ctl > 0 ? "ctl_filt_bam" : "filt_bam" ) + "_rep" + rep
+	key2 := ( ctl > 0 ? "ctl_filt_bam" : "filt_bam" ) + rep
+	key3 := ( ctl > 0 ? "ctl_filt_bam" : "filt_bam" )
 
 	if ( cmd_line_arg_has_key( key ) ) {
-		val := get_cmd_line_arg_val( key )
-		return (val=="") || (val.parseBool())
+		return get_cmd_line_arg_val( key )
 	}
-	else if ( (rep==1) && cmd_line_arg_has_key( key_wo_rep ) ) {
-		val := get_cmd_line_arg_val( key_wo_rep )
-		return (val=="") || (val.parseBool())
-	}	
+	else if ( cmd_line_arg_has_key( key2 ) ) {
+		return get_cmd_line_arg_val( key2 )
+	}
+	else if ( (rep==1) && cmd_line_arg_has_key( key3 ) ) {
+		return get_cmd_line_arg_val( key3 )
+	}
 	else if ( conf.hasKey( key ) ) {
-		return conf{ key }.parseBool()
+		return get_path( conf{ key } )
 	}
-	else if ( (rep==1) && conf.hasKey( key_wo_rep ) ) {
-		return conf{ key_wo_rep }.parseBool()
+	else if ( conf.hasKey( key2 ) ) {
+		return get_path( conf{ key2 } )
 	}
-
-	return false
-}
-
-bool is_bam_single_ended( int ctl, int rep ) {
-
-	return !is_bam_paired_end( ctl, rep )
-}
-
-bool is_bam_PE( int ctl, int rep ) {
-
-	return is_bam_paired_end( ctl, rep )
-}
-
-bool is_bam_SE( int ctl, int rep ) {
-
-	return is_bam_single_ended( ctl, rep )
+	else if ( (rep==1) && conf.hasKey( key3 ) ) {
+		return get_path( conf{ key3 } )
+	}
+	return ""
 }
 
 int get_num_rep_bam() {
@@ -79,6 +67,15 @@ int get_num_rep_bam() {
 	rep := 1
 
 	while( get_bam( 0, rep ) != "" ) rep++
+
+	return rep-1
+}
+
+int get_num_rep_filt_bam() {
+
+	rep := 1
+
+	while( get_filt_bam( 0, rep ) != "" ) rep++
 
 	return rep-1
 }

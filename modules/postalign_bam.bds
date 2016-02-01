@@ -4,15 +4,11 @@ include "species.bds"
 
 // has functions related to bam, and helps getting bam from configruation file or command line argument
 
-help Bam definition
-help      Single-ended : To define bam use '-bam[REP_NO]', For control use '-ctl_bam[REP_NO]'
-help      Paired end : To define bam use '-bam[REP_NO] -bam[REP_NO]_PE', For control use '-ctl_bam[REP_NO]_[REP_NO] -ctl_bam[REP_NO]_PE'
-
 help Alignment settings for bam
 wt_markdup 	:= "24h" 	help Walltime for Picardtools MarkDuplicate (default: 24h, 24:00:00).
 mem_markdup	:= "16G" 	help Max. memory for Picardtools MarkDuplicate (default: 16G).
 mapq_thresh	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
-rm_chr_from_tag := "" 		help If defined, remove lines including it from all tagalign files. (example: 'other|ribo|mito|_', '_', default: blank)
+rm_chr_from_tag := "" 		help If specified, exclude lines with specified string from tagaligns. (example: 'other|ribo|mito|_', '_', default: blank)
 
 
 /*
@@ -31,10 +27,10 @@ IMPORTANT!: legacy softwares compatibility (make the code work with legacy samto
 */
 
 
-init_bam()
+init_postalign_bam()
 
 
-void init_bam() {
+void init_postalign_bam() {
 
 	if ( conf_file_exists() ) {
 		mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
@@ -53,7 +49,7 @@ void init_bam() {
 	}	
 }
 
-string _dedup_bam( string bam, string out_dir, string info ) {
+string[] _dedup_bam( string bam, string out_dir, string info ) {
 
 	prefix 		:= change_dir( remove_ext( bam, "bam" ), out_dir )
 
@@ -66,7 +62,7 @@ string _dedup_bam( string bam, string out_dir, string info ) {
 	tmp_filt_bam 	:= "$prefix.dupmark.bam"
 
 	in 		:= [ bam ]
-	out 		:= nodup_bam
+	out 		:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	task( taskName:= "dedup_bam "+info, \
 		cpus:=nth, mem:=parse_mem_or_skip(mem_markdup), timeout:=parse_time_or_skip(wt_markdup), \
@@ -130,7 +126,7 @@ string _dedup_bam( string bam, string out_dir, string info ) {
 	return out
 }
 
-string _dedup_bam_PE( string bam, string out_dir, string info ) {
+string[] _dedup_bam_PE( string bam, string out_dir, string info ) {
 
 	prefix 		:= change_dir( remove_ext( bam, "bam" ), out_dir )
 
@@ -148,7 +144,7 @@ string _dedup_bam_PE( string bam, string out_dir, string info ) {
 	tmp_filt_bam_prefix := "$prefix.dupmark"
 
 	in 		:= [ bam ]
-	out 		:= nodup_bam
+	out 		:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	task( taskName:= "dedup_bam_PE "+info, \
 		cpus:=nth, mem:=parse_mem_or_skip(mem_markdup), timeout:=parse_time_or_skip(wt_markdup), \

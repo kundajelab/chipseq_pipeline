@@ -16,6 +16,8 @@ libssl-dev
 libfreetype6-dev
 liblapack-dev
 pkg-config
+poppler-utils
+tabix
 )
 #libboost-all-dev
 
@@ -35,6 +37,7 @@ gcc-gfortran
 openssl
 openssl-devel
 freetype-devel
+poppler-utils
 )
 #boost-devel
 

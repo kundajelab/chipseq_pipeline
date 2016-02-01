@@ -68,7 +68,7 @@ Example (for single ended fastqs):
 $ bds chipseq.bds \
 -fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
--ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
+-fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
 -bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa \
 ```
 
@@ -134,6 +134,7 @@ bwa_idx = /mnt/data/annotations/indexes/bwa_indexes/encodeHg19Male/v0.7.10/encod
 bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
 bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
 vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.merged.ANS.bed
+blacklist_idr = /mnt/data/ENCODE/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz
 
 [mm9]
 ...
@@ -145,7 +146,7 @@ vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.
 The AQUAS transcription factor ChIP-Seq pipeline goes through the following stages:
 ```
 1) bam          : mapping (fastq -> bam)
-2) nodup_bam    : filtering and deduping bam (bam -> nodup_bam)
+2) filt_bam     : filtering and deduping bam (bam -> filt_bam)
 3) tag          : creating tagalign (bam -> tagalign)
 4) xcor         : cross-correlation analysis (tagalign -> xcor plot.pdf/score.txt )
 5) peak         : peak calling (tagaligns -> peaks)
@@ -153,7 +154,7 @@ The AQUAS transcription factor ChIP-Seq pipeline goes through the following stag
 ```
 If you define '-final_stage [STAGE]', the pipeline stops right after the stage.
 
-This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or nodup_bam) IN PARALLEL. Set -final_stage [FINAL STAGE]. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
+This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL. Set -final_stage [FINAL STAGE]. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
 
 Mapping for each replicate will go IN PARALLEL! Consider your computating resources before running the pipeline. If you start the pipeline with fastqs, lots of processors will be taken due to bwa_aln. Lower -nth_bwa_aln if you have limited computing resources. It's 2 by default.
 
@@ -172,7 +173,7 @@ $ bds chipseq.bds \
 Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes).
 ```
 $ bds chipseq.bds \
--final_stage nodup_bam \
+-final_stage filt_bam \
 -bam1 /DATA/ENCFF000YLW.bam \
 ...
 -bam5 /DATA/ENCFF000???.bam
@@ -185,7 +186,7 @@ The ENCODE ChIP-Seq pipeline can start from various types of data.
 ```
 1) fastq 
 2) bam
-3) nodup_bam	(it's bam but dupes are removed)
+3) filt_bam	(it's bam but dupes are removed)
 4) tag
 5) peak
 ```
@@ -194,12 +195,9 @@ For inputs:
 Define data path with -[DATA_TYPE][REPLICATE_ID].
 
 For contols:
-Define data path with -ctl_[DATA_TYPE][REPLICATE_ID].
+Define data path with -ctl_[DATA_TYPE][CONTROL_ID].
 
-You can skip [REPLICATE_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, ... )
-
-!IMPORTANT: There is no way to automatically distinguish between bam and nodup_bam types from command line argument or keys in configuration file.
-If you want to start from nodup_bam, specify -input nodup_bam
+You can skip [REPLICATE_ID] or [CONTROL_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, ... )
 
 1) Starting from fastqs (see the example in the previous chapter)
 
@@ -212,10 +210,9 @@ $ bds chipseq.bds \
 ...
 ```
 
-3) Starting from nodup_bams (nodup_bam: dupe removed)
+3) Starting from filtered bams (filt_bam: bam with dupe removed)
 ```
 $ bds chipseq.bds \
--input nodup_bam
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
 -ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
@@ -308,8 +305,8 @@ $ bds chipseq.bds \
 
 ### Peak calling method
 
-Define peak calling method with -peakcall [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default.
-If you want to on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate), use '-peak_for_true_rep'.
+Define peak calling method with -callpeak [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default.
+If you want to on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate), use '-true_rep'.
 
 For spp, no additional parameter is required.
 
@@ -318,7 +315,7 @@ Define additional parameters (-chrsz, -seq)
 ```
 $ bds chipseq.bds \
 ...
--peakcall gem
+-callpeak gem
 -chrsz /DATA/hg19.chrom.sizes \
 -seq /DATA/encodeHg19Male
 ```
@@ -328,7 +325,7 @@ Define additional parameters (-chrsz, -gensz)
 ```
 $ bds chipseq.bds \
 ...
--peakcall macs2
+-callpeak macs2
 -chrsz /DATA/hg19.chrom.sizes
 -gensz hs
 ```
@@ -338,7 +335,11 @@ Seq is the directory where reference genome files exist. Chrsz is chrome sizes f
 
 ### Choose IDR method
 
-There are two versions of IDR. IDR works after spp and gem peak calling only.
+There are two versions of IDR. For full IDR QC report, specify a blacklist (for hg19, <a href="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeMapability/wgEncodeDacMapabilityConsensusExcludable.bed.gz">here</a> for IDR QC.
+
+```
+-blacklist_idr [BLACKLIST_IDR]
+```
 
 1) IDR1
 
@@ -365,7 +366,7 @@ Define all species specific parameters in the species file and add parameter '-s
 
 If you don't want to generate bigwig files, add '-no_bw'.
 
-In order to generate signal track using macs2 do not use '-sigtrk macs2'. Use '-peakcall macs2' instead.
+In order to generate signal track using macs2 do not use '-sigtrk macs2'. Use '-callpeak macs2' instead.
 
 1) using align2rawsignal ( converts tagalign to bigwig, final_stage >= xcor )
 ```
@@ -380,7 +381,7 @@ If you want to create wig instead of bigwig, then add '-make_wig -no_bw'.
 If you want both bigwig and wig, then add '-make_wig'.
 
 
-2) using deepTools (bamCoverage) ( converts nodup_bam to bigwig, final_stage >= nodup_bam )
+2) using deepTools (bamCoverage) ( converts filt_bam to bigwig, final_stage >= filt_bam )
 ```
 $ bds chipseq.bds \
 ...
@@ -389,6 +390,29 @@ $ bds chipseq.bds \
 
 Seq is the directory where reference genome files exist.
 Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/.
+
+
+
+### Useful HTML reports
+
+There are two kinds of HTML reports provided by the pipeline:
+
+1) BigDataScript HTML report for debugging
+
+Located at the working folder with name chipseq_[TIMESTAMP]_report.html.
+This report is automatically generated by BigDataScript and is useful for debugging since it shows summary, timeline, Stdout and Stderr for each job.
+
+2) ChIP-Seq pipeline report for QC and result
+
+The pipeline automatically generate a nice HTML report (Report.html) on its output directory (specified with -out_dir or just './out'). It summarizes files and directory structure, includes QC reports and show a workflow diagram and genome browser tracks for peaks and signals (bigwigs for pValue and fold change).
+
+Move your output directory to a web directory (for example, /var/www/somewhere) or make a softlink of it to a web directory. For genome browser tracks, specify your web directory root for your output  While keeping its structure. Make sure that you have bgzip and tabix installed on your system.
+
+Add the following to the command line:
+
+```
+-url_base http://your/url/to/output
+```
 
 
 
@@ -460,23 +484,6 @@ pe_list               make shm
 shell                 /bin/bash
 ...
 ```
-
-
-### Useful HTML reports
-
-There are two kinds of HTML reports provided by the pipeline:
-
-1) BigDataScript HTML report for debugging
-
-Located at the working folder with name chipseq_[TIMESTAMP]_report.html.
-This report is automatically generated by BigDataScript and is useful for debugging since it shows summary, timeline, Stdout and Stderr for each job.
-
-2) ChIP-Seq pipeline report for QC and result
-
-Located at the output folder (typically, ./out/) with name Report.html.
-This report shows all QC and result files including plots (qc, txt, log, pdf, png, gif and jpg).
-Don't forget to move linked files (pdf, png, jpg and so on) together with HTML.
-
 
 
 ### Debugging pipeline

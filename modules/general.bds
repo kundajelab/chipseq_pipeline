@@ -4,19 +4,19 @@ include "conf.bds"
 
 
 help General pipeline settings
-v 		:= true 	help Verbose (default: true).
-out_dir 	:= "out"	help Output directory. (default: out).
-no_par_job	:= false	help Add it to serialize all jobs for desktops with limited resources (default: false).
+v 		:= true 	help Verbose.
+out_dir 	:= "out"	help Output directory (default: out).
+no_par_job	:= false	help Serialize all jobs (individual job can still take multiple threads).
 
 help General cluster resource settings
 nth		:= 1 		help # threads for all cluster jobs (default: 1).
 wt 		:= "11h"	help Walltime for all cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
-memory 		:= "8G"		help Max. memory for all cluster jobs (example: 8G, 1000MB, default: 8G).
-skip_wt_mem 	:= false 	help Add it to use default resource settings of your computer/cluster (default: false).
+memory 		:= "8G"		help Maximum memory for all cluster jobs (example: 8G, 1000MB, default: 8G).
+skip_wt_mem 	:= false 	help Use default resource settings of your computer/cluster.
 
 help Shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
-shcmd 		:= ""		help Shell cmds separated by ;. Shell var. must be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test"). 
+shcmd 		:= ""		help Shell commands separated by ;. Shell var. must be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test"). 
 addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (example: "/bin/test:${HOME}/utils").
 
 init_mod 	:= "" // module init. shell script found
@@ -175,6 +175,14 @@ void print_cmd_line_params() {
 
 		//sys DATE=$(date "+%Y%m%d_%H%M%S"); echo $line > cmd_line_parameters.${DATE}.txt
 	}
+}
+
+string get_rel_path( string path ) {
+
+	rel_path := path.path().replace( out_dir.path(), "." )
+
+	if ( rel_path == path.path() ) 	return ""
+	else 				return rel_path
 }
 
 bool is_skip_wt_and_memory() {

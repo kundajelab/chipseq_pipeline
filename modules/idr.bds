@@ -4,8 +4,8 @@ include "species.bds"
 
 
 help IDR settings
-use_idr1	:= false	help Add it use IDR-1 code (default: false).
-idr_thresh 	:= "0.02"	help IDR threshold ( -log_10 (score) ) (default: 0.02).
+use_idr1	:= false	help Force to use IDR-1 code (not recommended).
+idr_thresh 	:= "0.02"	help IDR threshold : -log_10(score) (default: 0.02).
 
 
 idr_summary 	:= "NPEAKS_IDR.txt"	// file basename for summary of number of peaks found
@@ -30,6 +30,8 @@ void init_idr() {
 }
 
 string[] _idr( string peak1, string peak2, string pooled, string out_dir, string info ) {
+
+	if ( peak1=="" || peak2=="" || pooled=="" ) return ["","",""]
 
 	// write three peak filenames to file (just for information)
 	save_data("$out_dir/$info"+"_filenames.txt", \
@@ -60,7 +62,8 @@ string[] _idr1( string peak1, string peak2, string pooled, string out_dir, strin
 	idr_output 		:= "$prefix.IDR"+idr_thresh+".narrowPeak.gz"
 
 	in 	:= [ peak1, peak2, pooled ]
-	out 	:= [ idr_output, pooled_common_peaks, common_rep1_match, common_rep2_match, recal_pooled_common_peaks, pooled_common_peaks_idr ]
+	//out 	:= [ idr_output, pooled_common_peaks, common_rep1_match, common_rep2_match, recal_pooled_common_peaks, pooled_common_peaks_idr ]
+	out 	:= [ idr_output, pooled_common_peaks_idr ]
 
 	task( taskName:= "idr1 "+info, \
 		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
@@ -154,9 +157,10 @@ string[] _idr2( string peak1, string peak2, string pooled, string out_dir, strin
 
 	peak 		:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
 	idr_output 	:= "$prefix.overlapped-peaks.txt"
+	png 		:= "$prefix.overlapped-peaks.txt.png"
 
 	in 	:= [peak1, peak2, pooled]
-	out 	:= [idr_output, peak]
+	out 	:= [idr_output, peak, png]
 
 	task( taskName:= "idr2 "+info, cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), out<-in ) {
 		sys $SHCMD_INIT
@@ -236,7 +240,7 @@ string _idr_final_qc( string idr_Nt, string idr_N1, string idr_N2, string idr_Np
 	in 	:= [idr_Nt, idr_N1, idr_N2, idr_Np]
 	out 	:= qc
 
-	task( taskName:= "idr final qc"+info, cpus:=1, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), true ) {
+	task( taskName:= "idr final qc"+info, cpus:=1, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), out<-in ) {
 		sys $SHCMD_INIT
 
 		sys echo -e "Nt\tN1\tN2\tNp\tconservative_set\toptimal_set\trescue_ratio\tself_consistency_ratio\treproducibility" > $qc

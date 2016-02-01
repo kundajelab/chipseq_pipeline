@@ -5,17 +5,14 @@ include "species.bds"
 
 // has functions related to tagalign, and helps getting tagalign from configruation file or command line argument
 
-help Tagalign definition
-help      To define tagalign use '-tag[REP_NO]', For control use '-ctl_tag[REP_NO]'
-
-help Alignment settings for tagalign
+help Alignment settings for tagalign.
 nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
 
 
-init_tag()
+init_postalign_bed()
 
 
-void init_tag() {
+void init_postalign_bed() {
 
 	if ( conf_file_exists() ) {
 

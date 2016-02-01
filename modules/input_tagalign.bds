@@ -3,10 +3,8 @@
 include "species.bds"
 
 
-// has functions related to tagalign, and helps getting tagalign from configruation file or command line argument
-
-help Tagalign definition
-help      To define tagalign use '-tag[REP_NO]', For control use '-ctl_tag[REP_NO]'
+help Tagalign input definition :
+help      For replicate '-tag[REP_ID]', For control '-ctl_tag[REP_ID]'.
 
 
 string get_tag( int ctl, int rep ) {
@@ -57,44 +55,6 @@ string get_tag( int ctl, int rep ) {
 		return get_path( conf{ key6 } )
 	}
 	return ""
-}
-
-bool is_tag_paired_end( int ctl, int rep ) {
-
-	key := ( ctl > 0 ? "ctl_tag" : "tag" ) + rep + "_pe"
-	key_wo_rep := ( ctl > 0 ? "ctl_tag" : "tag" ) + "_pe"
-
-	if ( cmd_line_arg_has_key( key ) ) {
-		val := get_cmd_line_arg_val( key )
-		return (val=="") || (val.parseBool())
-	}
-	else if ( (rep==1) && cmd_line_arg_has_key( key_wo_rep ) ) {
-		val := get_cmd_line_arg_val( key_wo_rep )
-		return (val=="") || (val.parseBool())
-	}
-	else if ( conf.hasKey( key ) ) {
-		return conf{ key }.parseBool()
-	}
-	else if ( (rep==1) && conf.hasKey( key_wo_rep ) ) {
-		return conf{ key_wo_rep }.parseBool()
-	}
-
-	return false
-}
-
-bool is_tag_single_ended( int ctl, int rep ) {
-
-	return !is_tag_paired_end( ctl, rep )
-}
-
-bool is_tag_PE( int ctl, int rep ) {
-
-	return is_tag_paired_end( ctl, rep )
-}
-
-bool is_tag_SE( int ctl, int rep ) {
-
-	return is_tag_single_ended( ctl, rep )
 }
 
 int get_num_rep_tag() {

@@ -3,11 +3,11 @@
 include "species.bds"
 
 
-help Narrow peak definition for IDR, to define narrow peak files:
-help     For true replicates, use '-peak1' and '-peak2',
-help     For pooled replicates, use '-peak_pooled',
-help     For two PR (pseudo-replicates), use '-peak[REP_NO]_pr1' and '-peak[REP_NO]_pr2',
-help     For two PPR (pooled pseudo-replicates), use '-peak_ppr1' and '-peak_ppr2',
+help Narrow peak input definition : 
+help      For true replicates, use '-peak1' and '-peak2',
+help      For pooled replicates, use '-peak_pooled',
+help      For two PR (pseudo-replicates), use '-peak[REP_ID]_pr1' and '-peak[REP_ID]_pr2',
+help      For two PPR (pooled pseudo-replicates), use '-peak_ppr1' and '-peak_ppr2',
 
 
 string get_peak( int rep, int pse ) { // rep==0 : pooled peak, pse==0 : true replicate
@@ -43,16 +43,4 @@ string get_peak( int rep, int pse ) { // rep==0 : pooled peak, pse==0 : true rep
 int get_num_rep_peak() {
 	
 	return 2
-}
-
-bool can_idr_for_true_rep() {
-	return get_peak( 0, 0 ) != "" && get_peak( 1, 0 ) != "" && get_peak( 2, 0 ) != ""
-}
-
-bool can_idr_for_pseudo_rep( int rep ) {
-	return get_peak( rep, 1 ) != "" && get_peak( rep, 2 ) != "" && get_peak( rep, 0 ) != ""
-}
-
-bool can_idr_for_pooled_pseudo_rep() {
-	return get_peak( 0, 1 ) != "" && get_peak( 0, 2 ) != "" && get_peak( 0, 0 ) != ""
 }
