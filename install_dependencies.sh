@@ -17,7 +17,6 @@ libfreetype6-dev
 liblapack-dev
 pkg-config
 poppler-utils
-tabix
 )
 #libboost-all-dev
 
@@ -264,6 +263,18 @@ tar zxvf bds_Linux.tgz
 cp $SCRIPTDIR/bds.config $HOME/.bds/
 CONTENTS=("export PATH=\$PATH:\$HOME/.bds/")
 add_to_bashrc
+
+
+# local installation for tabix (0.2.6)
+cd $SOFTWARE
+wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download -O tabix-0.2.6.tar.bz2
+tar jxvf tabix-0.2.6.tar.bz2
+rm -f tabix-0.2.6.tar.bz2
+cd tabix-0.2.6
+make
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/tabix-0.2.6")
+add_to_bashrc
+
 
 # Local installation for bwa (0.7.3)
 cd $SOFTWARE
