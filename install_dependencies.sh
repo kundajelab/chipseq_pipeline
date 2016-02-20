@@ -88,11 +88,11 @@ elif [ ${LINUX_ID_LIKE} == fedora ]; then
       echo "   Please install $i using the following commmand or ask administrator."
       echo "   ============================================================="
       if [ $i == "lapack-devel" ]; then
-        echo "   # find yum repo for (server-optional) in /etc/yum.repos.d
-        echo "   grep -rl "server-optional" /etc/yum.repos.d
+        echo "   # find yum repo for (server-optional) in /etc/yum.repos.d"
+        echo "   grep -rl "server-optional" /etc/yum.repos.d"
         echo 
-        echo "   # enable the repo (repo name can vary)
-        echo "   vim /etc/yum.repos.d/[ANY_REPO_FOUND]
+        echo "   # enable the repo (repo name can vary)"
+        echo "   vim /etc/yum.repos.d/[ANY_REPO_FOUND]"
         echo 
         echo "   [rhui-REGION-rhel-server-optional]"
         echo "   ..."
