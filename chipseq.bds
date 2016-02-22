@@ -845,7 +845,6 @@ void do_idr() {
 		if ( !is_data_available( 0, 2 ) ) return
 	}
 
-
 	string tmp
 
 	// take 2nd and 3rd output (narrowpeak.gz, and png plot) of _idr
@@ -1167,7 +1166,8 @@ void set_env() {
 			+ "\${PATH}"
 
 		shellcmd := "export PICARDROOT=$dir_sw_BDS/picard-tools-1.92; export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
-				+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; " \
+			+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; " \
+			+ "export PYTHONPATH=$dir_sw_BDS/python2.7/lib/python2.7/site-packages:\${PYTHONPATH}; "
 
 		shellcmd = shellcmd \
 			+ "MCRROOT=$dir_sw_BDS/MATLAB_Compiler_Runtime/v714;" \
@@ -1206,7 +1206,7 @@ void set_env() {
 				+ "\${PATH}"
 
 			shellcmd := "export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
-					+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; " \
+				+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; "
 
 			shellcmd = shellcmd \
 				+ "MCRROOT=$dir_sw_BDS/MATLAB_Compiler_Runtime/v714;" \

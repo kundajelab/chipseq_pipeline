@@ -678,7 +678,7 @@ export -f module
 ```
 
 
-4) bwa failure due to lack of memory ( [main_samview] truncated file. )
+4) Cannot allocate memory (bwa fails due to lack of memory)
 
 An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):
 
@@ -692,11 +692,25 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 [main_samview] truncated file.
 ```
 
-Solution: balance memory usage of parallel jobs or disable parallel jobs (add '-no_par_job')
+Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par_job')
 
 ```
 $ bds chipseq.bds -no_par_job ...
 ```
+
+
+
+5) [samopen] no @SQ lines in the header. ( bwa sam failure )
+
+For computers with limited memory, bwa samse/sampe fails without non-zero exit value. This leads to a failure of a pipeline or corruption of outputs.
+
+Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par_job')
+
+```
+$ bds chipseq.bds -no_par_job ...
+```
+
+
 
 
 

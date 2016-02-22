@@ -18,6 +18,9 @@ liblapack-dev
 pkg-config
 poppler-utils
 libboost-all-dev
+graphviz
+libcurl4-openssl-dev
+libxp6
 )
 #libboost-all-dev
 
@@ -39,6 +42,10 @@ openssl-devel
 freetype-devel
 poppler-utils
 boost-devel
+graphviz
+libcurl-devel
+openssl-devel
+libXp
 )
 #boost-devel
 
@@ -382,45 +389,6 @@ make clean
 CONTENTS=("export LAPACK=$SOFTWARE/blas/lapack-*/liblapack.a")
 add_to_bashrc
 
-# Local installation instruction for Python (3.4.3) and relevant packages (for Nathan Boley's IDR)
-cd $SOFTWARE
-wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz
-tar zxvf Python-3.4.3.tgz
-rm -f Python-3.4.3.tgz
-cd Python-3.4.3
-./configure --prefix=$SOFTWARE/python3.4
-make altinstall prefix=$SOFTWARE/python3.4 exec-prefix=$SOFTWARE/python3.4
-wget http://cython.org/release/Cython-0.22.tar.gz
-tar zxvf Cython-0.22.tar.gz
-cd Cython-0.22
-$SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
-ln -s $SOFTWARE/python3.4/bin/python3.4 $SOFTWARE/python3.4/bin/python3
-cd $SOFTWARE
-$SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" numpy
-$SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" matplotlib
-$SOFTWARE/python3.4/bin/pip3.4 install --install-option="--prefix=$SOFTWARE/python3.4" scipy
-CONTENTS=(
-"export PATH=\$PATH:$SOFTWARE/python3.4/bin"
-"export PYTHONPATH=$SOFTWARE/python3.4/lib/python3.4/site-packages:\$PYTHONPATH"
-)
-add_to_bashrc
-
-# Local installation instruction for Nathan Boley's IDR
-cd $SOFTWARE
-git clone --recursive https://github.com/nboley/idr.git
-cd idr
-$SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
-ln -s $SOFTWARE/python3.4/bin/python3.4 $SOFTWARE/python3.4/bin/python3
-CONTENTS=("export PATH=\$PATH:$SOFTWARE/idr/bin")
-add_to_bashrc
-
-# Local installation instruction for Anshul Kundaje's IDR
-cd $SOFTWARE
-wget https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0 -O idrCode.tar.gz
-tar zxvf idrCode.tar.gz
-rm -f idrCode.tar.gz
-CONTENTS=("export PATH=\$PATH:$SOFTWARE/idrCode")
-add_to_bashrc
 
 # Local installation instruction for Python (2.7.2) and relevant packages (for macs2)
 cd $SOFTWARE
@@ -428,18 +396,8 @@ wget https://www.python.org/ftp/python/2.7.2/Python-2.7.2.tgz
 tar zxvf Python-2.7.2.tgz
 rm -f Python-2.7.2.tgz
 cd Python-2.7.2
-./configure --prefix=$SOFTWARE/python2.7
+./configure --prefix=$SOFTWARE/python2.7 --enable-unicode=ucs4
 make altinstall prefix=$SOFTWARE/python2.7 exec-prefix=$SOFTWARE/python2.7
-cd $SOFTWARE
-cd python2.7/bin
-wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate
-./python2 get-pip.py
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" setuptools
-$SOFTWARE/python2.7/bin/pip2.7 install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" setuptools
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" numpy
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" matplotlib
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" pysam
-$SOFTWARE/python2.7/bin/pip2.7 install --install-option="--prefix=$SOFTWARE/python2.7" deeptools
 cd $SOFTWARE
 wget http://cython.org/release/Cython-0.22.tar.gz
 tar zxvf Cython-0.22.tar.gz
@@ -448,10 +406,14 @@ $SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
 ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python2
 ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python
 cd $SOFTWARE
-git clone git://github.com/numpy/numpy.git numpy
-cd numpy
-git checkout tags/v1.9.2
-$SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
+cd python2.7/bin
+wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate
+./python2 get-pip.py
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade setuptools
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" numpy
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" matplotlib pysam pyBigwig
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" scipy
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools
 
 CONTENTS=(
 "export PATH=\$PATH:$SOFTWARE/python2.7/bin"
@@ -466,6 +428,54 @@ cd MACS
 $SOFTWARE/python2.7/bin/python2.7 setup_w_cython.py install --prefix=$SOFTWARE/python2.7
 chmod 755 $SOFTWARE/MACS/bin/*
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/MACS/bin")
+add_to_bashrc
+
+# deepTools (signal track gen.)
+#source ~/.bashrc
+cd $SOFTWARE
+git clone https://github.com/fidelram/deepTools
+cd deepTools
+git checkout tags/1.6.0
+$SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/deepTools/bin")
+add_to_bashrc
+
+# Local installation instruction for Python (3.4.3) and relevant packages (for Nathan Boley's IDR)
+cd $SOFTWARE
+wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz
+tar zxvf Python-3.4.3.tgz
+rm -f Python-3.4.3.tgz
+cd Python-3.4.3
+./configure --prefix=$SOFTWARE/python3.4
+make altinstall prefix=$SOFTWARE/python3.4 exec-prefix=$SOFTWARE/python3.4
+wget http://cython.org/release/Cython-0.22.tar.gz
+tar zxvf Cython-0.22.tar.gz
+cd Cython-0.22
+$SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
+ln -s $SOFTWARE/python3.4/bin/python3.4 $SOFTWARE/python3.4/bin/python3
+cd $SOFTWARE
+$SOFTWARE/python3.4/bin/easy_install-3.4 numpy
+$SOFTWARE/python3.4/bin/easy_install-3.4 matplotlib
+$SOFTWARE/python3.4/bin/easy_install-3.4 scipy
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/python3.4/bin")
+add_to_bashrc
+#"export PYTHONPATH=$SOFTWARE/python3.4/lib/python3.4/site-packages:\$PYTHONPATH"
+
+
+# Local installation instruction for IDR2( Nathan Boley's IDR )
+cd $SOFTWARE
+git clone --recursive https://github.com/nboley/idr.git
+cd idr
+$SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/idr/bin")
+add_to_bashrc
+
+# Local installation instruction for Anshul Kundaje's IDR
+cd $SOFTWARE
+wget https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0 -O idrCode.tar.gz
+tar zxvf idrCode.tar.gz
+rm -f idrCode.tar.gz
+CONTENTS=("export PATH=\$PATH:$SOFTWARE/idrCode")
 add_to_bashrc
 
 # Local installation instruction for gem 
@@ -508,16 +518,6 @@ CONTENTS=(
 "export LD_LIBRARY_PATH" 
 "export XAPPLRESDIR"
 )
-add_to_bashrc
-
-# deepTools (signal track gen.)
-source ~/.bashrc
-cd $SOFTWARE
-git clone https://github.com/fidelram/deepTools
-cd deepTools
-git checkout tags/1.6.0
-$SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
-CONTENTS=("export PATH=\$PATH:$SOFTWARE/deepTools/bin")
 add_to_bashrc
 
 
