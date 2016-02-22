@@ -483,7 +483,8 @@ add_to_bashrc
 
 # Local installation instruction for gem 
 cd $SOFTWARE
-wget http://cgs.csail.mit.edu/gem/download/gem.v2.6.tar.gz
+#wget http://cgs.csail.mit.edu/gem/download/gem.v2.6.tar.gz
+wget http://groups.csail.mit.edu/cgs/gem/download/gem.v2.6.tar.gz
 tar zxvf gem.v2.6.tar.gz
 rm -f gem.v2.6.tar.gz
 cd gem
