@@ -416,7 +416,7 @@ $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOF
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pysam
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pyBigwig
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" scipy
-$SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools==1.5.9.1
 
 CONTENTS=(
 "export PATH=\$PATH:$SOFTWARE/python2.7/bin"
