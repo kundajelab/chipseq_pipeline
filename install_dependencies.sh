@@ -44,8 +44,8 @@ poppler-utils
 boost-devel
 graphviz
 libcurl-devel
-openssl-devel
-libXp
+libpng-devel
+bzip2
 )
 #boost-devel
 
@@ -389,6 +389,7 @@ make clean
 CONTENTS=("export LAPACK=$SOFTWARE/blas/lapack-*/liblapack.a")
 add_to_bashrc
 
+#tabix
 
 # Local installation instruction for Python (2.7.2) and relevant packages (for macs2)
 cd $SOFTWARE
@@ -411,7 +412,9 @@ wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate
 ./python2 get-pip.py
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade setuptools
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" numpy
-$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" matplotlib pysam pyBigwig
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" matplotlib
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pysam
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pyBigwig
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" scipy
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools
 

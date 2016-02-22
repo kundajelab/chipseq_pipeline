@@ -167,6 +167,10 @@ void chk_input() {
 		error("\n\nFor peak calling, # replicates (" + get_num_rep() + ") should be <= 2.\n\n")
 	}
 
+	if ( is_final_stage_idr() && !path_exists( blacklist_idr ) ) {
+		print("\nWarning: Blacklist bed ('-blacklist_idr') for final IDR QC is missing! ($blacklist_idr)\n\n")
+	}
+
 	print( "\n====== Checking inputs (data type = $input) ...\n\n" );
 
 	if ( is_input_peak() ) {
@@ -876,7 +880,8 @@ void do_idr() {
 		
 		wait
 
-		if ( idr_Nt!="" && idr_N1!="" && idr_N2!="" && idr_Np!="" ) { // if we have all four narrow peaks, do idr qc
+		if ( path_exists( blacklist_idr ) && \
+			 idr_Nt!="" && idr_N1!="" && idr_N2!="" && idr_Np!="" ) { // if we have all four narrow peaks, do idr qc
 
 			// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
 			idr_qc = _idr_final_qc( idr_Nt, idr_N1, idr_N2, idr_Np, idr_out_dir, "" )
