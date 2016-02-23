@@ -226,6 +226,17 @@ function add_to_bashrc {
   done
 }
 
+function chk_exit_code {
+  if [ $? == 0 ]; then
+    echo
+  else
+    echo
+    echo =====================================================
+    echo Installation has failed due to non-zero exit code!
+    echo =====================================================
+  fi
+}
+
 
 CONTENTS=(
 "export _JAVA_OPTIONS=\"-Xms256M -Xmx512M -XX:ParallelGCThreads=1\""
@@ -281,6 +292,7 @@ tar jxvf tabix-0.2.6.tar.bz2
 rm -f tabix-0.2.6.tar.bz2
 cd tabix-0.2.6
 make
+chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/tabix-0.2.6")
 add_to_bashrc
 
@@ -291,6 +303,7 @@ git clone https://github.com/lh3/bwa bwa-0.7.3
 cd bwa-0.7.3
 git checkout tags/0.7.3
 make
+chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/bwa-0.7.3")
 add_to_bashrc
 
@@ -300,6 +313,7 @@ git clone https://github.com/samtools/samtools samtools-0.1.19
 cd samtools-0.1.19
 git checkout tags/0.1.19
 make
+chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/samtools-0.1.19")
 add_to_bashrc
 
@@ -310,6 +324,7 @@ tar zxvf bedtools-2.19.1.tar.gz
 rm -f bedtools-2.19.1.tar.gz
 cd bedtools2-2.19.1
 make
+chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/bedtools2-2.19.1/bin")
 add_to_bashrc
 
@@ -358,20 +373,19 @@ cd R-2.15.1
 #./configure --prefix=$HOME/R --with-readline=no --with-x=no --enable-R-static-lib
 ./configure --with-readline=no --with-x=no --enable-R-static-lib
 make
+chk_exit_code
 cd $SOFTWARE
-#wget http://compbio.med.harvard.edu/Supplements/ChIP-seq/spp_1.10.tar.gz
 wget http://mitra.stanford.edu/kundaje/software/spp_1.13.tar.gz
 echo > tmp.R
   echo 'install.packages("snow", repos="http://cran.us.r-project.org")' >> tmp.R
   echo 'install.packages("snowfall", repos="http://cran.us.r-project.org")' >> tmp.R
   echo 'install.packages("bitops", repos="http://cran.us.r-project.org")' >> tmp.R
   echo 'install.packages("caTools", repos="http://cran.us.r-project.org")' >> tmp.R
-#  echo 'install.packages("./phantompeakqualtools/spp_1.10.1.tar.gz")' >> tmp.R
   echo 'source("http://bioconductor.org/biocLite.R")' >> tmp.R
   echo 'biocLite("Rsamtools",suppressUpdates=TRUE)' >> tmp.R
-#  echo 'install.packages("./phantompeakqualtools/spp_1.10.1.tar.gz")' >> tmp.R
   echo 'install.packages("./spp_1.13.tar.gz")' >> tmp.R
 $SOFTWARE/R-2.15.1/bin/Rscript tmp.R
+chk_exit_code
 rm -f tmp.R
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/R-2.15.1/bin")
 add_to_bashrc
@@ -385,6 +399,7 @@ rm -f lapack.tgz
 cd lapack-*/
 cp INSTALL/make.inc.gfortran make.inc          # On Linux with lapack-3.2.1 or newer
 make lapacklib
+chk_exit_code
 make clean
 CONTENTS=("export LAPACK=$SOFTWARE/blas/lapack-*/liblapack.a")
 add_to_bashrc
@@ -399,11 +414,13 @@ rm -f Python-2.7.2.tgz
 cd Python-2.7.2
 ./configure --prefix=$SOFTWARE/python2.7 --enable-unicode=ucs4
 make altinstall prefix=$SOFTWARE/python2.7 exec-prefix=$SOFTWARE/python2.7
+chk_exit_code
 cd $SOFTWARE
 wget http://cython.org/release/Cython-0.22.tar.gz
 tar zxvf Cython-0.22.tar.gz
 cd Cython-0.22
 $SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
+chk_exit_code
 ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python2
 ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python
 cd $SOFTWARE
@@ -411,13 +428,19 @@ cd python2.7/bin
 wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate
 ./python2 get-pip.py
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade setuptools
+chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" numpy
+chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" matplotlib
+chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pysam
+chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pyBigwig
+chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" scipy
+chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools==1.5.9.1
-
+chk_exit_code
 CONTENTS=(
 "export PATH=\$PATH:$SOFTWARE/python2.7/bin"
 "export PYTHONPATH=$SOFTWARE/python2.7/lib/python2.7/site-packages:\$PYTHONPATH"
@@ -429,6 +452,7 @@ cd $SOFTWARE
 git clone https://github.com/taoliu/MACS/
 cd MACS
 $SOFTWARE/python2.7/bin/python2.7 setup_w_cython.py install --prefix=$SOFTWARE/python2.7
+chk_exit_code
 chmod 755 $SOFTWARE/MACS/bin/*
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/MACS/bin")
 add_to_bashrc
@@ -440,6 +464,7 @@ git clone https://github.com/fidelram/deepTools
 cd deepTools
 git checkout tags/1.6.0
 $SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
+chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/deepTools/bin")
 add_to_bashrc
 
@@ -451,15 +476,20 @@ rm -f Python-3.4.3.tgz
 cd Python-3.4.3
 ./configure --prefix=$SOFTWARE/python3.4
 make altinstall prefix=$SOFTWARE/python3.4 exec-prefix=$SOFTWARE/python3.4
+chk_exit_code
 wget http://cython.org/release/Cython-0.22.tar.gz
 tar zxvf Cython-0.22.tar.gz
 cd Cython-0.22
 $SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
 ln -s $SOFTWARE/python3.4/bin/python3.4 $SOFTWARE/python3.4/bin/python3
+chk_exit_code
 cd $SOFTWARE
 $SOFTWARE/python3.4/bin/easy_install-3.4 numpy
+chk_exit_code
 $SOFTWARE/python3.4/bin/easy_install-3.4 matplotlib
+chk_exit_code
 $SOFTWARE/python3.4/bin/easy_install-3.4 scipy
+chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/python3.4/bin")
 add_to_bashrc
 #"export PYTHONPATH=$SOFTWARE/python3.4/lib/python3.4/site-packages:\$PYTHONPATH"
@@ -470,6 +500,7 @@ cd $SOFTWARE
 git clone --recursive https://github.com/nboley/idr.git
 cd idr
 $SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
+chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/idr/bin")
 add_to_bashrc
 
@@ -508,6 +539,7 @@ wget http://www.broadinstitute.org/~anshul/softwareRepo/MCR2010b.bin
 chmod 755 MCR2010b.bin
 echo '-P installLocation="'$SOFTWARE'/MATLAB_Compiler_Runtime"' > tmp.stdin
 ./MCR2010b.bin -silent -options "tmp.stdin"
+chk_exit_code
 rm -f tmp.stdin
 rm -f MCR2010b.bin
 CONTENTS=(
