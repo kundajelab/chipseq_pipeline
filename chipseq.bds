@@ -1165,7 +1165,7 @@ void set_env() {
 		path := " export PATH=" \
 			+ "$dir_sw_BDS/tabix-0.2.6:$dir_sw_BDS/bwa-0.7.3:$dir_sw_BDS/samtools-0.1.19:$dir_sw_BDS/bedtools2-2.19.1/bin:" \
 			+ "$dir_sw_BDS/ucsc_tools:$dir_sw_BDS/picard-tools-1.92:$dir_sw_BDS/R-2.15.1/bin:" \
-			+ "$dir_sw_BDS/phantompeakqualtools:$dir_sw_BDS/idr/bin:$dir_sw_BDS/python3.4/bin:" \
+			+ "$dir_sw_BDS/phantompeakqualtools:$dir_sw_BDS/python3.4/bin:" \
 			+ "$dir_sw_BDS/align2rawsignal/bin:$dir_sw_BDS/idrCode:$dir_sw_BDS/python2.7/bin:" \
 			+ "$dir_sw_BDS/MACS/bin:$dir_sw_BDS/gem:$dir_sw_BDS/deepTools/bin" \
 			+ "\${PATH}"

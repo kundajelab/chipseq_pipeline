@@ -502,8 +502,6 @@ git clone --recursive https://github.com/nboley/idr.git
 cd idr
 $SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
 chk_exit_code
-CONTENTS=("export PATH=\$PATH:$SOFTWARE/idr/bin")
-add_to_bashrc
 
 # Local installation instruction for Anshul Kundaje's IDR
 cd $SOFTWARE
