@@ -123,7 +123,7 @@ else
   echo "Your linux system is not based on Fedora (Red Hat, ...) or Debian (Ubuntu, ...)."
   echo "Installer will fail if you didn't manually install all required softwares."
   echo "List of required softwares: "
-  echo "  gcc, kernel-devel, wget, bc, zlib-devel, ncurses-devel, gcc-gfortran, boost-devel, openssl, openssl-devel, freetype-devel, lapack"
+  echo "  gcc, gcc-c++, kernel-devel, lapack-devel, libXpm-devel, libXp-devel, libXmu-devel, wget, bc, zlib-devel, ncurses-devel, gcc-gfortran, openssl, openssl-devel, freetype-devel, poppler-utils, boost-devel, graphviz, libcurl-devel, libpng-devel, bzip2"
 fi
 
 
@@ -202,7 +202,7 @@ if [ $EXIT == 1 ]; then
   echo "However, you can proceed if you have equivalent softwares locally installed on your system."
   echo "Otherwise, compilation of some bio-softwares will fail."
   echo 
-  echo "If you have trouble with 'sudo apt-get install [PACKAGE]', try with 'sudo apt-get update' first. "
+  echo "If you have trouble with 'sudo apt-get (or yum) install [PACKAGE]', try with 'sudo apt-get (or yum) update' first. "
   echo 
   read -p "Are you sure that you want to proceed? [yes/no] " yn
   case $yn in
@@ -234,6 +234,7 @@ function chk_exit_code {
     echo =====================================================
     echo Installation has failed due to non-zero exit code!
     echo =====================================================
+    exit 1
   fi
 }
 
@@ -268,7 +269,7 @@ mkdir -p $SOFTWARE
 
 # Local installation for BigDataScript (latest)
 #cd $HOME
-#wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate
+#wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate -N
 #tar zxvf bds_Linux.tgz
 #rm -f bds_Linux.tgz
 
@@ -287,7 +288,7 @@ add_to_bashrc
 
 # local installation for tabix (0.2.6)
 cd $SOFTWARE
-wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download -O tabix-0.2.6.tar.bz2
+wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download -O tabix-0.2.6.tar.bz2 -N
 tar jxvf tabix-0.2.6.tar.bz2
 rm -f tabix-0.2.6.tar.bz2
 cd tabix-0.2.6
@@ -319,7 +320,7 @@ add_to_bashrc
 
 # Local installation for bedtools (2.19.1)
 cd $SOFTWARE
-wget http://pkgs.fedoraproject.org/repo/pkgs/BEDTools/bedtools-2.19.1.tar.gz/58de5377c3fb1bc1ab5a2620cf48f846/bedtools-2.19.1.tar.gz
+wget http://pkgs.fedoraproject.org/repo/pkgs/BEDTools/bedtools-2.19.1.tar.gz/58de5377c3fb1bc1ab5a2620cf48f846/bedtools-2.19.1.tar.gz -N
 tar zxvf bedtools-2.19.1.tar.gz
 rm -f bedtools-2.19.1.tar.gz
 cd bedtools2-2.19.1
@@ -332,19 +333,19 @@ add_to_bashrc
 cd $SOFTWARE
 mkdir ucsc_tools
 cd ucsc_tools
-wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
-wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
-wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
+wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig -N
+wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig -N
+wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo -N
 chmod 755 *
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/ucsc_tools")
 add_to_bashrc
 
 # Local installation for PICARD tools (1.92)
 cd $SOFTWARE
-wget http://mitra.stanford.edu/kundaje/software/picard-tools-1.92.tar.gz
+wget http://mitra.stanford.edu/kundaje/software/picard-tools-1.92.tar.gz -N
 tar zxvf picard-tools-1.92.tar.gz
 rm -f picard-tools-1.92.tar.gz
-#wget http://sourceforge.net/projects/picard/files/picard-tools/1.92/picard-tools-1.92.zip/download -O picard-tools-1.92.zip
+#wget http://sourceforge.net/projects/picard/files/picard-tools/1.92/picard-tools-1.92.zip/download -O picard-tools-1.92.zip -N
 #unzip picard-tools-1.92.zip
 #rm -f picard-tools-1.92.zip
 cd picard-tools-1.92
@@ -357,7 +358,7 @@ add_to_bashrc
 
 # Local installation for run_spp.R (Anshul's phantompeakqualtool)
 cd $SOFTWARE
-wget https://phantompeakqualtools.googlecode.com/files/ccQualityControl.v.1.1.tar.gz
+wget https://phantompeakqualtools.googlecode.com/files/ccQualityControl.v.1.1.tar.gz -N
 tar zxvf ccQualityControl.v.1.1.tar.gz
 rm -f ccQualityControl.v.1.1.tar.gz
 chmod 755 phantompeakqualtools/*
@@ -366,7 +367,7 @@ add_to_bashrc
 
 # Local installation instruction for R (2.15.1) and relevant packages
 cd $SOFTWARE
-wget http://cran.r-project.org/src/base/R-2/R-2.15.1.tar.gz
+wget http://cran.r-project.org/src/base/R-2/R-2.15.1.tar.gz -N
 tar zxvf R-2.15.1.tar.gz
 rm -f R-2.15.1.tar.gz
 cd R-2.15.1
@@ -375,7 +376,7 @@ cd R-2.15.1
 make
 chk_exit_code
 cd $SOFTWARE
-wget http://mitra.stanford.edu/kundaje/software/spp_1.13.tar.gz
+wget http://mitra.stanford.edu/kundaje/software/spp_1.13.tar.gz -N
 echo > tmp.R
   echo 'install.packages("snow", repos="http://cran.us.r-project.org")' >> tmp.R
   echo 'install.packages("snowfall", repos="http://cran.us.r-project.org")' >> tmp.R
@@ -393,7 +394,7 @@ add_to_bashrc
 #LAPACK
 mkdir -p $SOFTWARE/blas
 cd $SOFTWARE/blas
-wget http://www.netlib.org/lapack/lapack.tgz
+wget http://www.netlib.org/lapack/lapack.tgz -N
 tar xzf lapack.tgz
 rm -f lapack.tgz
 cd lapack-*/
@@ -408,7 +409,7 @@ add_to_bashrc
 
 # Local installation instruction for Python (2.7.2) and relevant packages (for macs2)
 cd $SOFTWARE
-wget https://www.python.org/ftp/python/2.7.2/Python-2.7.2.tgz
+wget https://www.python.org/ftp/python/2.7.2/Python-2.7.2.tgz -N
 tar zxvf Python-2.7.2.tgz
 rm -f Python-2.7.2.tgz
 cd Python-2.7.2
@@ -416,7 +417,7 @@ cd Python-2.7.2
 make altinstall prefix=$SOFTWARE/python2.7 exec-prefix=$SOFTWARE/python2.7
 chk_exit_code
 cd $SOFTWARE
-wget http://cython.org/release/Cython-0.22.tar.gz
+wget http://cython.org/release/Cython-0.22.tar.gz -N
 tar zxvf Cython-0.22.tar.gz
 cd Cython-0.22
 $SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
@@ -425,7 +426,7 @@ ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python2
 ln -s $SOFTWARE/python2.7/bin/python2.7 $SOFTWARE/python2.7/bin/python
 cd $SOFTWARE
 cd python2.7/bin
-wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate
+wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate -N
 ./python2 get-pip.py
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade setuptools
 chk_exit_code
@@ -470,14 +471,14 @@ add_to_bashrc
 
 # Local installation instruction for Python (3.4.3) and relevant packages (for Nathan Boley's IDR)
 cd $SOFTWARE
-wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz
+wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz -N
 tar zxvf Python-3.4.3.tgz
 rm -f Python-3.4.3.tgz
 cd Python-3.4.3
 ./configure --prefix=$SOFTWARE/python3.4
 make altinstall prefix=$SOFTWARE/python3.4 exec-prefix=$SOFTWARE/python3.4
 chk_exit_code
-wget http://cython.org/release/Cython-0.22.tar.gz
+wget http://cython.org/release/Cython-0.22.tar.gz -N
 tar zxvf Cython-0.22.tar.gz
 cd Cython-0.22
 $SOFTWARE/python3.4/bin/python3.4 setup.py install --prefix=$SOFTWARE/python3.4
@@ -506,7 +507,7 @@ add_to_bashrc
 
 # Local installation instruction for Anshul Kundaje's IDR
 cd $SOFTWARE
-wget https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0 -O idrCode.tar.gz
+wget https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0 -O idrCode.tar.gz -N
 tar zxvf idrCode.tar.gz
 rm -f idrCode.tar.gz
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/idrCode")
@@ -514,8 +515,8 @@ add_to_bashrc
 
 # Local installation instruction for gem 
 cd $SOFTWARE
-#wget http://cgs.csail.mit.edu/gem/download/gem.v2.6.tar.gz
-wget http://groups.csail.mit.edu/cgs/gem/download/gem.v2.6.tar.gz
+#wget http://cgs.csail.mit.edu/gem/download/gem.v2.6.tar.gz -N
+wget http://groups.csail.mit.edu/cgs/gem/download/gem.v2.6.tar.gz -N
 tar zxvf gem.v2.6.tar.gz
 rm -f gem.v2.6.tar.gz
 cd gem
@@ -529,13 +530,13 @@ add_to_bashrc
 
 # Local installation instruction for Wiggler (for generating signal tracks)
 cd $SOFTWARE
-wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz
+wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz -N
 tar zxvf align2rawsignal.2.0.tgz
 rm -f align2rawsignal.2.0.tgz
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/align2rawsignal/bin")
 add_to_bashrc
 
-wget http://www.broadinstitute.org/~anshul/softwareRepo/MCR2010b.bin
+wget http://www.broadinstitute.org/~anshul/softwareRepo/MCR2010b.bin -N
 chmod 755 MCR2010b.bin
 echo '-P installLocation="'$SOFTWARE'/MATLAB_Compiler_Runtime"' > tmp.stdin
 ./MCR2010b.bin -silent -options "tmp.stdin"
