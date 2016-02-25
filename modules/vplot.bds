@@ -5,7 +5,8 @@ include "species.bds"
 
 string _vplot( string srt_bam, string out_dir, string info ) {
 
-	prefix 		:= change_dir( remove_ext( srt_bam, ["bam"] ) , out_dir )
+//	prefix 		:= change_dir( remove_ext( srt_bam, ["bam"] ) , out_dir )
+	prefix 		:= change_dir( srt_bam, out_dir )
 	vp_idx_base 	:= get_basename( vplot_idx )
 
 	vplot 	:= "$prefix.$vp_idx_base.vect.png"
