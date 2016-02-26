@@ -855,28 +855,28 @@ void do_idr() {
 	(tmp, idr_Nt, idr_Nt_png) = _idr( peak{1}, peak{2}, peak_pooled, idr_out_dir, "true_rep_Rep1_vs_Rep2" )
 
 	_add_to_graphviz( ["peak\\n(true rep1)","peak\\n(true rep2)","peak\\n(pooled)"], [peak{1},peak{2},peak_pooled], \
-			  ["idr\\n(Nt)"], [idr_Nt], \
-			  "peak_idr\\n(true rep)", "limegreen" )
+			  ["peak_idr\\n(Nt)"], [idr_Nt], \
+			  "idr\\n(true rep)", "limegreen" )
 
 	if ( !true_rep ) {
 
 		(tmp, idr_N1, idr_N1_png) = _idr( peak_pr1{1}, peak_pr2{1}, peak{1}, idr_out_dir, "pseudo_rep_Rep1_PR1_vs_Rep1_PR2" )
 
 		_add_to_graphviz( ["peak\\n(rep1 pr1)","peak\\n(rep1 pr2)","peak\\n(true rep1)"], [peak_pr1{1},peak_pr2{1},peak{1}], \
-				  ["idr\\n(N1)"], [idr_N1], \
-				  "peak_idr\\n(pseudo rep1)", "limegreen" )
+				  ["peak_idr\\n(N1)"], [idr_N1], \
+				  "idr\\n(pseudo rep1)", "limegreen" )
 
 		(tmp, idr_N2, idr_N2_png) = _idr( peak_pr1{2}, peak_pr2{2}, peak{2}, idr_out_dir, "pseudo_rep_Rep2_PR1_vs_Rep2_PR2" )
 
 		_add_to_graphviz( ["peak\\n(rep2 pr1)","peak\\n(rep2 pr2)","peak\\n(true rep2)"], [peak_pr1{2},peak_pr2{2},peak{2}], \
-				  ["idr\\n(N2)"], [idr_N1], \
-				  "peak_idr\\n(pseudo rep2)", "limegreen" )
+				  ["peak_idr\\n(N2)"], [idr_N1], \
+				  "idr\\n(pseudo rep2)", "limegreen" )
 
 		(tmp, idr_Np, idr_Np_png) = _idr( peak_ppr1, peak_ppr2, peak_pooled, idr_out_dir, "pooled_pseudo_rep_PPR1_vs_PPR2" )
 
 		_add_to_graphviz( ["peak\\n(ppr1)","peak\\n(ppr2)","peak\\n(pooled)"], [peak_ppr1,peak_ppr2,peak_pooled], \
-				  ["idr\\n(Np)"], [idr_Np], \
-				  "peak_idr\\n(pooled pseudo rep)", "limegreen" )
+				  ["peak_idr\\n(Np)"], [idr_Np], \
+				  "idr\\n(pooled pseudo rep)", "limegreen" )
 		
 		wait
 
