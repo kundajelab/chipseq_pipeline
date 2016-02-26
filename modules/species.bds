@@ -142,9 +142,9 @@ void read_species() { // check for species configruation files
 
 	if ( v ) { // verbose
 		print("\n")
-		print( "Chr. sizes file\t: $chrsz\n" )
+		print( "Chr. sizes file\t\t: $chrsz\n" )
 		print( "Genome size (hs,mm)\t: $gensz\n" )
-		print( "Ref. genome seq. dir.\t\t: $seq\n" )
+		print( "Ref. genome seq. dir.\t: $seq\n" )
 		print( "Umap dir.\t\t: $umap\n" )
 		print( "Umap dir. (HiC)\t\t: $umap_hic\n" )
 		print( "BWA index\t\t: $bwa_idx\n" )
@@ -154,7 +154,7 @@ void read_species() { // check for species configruation files
 		print( "Black list for IDR\t: $blacklist_idr\n" )
 
 		print( "\nParams for ataqc\n")
-		print( "Ref. genome seq. fastq\t\t: $ref_fa\n" )
+		print( "Ref. genome seq. fasta\t: $ref_fa\n" )
 		print( "Black list for ataqc\t: $blacklist\n" )
 		print( "DNase bed for ataqc\t: $dnase\n" )
 		print( "TSS bed for ataqc\t: $tss\n" )
