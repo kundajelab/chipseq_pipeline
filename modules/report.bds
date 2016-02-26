@@ -278,7 +278,8 @@ string _pdf_to_png( string pdf ) {
 
 	png 	:= remove_ext( pdf, "pdf" ) + ".png"
 
-	// Requirements: poppler-utils (sudo apt-get install poppler-utils)	
+	// Requirements: poppler-utils (sudo apt-get install poppler-utils)
+	sys $SHCMD_INIT
 	sys pdftoppm -png $pdf > $png
 
 	return png
@@ -306,6 +307,7 @@ string _peak_to_hammock( string peak ) {
 
 	if ( out<-in ) { // needs bgzip and tabix
 
+		sys $SHCMD_INIT
 		sys zcat $peak | sed '/^\(chr\)/!d' | sort -k1,1V -k2,2n > $tmp
 		sys python $conv $tmp $hammock
 	}

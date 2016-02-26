@@ -22,6 +22,7 @@ string _html_graphviz() { // graphviz diagram
 		   	+ dot_lines + "\n\n}" )
 
 	// run graphviz
+	sys $SHCMD_INIT
 	sys cat $dot_tmp | awk '!x[$0]++' > $dot 	# remove duplicate lines
 	//sys cat $dot_tmp > $dot
 	sys dot -Tsvg $dot > $svg 			# dot to svg
