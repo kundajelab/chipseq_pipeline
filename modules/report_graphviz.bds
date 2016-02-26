@@ -22,12 +22,12 @@ string _html_graphviz() { // graphviz diagram
 		   	+ dot_lines + "\n\n}" )
 
 	// run graphviz
-	sys $SHCMD_INIT
-	sys cat $dot_tmp | awk '!x[$0]++' > $dot 	# remove duplicate lines
-	//sys cat $dot_tmp > $dot
-	sys dot -Tsvg $dot > $svg 			# dot to svg
-	sys rm -f $dot_tmp
-
+	task {
+		sys $SHCMD_INIT
+		sys cat $dot_tmp | awk '!x[$0]++' > $dot 	# remove duplicate lines
+		sys dot -Tsvg $dot > $svg 			# dot to svg
+		sys rm -f $dot_tmp
+	}
 	// add workflow diagram
 	return "<div id='chipseq_graphviz'><object data='"+ get_rel_path( svg ) + "'></object></div><br>"
 }
