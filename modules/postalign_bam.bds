@@ -4,11 +4,12 @@ include "species.bds"
 
 // has functions related to bam, and helps getting bam from configruation file or command line argument
 
-help Alignment settings for bam
-wt_markdup 	:= "24h" 	help Walltime for Picardtools MarkDuplicate (default: 24h, 24:00:00).
-mem_markdup	:= "16G" 	help Max. memory for Picardtools MarkDuplicate (default: 16G).
+help == postalign bam settings
 mapq_thresh	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
 rm_chr_from_tag := "" 		help If specified, exclude lines with specified string from tagaligns. (example: 'other|ribo|mito|_', '_', default: blank)
+//help *resources :
+wt_markdup 	:= "24h" 	help Walltime for Picardtools MarkDuplicate (default: 24h, 24:00:00).
+mem_markdup	:= "16G" 	help Max. memory for Picardtools MarkDuplicate (default: 16G).
 
 
 /*
@@ -34,19 +35,17 @@ void init_postalign_bam() {
 
 	if ( conf_file_exists() ) {
 		mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
-		rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag", "remove_chr_from_tag", "rm_chr_from_tagalign", "remove_chr_from_tagalign"] )		
+		rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )		
 
-		wt_markdup 	= get_conf_val( wt_markdup, 		["walltime_markdup", "wt_markdup", "timeout_markdup"] )
-		mem_markdup 	= get_conf_val( mem_markdup, 		["memory_markdup", "mem_markdup"] )
+		wt_markdup 	= get_conf_val( wt_markdup, 		["wt_markdup"] )
+		mem_markdup 	= get_conf_val( mem_markdup, 		["mem_markdup"] )
 	}
 
-	if ( v ) { // verbose
-		print("\n")		
-		print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")
-		print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
-		print( "Walltime (picard markdup)\t: $wt_markdup\n")
-		print( "Max. memory (picard markdup)\t: $mem_markdup\n")
-	}	
+	print("\n\n== postalign bam settings\n")
+	print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")
+	print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
+	print( "Walltime (picard markdup)\t: $wt_markdup\n")
+	print( "Max. memory (picard markdup)\t: $mem_markdup\n")
 }
 
 string[] _dedup_bam( string bam, string out_dir, string info ) {

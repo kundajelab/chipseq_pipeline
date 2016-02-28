@@ -3,11 +3,11 @@
 include "species.bds"
 
 
-help Narrow peak input definition : 
-help      For true replicates, use '-peak1' and '-peak2',
-help      For pooled replicates, use '-peak_pooled',
-help      For two PR (pseudo-replicates), use '-peak[REP_ID]_pr1' and '-peak[REP_ID]_pr2',
-help      For two PPR (pooled pseudo-replicates), use '-peak_ppr1' and '-peak_ppr2',
+help == narrow peak input definition : 
+help         For true replicates, use '-peak1' and '-peak2',
+help         For pooled replicates, use '-peak_pooled',
+help         For two PR (pseudo-replicates), use '-peak[REP_ID]_pr1' and '-peak[REP_ID]_pr2',
+help         For two PPR (pooled pseudo-replicates), use '-peak_ppr1' and '-peak_ppr2',
 
 
 string get_peak( int rep, int pse ) { // rep==0 : pooled peak, pse==0 : true replicate

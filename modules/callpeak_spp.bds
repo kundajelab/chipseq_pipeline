@@ -3,17 +3,18 @@
 include "species.bds"
 
 
-help Spp settings (run_SPP_nodups.R) :
-npeak 		:= 300000 	help -npeak in spp (phantompeakqual tool run_spp_nodups.R) (default: 300000).
+help == callpeak spp settings
+npeak 		:= 300000 	help Threshold on # peaks (-npeak in spp) (default: 300000).
+//help *resources :
 nth_spp 	:= 2		help # threads for spp (run_spp.R) (default: 2).
 wt_spp		:= "15h"	help Walltime for spp (default: 10h, 10:00:00).
 mem_spp		:= "8G" 	help Max. memory for spp (default: 8G).
 
 
-init_peakcall_spp()
+init_callpeak_spp()
 
 
-void init_peakcall_spp() {
+void init_callpeak_spp() {
 
 	if ( conf_file_exists() ) {
 
@@ -23,19 +24,15 @@ void init_peakcall_spp() {
 		mem_spp 	= get_conf_val( mem_spp, 		["memory_spp", "mem_spp"] )
 	}
 
-	if ( v ) { // verbose
-		print("\n")
-		//print_if_not_null( "Peak calling method", "$peakcall" )
-		print( "# peak for spp (-npeak)\t: $npeak\n")
-		print( "# threads (spp)\t\t: $nth_spp\n")
-		print( "Walltime (spp)\t\t: $wt_spp\n")
-		print( "Max. memory (spp)\t: $mem_spp\n")
-	}
+	print("\n\n== callpeak spp settings\n")
+	print( "Threshold for # peak\t\t: $npeak\n")
+	print( "# threads (spp)\t\t: $nth_spp\n")
+	print( "Walltime (spp)\t\t: $wt_spp\n")
+	print( "Max. memory (spp)\t: $mem_spp\n")
 }
 
 string[] _spp( string tag, string ctl_tag, string fraglen, string out_dir, string info ) {
 
-	// outputs
 	prefix_vs	:= "$out_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
 	prefix_x	:= "$out_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
 
@@ -62,7 +59,6 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string out_dir, strin
 			-npeak=$npeak -odir=$out_dir -speak=$fraglen -savn -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
-		// chr3    153999636       1.54e+08        .       0       .       4.47152214284156        -1      -0.0118951365772202     18
 		sys zcat $npeakfile_vs | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -c > $npeakfile
 		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -c > $rpeakfile
 		

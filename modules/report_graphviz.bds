@@ -2,6 +2,7 @@
 
 include "report.bds"
 
+
 shape_box 	:= "box"
 shape_node 	:= "oval"
 fontsize_box 	:= 11

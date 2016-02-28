@@ -2,9 +2,12 @@
 
 include "general.bds"
 
+
+help == report settings
 url_base 	:= "" 		help URL base for output directory.
 
-padding_left	:= 20
+
+padding_left	:= 20 
 
 
 init_report()
@@ -16,10 +19,8 @@ void init_report() {
 		url_base	= get_conf_val( url_base, 		["url_base"] )
 	}
 	
-	if ( v ) { // verbose
-		print("\n")
-		print( "URL root for output directory\t: $url_base\n" )
-	}
+	print("\n\n== report settings\n")
+	print( "URL root for output directory\t: $url_base\n" )
 }
 
 // bwa logs (*.flagstat.qc): 1 table

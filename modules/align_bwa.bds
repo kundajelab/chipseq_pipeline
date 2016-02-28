@@ -3,9 +3,9 @@
 include "species.bds"
 
 
-help Bwa settings :
-
+help == align bwa settings (requirements: -bwa_idx)
 param_bwa_aln	:= "-q 5 -l 32 -k 2" 	help Parameters for bwa aln (default: "-q 5 -l 32 -k 2").
+//help *resources
 nth_bwa_aln	:= 2 			help # threads for bwa aln (default: 2).
 wt_bwa_aln	:= "10h"		help Walltime for bwa aln (default: 10h, 10:00:00).
 mem_bwa_aln	:= "8G"	 		help Max. memory for bwa aln (default: 8G).
@@ -20,24 +20,27 @@ void init_align_bwa() {
 
 	if ( conf_file_exists() ) {
 
-		param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["bwa_aln_param", "param_bwa_aln"] )
+		param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["param_bwa_aln"] )
 
-		nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["nthreads_bwa_aln", "nth_bwa_aln", "cpu_bwa_aln"] )
-		wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["walltime_bwa_aln", "wt_bwa_aln", "timeout_bwa_aln"] )
-		mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["memory_bwa_aln", "mem_bwa_aln"] )
-		wt_bwa_sam 	= get_conf_val( wt_bwa_sam, 		["walltime_bwa_sam", "wt_bwa_sam", "timeout_bwa_sam"] )
-		mem_bwa_sam 	= get_conf_val( mem_bwa_sam, 		["memory_bwa_sam", "mem_bwa_sam"] )
+		nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["nth_bwa_aln"] )
+		wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["wt_bwa_aln"] )
+		mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["mem_bwa_aln"] )
+		wt_bwa_sam 	= get_conf_val( wt_bwa_sam, 		["wt_bwa_sam"] )
+		mem_bwa_sam 	= get_conf_val( mem_bwa_sam, 		["mem_bwa_sam"] )
 	}
 
-	if ( v ) { // verbose
-		print("\n")		
-		print( "Param. for bwa aln\t: $param_bwa_aln\n")
-		print( "# threads (bwa aln)\t: $nth_bwa_aln\n")
-		print( "Walltime (bwa aln)\t: $wt_bwa_aln\n")
-		print( "Max. memory (bwa aln)\t: $mem_bwa_aln\n")
-		print( "Walltime (bwa sam)\t: $wt_bwa_sam\n")
-		print( "Max. memory (bwa sam)\t: $mem_bwa_sam\n")
-	}	
+	print("\n\n== align bwa settings\n")
+	print( "Param. for bwa aln\t: $param_bwa_aln\n")
+	print( "# threads (bwa aln)\t: $nth_bwa_aln\n")
+	print( "Walltime (bwa aln)\t: $wt_bwa_aln\n")
+	print( "Max. memory (bwa aln)\t: $mem_bwa_aln\n")
+	print( "Walltime (bwa sam)\t: $wt_bwa_sam\n")
+	print( "Max. memory (bwa sam)\t: $mem_bwa_sam\n")
+}
+
+void chk_align_bwa() {
+
+	if ( !path_exists("$bwa_idx.bwt") ) error("\nBwa index (-bwa_idx) doesn't exists! (file: $bwa_idx.bwt)\n")
 }
 
 string[] _bwa( string fastq, string out_dir, string info ) {

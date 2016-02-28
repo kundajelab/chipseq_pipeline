@@ -3,8 +3,9 @@
 include "species.bds"
 
 
-help Signal track generation settings : bamCoverage
-param_bam_cvrg 	:= "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10"	help Parameters for deepTools bigwig generation from nodup_bam (default: "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10").
+help == signal track generation settings (requirements: -umap -chrsz -seq)
+param_bam_cvrg 	:= "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10"	help Parameters for deepTools bigwig generation from filt_bam (default: "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10").
+//help *resources :
 nth_bam_cvrg	:= 3 		help # threads for bamCoverage (deepTools) (default: 3).
 wt_bam_cvrg	:= "5h"		help Walltime for bamCoverage (deepTools) (default: 5h, 5:00:00).
 mem_bam_cvrg	:= "8G" 	help Max. memory for bamCoverage (deepTools) (default: 8G).
@@ -16,20 +17,24 @@ init_signal()
 void init_signal() {
 
 	if ( conf_file_exists() ) {
-		//signal track genenration
-		param_bam_cvrg	= get_conf_val( param_bam_cvrg, 	["param_bam_cvrg", "param_bam_coverage"] )
-		nth_bam_cvrg 	= get_conf_val_int( nth_bam_cvrg,	["nthreads_bam_cvrg", "nth_bam_cvrg", "cpu_bam_cvrg"] )
-		wt_bam_cvrg 	= get_conf_val( wt_bam_cvrg, 		["walltime_bam_cvrg", "wt_bam_cvrg", "timeout_bam_cvrg"] )
-		mem_bam_cvrg 	= get_conf_val( mem_bam_cvrg, 		["memory_bam_cvrg", "mem_bam_cvrg"] )
+		param_bam_cvrg	= get_conf_val( param_bam_cvrg, 	["param_bam_cvrg"] )
+		nth_bam_cvrg 	= get_conf_val_int( nth_bam_cvrg,	["nth_bam_cvrg"] )
+		wt_bam_cvrg 	= get_conf_val( wt_bam_cvrg, 		["wt_bam_cvrg"] )
+		mem_bam_cvrg 	= get_conf_val( mem_bam_cvrg, 		["mem_bam_cvrg"] )
 	}
 
-	if ( v ) { // verbose
-		print("\n")		
-		print( "Param. for bamCoverage (deeptools)\t: $param_bam_cvrg\n")
-		print( "# threads (bam_cvrg)\t: $nth_bam_cvrg\n")
-		print( "Walltime (bam_cvrg)\t: $wt_bam_cvrg\n")
-		print( "Max. memory (bam_cvrg)\t: $mem_bam_cvrg\n")
-	}	
+	print("\n\n== callpeak gem settings\n")
+	print( "Param. for bamCoverage (deeptools)\t: $param_bam_cvrg\n")
+	print( "# threads (bam_cvrg)\t: $nth_bam_cvrg\n")
+	print( "Walltime (bam_cvrg)\t: $wt_bam_cvrg\n")
+	print( "Max. memory (bam_cvrg)\t: $mem_bam_cvrg\n")
+}
+
+void chk_signal_aln2rawsig() {
+
+	if ( !path_exists( "$umap/chr1.uint8.unique" ) ) error("Unique mappability (-umap) directory doesn't exists! (file: $umap/chr1.uint8.unique)\n")
+	if ( !path_exists( chrsz ) ) error("Chromosome size file (-chrsz) is missing or doesn't exists! (file: $chrsz)")
+	if ( !path_exists( "$seq/chr1.fa") ) error("\nReference genome sequence directory doesn't exists! (file: $seq/chr1.fa)\n")
 }
 
 string _tag_to_wig( string tag, string fraglen, string out_dir, string info ) {

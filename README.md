@@ -61,7 +61,7 @@ There are two ways to define parameters for ChIP-Seq pipelines. Default values a
 
 1) Parameters from command line arguments: 
 ```
-$ bds chipseq.bds [OPTS]
+$ bds chipseq.bds [OPTIONS]
 ```
 Example (for single ended fastqs):
 ```
@@ -135,6 +135,16 @@ bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg1
 bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
 vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.merged.ANS.bed
 blacklist_idr = /mnt/data/ENCODE/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz
+
+ref_fa  = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/encodeHg19Male.fa  // genome reference fasta
+blacklist = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/Anshul_Hg19UltraHighSignalArtifactRegions.bed.gz
+dnase = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_all_p10_ucsc.bed.gz
+tss = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/hg19_RefSeq_stranded.bed.gz
+prom = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_prom_p2.bed.gz
+enh = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_enh_p2.bed.gz
+reg2map = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/dnase_avgs_reg2map_p10_merged_named.pvals.gz
+roadmap_meta = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/eid_to_mnemonic.txt
+
 
 [mm9]
 ...
@@ -265,10 +275,10 @@ For IDR on pooled pseduro replicates:
 
 Add the following flag to the command line.
 ```
--paired_end
+-pe
 ```
 
-For fastqs, you do not need to add '-paired_end' since the pipeline will automatically determine if SE or PE.
+For fastqs, you do not need to add '-pe' since the pipeline will automatically determine if SE or PE.
 
 For replicates:
 Define data path as -fastq[REPLICATE_ID], then it's SE (single ended).

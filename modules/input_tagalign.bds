@@ -3,8 +3,8 @@
 include "species.bds"
 
 
-help Tagalign input definition :
-help      For replicate '-tag[REP_ID]', For control '-ctl_tag[REP_ID]'.
+help == tagalign input definition :
+help         For replicate '-tag[REP_ID]', For control '-ctl_tag[REP_ID]'.
 
 
 string get_tag( int ctl, int rep ) {

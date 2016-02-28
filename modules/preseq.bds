@@ -3,24 +3,22 @@
 include "species.bds"
 
 
-help Preseq analysis settings :
+help == preseq analysis settings
 xmax 		:= 500		help Maximum # of reads for preseq analysis (default: 500).
 
 
-init_peakcall_etc()
+init_callpeak_etc()
 
 
-void init_peakcall_etc() {
+void init_callpeak_etc() {
 
 	if ( conf_file_exists() ) {
 
 		xmax 		= get_conf_val_int( xmax,		["xmax", "x_max"] )
 	}
 
-	if ( v ) { // verbose
-		print("\n")
-		print( "Xmax for preseq\t: $xmax\n")
-	}
+	print("\n\n== preseq settings\n")
+	print( "Xmax for preseq\t: $xmax\n")
 }
 
 string _preseq( string srt_bam, string out_dir, string info ) {
