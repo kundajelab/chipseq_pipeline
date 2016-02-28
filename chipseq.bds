@@ -886,7 +886,7 @@ void report() {
 	sys cp $script_dir/html/jquery.treetable.* $out_dir    # move report js/css files to out_dir
 
 	report_file 	:= "$out_dir/Report.html"
-	report_header 	:= "$script_dir/html/rpt_header.html"
+	report_header 	:= "$script_dir/rpt_header.html"
 
 	html := report_header.read()
 
