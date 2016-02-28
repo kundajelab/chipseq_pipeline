@@ -899,10 +899,10 @@ void report() {
 	wait
 
 	script_dir  := programPath.dirName()	// directory where chipseq.bds exists	
-	sys cp $script_dir/etc/jquery.treetable.* $out_dir    # move report js/css files to out_dir
+	sys cp $script_dir/html/jquery.treetable.* $out_dir    # move report js/css files to out_dir
 
 	report_file 	:= "$out_dir/Report.html"
-	report_header 	:= "$script_dir/etc/rpt_header.html"
+	report_header 	:= "$script_dir/html/rpt_header.html"
 
 	html := report_header.read()
 

@@ -9,7 +9,6 @@
 
 # Alignment, SPP and IDR
 bds ~/ENCODE_chipseq_pipeline/tf_chipseq.bds \
--input fastq \
 -fastq1 /DATA/ENCODE/ENCSR000EGM/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCODE/ENCSR000EGM/ENCFF000YLY.fastq.gz \
 -ctl_fastq1 /DATA/ENCODE/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
@@ -19,14 +18,12 @@ bds ~/ENCODE_chipseq_pipeline/tf_chipseq.bds \
 # Start from tagAligns, SPP and IDR
 # tagalign_PE = false because it's single ended
 bds ~/ENCODE_chipseq_pipeline/tf_chipseq.bds \
--input tagalign \
 -tag1 /DATA/ENCODE/ENCSR000EGM/T1.tagAlign.gz \
 -tag2 /DATA/ENCODE/ENCSR000EGM/T2.tagAlign.gz \
 -ctl_tag1 /DATA/ENCODE/ENCSR000EGM/Ctl/T3.tagAlign.gz \
 
 # Alignment, histone chipseq (peak calling using macs2)
 bds ~/ENCODE_chipseq_pipeline/tf_chipseq.bds \
--input bam \
 -bam1 /DATA/ENCODE/ENCSR000EGM/BAM1.bam \
 -bam2 /DATA/ENCODE/ENCSR000EGM/BAM2.bam \
 -ctl_bam1 /DATA/ENCODE/ENCSR000EGM/Ctl/BAM3.bam \
