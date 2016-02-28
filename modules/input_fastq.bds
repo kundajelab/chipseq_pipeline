@@ -3,9 +3,9 @@
 include "species.bds"
 
 
-help Fastq input definition :
-help      Single-ended : For replicate '-fastq[REP_ID]', For control '-ctl_fastq[REP_ID]'
-help      Paired end : For replicate '-fastq[REP_ID]_[PAIR_ID]', For control '-ctl_fastq[REP_ID]_[PAIR_ID]'
+help == fastq input definition :
+help         Single-ended : For replicate '-fastq[REP_ID]', For control '-ctl_fastq[REP_ID]'
+help         Paired end : For replicate '-fastq[REP_ID]_[PAIR_ID]', For control '-ctl_fastq[REP_ID]_[PAIR_ID]'
 
 // Dummy variables for atac.bds (for legacy input method)
 fastq1_1	:= ""

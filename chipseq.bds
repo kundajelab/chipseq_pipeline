@@ -1,37 +1,28 @@
 #!/usr/bin/env bds
 
-help ==== Replicate ending : single ended (SE) or paired end (PE).
-paired_end 	:= false 	help Set it for paired end data.
 
-help ==== Final stage of pipeline : leave it blank to let the pipeline go through all stages
-final_stage	:= "" 		help Final stage for pipeline (bam, filt_bam, tag, xcor and peak)..
+help == chipseq pipeline settings
 
-help ==== General pipeline parameters : output directory, resource settings, shell environments and species
-include "modules/general.bds"
+pe 		:= false 	help Paired end data.
+final_stage	:= "" 		help Final stage for pipeline (bam, filt_bam, tag, xcor and peak).
+callpeak 	:= "spp"	help Peak calling method : spp, macs2 and gem (default: spp).
+subsample 	:= false 	help Subsample taglign for cross corr. analysis. Use '-nreads [NO_READS]' for # reads to subsample.
+true_rep   	:= false	help Call peaks on true replicates only.
+ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
+sigtrk 		:= ""		help Signal track generation method : aln2rawsig and deeptools.
+no_bw		:= false	help Prevent bigwig generation.
+make_wig 	:= false	help Create wig (only for '-sigtrk aln2rawsig').
 
-help ==== Species specific parameters : bwa index, chr. size file, genome size and etc.
-include "modules/species.bds"
+help() // print help if no parameters are given
 
-help ==== Input : pipeline can start from various data types (fastq, bam, filt_bam, tagalign and peak).
 include "modules/input_fastq.bds"
 include "modules/input_bam.bds"
 include "modules/input_tagalign.bds"
 include "modules/input_peak.bds"
 
-help ==== Subsampling tagligns for cross correlation analysis.
-subsample 	:= false 	help Subsample taglign for cross corr. analysis. Use '-nreads [NO_READS]' for # reads to subsample.
+include "modules/general.bds"
+include "modules/species.bds"
 
-help ==== Calling peaks.
-callpeak 	:= "spp"	help Peak calling method : spp, macs2 and gem (default: spp).
-true_rep   	:= false	help Call peaks on true replicates only.
-ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
-
-help ==== Signal track generation.
-sigtrk 		:= ""		help Signal track generation method : aln2rawsig and deeptools.
-no_bw		:= false	help Prevent bigwig generation.
-make_wig 	:= false	help Create wig (only for '-sigtrk aln2rawsig').
-
-//help ==== Advanced settings for ChIP-Seq pipeline
 include "modules/report.bds"
 include "modules/report_graphviz.bds"
 
@@ -49,13 +40,12 @@ include "modules/signal.bds"
 
 //////// Global variables /////
 
-// system
+// system vars
 input 		:= ""
 num_ctl 	:= 1
 
 // filepath of outputs
 string{} fastq, bam, filt_bam, tag, tag_pr1, tag_pr2 // replicate data: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
-
 string{} peak, peak_pr1, peak_pr2 // peaks: map with key ("$rep")
 
 string tag_pooled, tag_ctl_pooled, tag_ppr1, tag_ppr2
@@ -74,9 +64,8 @@ string idr_qc
 
 
 
-//////// chipseq pipeline starts here /////
 
-help() // print help if no parameters are given
+//////// chipseq pipeline starts here /////
 
 init_chipseq() // read command line parameters or configruation file
 
@@ -97,39 +86,19 @@ void init_chipseq() {
 
 	if ( conf_file_exists() ) {
 
-		paired_end	= get_conf_val_bool( paired_end, 	["paired_end", "pe"] )
-		final_stage	= get_conf_val( final_stage, 		["final_stage", "final_out"] )
+		pe		= get_conf_val_bool( pe, 		["pe"] )
+		final_stage	= get_conf_val( final_stage, 		["final_stage"] )
 
-		subsample	= get_conf_val_bool( subsample, 	["subsample_tag", "subsample","subsample_tagalign", "subsamplealign"] )
+		subsample	= get_conf_val_bool( subsample, 	["subsample"] )
 
-		callpeak	= get_conf_val( callpeak, 		["callpeak", "peakcall"] )
-		true_rep 	= get_conf_val_bool( true_rep, 	["true_rep"] )
-		ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, ["ctl_depth_ratio"])
+		callpeak	= get_conf_val( callpeak, 		["callpeak"] )
+		true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
+		ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])
 		
-		sigtrk 		= get_conf_val( sigtrk, 		["sigtrk", "sig_trk", "sigtrk_method"] )
-		make_wig	= get_conf_val_bool( make_wig, 		["create_wig", "make_wig"] )
-		no_bw		= get_conf_val_bool( no_bw, 		["no_bigwig", "no_bw"] )
-
+		sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
+		make_wig	= get_conf_val_bool( make_wig, 		["make_wig"] )
+		no_bw		= get_conf_val_bool( no_bw, 		["no_bw"] )
 	}
-	
-	if ( v ) { // verbose
-		print("\n")
-		print( "Final stage for ChIP-Seq\t: $final_stage\n" )
-		print( "# replicates \t\t\t: "+get_num_rep()+"\n" )
-		print( "Input data type\t\t\t: $input\n")
-		print( "Peak calling method\t\t: $callpeak\n" )
-		print( "Peak calling for true replicates only?: $true_rep\n" )
-		print( "Control rep. depth ratio\t: $ctl_depth_ratio\n" )
-		print( "Subsampling for tagaligns\t: $subsample\n")
-		print( "Sig. trk. generation method\t: $sigtrk\n" )
-		print( "Create wig\t\t\t: $make_wig\n" )
-		print( "No bigwig\t\t\t: $no_bw\n" )
-	}	
-
-	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
-}
-
-void chk_input() {
 
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
@@ -138,40 +107,55 @@ void chk_input() {
 	if ( get_bam(0,1) != "" ) 	input = "bam"
 	if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
 
-	if ( is_input_fastq() ) {
-		if ( !path_exists("$bwa_idx.bwt") ) error("\nBWA index doesn't exists! ($bwa_idx.bwt)\n")
-	}
+	if ( !control_exists() ) num_ctl = 0
+	
+	print( "\n\n== chipseq pipeline settings\n")
+	print( "Final stage for ChIP-Seq\t: $final_stage\n" )
+	print( "# replicates \t\t\t: "+get_num_rep()+"\n" )
+	print( "Input data type\t\t\t: $input\n")
+	print( "Peak calling method\t\t: $callpeak\n" )
+	print( "Peak calling for true replicates only?: $true_rep\n" )
+	print( "Control rep. depth ratio\t: $ctl_depth_ratio\n" )
+	print( "Subsampling for tagaligns\t: $subsample\n")
+	print( "Sig. trk. generation method\t: $sigtrk\n" )
+	print( "Create wig\t\t\t: $make_wig\n" )
+	print( "No bigwig\t\t\t: $no_bw\n" )
 
-	if ( is_sigtrk_macs2() || is_callpeak_macs2() || is_callpeak_gem() ) {
-		if ( !path_exists( chrsz ) ) error("\nChrome sizes file doesn't exists! ($chrsz)\n")	
-	}
+	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
+}
 
-	if ( is_sigtrk_aln2rawsig() || is_callpeak_gem() ) {
-		if ( !path_exists("$seq/chr1.fa") ) error("\nRef. sequence doesn't exists! ($seq/chr1.fa)\n")
-	}
+void chk_input() {
 
-	if ( is_sigtrk_aln2rawsig() ) {
-		if ( !path_exists( umap ) ) error("\nUmap directory doesn't exists! ($umap)\n")
-	}
+	print( "\n\n== checking chipseq inputs (data type = $input) ...\n\n" );
 
-	if ( !is_data_available( 1, 1 ) && is_callpeak_macs2() ) { // can call peaks with macs2 without control
-		num_ctl = 0
-	}
+	if ( is_input_fastq() ) 			chk_align_bwa()
+	if ( is_callpeak_gem() ) 			chk_callpeak_gem()
+	if ( is_sigtrk_macs2() || is_callpeak_macs2() ) chk_callpeak_macs2()
+	if ( is_sigtrk_aln2rawsig() ) 			chk_signal_aln2rawsig()
+	if ( is_final_stage_idr() ) 			chk_idr()
 
-	if ( is_align_only_mode() ) { 	// if no data for control rep1 and final stage is before peak calling
-					// this must be aligment only mode, so ignore all control from here
-		print("\n\nAlign only mode for " + get_num_rep() + " replicates!\n\n")
-		num_ctl = 0
+	if ( is_align_only_mode() ) { 	
+		print("Align only mode (no peak calling) for " + get_num_rep() + " replicates.\n")
 	}
 	else if ( get_num_rep() > 2 ) {
+		error("For peak calling, # replicates (" + get_num_rep() + ") should be <= 2.\n")
+	}
+/*
+	// can call peaks with macs2 without control
+	if ( !control_exists() && is_callpeak_macs2() ) num_ctl = 0
+
+	// if no data for control rep1 and final stage is before peak calling, this must be aligment only mode, so ignore all control from here
+	if ( is_align_only_mode() ) { 	
+
+		num_ctl = 0
+		print("\n\nAlign only mode for " + get_num_rep() + " replicates!\n\n")		
+	}
+	else if ( get_num_rep() > 2 ) {
+
 		error("\n\nFor peak calling, # replicates (" + get_num_rep() + ") should be <= 2.\n\n")
 	}
-
-	if ( is_final_stage_idr() && !path_exists( blacklist_idr ) ) {
-		print("\nWarning: Blacklist bed ('-blacklist_idr') for final IDR QC is missing! ($blacklist_idr)\n\n")
-	}
-
-	print( "\n====== Checking inputs (data type = $input) ...\n\n" );
+*/
+	print("\n")
 
 	if ( is_input_peak() ) {
 
@@ -268,7 +252,7 @@ void align() {
 
 			if ( !is_data_available( ctl, rep ) ) continue
 
-			if ( no_par_job ) _align( ctl, rep ) // go serial 
+			if ( no_par ) _align( ctl, rep ) // go serial 
 			else 		  par _align( ctl, rep ) // go parallel
 		}
 	}
@@ -619,7 +603,7 @@ void call_peaks() {
 
 	if ( !is_final_stage_peak() && !is_final_stage_idr() ) return
 
-	if ( !is_data_available( 1, 1 ) ) { // if there is no control, show warning or exit
+	if ( !control_exists() ) { // if there is no control, show warning or exit
 
 		if ( is_callpeak_macs2() ) {
 			print("\n\nIMPORTANT! call peaks with MACS2 without control!\n")
@@ -671,7 +655,7 @@ void call_peaks() {
 
 	string tag_ctl1_graphviz_id, tag_ctl2_graphviz_id, tag_ctl_pooled_graphviz_id
 
-	if ( !is_data_available( 1, 1 ) ) {
+	if ( !control_exists() ) {
 
 		tag{"1,1"} = ""
 
@@ -855,7 +839,7 @@ void do_idr() {
 	(tmp, idr_Nt, idr_Nt_png) = _idr( peak{1}, peak{2}, peak_pooled, idr_out_dir, "true_rep_Rep1_vs_Rep2" )
 
 	_add_to_graphviz( ["peak\\n(true rep1)","peak\\n(true rep2)","peak\\n(pooled)"], [peak{1},peak{2},peak_pooled], \
-			  ["idr\\n(Nt)"], [idr_Nt], \
+			  ["peak_idr\\n(Nt)"], [idr_Nt], \
 			  "idr\\n(true rep)", "limegreen" )
 
 	if ( !true_rep ) {
@@ -863,19 +847,19 @@ void do_idr() {
 		(tmp, idr_N1, idr_N1_png) = _idr( peak_pr1{1}, peak_pr2{1}, peak{1}, idr_out_dir, "pseudo_rep_Rep1_PR1_vs_Rep1_PR2" )
 
 		_add_to_graphviz( ["peak\\n(rep1 pr1)","peak\\n(rep1 pr2)","peak\\n(true rep1)"], [peak_pr1{1},peak_pr2{1},peak{1}], \
-				  ["idr\\n(N1)"], [idr_N1], \
+				  ["peak_idr\\n(N1)"], [idr_N1], \
 				  "idr\\n(pseudo rep1)", "limegreen" )
 
 		(tmp, idr_N2, idr_N2_png) = _idr( peak_pr1{2}, peak_pr2{2}, peak{2}, idr_out_dir, "pseudo_rep_Rep2_PR1_vs_Rep2_PR2" )
 
 		_add_to_graphviz( ["peak\\n(rep2 pr1)","peak\\n(rep2 pr2)","peak\\n(true rep2)"], [peak_pr1{2},peak_pr2{2},peak{2}], \
-				  ["idr\\n(N2)"], [idr_N1], \
+				  ["peak_idr\\n(N2)"], [idr_N1], \
 				  "idr\\n(pseudo rep2)", "limegreen" )
 
 		(tmp, idr_Np, idr_Np_png) = _idr( peak_ppr1, peak_ppr2, peak_pooled, idr_out_dir, "pooled_pseudo_rep_PPR1_vs_PPR2" )
 
 		_add_to_graphviz( ["peak\\n(ppr1)","peak\\n(ppr2)","peak\\n(pooled)"], [peak_ppr1,peak_ppr2,peak_pooled], \
-				  ["idr\\n(Np)"], [idr_Np], \
+				  ["peak_idr\\n(Np)"], [idr_Np], \
 				  "idr\\n(pooled pseudo rep)", "limegreen" )
 		
 		wait
@@ -887,7 +871,7 @@ void do_idr() {
 			idr_qc = _idr_final_qc( idr_Nt, idr_N1, idr_N2, idr_Np, idr_out_dir, "" )
 
 			_add_to_graphviz( ["idr\\n(Nt)","idr\\n(N1)","idr\\n(N2)","idr\\n(Np)"], [idr_Nt,idr_N1,idr_N2,idr_Np], \
-					  ["idr qc"], [idr_qc] )
+					  ["idr_qc"], [idr_qc] )
 		}
 	}
 
@@ -1241,61 +1225,13 @@ void set_env() {
 
 	}
        
-	if ( v ) { // verbose
-		print( "\nShell command for initialization\t: $SHCMD_INIT\n\n" )
-	}
+	print( "\nShell command for initialization\t: $SHCMD_INIT\n\n" )
 }
 
 void help() {
 
 	if ( is_cmd_line_arg_empty() ) {
-
-		print(" Usage 1 (command line argument): example starting from two SE fastqs \n")
-		print("\n")
-		print("\t\$ bds chipseq.bds \\ \n")
-		print("\t\t -fastq1 [FASTQ_REP1] \\ \n")
-		print("\t\t -fastq2 [FASTQ_REP2] \\ \n")
-		print("\t\t -bwa_idx [BWA_INDEX] \\ \n")
-		print("\t\t ... \n")
-		print("\n")
-		print(" Usage 2 (configruation file): \n")
-		print("\n")
-		print("\t\$ bds chipseq.bds [CONF_FILE] \\ \n")
-		print("\n")
-		print("\t===[CONF_FILE] contents===\n")
-		print("\tfastq1= [FASTQ_REP1]\n")
-		print("\tfastq2= [FASTQ_REP2]\n")
-		print("\tbwa_idx= [BWA_INDEX]\n")
-		print("\t\t ...\n")
-		print("\n")
-		print(" Usage 3 (command line argument using species database): For example, [SPECIES]= hg19 or mm9.\n")
-		print("\n")
-		print("\t\$ bds chipseq.bds \\ \n")
-		print("\t\t -fastq1 [FASTQ_REP1] \\ \n")
-		print("\t\t -fastq2 [FASTQ_REP2] \\ \n")
-		print("\t\t -species [SPECIES] \\ \n")
-		print("\t\t -species_file [SPECIES_FILE] \\ \n")
-		print("\t\t ... \n")
-		print("\n")
-		print(" For Sun Grid Engine (SGE) cluster use\n")
-		print("\n")
-		print("\t\$ bds -s sge chipseq.bds ... \n")
-		print("\n")
-		print(" For Kundaje lab cluster use (this will automatically set shell environments and species file.)\n")
-		print("\n")
-		print("\t\$ bds -s sge chipseq.bds ... -kundaje_lab\n")
-		print("\n")
-		print(" Recommended software versions\n")
-		print("\n")
-		print("\tbwa/0.7.3; samtools/0.1.19; bedtools/2.19.1; ucsc_tools/3.0.9; picard-tools/1.92\n")
-		print("\tphantompeakqualtools/1.1; align2rawsignal/2.0; MACS2/2.1.0; gem/2.6; \n")
-		print("\tjava/8; r/2.15.1; python3/3.4; python2/2.7\n")
-		print("\tspp_1.10.1 (R package);\n")
-		print("\n")
-		print(" List of parameters\n")
-		print(" \n")
 		printHelp()
-
 		exit
 	}
 }
@@ -1334,7 +1270,7 @@ bool is_sigtrk_deeptools() {
 
 bool is_align_only_mode() {
 
-	return !is_input_peak() && !is_data_available( 1, 1 ) && !is_callpeak_macs2()
+	return !is_input_peak() && !control_exists() && !is_callpeak_macs2()
 }
 
 bool is_input_fastq() {
@@ -1411,7 +1347,7 @@ bool is_paired_end( int ctl, int rep ) {
 		return fastqs.size()==2
 	}
 	else {
-		return paired_end
+		return pe
 	}
 }
 
@@ -1439,6 +1375,10 @@ bool is_data_available( int ctl, int rep ) {
 	else {
 		return false
 	}
+}
+
+bool control_exists() {
+	return is_data_available( 1, 1 )
 }
 
 string get_info( int ctl, int rep ) {

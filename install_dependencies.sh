@@ -245,16 +245,7 @@ CONTENTS=(
 "export MALLOC_ARENA_MAX=4"
 "export PATH=\$PATH:\$HOME/.bds"
 )
-add_to_bashrc
-
-#echo 
-#echo "Adding following lines to your $BASHRC ..."
-#for i in "${BASHRC_CONTENTS[@]}"; do
- # if [ $(grep "$i" "$BASHRC" | wc -l ) == 0 ]; then
-#    echo $i
-#    echo $i >> $BASHRC
-#  fi
-#done
+#add_to_bashrc
 
 echo
 echo "=============================================================================="
@@ -266,12 +257,6 @@ read -p "Press [Enter] key to continue..."
 echo
 
 mkdir -p $SOFTWARE
-
-# Local installation for BigDataScript (latest)
-#cd $HOME
-#wget https://github.com/pcingola/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz --no-check-certificate -N
-#tar zxvf bds_Linux.tgz
-#rm -f bds_Linux.tgz
 
 cd $SOFTWARE
 git clone https://github.com/pcingola/BigDataScript
@@ -295,7 +280,7 @@ cd tabix-0.2.6
 make
 chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/tabix-0.2.6")
-add_to_bashrc
+#add_to_bashrc
 
 
 # Local installation for bwa (0.7.3)
@@ -306,7 +291,7 @@ git checkout tags/0.7.3
 make
 chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/bwa-0.7.3")
-add_to_bashrc
+#add_to_bashrc
 
 # Local installation for samtools (0.1.19)
 cd $SOFTWARE
@@ -316,7 +301,7 @@ git checkout tags/0.1.19
 make
 chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/samtools-0.1.19")
-add_to_bashrc
+#add_to_bashrc
 
 # Local installation for bedtools (2.19.1)
 cd $SOFTWARE
@@ -327,7 +312,7 @@ cd bedtools2-2.19.1
 make
 chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/bedtools2-2.19.1/bin")
-add_to_bashrc
+#add_to_bashrc
 
 # Local installation for UCSC tools
 cd $SOFTWARE
@@ -338,7 +323,8 @@ wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig -N
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo -N
 chmod 755 *
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/ucsc_tools")
-add_to_bashrc
+#add_to_bashrc
+
 
 # Local installation for PICARD tools (1.92)
 cd $SOFTWARE
@@ -354,7 +340,8 @@ CONTENTS=(
 "export PATH=\$PATH:$SOFTWARE/picard-tools-1.92"
 "export PICARDROOT=$SOFTWARE/picard-tools-1.92"
 )
-add_to_bashrc
+#add_to_bashrc
+
 
 # Local installation for run_spp.R (Anshul's phantompeakqualtool)
 cd $SOFTWARE
@@ -363,7 +350,7 @@ tar zxvf ccQualityControl.v.1.1.tar.gz
 rm -f ccQualityControl.v.1.1.tar.gz
 chmod 755 phantompeakqualtools/*
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/phantompeakqualtools")
-add_to_bashrc
+#add_to_bashrc
 
 # Local installation instruction for R (2.15.1) and relevant packages
 cd $SOFTWARE
@@ -389,7 +376,7 @@ $SOFTWARE/R-2.15.1/bin/Rscript tmp.R
 chk_exit_code
 rm -f tmp.R
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/R-2.15.1/bin")
-add_to_bashrc
+#add_to_bashrc
 
 #LAPACK
 mkdir -p $SOFTWARE/blas
@@ -403,7 +390,7 @@ make lapacklib
 chk_exit_code
 make clean
 CONTENTS=("export LAPACK=$SOFTWARE/blas/lapack-*/liblapack.a")
-add_to_bashrc
+#add_to_bashrc
 
 #tabix
 
@@ -446,7 +433,7 @@ CONTENTS=(
 "export PATH=\$PATH:$SOFTWARE/python2.7/bin"
 "export PYTHONPATH=$SOFTWARE/python2.7/lib/python2.7/site-packages:\$PYTHONPATH"
 )
-add_to_bashrc
+#add_to_bashrc
 
 # Local installation instruction for MACS2
 cd $SOFTWARE
@@ -456,7 +443,7 @@ $SOFTWARE/python2.7/bin/python2.7 setup_w_cython.py install --prefix=$SOFTWARE/p
 chk_exit_code
 chmod 755 $SOFTWARE/MACS/bin/*
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/MACS/bin")
-add_to_bashrc
+#add_to_bashrc
 
 # deepTools (signal track gen.)
 #source ~/.bashrc
@@ -467,7 +454,7 @@ git checkout tags/1.6.0
 $SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
 chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/deepTools/bin")
-add_to_bashrc
+#add_to_bashrc
 
 # Local installation instruction for Python (3.4.3) and relevant packages (for Nathan Boley's IDR)
 cd $SOFTWARE
@@ -492,7 +479,7 @@ chk_exit_code
 $SOFTWARE/python3.4/bin/easy_install-3.4 scipy
 chk_exit_code
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/python3.4/bin")
-add_to_bashrc
+#add_to_bashrc
 #"export PYTHONPATH=$SOFTWARE/python3.4/lib/python3.4/site-packages:\$PYTHONPATH"
 
 
@@ -509,7 +496,7 @@ wget https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?att
 tar zxvf idrCode.tar.gz
 rm -f idrCode.tar.gz
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/idrCode")
-add_to_bashrc
+#add_to_bashrc
 
 # Local installation instruction for gem 
 cd $SOFTWARE
@@ -524,7 +511,7 @@ CONTENTS=(
 "export GEMROOT=$SOFTWARE/gem"
 "export GEM=$SOFTWARE/gem/gem.jar"
 )
-add_to_bashrc
+#add_to_bashrc
 
 # Local installation instruction for Wiggler (for generating signal tracks)
 cd $SOFTWARE
@@ -532,7 +519,7 @@ wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz -N
 tar zxvf align2rawsignal.2.0.tgz
 rm -f align2rawsignal.2.0.tgz
 CONTENTS=("export PATH=\$PATH:$SOFTWARE/align2rawsignal/bin")
-add_to_bashrc
+#add_to_bashrc
 
 wget http://www.broadinstitute.org/~anshul/softwareRepo/MCR2010b.bin -N
 chmod 755 MCR2010b.bin
@@ -553,7 +540,7 @@ CONTENTS=(
 "export LD_LIBRARY_PATH" 
 "export XAPPLRESDIR"
 )
-add_to_bashrc
+#add_to_bashrc
 
 
 # WARNING

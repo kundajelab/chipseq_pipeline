@@ -3,7 +3,7 @@
 include "species.bds"
 
 
-help IDR settings
+help == idr settings
 use_idr1	:= false	help Force to use IDR-1 code (not recommended).
 idr_thresh 	:= "0.02"	help IDR threshold : -log_10(score) (default: 0.02).
 
@@ -22,11 +22,14 @@ void init_idr() {
 		idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
 	}
 
-	if ( v ) { // verbose
-		print("\n")		
-		print( "Use IDR-1\t\t: $use_idr1\n" )
-		print( "IDR threshold\t\t: $idr_thresh\n" )
-	}
+	print("\n\n== idr settings\n")
+	print( "Use IDR-1\t\t: $use_idr1\n" )
+	print( "IDR threshold\t\t: $idr_thresh\n" )
+}
+
+void chk_idr() {
+
+	if ( !path_exists( blacklist_idr ) ) print("\nWarning: Blacklist bed (-blacklist_idr) for final IDR QC is missing! (file: $blacklist_idr)\n\n")
 }
 
 string[] _idr( string peak1, string peak2, string pooled, string out_dir, string info ) {

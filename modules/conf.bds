@@ -3,8 +3,7 @@
 include "base.bds"
 
 
-help Configuration settings
-
+help == configuration file settings
 c	:= "" 		help Configuration file path.
 
 string{} conf // map for configuration

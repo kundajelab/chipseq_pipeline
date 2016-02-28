@@ -2,9 +2,15 @@
 
 include "general.bds"
 
+
+help == report settings
 url_base 	:= "" 		help URL base for output directory.
 
-padding_left	:= 20
+
+padding_left	:= 20 
+
+
+init_report()
 
 
 void init_report() {
@@ -13,10 +19,8 @@ void init_report() {
 		url_base	= get_conf_val( url_base, 		["url_base"] )
 	}
 	
-	if ( v ) { // verbose
-		print("\n")
-		print( "URL root for output directory\t: $url_base\n" )
-	}
+	print("\n\n== report settings\n")
+	print( "URL root for output directory\t: $url_base\n" )
 }
 
 // bwa logs (*.flagstat.qc): 1 table
@@ -236,8 +240,10 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 	json_url := get_url( json_file )
 	viz_url	 := "http://epigenomegateway.wustl.edu/browser/?genome=" + species + "&tknamewidth=150&datahub=" + json_url
 
+	json_rel_path := get_rel_path( json_file )
+
 	html += "<a href=$viz_url target='_blank'>Visualize</a>&nbsp&nbsp"
-	html += "<a href=$json_url target='_blank'>JSON (datahub)</a>"
+	html += "<a href=$json_rel_path target='_blank'>JSON (datahub)</a>"
 	html += "</div></div><br>\n\n"
 
 	return html
@@ -261,7 +267,7 @@ string _html_link( string path, string name ) {
 
 string _html_link_url( string path ) {
 
-	return "<a href='" + get_url( path ) + "' target='_blank'>" + get_rel_path( path ) + "</a><br>"
+	return "<a href='" + get_rel_path( path ) + "' target='_blank'>" + get_rel_path( path ) + "</a><br>"
 }
 
 string _html_img( string path, int width, string cap ) {
@@ -273,8 +279,11 @@ string _pdf_to_png( string pdf ) {
 
 	png 	:= remove_ext( pdf, "pdf" ) + ".png"
 
-	// Requirements: poppler-utils (sudo apt-get install poppler-utils)	
-	sys pdftoppm -png $pdf > $png
+	// Requirements: poppler-utils (sudo apt-get install poppler-utils)
+	task {
+		sys $SHCMD_INIT
+		sys pdftoppm -png $pdf > $png
+	}
 
 	return png
 }
@@ -299,8 +308,9 @@ string _peak_to_hammock( string peak ) {
 	in 	:= peak
 	out 	:= hammock+".gz"
 
-	if ( out<-in ) { // needs bgzip and tabix
+	task ( out<-in ) { // needs bgzip and tabix
 
+		sys $SHCMD_INIT
 		sys zcat $peak | sed '/^\(chr\)/!d' | sort -k1,1V -k2,2n > $tmp
 		sys python $conv $tmp $hammock
 	}

@@ -3,25 +3,23 @@
 include "conf.bds"
 
 
-help General pipeline settings
-v 		:= true 	help Verbose.
+help == general pipeline settings
 out_dir 	:= "out"	help Output directory (default: out).
-no_par_job	:= false	help Serialize all jobs (individual job can still take multiple threads).
+no_par		:= false	help Serialize all jobs (individual job can still take multiple threads).
+nth		:= 1 		help Default # threads for all cluster jobs (default: 1).
+wt 		:= "11h"	help Default Walltime for all cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
+memory 		:= "8G"		help Default Maximum memory for all cluster jobs (example: 8G, 1000MB, default: 8G).
+use_sys_default	:= false 	help Use system default resource settings of your computer/cluster.
 
-help General cluster resource settings
-nth		:= 1 		help # threads for all cluster jobs (default: 1).
-wt 		:= "11h"	help Walltime for all cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
-memory 		:= "8G"		help Maximum memory for all cluster jobs (example: 8G, 1000MB, default: 8G).
-skip_wt_mem 	:= false 	help Use default resource settings of your computer/cluster.
-
-help Shell environment settings
+help == shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
 shcmd 		:= ""		help Shell commands separated by ;. Shell var. must be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test"). 
 addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (example: "/bin/test:${HOME}/utils").
 
+
+// system var (do not touch)
 init_mod 	:= "" // module init. shell script found
 SHCMD_INIT 	:= ""  // IMPORTANT! Shell command executed prior to all BigDataScript tasks (use this for setting environemts)
-
 walltimeout 	:= 3600*24*100 // BigDataScript internal variable
 
 
@@ -34,32 +32,25 @@ void init_base() {
 
 	if ( conf_file_exists() ) {
 
-		// read conf values for basic variables defined in base.bds
-		v		= get_conf_val_bool( v,			["v","verbose"] )
+		out_dir = get_conf_val( out_dir, 	["out_dir"] )	
+		no_par 	= get_conf_val_bool( no_par, 		["no_par"] )
 
-		out_dir 	= get_conf_val( out_dir, 		["output_dir", "out_dir", "outdir"] )	
-		no_par_job 	= get_conf_val_bool( no_par_job, 	["no_parallel_job","no_par_job"] )
-
-		nth 		= get_conf_val_int( nth, 		["nthreads","nth","cpu"] )
-		wt 		= get_conf_val( wt, 			["walltime","wt","timeout"] )
-		memory 		= get_conf_val( memory, 		["mem","memory"] )
+		nth 	= get_conf_val_int( nth, 	["nth"] )
+		wt 	= get_conf_val( wt, 		["wt"] )
+		memory 	= get_conf_val( memory, 	["memory"] )
 	}
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
-	if ( v ) { // verbose
-		print("\n")
-		print( "Output dir.\t\t: $out_dir\n" )
-		print( "No parallel jobs\t: $no_par_job\n" )
-		print( "# threads (general)\t: $nth\n" )
-		print( "Walltime (general)\t: $wt\n" )
-		print( "Max. memory (general)\t: $memory\n" )
-	}
+	print("\n\n== general pipeline settings\n")
+	print( "Output dir.\t\t: $out_dir\n" )
+	print( "No parallel jobs\t: $no_par\n" )
+	print( "# threads (general)\t: $nth\n" )
+	print( "Walltime (general)\t: $wt\n" )
+	print( "Max. memory (general)\t: $memory\n" )
 
-	if ( is_skip_wt_and_memory() ) {
-		print( "\n\nIMPORTANT! System default resource settings will be used for walltime and max. memory!\n")
-		print( "All '-memory*'' and '-wt*'' parameters will be ignored.\n")
-		print( "Pipeline jobs will go with UNLIMITED resource settings (if you run it locally without '-s [SYSTEM]' option).\n\n")
+	if ( use_sys_default ) {
+		print( "System default resource settings will be used for walltime and max. memory!\n")
 	}
 }
 
@@ -157,9 +148,7 @@ void init_shell_env() {
 	SHCMD_INIT = SHCMD_INIT.replace( "::", ":" )
 	SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
 
-	if ( v ) { // verbose
-		print( "Shell cmd. for init.\t: $SHCMD_INIT\n" )
-	}		
+	print( "Shell cmd. for init.\t: $SHCMD_INIT\n" )
 }
 
 void print_cmd_line_params() {
@@ -185,21 +174,22 @@ string get_rel_path( string path ) {
 	else 				return rel_path
 }
 
-bool is_skip_wt_and_memory() {
-	return skip_wt_mem || is_system_local() || is_kundaje_lab()
-}
-
 int parse_time_or_skip( string str ) {
 
-	return is_skip_wt_and_memory() ? -1 : parse_time( str )
+	return (use_sys_default || is_system_local() || is_kundaje_lab()) ? -1 : parse_time( str )
 }
 
 int parse_mem_or_skip( string str ) {
 
-	return is_skip_wt_and_memory() ? -1 : parse_mem( str )
+	return (use_sys_default || is_system_local() || is_kundaje_lab()) ? -1 : parse_mem( str )
 }
 
 void wait_par() {
 	
+<<<<<<< HEAD
 	if ( no_par_job ) wait //barrier for parallel tasks
 }
+=======
+	if ( no_par ) wait //barrier for parallel tasks
+}
+>>>>>>> 2789ef898438f101e4cf6f1cf7b68a52aafa4bdd

@@ -3,35 +3,39 @@
 include "species.bds"
 
 
-help Gem settings :
+help == callpeak gem settings (requirements: -chrsz -seq)
+//help *resources : 
 nth_gem		:= 2 		help # threads for gem (default: 2)
 wt_gem		:= "20h"	help Walltime for gem (default: 20h, 20:00:00).
 mem_gem		:= "16G" 	help Max. memory for gem (default: 16G).
 
 
-init_peakcall_gem()
+init_callpeak_gem()
 
 
-void init_peakcall_gem() {
+void init_callpeak_gem() {
 
 	if ( conf_file_exists() ) {
 
-		nth_gem 	= get_conf_val_int( nth_gem,		["nthreads_gem", "nth_gem", "cpu_gem"] )
-		wt_gem 		= get_conf_val( wt_gem, 		["walltime_gem", "wt_gem", "timeout_gem"] )
-		mem_gem 	= get_conf_val( mem_gem, 		["memory_gem", "mem_gem"] )
+		nth_gem 	= get_conf_val_int( nth_gem,		["nth_gem"] )
+		wt_gem 		= get_conf_val( wt_gem, 		["wt_gem"] )
+		mem_gem 	= get_conf_val( mem_gem, 		["mem_gem"] )
 	}
 
-	if ( v ) { // verbose
-		print("\n")
-		print( "# threads (gem)\t\t: $nth_gem\n")
-		print( "Walltime (gem)\t\t: $wt_gem\n")
-		print( "Max. memory (gem)\t: $mem_gem\n")
-	}
+	print("\n\n== callpeak gem settings\n")
+	print( "# threads (gem)\t\t: $nth_gem\n")
+	print( "Walltime (gem)\t\t: $wt_gem\n")
+	print( "Max. memory (gem)\t: $mem_gem\n")	
+}
+
+void chk_callpeak_gem() {
+
+	if ( !path_exists( chrsz ) ) error("Chromosome size file (-chrsz) is missing or doesn't exists! (file: $chrsz)")
+	if ( !path_exists("$seq/chr1.fa") ) error("\nReference genome sequence directory doesn't exists! (file: $seq/chr1.fa)\n")
 }
 
 string[] _gem( string tag, string ctl_tag, string out_dir, string info ) {
 
-	// misc.
 	prefix 		:= "$out_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
 	prefix_basename := get_basename( prefix )
 
