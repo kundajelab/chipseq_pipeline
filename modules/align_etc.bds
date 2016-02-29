@@ -20,7 +20,7 @@ string _trim_adapters( string fastq, string out_dir, string info ) {
 		sys $SHCMD_INIT
 
 		sys trim_galore $fastq -o $out_dir
-		sys gzip $p
+		sys if [ ! -f $p_gz ]; then gzip $p; fi
 	}
 
 	wait_par()

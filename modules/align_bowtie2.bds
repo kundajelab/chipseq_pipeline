@@ -48,8 +48,11 @@ string[] _bowtie2( string fastq, string out_dir, string info ) {
 
 		sys $SHCMD_INIT
 
-		sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) -S /dev/stdout 2> $log | \
-    			samtools view -o $bam -b /dev/stdin
+		sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) 2> $log | \
+			samtools view -bS - > $bam
+
+//		sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) -S /dev/stdout 2> $log | \
+//			samtools view -o $bam -b /dev/stdin
 	}
 
 	wait_par()

@@ -140,21 +140,7 @@ void chk_input() {
 	else if ( get_num_rep() > 2 ) {
 		error("For peak calling, # replicates (" + get_num_rep() + ") should be <= 2.\n")
 	}
-/*
-	// can call peaks with macs2 without control
-	if ( !control_exists() && is_callpeak_macs2() ) num_ctl = 0
 
-	// if no data for control rep1 and final stage is before peak calling, this must be aligment only mode, so ignore all control from here
-	if ( is_align_only_mode() ) { 	
-
-		num_ctl = 0
-		print("\n\nAlign only mode for " + get_num_rep() + " replicates!\n\n")		
-	}
-	else if ( get_num_rep() > 2 ) {
-
-		error("\n\nFor peak calling, # replicates (" + get_num_rep() + ") should be <= 2.\n\n")
-	}
-*/
 	print("\n")
 
 	if ( is_input_peak() ) {

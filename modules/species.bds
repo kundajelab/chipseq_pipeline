@@ -47,7 +47,7 @@ void init_species() {
 		species_file 	= get_conf_val( species_file, 	["species_file"] )
 	}
 
-	print("\n\n== species settings\n")
+	print("\n\n== species and species file\n")
 	print( "Species\t: $species\n" )
 	print( "Species file\t: $species_file\n" )
 }

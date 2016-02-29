@@ -432,11 +432,11 @@ Some bioinformatics softwares like bwa 0.7.3, samtools 0.1.12 do not return non-
 
 The minimum memory requirement for the pipeline is 8GB, but we recommend to run the pipeline on computers with more than 16GB of memory. If you have memory issues, there are two options. Try with 2) first and if it doesn't work go 1). The difference between those two options is that even single thread jobs will be serialized for 1).
 
-1) (SLOW BUT STABLE) Turn off parallelization by using the flag "-no_par_job" in command line argument or "no_par_job=true" in a configuration file. However, individual jobs can still use multiple number of processors so increase the number of threads to speed up the pipeline.
+1) (SLOW BUT STABLE) Turn off parallelization by using the flag "-no_par" in command line argument or "no_par=true" in a configuration file. However, individual jobs can still use multiple number of processors so increase the number of threads to speed up the pipeline.
 
 Example: for desktop with 4 cores
 ```
-$ bds chipseq.bds -no_par_job -nth_bwa_aln 4 -nth_spp 4 ...
+$ bds chipseq.bds -no_par -nth_bwa_aln 4 -nth_spp 4 ...
 ```
 
 2) (FAST BUT UNSTABLE) Do not turn off paralleization but just increase the number of threads for BIG-MEMORY bottleneck jobs (bwa and spp) to your computer's maximum so that no BIG-MEMORY jobs will be parallelized.
@@ -702,10 +702,10 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 [main_samview] truncated file.
 ```
 
-Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par_job')
+Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par')
 
 ```
-$ bds chipseq.bds -no_par_job ...
+$ bds chipseq.bds -no_par ...
 ```
 
 
@@ -714,10 +714,10 @@ $ bds chipseq.bds -no_par_job ...
 
 For computers with limited memory, bwa samse/sampe fails without non-zero exit value. This leads to a failure of a pipeline or corruption of outputs.
 
-Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par_job')
+Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par')
 
 ```
-$ bds chipseq.bds -no_par_job ...
+$ bds chipseq.bds -no_par ...
 ```
 
 
