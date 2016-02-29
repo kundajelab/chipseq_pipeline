@@ -22,7 +22,7 @@ with open(infile) as fin:
 		fout.write('\n')
 fout.close()
 
-os.system('sort -k1,1 -k2,2n '+outfile+' > x')
-os.system('mv x '+outfile)
+os.system('sort -k1,1 -k2,2n '+outfile+' > '+outfile+'.srt')
+os.system('mv '+outfile+'.srt'+' '+outfile)
 os.system('bgzip '+outfile)
 os.system('tabix -p bed '+outfile+'.gz')

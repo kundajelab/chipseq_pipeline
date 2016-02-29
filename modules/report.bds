@@ -313,9 +313,10 @@ string _peak_to_hammock( string peak ) {
 		sys $SHCMD_INIT
 		sys zcat $peak | sed '/^\(chr\)/!d' | sort -k1,1V -k2,2n > $tmp
 		sys python $conv $tmp $hammock
+		sys rm -f $tmp
 	}
 
-	return out	
+	return out
 }
 
 string get_url( string path ) {
