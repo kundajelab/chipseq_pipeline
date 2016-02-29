@@ -57,6 +57,7 @@ string[] _dedup_bam( string bam, string out_dir, string info ) {
 	dup_qc 		:= "$prefix.dup.qc"
 	map_qc 		:= "$prefix.nodup.flagstat.qc"
 	pbc_qc 		:= "$prefix.nodup.pbc.qc"
+	filt_bam_prefix	:= "$prefix.filt"
 	filt_bam 	:= "$prefix.filt.bam"
 	tmp_filt_bam 	:= "$prefix.dupmark.bam"
 
@@ -74,7 +75,10 @@ string[] _dedup_bam( string bam, string out_dir, string info ) {
 		//# not primary alignment, reads failing platform
 		//# Remove low MAPQ reads
 		//# ==================  
-		sys samtools view -F 1804 -q $mapq_thresh -b $bam > $filt_bam
+		sys samtools view -F 1804 -q $mapq_thresh -b $bam > $filt_bam.tmp
+
+		sys samtools sort $filt_bam.tmp $filt_bam_prefix
+		sys rm -f $filt_bam.tmp
 
 		//# Mark duplicates
 		sys if [ -f ${PICARDROOT}/MarkDuplicates.jar ]; then \
@@ -148,6 +152,7 @@ string[] _dedup_bam_PE( string bam, string out_dir, string info ) {
 	task( taskName:= "dedup_bam_PE "+info, \
 		cpus:=nth, mem:=parse_mem_or_skip(mem_markdup), timeout:=parse_time_or_skip(wt_markdup), \
 		out<-in ) {
+
 		sys $SHCMD_INIT
 
 		//# =============================

@@ -185,11 +185,5 @@ int parse_mem_or_skip( string str ) {
 }
 
 void wait_par() {
-	
-<<<<<<< HEAD
-	if ( no_par_job ) wait //barrier for parallel tasks
-}
-=======
 	if ( no_par ) wait //barrier for parallel tasks
 }
->>>>>>> 2789ef898438f101e4cf6f1cf7b68a52aafa4bdd

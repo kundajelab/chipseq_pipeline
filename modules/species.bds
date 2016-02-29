@@ -33,7 +33,7 @@ roadmap_meta 	:= ""		help Roadmap metadata for ataqc.
 
 
 species_basename 		:= "species.conf"
-species_basename_kundaje_lab  	:= "species_kundaje_lab.conf"
+species_basename_kundaje_lab  	:= "species_kundaje.conf"
 
 
 init_species()
