@@ -6,7 +6,7 @@ BigDataScript (BDS) Pipelines
 
 ### Installation instruction
 
-Get BigDataScript (v0.9999 is stable and doesn't require high java version).
+Get BigDataScript (v0.9999) is stable and doesn't require high java version).
 ```
 $ git clone https://github.com/pcingola/BigDataScript
 $ cd BigDataScript
@@ -95,17 +95,17 @@ $ bds [PIPELINE_BDS]
 
 Most clusters have resource limitation so that jobs submitted without it will be declined. By default, walltime is 11 hours and max memory is 8GB. To change them, add the following parameters to the command line.
 ```
--wt [WALLTIME; examples: 13:20:20, 10h, 7200] -mem [MAX_MEMORY; examples: 5G, 2000K]
+-wt [WALLTIME; examples: 13:20:20, 10h, 7200] -memory [MAX_MEMORY; examples: 5G, 2000K]
 ```
 
-You can also specify walltime and max. memory for a specific job. To see which job has specific resource settings, run the pipeline without parameters `$ bds [PIPELINE_BDS]` then it will display all parameters including resource settings and help. The following line is an example parameter to increase walltime and max. memory for MACS2 peak calling.
+You can also specify walltime and max. memory for a specific job (note that max. memory parameter is `-mem_XX` instead of `-memory_XX`). To see which job has specific resource settings, run the pipeline without parameters `$ bds [PIPELINE_BDS]` then it will display all parameters including resource settings and help. The following line is an example parameter to increase walltime and max. memory for MACS2 peak calling.
 ```
--wt_macs2 40h -mem 20G
+-wt_macs2 40h -mem_macs2 20G
 ```
 
 If your system (either local or cluster engine) doesn't limit walltime and max. memory for jobs, add the following to the command line. Pipeline jobs will run without resource restriction.
 ```
--skip_wt_mem
+-use_sys_default
 ```
 
 
@@ -221,6 +221,16 @@ bwa_idx = /mnt/data/annotations/indexes/bwa_indexes/encodeHg19Male/v0.7.10/encod
 bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
 bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
 vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.merged.ANS.bed
+
+ref_fa  = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/encodeHg19Male.fa  // genome reference fasta
+blacklist = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/Anshul_Hg19UltraHighSignalArtifactRegions.bed.gz
+dnase = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_all_p10_ucsc.bed.gz
+tss = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/hg19_RefSeq_stranded.bed.gz
+prom = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_prom_p2.bed.gz
+enh = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_enh_p2.bed.gz
+reg2map = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/dnase_avgs_reg2map_p10_merged_named.pvals.gz
+roadmap_meta = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/eid_to_mnemonic.txt
+
 
 # your own definition for species
 [hg19_custom]
