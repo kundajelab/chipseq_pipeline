@@ -368,7 +368,7 @@ echo > tmp.R
   echo 'withCallingHandlers(install.packages("snow", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
   echo 'withCallingHandlers(install.packages("snowfall", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
   echo 'withCallingHandlers(install.packages("bitops", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
-  echo 'withCallingHandlers(install.packages(install.packages("caTools", repos="http://cran.us.r-project.org")),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
+  echo 'withCallingHandlers(install.packages("caTools", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
   echo 'source("http://bioconductor.org/biocLite.R")' >> tmp.R
   echo 'biocLite("Rsamtools",suppressUpdates=TRUE)' >> tmp.R
   echo 'withCallingHandlers(install.packages("./spp_1.13.tar.gz"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
