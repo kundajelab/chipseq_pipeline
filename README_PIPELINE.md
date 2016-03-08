@@ -93,15 +93,19 @@ $ bds [PIPELINE_BDS]
 
 ### Resource settings (walltime and max. memory)
 
-Most clusters have resource limitation so that jobs submitted without it will be declined. By default, walltime is 11 hours and max memory is 8GB. To change them, add the following parameters to the command line.
+Most clusters have resource limitation so that jobs submitted without it will be declined. By default, walltime is 11 hours and max memory is 8GB. To change them, add the following parameters to the command line. `-memory` does not apply to jobs with their own max. memory parameters (eg. spp with -mem_spp, bwa aln with -mem_bwa_aln, ...)
 ```
 -wt [WALLTIME; examples: 13:20:20, 10h, 7200] -memory [MAX_MEMORY; examples: 5G, 2000K]
 ```
 
-You can also specify walltime and max. memory for a specific job (note that max. memory parameter is `-mem_XX` instead of `-memory_XX`). To see which job has specific resource settings, run the pipeline without parameters `$ bds [PIPELINE_BDS]` then it will display all parameters including resource settings and help. The following line is an example parameter to increase walltime and max. memory for MACS2 peak calling.
+To specify walltime and max. memory for a specific job (note that max. memory parameter is `-mem_XXX` instead of `-memory_XXX`). To see which job has specific resource settings, run the pipeline without parameters `$ bds [PIPELINE_BDS]` then it will display all parameters including resource settings and help. The following line is an example parameter to increase walltime and max. memory for MACS2 peak calling.
 ```
--wt_macs2 40h -mem_macs2 20G
+-wt_macs2 40h -mem_macs2 20G -nth_macs2 2
 ```
+
+Note that max. memory defined with `-mem_XXX` is PER CPU! `-mem_macs2 20G -nth_macs2 2` in the above example will have max. memory limit of 40G.
+
+Also note that without a cluster engine (like Grid Engine) pipeline jobs can possible have no limit for max. memory according to your UNIX system. In such a case, reduce # of cpus with `-nth_XXX`.
 
 If your system (either local or cluster engine) doesn't limit walltime and max. memory for jobs, add the following to the command line. Pipeline jobs will run without resource restriction.
 ```
