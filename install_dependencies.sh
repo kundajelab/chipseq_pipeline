@@ -427,6 +427,8 @@ $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOF
 chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" scipy
 chk_exit_code
+#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" python-levenshtein
+#chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools==1.5.9.1
 chk_exit_code
 CONTENTS=(
