@@ -57,8 +57,15 @@ Create and move to your working directory. Run the following command:
 $ bds [PIPELINE_BDS] [PARAMETERS]
 ```
 
+DO NOT CLOSE A TERMINAL WHILE PIPELINE IS RUNNING! All tasks will be canceled and intermediate files will be deleted. Make a screen or make sure that a terminal don't close.
+
 Do not run multiple BDS pipelines on the same working directory. BDS creates an HTML report and temporary files on the working directory. Things will be messed up.
 
+
+
+### How to stop pipelines?
+
+Press Ctrl + C on a terminal or just close it. Please not that this will delete all intermediate files and incomplete outputs for the running tasks. Outputs from finished tasks will not be deleted.
 
 
 
