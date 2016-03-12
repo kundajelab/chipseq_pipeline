@@ -74,6 +74,8 @@ elif append == "gz":
     p2_rds = gzip.open(p2_in,'r')
     p1_out = re.sub(".fastq.gz", ".trim.fastq", p1_file)
     p2_out = re.sub(".fastq.gz", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fq.gz", ".trim.fastq", p1_out)
+    p2_out = re.sub(".fq.gz", ".trim.fastq", p2_out)
 else:
     sys.exit("ERROR! The input file2 must be a .fastq or .fastq.gz")
 
