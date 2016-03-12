@@ -27,7 +27,7 @@ $ cd TF_chipseq_pipeline
 $ ./install_dependencies.sh   # this will take longer than 30 minutes depending on your system
 ```
 
-Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
+Add the following lines to your `$HOME/.bashrc` or `$HOME/.bash_profile`:
 ```
 export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
 export MAX_JAVA_MEM="8G"
@@ -36,7 +36,20 @@ export MALLOC_ARENA_MAX=4
 export PATH=$PATH:$HOME/.bds
 ```
 
+If you choose not to use `install_dependencies.sh` and want to manually install all external dependencies (softwares) for the pipeline, get BigDataScript v0.9999 first:
+```
+$ git clone https://github.com/pcingola/BigDataScript
+$ cd BigDataScript
+$ git checkout tags/v0.9999
+$ cp distro/bds_Linux.tgz $HOME
+$ cd $HOME
+$ tar zxvf bds_Linux.tgz
+```
 
+Add `$HOME/.bds/` to your `$PATH`, then replace BDS's default bds.config with a correct one:
+```
+$ cp bds.config $HOME/.bds/
+```
 
 ### Installation instruction (for Kundaje lab members)
 
