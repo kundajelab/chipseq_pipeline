@@ -735,6 +735,13 @@ $ bds chipseq.bds -no_par ...
 
 
 
+6) Unable to run job: unknown resource "'mem"
+
+Replace `$HOME/.bds/bds.config` with the one in the repo.
+```
+$ cp /path/to/repo/bds.config $HOME/.bds/
+```
+
 
 
 
