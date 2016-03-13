@@ -19,21 +19,39 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 
 ### Installation instruction
 
-Get the latest version of chipseq pipelines and install dependencies.
+Get the latest version of chipseq pipelines.
 ```
 $ git clone https://github.com/kundajelab/TF_chipseq_pipeline
-$ cd TF_chipseq_pipeline
+```
 
-$ ./install_dependencies.sh   # this will take longer than 30 minutes depending on your system
+Add `$HOME/.bds/` to your `$PATH`, then replace BDS's default bds.config with a correct one:
+```
+$ cd TF_chipseq_pipeline
+$ mkdir -p $HOME/.bds
+$ cp bds.config $HOME/.bds
 ```
 
 Add the following lines to your `$HOME/.bashrc` or `$HOME/.bash_profile`:
 ```
+export PATH=$PATH:$HOME/.bds
+```
+
+If java memory occurs, add the following lines to your `$HOME/.bashrc` or `$HOME/.bash_profile`:
+```
 export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
 export MAX_JAVA_MEM="8G"
 export MALLOC_ARENA_MAX=4
+```
 
-export PATH=$PATH:$HOME/.bds
+Install software dependencies automatically (DO NOT run this on kundaje clusters or scg3). You can specify destination for installation.
+```
+$ cd TF_chipseq_pipeline
+$ ./install_dependencies.sh [ROOT_DIR]  # this will take longer than 30 minutes depending on your system
+```
+
+If you specifed `[ROOT_DIR]`, add `-dir_sw [ROOT_DIR]` to the command line when you run pipeline. You can skip this if you installed without `[ROOT_DIR]`.
+```
+$ bds chipseq.bds ... -dir_sw [ROOT_DIR]
 ```
 
 If you choose not to use `install_dependencies.sh` and want to manually install all external dependencies (softwares) for the pipeline, get BigDataScript v0.9999 first:
@@ -46,10 +64,6 @@ $ cd $HOME
 $ tar zxvf bds_Linux.tgz
 ```
 
-Add `$HOME/.bds/` to your `$PATH`, then replace BDS's default bds.config with a correct one:
-```
-$ cp bds.config $HOME/.bds/
-```
 
 ### Installation instruction (for Kundaje lab members)
 
