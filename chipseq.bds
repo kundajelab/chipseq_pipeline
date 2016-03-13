@@ -13,6 +13,8 @@ sigtrk 		:= ""		help Signal track generation method : aln2rawsig and deeptools.
 no_bw		:= false	help Prevent bigwig generation.
 make_wig 	:= false	help Create wig (only for '-sigtrk aln2rawsig').
 
+dir_sw  	:= "$HOME/software_bds" help Root directory of dependencies (if you have installed dependencies with 'install_dependencies.sh [ROOT_DIR]').
+
 help() // print help if no parameters are given
 
 include "modules/input_fastq.bds"
@@ -98,6 +100,8 @@ void init_chipseq() {
 		sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
 		make_wig	= get_conf_val_bool( make_wig, 		["make_wig"] )
 		no_bw		= get_conf_val_bool( no_bw, 		["no_bw"] )
+
+		dir_sw		= get_conf_val( dir_sw, 		["dir_sw"] )
 	}
 
 	// determine input type
@@ -120,6 +124,7 @@ void init_chipseq() {
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "No bigwig\t\t\t: $no_bw\n" )
+	print( "Root dir. for dependencies\t\t: $dir_sw\n" )
 
 	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
 }
@@ -1122,30 +1127,27 @@ string _html_chipseq_tracks() {
 
 void set_env() {
 
-	// set shell environments automatically
-	dir_sw_BDS  := "$HOME/software_bds" // location of dependencies installed by the script "install_dependencies.sh"
+	if ( path_exists( dir_sw ) ) { // automatically add software binaries to shell env. vars like PATH
 
-	if ( path_exists( dir_sw_BDS ) ) { // automatically add software binaries to shell env. vars like PATH
+		if ( is_kundaje_lab() ) error("Remove $dir_sw if you run chipseq on SCG3 or Kundaje lab clusters\n")
 
-		if ( is_kundaje_lab() ) error("Remove $dir_sw_BDS if you run chipseq on SCG3 or Kundaje lab clusters\n")
-
-		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw_BDS) \n")
+		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw) \n")
 		print("Automatically adding environment variables...\n\n")
 
 		path := " export PATH=" \
-			+ "$dir_sw_BDS/tabix-0.2.6:$dir_sw_BDS/bwa-0.7.3:$dir_sw_BDS/samtools-0.1.19:$dir_sw_BDS/bedtools2-2.19.1/bin:" \
-			+ "$dir_sw_BDS/ucsc_tools:$dir_sw_BDS/picard-tools-1.92:$dir_sw_BDS/R-2.15.1/bin:" \
-			+ "$dir_sw_BDS/phantompeakqualtools:$dir_sw_BDS/python3.4/bin:" \
-			+ "$dir_sw_BDS/align2rawsignal/bin:$dir_sw_BDS/idrCode:$dir_sw_BDS/python2.7/bin:" \
-			+ "$dir_sw_BDS/MACS/bin:$dir_sw_BDS/gem:$dir_sw_BDS/deepTools/bin" \
+			+ "$dir_sw/tabix-0.2.6:$dir_sw/bwa-0.7.3:$dir_sw/samtools-0.1.19:$dir_sw/bedtools2-2.19.1/bin:" \
+			+ "$dir_sw/ucsc_tools:$dir_sw/picard-tools-1.92:$dir_sw/R-2.15.1/bin:" \
+			+ "$dir_sw/phantompeakqualtools:$dir_sw/python3.4/bin:" \
+			+ "$dir_sw/align2rawsignal/bin:$dir_sw/idrCode:$dir_sw/python2.7/bin:" \
+			+ "$dir_sw/MACS/bin:$dir_sw/gem:$dir_sw/deepTools/bin" \
 			+ "\${PATH}"
 
-		shellcmd := "export PICARDROOT=$dir_sw_BDS/picard-tools-1.92; export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
-			+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; " \
-			+ "export PYTHONPATH=$dir_sw_BDS/python2.7/lib/python2.7/site-packages:\${PYTHONPATH}; "
+		shellcmd := "export PICARDROOT=$dir_sw/picard-tools-1.92; export LAPACK=$dir_sw/blas/lapack-*/liblapack.a; " \
+			+ "export GEMROOT=$dir_sw/gem; export GEM=$dir_sw/gem/gem.jar; " \
+			+ "export PYTHONPATH=$dir_sw/python2.7/lib/python2.7/site-packages:\${PYTHONPATH}; "
 
 		shellcmd = shellcmd \
-			+ "MCRROOT=$dir_sw_BDS/MATLAB_Compiler_Runtime/v714;" \
+			+ "MCRROOT=$dir_sw/MATLAB_Compiler_Runtime/v714;" \
 			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64;" \
 			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64;" \
 			+ "MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64;" \
@@ -1171,7 +1173,7 @@ void set_env() {
 		if ( is_scg3() ) {
 			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.7;"
 
-			dir_sw_BDS = "/srv/gsfs0/scratch/leepc12/software"
+			dir_sw_BDS := "/srv/gsfs0/scratch/leepc12/software"
 
 			path := " export PATH=" \
 				+ "$dir_sw_BDS/R-2.15.1/bin:" \
@@ -1199,7 +1201,6 @@ void set_env() {
 			SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
 		}
 		else {
-			//SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.3 gem/2.6 r/2.15.1 deepTools/latest align2rawsignal/2.0 phantompeakqualtools/default idr/latest;"
 			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.10 gem/2.6 r/2.15.1 deepTools/latest align2rawsignal/2.0 phantompeakqualtools/default idr/latest;"
 			SHCMD_INIT = SHCMD_INIT + " export PATH=${PATH}:/software/idrCode;"
 		}
