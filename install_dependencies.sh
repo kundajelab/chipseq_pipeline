@@ -477,7 +477,7 @@ if [ ! -f $FLAGDIR/PYTHON2MATPLOTLIB ]; then
 fi
 
 if [ ! -f $FLAGDIR/PYTHON2PYSAM ]; then
- $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pysam
+ $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pysam==0.8.2
  chk_exit_code $FLAGDIR/PYTHON2PYSAM
 fi
 
@@ -606,6 +606,7 @@ if [ ! -f $FLAGDIR/WIGGLER ]; then
 fi
 
 if [ ! -f $FLAGDIR/MCR ]; then
+ cd $SOFTWARE
  wget http://www.broadinstitute.org/~anshul/softwareRepo/MCR2010b.bin -N
  chmod 755 MCR2010b.bin
  echo '-P installLocation="'$SOFTWARE'/MATLAB_Compiler_Runtime"' > tmp.stdin
@@ -617,14 +618,29 @@ if [ ! -f $FLAGDIR/MCR ]; then
 fi
 
 
+#if [ ! -f $FLAGDIR/PRESEQ ]; then
+# cd $SOFTWARE
+# git clone https://github.com/smithlabcode/preseq --recursive
+# cd preseq
+# git checkout tags/v2.0.2
+# make
+#
+# chk_exit_code $FLAGDIR/PRESEQ
+#fi
+
+
 # WARNING
 if [ $FAILED == 1 ]; then
   echo 
+  echo =====================================================
   echo "Failed to install some dependencies, check your system requirements and re-run the installer."
+  echo =====================================================
   echo 
 else
   echo
+  echo =====================================================
   echo "Done Installing all dependencies for ChIP-Seq pipeline."
+  echo =====================================================
   echo
 fi
 
