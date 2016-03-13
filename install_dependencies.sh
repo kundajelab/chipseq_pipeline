@@ -1,7 +1,18 @@
 ################ local installation ##################
 
+
+if [ "$#" -lt 1 ]
+then
+  SOFTWARE=$HOME/software_bds
+else
+  SOFTWARE=$1
+fi
+
+echo
+echo "Installation Directory: $SOFTWARE"
+echo
+
 # DO NOT CHANGE NAMING OF SOFTWARE DIRECTORY!
-SOFTWARE=$HOME/software_bds
 BASHRC=$HOME/.bashrc
 
 SCRIPTDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -253,7 +264,8 @@ echo "Starting automatic installation for dependencies for ChIP-seq pipeline."
 echo "Make sure you have enough disk space (at least 3GB) on your file system."
 echo "All dependencies will be installed under $SOFTWARE."
 echo "=============================================================================="
-read -p "Press [Enter] key to continue..."
+echo "Press [Enter] key to continue..."
+read -p ""
 echo
 
 mkdir -p $SOFTWARE
@@ -273,7 +285,7 @@ add_to_bashrc
 
 # local installation for tabix (0.2.6)
 cd $SOFTWARE
-wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download -O tabix-0.2.6.tar.bz2 -N
+wget https://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download -O tabix-0.2.6.tar.bz2 -N --no-check-certificate
 tar jxvf tabix-0.2.6.tar.bz2
 rm -f tabix-0.2.6.tar.bz2
 cd tabix-0.2.6
@@ -427,8 +439,8 @@ $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOF
 chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" scipy
 chk_exit_code
-#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" python-levenshtein
-#chk_exit_code
+$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" python-levenshtein
+chk_exit_code
 $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools==1.5.9.1
 chk_exit_code
 CONTENTS=(
