@@ -7,6 +7,7 @@ include "species.bds"
 
 help == postalign bed/tagalign settings
 nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
+fraglen0        := false        help Set predefined fragment length as zero for cross corr. analysis (add -speak=0 to run_spp.R).
 
 
 init_postalign_bed()
@@ -187,6 +188,8 @@ string[] _xcor( string tag, string out_dir, string info ) {
 	xcor_score 	:= "$prefix.cc.qc"
 	xcor_plot 	:= "$prefix.cc.plot.pdf"
 
+        param_speak     := fraglen0 ? "-speak=0" : ""
+
 	in 		:= [ tag ]
 	out 		:= [ xcor_score, xcor_plot ]
 
@@ -200,7 +203,7 @@ string[] _xcor( string tag, string out_dir, string info ) {
 		//# Filename <tab> numReads <tab> estFragLen <tab> correstFragLen <tab> PhantomPeak <tab> corrphantomPeak <tab> argmincorr <tab> mincorr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag
 		sys Rscript $(which run_spp_nodups.R) -rf \
 			-c=$tag -p=$nth \
-			-filtchr=chrM -savp=$xcor_plot -out=$xcor_score
+			-filtchr=chrM -savp=$xcor_plot -out=$xcor_score $param_speak
 		sys sed -r 's/,[^\t]+//g' $xcor_score > $xcor_score.tmp
 		sys mv $xcor_score.tmp $xcor_score
 	}
