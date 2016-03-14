@@ -205,6 +205,13 @@ $ bds [PIPELINE_BDS] [CONF_FILE] [PARAMS_TO_BE_OVERRIDEN]
 ```
 
 
+### Using Environment file
+
+```
+$ bds chipseq.bds ... -env [ENV_FILE]
+```
+
+
 
 ### Using species file
 
@@ -212,7 +219,7 @@ There are many species specific parameters like indices (bwa, bowtie, ...), chro
 
 Add the following to the command line to specify species and species file.
 ```
--species [SPECIES; hg19, mm9, ...] -species_file [PATH_FOR_SPECIES_FILE]
+-species [SPECIES; hg19, mm9, ...] -species_file [SPECIES_FILE]
 ```
 
 You can override any parameters defined in the species file by adding them to command line argument or configuration file. For example, if you want to override parameters for BWA index and umap:
@@ -231,12 +238,11 @@ umap_hic= /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k20tok54 	// uniq. mapp
 bwa_idx = /mnt/data/annotations/indexes/bwa_indexes/encodeHg19Male/v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
 bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
-vplot_idx = /mnt/data/annotations/indexes/vplot_indexes/hg19/parsed_hg19_RefSeq.merged.ANS.bed
+vplot_idx = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/hg19_RefSeq_stranded.bed.gz
 
 ref_fa  = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/encodeHg19Male.fa  // genome reference fasta
 blacklist = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/Anshul_Hg19UltraHighSignalArtifactRegions.bed.gz
 dnase = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_all_p10_ucsc.bed.gz
-tss = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/hg19_RefSeq_stranded.bed.gz
 prom = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_prom_p2.bed.gz
 enh = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_enh_p2.bed.gz
 reg2map = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/dnase_avgs_reg2map_p10_merged_named.pvals.gz
@@ -267,8 +273,16 @@ bwa_idx             : BWA index (full path prefix of [].bwt file) .
 bwt_idx             : Bowtie index (full path prefix of [].1.ebwt file).
 bwt2_idx            : Bowtie2 index (full path prefix of [].1.bt2 file).
 vplot_idx           : V plot index (full path for bed file).
-```
 
+// for ataqc
+ref_fa 		    : Reference genome sequence fasta.
+blacklist 	    : Blacklist bed for ataqc.
+dnase 		    : DNase bed for ataqc.
+prom 		    : Promoter bed for ataqc.
+enh 		    : Enhancer bed for ataqc.
+reg2map 	    : Reg2map for ataqc.
+roadmap_meta 	    : Roadmap metadata for ataqc.
+```
 
 
 
@@ -276,7 +290,7 @@ vplot_idx           : V plot index (full path for bed file).
 
 Add the following to the command line and that's it.
 ```
--species [SPECIES; hg19, mm9]
+-species [SPECIES; hg19, mm9, ...]
 ```
 
 hg19 and mm9 are available for SCG3 and Kundaje lab clusters. If you are interested in other species, add species to `species/species*.conf` and share with lab members or create your own species file.
@@ -363,6 +377,83 @@ They are command line argument versions of mod, shcmd and addpath. For example,
 $ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin'
 ```
 
+
+### Using Environment file
+
+You can have mod, shcmd and addpath in your configuration file or `-mod` `-shcmd` and `-addpath` in your command line arguments, but it will be more convenient to have a separate file to define your own shell environments and cluster resources. You can also define any parameters (like bwa index, # thread for tasks, fastqs and so on) in the environment file.
+```
+$ bds [PIPELINE_BDS] ... -env [ENV_FILE]
+
+$ cat [ENV_FILE]
+mod_any_suffix = bwa/0.7.3 samtools/1.2
+addpath_any_suffix = ${HOME}/program1/bin
+shcmd_any_suffix = export R_PATH=/home/userid/R-2.15.1
+
+species_file = /path/to/your/species.conf
+
+nth_spp = 4 	// On this cluster for spp, I want to use 4 CPUs, 4G for each CPU and 10 hours of walltime.
+mem_spp = 4G
+wt_spp  = 10:00:00
+
+nth_macs2 = 2 	// You can also have resource settings for other tasks
+...
+```
+
+Note that any pre-defined enviroment variables (like $PATH) should be referred in a curly bracket like ${PATH}. This is because BDS distinguishes environment variables from BDS variables by a curly bracket ${}.
+
+Example environment file on scg3 (Stanford cluster).
+```
+mod_chipseq = bwa/0.7.7 samtools/0.1.19 bedtools/2.19.1 ucsc_tools/3.0.9 picard-tools/1.92 MACS2/2.1.0 java/latest
+
+addpath_chipseq = /srv/gsfs0/scratch/leepc12/software/idrCode:/srv/gsfs0/scratch/leepc12/software/phantompeakqualtools:/srv/gsfs0/scratch/leepc12/software/idr/bin:/srv/gsfs0/scratch/leepc12/software/align2rawsignal/bin:/srv/gsfs0/scratch/leepc12/software/gem:/srv/gsfs0/scratch/leepc12/software/deepTools/bin:/srv/gsfs0/scratch/leepc12/software/R-2.15.1/bin:/srv/gsfs0/scratch/leepc12/software/python3.4/bin:/srv/gsfs0/scratch/leepc12/software/python2.7/bin
+
+shcmd_chipseq = export GEMROOT=/srv/gsfs0/scratch/leepc12/software/gem; export GEM=/srv/gsfs0/scratch/leepc12/software/gem/gem.jar; export LAPACK=/srv/gsfs0/scratch/leepc12/software/blas/lapack-*/liblapack.a; export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4; MCRROOT=/srv/gsfs0/scratch/leepc12/software/MATLAB_Compiler_Runtime/v714; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/runtime/glnxa64; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/bin/glnxa64; MCRJRE=${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRJRE}/native_threads; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRJRE}/server; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRJRE}; XAPPLRESDIR=${MCRROOT}/X11/app-defaults; export LD_LIBRARY_PATH; export XAPPLRESDIR;
+
+species_file = $script_dir/species/scg3.conf
+```
+
+
+### Parameter overriding
+
+Parameters can be defined in 1) environment file, 2) configuation file and 3) command line arguments. They will be overriden in the order of 1) < 2) < 3).
+
+
+
+### How to setup Sun Grid Engine for BigDataScript
+
+Add the following to grid engine configuration.
+```
+$ sudo qconf -mconf
+...
+execd_params                 ENABLE_ADDGRP_KILL=true
+...
+```
+
+Add a parallel environment shm to grid engine configuration.
+```
+$ sudo qconf -ap
+
+pe_name            shm
+slots              999
+user_lists         NONE
+xuser_lists        NONE
+start_proc_args    /bin/true
+stop_proc_args     /bin/true
+allocation_rule    $pe_slots
+control_slaves     FALSE
+job_is_first_task  FALSE
+urgency_slots      min
+accounting_summary FALSE
+```
+
+Add shm to your queue and set your shell as bash.
+```
+$ sudo qconf -mq [YOUR_MAIN_QUEUE]
+...
+pe_list               make shm
+shell                 /bin/bash
+...
+```
 
 
 ### Troubleshooting
