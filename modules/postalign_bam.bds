@@ -33,13 +33,11 @@ init_postalign_bam()
 
 void init_postalign_bam() {
 
-	if ( conf_file_exists() ) {
-		mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
-		rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )		
+	mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
+	rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )		
 
-		wt_markdup 	= get_conf_val( wt_markdup, 		["wt_markdup"] )
-		mem_markdup 	= get_conf_val( mem_markdup, 		["mem_markdup"] )
-	}
+	wt_markdup 	= get_conf_val( wt_markdup, 		["wt_markdup"] )
+	mem_markdup 	= get_conf_val( mem_markdup, 		["mem_markdup"] )
 
 	print("\n\n== postalign bam settings\n")
 	print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")

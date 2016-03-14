@@ -16,11 +16,8 @@ init_idr()
 
 void init_idr() {
 
-	if ( conf_file_exists() ) {
-
-		use_idr1 	= get_conf_val_bool( use_idr1, 		["use_idr1"] )
-		idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
-	}
+	use_idr1 	= get_conf_val_bool( use_idr1, 		["use_idr1"] )
+	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
 
 	print("\n\n== idr settings\n")
 	print( "Use IDR-1\t\t: $use_idr1\n" )

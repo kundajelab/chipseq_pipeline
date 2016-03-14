@@ -30,15 +30,12 @@ print_cmd_line_params()
 
 void init_base() { 
 
-	if ( conf_file_exists() ) {
+	out_dir = get_conf_val( out_dir, 	["out_dir"] )	
+	no_par 	= get_conf_val_bool( no_par, 	["no_par"] )
 
-		out_dir = get_conf_val( out_dir, 	["out_dir"] )	
-		no_par 	= get_conf_val_bool( no_par, 		["no_par"] )
-
-		nth 	= get_conf_val_int( nth, 	["nth"] )
-		wt 	= get_conf_val( wt, 		["wt"] )
-		memory 	= get_conf_val( memory, 	["memory"] )
-	}
+	nth 	= get_conf_val_int( nth, 	["nth"] )
+	wt 	= get_conf_val( wt, 		["wt"] )
+	memory 	= get_conf_val( memory, 	["memory","mem"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
@@ -79,27 +76,25 @@ void init_shell_env() {
 		print("\n\nInfo: Environments module not found on your system (e.g. /etc/profile.d/modules.sh). Ignoring shell env. parameters like '-mod'. \n")
 	}
 
-	if ( conf_file_exists() ) {
-		for( string k : conf.keys() ) {		
-			string val = conf{k}	
+	for( string k : conf.keys() ) {		
+		string val = conf{k}	
 
-			// concat. module
-			if ( (k.indexOf("mod_")>=0) || (k=="mod") ) {
+		// concat. module
+		if ( (k.indexOf("mod_")>=0) || (k=="mod") ) {
 
-				if ( init_mod != "" ) {
-					trimmed := val.trim().replace("module add ","").replace( ":", " " ).replace( ";", " " ).replace( ",", " " ).trim()
-					trimmed = trimmed.replace( "   ", " ").replace( "  ", " ")
-					module = module + " " + trimmed
-				}
+			if ( init_mod != "" ) {
+				trimmed := val.trim().replace("module add ","").replace( ":", " " ).replace( ";", " " ).replace( ",", " " ).trim()
+				trimmed = trimmed.replace( "   ", " ").replace( "  ", " ")
+				module = module + " " + trimmed
 			}
-			else if ( k.indexOf("shcmd")>=0 ) {
+		}
+		else if ( k.indexOf("shcmd")>=0 ) {
 
-				shellcmd = shellcmd + " " + val + ";"
-			}
-			else if ( k.indexOf("addpath")>=0 ) {
+			shellcmd = shellcmd + " " + val + ";"
+		}
+		else if ( k.indexOf("addpath")>=0 ) {
 
-				path = path + val.trim().replace(",",":").replace(";",":").replace(" ",":").replace(":::",":").replace("::",":") + ":"
-			}
+			path = path + val.trim().replace(",",":").replace(";",":").replace(" ",":").replace(":::",":").replace("::",":") + ":"
 		}
 	}
 
@@ -145,8 +140,8 @@ void init_shell_env() {
 
 	// additional initialization
 	SHCMD_INIT = SHCMD_INIT + shellcmd + path + module
-	SHCMD_INIT = SHCMD_INIT.replace( "::", ":" )
-	SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
+	SHCMD_INIT = SHCMD_INIT.replace( ": :", ":" ).replace( "::", ":" )
+	SHCMD_INIT = SHCMD_INIT.replace( "; ;", ";" ).replace( ";;", ";" )
 
 	print( "Shell cmd. for init.\t: $SHCMD_INIT\n" )
 }

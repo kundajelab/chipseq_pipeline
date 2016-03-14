@@ -15,11 +15,9 @@ init_align_bwt2()
 
 void init_align_bwt2() {
 
-	if ( conf_file_exists() ) {
-		nth_bwt2 	= get_conf_val_int( nth_bwt2,		["nthreads_bwt2", "nth_bwt2", "cpu_bwt2", "numthreads"] )
-		wt_bwt2 	= get_conf_val( wt_bwt2, 		["walltime_bwt2", "wt_bwt2", "timeout_bwt2"] )
-		mem_bwt2 	= get_conf_val( mem_bwt2, 		["memory_bwt2", "mem_bwt2"] )
-	}
+	nth_bwt2 	= get_conf_val_int( nth_bwt2,		["nthreads_bwt2", "nth_bwt2", "cpu_bwt2", "numthreads"] )
+	wt_bwt2 	= get_conf_val( wt_bwt2, 		["walltime_bwt2", "wt_bwt2", "timeout_bwt2"] )
+	mem_bwt2 	= get_conf_val( mem_bwt2, 		["memory_bwt2", "mem_bwt2"] )
 
 	print("\n\n== align bowtie2 settings\n")
 	print( "# threads (bowtie2)\t: $nth_bwt2\n")

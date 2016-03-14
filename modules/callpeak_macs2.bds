@@ -15,12 +15,9 @@ init_callpeak_macs2()
 
 void init_callpeak_macs2() {
 
-	if ( conf_file_exists() ) {
-
-		nth_macs2 	= get_conf_val_int( nth_macs2,		["nth_macs2"] )
-		wt_macs2 	= get_conf_val( wt_macs2, 		["wt_macs2"] )
-		mem_macs2 	= get_conf_val( mem_macs2, 		["mem_macs2"] )
-	}
+	nth_macs2 	= get_conf_val_int( nth_macs2,		["nth_macs2"] )
+	wt_macs2 	= get_conf_val( wt_macs2, 		["wt_macs2"] )
+	mem_macs2 	= get_conf_val( mem_macs2, 		["mem_macs2"] )
 
 	print("\n\n== callpeak macs2 settings\n")
 	print( "# threads (macs2)\t: $nth_macs2\n")

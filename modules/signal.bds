@@ -16,12 +16,10 @@ init_signal()
 
 void init_signal() {
 
-	if ( conf_file_exists() ) {
-		param_bam_cvrg	= get_conf_val( param_bam_cvrg, 	["param_bam_cvrg"] )
-		nth_bam_cvrg 	= get_conf_val_int( nth_bam_cvrg,	["nth_bam_cvrg"] )
-		wt_bam_cvrg 	= get_conf_val( wt_bam_cvrg, 		["wt_bam_cvrg"] )
-		mem_bam_cvrg 	= get_conf_val( mem_bam_cvrg, 		["mem_bam_cvrg"] )
-	}
+	param_bam_cvrg	= get_conf_val( param_bam_cvrg, 	["param_bam_cvrg"] )
+	nth_bam_cvrg 	= get_conf_val_int( nth_bam_cvrg,	["nth_bam_cvrg"] )
+	wt_bam_cvrg 	= get_conf_val( wt_bam_cvrg, 		["wt_bam_cvrg"] )
+	mem_bam_cvrg 	= get_conf_val( mem_bam_cvrg, 		["mem_bam_cvrg"] )
 
 	print("\n\n== callpeak gem settings\n")
 	print( "Param. for bamCoverage (deeptools)\t: $param_bam_cvrg\n")

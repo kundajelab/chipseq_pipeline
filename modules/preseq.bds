@@ -12,10 +12,7 @@ init_callpeak_etc()
 
 void init_callpeak_etc() {
 
-	if ( conf_file_exists() ) {
-
-		xmax 		= get_conf_val_int( xmax,		["xmax", "x_max"] )
-	}
+	xmax 		= get_conf_val_int( xmax,		["xmax", "x_max"] )
 
 	print("\n\n== preseq settings\n")
 	print( "Xmax for preseq\t: $xmax\n")

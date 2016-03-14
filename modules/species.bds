@@ -31,21 +31,15 @@ reg2map 	:= ""		help Reg2map for ataqc.
 roadmap_meta 	:= ""		help Roadmap metadata for ataqc.
 
 
-
-species_basename 		:= "species.conf"
-species_basename_kundaje_lab  	:= "species_kundaje.conf"
-
-
 init_species()
+
 read_species() // read it if exists
 
 
 void init_species() {
 
-	if ( conf_file_exists() ) {
-		species 	= get_conf_val( species, 	["species"] )
-		species_file 	= get_conf_val( species_file, 	["species_file"] )
-	}
+	species 	= get_conf_val( species, 	["species"] )
+	species_file 	= get_conf_val( species_file, 	["species_file"] )
 
 	print("\n\n== species and species file\n")
 	print( "Species\t: $species\n" )
@@ -57,30 +51,15 @@ void read_species() { // check for species configruation files
 	// value for key will be overriden as loop goes. so the last element in species_paths has the priority
 	string[] species_paths
 
-	// add bds script path
-	species_paths = concat( species_paths, get_species_file_paths( "/" + species_basename ) )
-
-	// add kundaje lab species file
-	if ( is_kundaje_lab() || is_scg3() ) \
-		species_paths = concat( species_paths, get_species_file_paths( "/" + species_basename_kundaje_lab ) )
-
-	// add default species file on working directory
-	species_paths.add( species_basename ) 
-
-	// add conf file
-	if ( c != "" ) \
-		species_paths.add( c ) 
-
-	// add conf file
-	if ( species_file != "" ) \
-		species_paths.add( species_file )
-
+	if ( env != env_ ) species_paths.add( env )
+	if ( c != "" ) species_paths.add( c )
+	species_paths.add( species_file )
 
 	for ( string path : species_paths ) {
 
 		if ( path.exists() ) {
 
-			loop := (path==c) ? 2 : 1 // look in configuration file two times
+			loop := (path==c || path==env) ? 2 : 1 // look in configuration file two times
 
 			for (int i=1; i<=loop; i++) {
 
@@ -91,19 +70,9 @@ void read_species() { // check for species configruation files
 				}
 				else {
 					_conf = read_conf( path, species ) // read species file
-
-					if ( is_scg3() && !species.toLower().endsWith("_scg3") ) { // if on scg3, check if SPECIES_scg3 exists.
-
-						_conf2 := read_conf( path, species+"_scg3" )
-
-						if ( _conf2.size() > 0 ) {
-							print("Found section $species"+"_scg3, use this instead of $species\n")
-							_conf = _conf2
-						}
-					}
 				}
 
-				print("Species (or configuration) file found ($path,$i).\n")
+				print("Species (or env./configuration) file found ($path,$i).\n")
 
 				if ( _conf.size() == 0 ) continue // no species section (like [hg19], [mm9], ...) found, keep going with next
 

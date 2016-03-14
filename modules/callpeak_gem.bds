@@ -15,12 +15,9 @@ init_callpeak_gem()
 
 void init_callpeak_gem() {
 
-	if ( conf_file_exists() ) {
-
-		nth_gem 	= get_conf_val_int( nth_gem,		["nth_gem"] )
-		wt_gem 		= get_conf_val( wt_gem, 		["wt_gem"] )
-		mem_gem 	= get_conf_val( mem_gem, 		["mem_gem"] )
-	}
+	nth_gem 	= get_conf_val_int( nth_gem,		["nth_gem"] )
+	wt_gem 		= get_conf_val( wt_gem, 		["wt_gem"] )
+	mem_gem 	= get_conf_val( mem_gem, 		["mem_gem"] )
 
 	print("\n\n== callpeak gem settings\n")
 	print( "# threads (gem)\t\t: $nth_gem\n")

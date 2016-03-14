@@ -13,7 +13,6 @@ sigtrk 		:= ""		help Signal track generation method : aln2rawsig and deeptools.
 no_bw		:= false	help Prevent bigwig generation.
 make_wig 	:= false	help Create wig (only for '-sigtrk aln2rawsig').
 
-dir_sw  	:= "$HOME/software_bds" help Root directory of dependencies (if you have installed dependencies with 'install_dependencies.sh [ROOT_DIR]').
 
 help() // print help if no parameters are given
 
@@ -22,7 +21,6 @@ include "modules/input_bam.bds"
 include "modules/input_tagalign.bds"
 include "modules/input_peak.bds"
 
-include "modules/general.bds"
 include "modules/species.bds"
 
 include "modules/report.bds"
@@ -71,8 +69,6 @@ string idr_qc
 
 init_chipseq() // read command line parameters or configruation file
 
-set_env() // setup unix shell environments
-
 chk_input() // check input files are valid
 
 align() // align and postalign
@@ -84,25 +80,24 @@ do_idr() // IDR
 report()
 
 
+
 void init_chipseq() {
 
-	if ( conf_file_exists() ) {
+//	if ( conf_file_exists() ) {
 
-		pe		= get_conf_val_bool( pe, 		["pe"] )
-		final_stage	= get_conf_val( final_stage, 		["final_stage"] )
+	pe		= get_conf_val_bool( pe, 		["pe"] )
+	final_stage	= get_conf_val( final_stage, 		["final_stage"] )
 
-		subsample	= get_conf_val_bool( subsample, 	["subsample"] )
+	subsample	= get_conf_val_bool( subsample, 	["subsample"] )
 
-		callpeak	= get_conf_val( callpeak, 		["callpeak"] )
-		true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
-		ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])
+	callpeak	= get_conf_val( callpeak, 		["callpeak"] )
+	true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
+	ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])
 		
-		sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
-		make_wig	= get_conf_val_bool( make_wig, 		["make_wig"] )
-		no_bw		= get_conf_val_bool( no_bw, 		["no_bw"] )
-
-		dir_sw		= get_conf_val( dir_sw, 		["dir_sw"] )
-	}
+	sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
+	make_wig	= get_conf_val_bool( make_wig, 		["make_wig"] )
+	no_bw		= get_conf_val_bool( no_bw, 		["no_bw"] )
+//	}
 
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
@@ -125,6 +120,8 @@ void init_chipseq() {
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "No bigwig\t\t\t: $no_bw\n" )
 	print( "Root dir. for dependencies\t\t: $dir_sw\n" )
+
+print("\nDEBUG: $SHCMD_INIT\n\n")
 
 	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
 }
@@ -1125,95 +1122,6 @@ string _html_chipseq_tracks() {
 	return html
 }
 
-void set_env() {
-
-	if ( path_exists( dir_sw ) ) { // automatically add software binaries to shell env. vars like PATH
-
-		if ( is_kundaje_lab() ) error("Remove $dir_sw if you run chipseq on SCG3 or Kundaje lab clusters\n")
-
-		print("\nFound ENCODE ChIP-Seq pipeline software directory ($dir_sw) \n")
-		print("Automatically adding environment variables...\n\n")
-
-		path := " export PATH=" \
-			+ "$dir_sw/tabix-0.2.6:$dir_sw/bwa-0.7.3:$dir_sw/samtools-0.1.19:$dir_sw/bedtools2-2.19.1/bin:" \
-			+ "$dir_sw/ucsc_tools:$dir_sw/picard-tools-1.92:$dir_sw/R-2.15.1/bin:" \
-			+ "$dir_sw/phantompeakqualtools:$dir_sw/python3.4/bin:" \
-			+ "$dir_sw/align2rawsignal/bin:$dir_sw/idrCode:$dir_sw/python2.7/bin:" \
-			+ "$dir_sw/MACS/bin:$dir_sw/gem:$dir_sw/deepTools/bin" \
-			+ "\${PATH}"
-
-		shellcmd := "export PICARDROOT=$dir_sw/picard-tools-1.92; export LAPACK=$dir_sw/blas/lapack-*/liblapack.a; " \
-			+ "export GEMROOT=$dir_sw/gem; export GEM=$dir_sw/gem/gem.jar; " \
-			+ "export PYTHONPATH=$dir_sw/python2.7/lib/python2.7/site-packages:\${PYTHONPATH}; "
-
-		shellcmd = shellcmd \
-			+ "MCRROOT=$dir_sw/MATLAB_Compiler_Runtime/v714;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64;" \
-			+ "MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/native_threads;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/server;" \
-			+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE};" \
-			+ "XAPPLRESDIR=\${MCRROOT}/X11/app-defaults;" \
-			+ "export LD_LIBRARY_PATH;" \
-			+ "export XAPPLRESDIR;"
-
-		SHCMD_INIT = SHCMD_INIT + ";" + path + ";" + shellcmd
-		SHCMD_INIT = SHCMD_INIT.replace( "; ;", ";" ).replace( ";;", ";" )
-	}
-
-	if ( is_kundaje_lab() || is_scg3() ) {
-
-		print("\nAutomatically adding environment variables... (Kundaje_lab: $hostname) \n\n")
-
-		if ( SHCMD_INIT.indexOf( init_mod ) < 0  ) { // if not module init. cmd found, then add it
-			SHCMD_INIT = SHCMD_INIT + " . /etc/profile.d/modules.sh;"
-		}
-
-		if ( is_scg3() ) {
-			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.7;"
-
-			dir_sw_BDS := "/srv/gsfs0/scratch/leepc12/software"
-
-			path := " export PATH=" \
-				+ "$dir_sw_BDS/R-2.15.1/bin:" \
-				+ "$dir_sw_BDS/phantompeakqualtools:$dir_sw_BDS/idr/bin:$dir_sw_BDS/python3.4/bin:" \
-				+ "$dir_sw_BDS/align2rawsignal/bin:$dir_sw_BDS/idrCode:$dir_sw_BDS/python2.7/bin:" \
-				+ "$dir_sw_BDS/gem:$dir_sw_BDS/deepTools/bin" \
-				+ "\${PATH}"
-
-			shellcmd := "export LAPACK=$dir_sw_BDS/blas/lapack-*/liblapack.a; " \
-				+ "export GEMROOT=$dir_sw_BDS/gem; export GEM=$dir_sw_BDS/gem/gem.jar; "
-
-			shellcmd = shellcmd \
-				+ "MCRROOT=$dir_sw_BDS/MATLAB_Compiler_Runtime/v714;" \
-				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/runtime/glnxa64;" \
-				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/bin/glnxa64;" \
-				+ "MCRJRE=\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64;" \
-				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/native_threads;" \
-				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE}/server;" \
-				+ "LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRJRE};" \
-				+ "XAPPLRESDIR=\${MCRROOT}/X11/app-defaults;" \
-				+ "export LD_LIBRARY_PATH;" \
-				+ "export XAPPLRESDIR;"			
-
-			SHCMD_INIT = SHCMD_INIT + ";" + path + ";" + shellcmd
-			SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
-		}
-		else {
-			SHCMD_INIT = SHCMD_INIT + " module add bwa/0.7.10 gem/2.6 r/2.15.1 deepTools/latest align2rawsignal/2.0 phantompeakqualtools/default idr/latest;"
-			SHCMD_INIT = SHCMD_INIT + " export PATH=${PATH}:/software/idrCode;"
-		}
-
-		SHCMD_INIT = SHCMD_INIT + " module add samtools/0.1.19 bedtools/2.19.1 ucsc_tools/3.0.9 picard-tools/1.92 MACS2/2.1.0 java/latest;"
-		SHCMD_INIT = SHCMD_INIT + " export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4"
-
-		SHCMD_INIT = SHCMD_INIT.replace( ";;", ";" )
-
-	}
-       
-	print( "\nShell command for initialization\t: $SHCMD_INIT\n\n" )
-}
 
 void help() {
 

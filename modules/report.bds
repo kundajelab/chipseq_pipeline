@@ -15,9 +15,7 @@ init_report()
 
 void init_report() {
 
-	if ( conf_file_exists() ) {
-		url_base	= get_conf_val( url_base, 		["url_base"] )
-	}
+	url_base	= get_conf_val( url_base, 		["url_base"] )
 	
 	print("\n\n== report settings\n")
 	print( "URL root for output directory\t: $url_base\n" )

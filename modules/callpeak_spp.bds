@@ -16,13 +16,10 @@ init_callpeak_spp()
 
 void init_callpeak_spp() {
 
-	if ( conf_file_exists() ) {
-
-		npeak 		= get_conf_val_int( npeak,		["npeak"] )
-		nth_spp 	= get_conf_val_int( nth_spp,		["nthreads_spp", "nth_spp", "cpu_spp"] )
-		wt_spp 		= get_conf_val( wt_spp, 		["walltime_spp", "wt_spp", "timeout_spp"] )
-		mem_spp 	= get_conf_val( mem_spp, 		["memory_spp", "mem_spp"] )
-	}
+	npeak 		= get_conf_val_int( npeak,		["npeak"] )
+	nth_spp 	= get_conf_val_int( nth_spp,		["nthreads_spp", "nth_spp", "cpu_spp"] )
+	wt_spp 		= get_conf_val( wt_spp, 		["walltime_spp", "wt_spp", "timeout_spp"] )
+	mem_spp 	= get_conf_val( mem_spp, 		["memory_spp", "mem_spp"] )
 
 	print("\n\n== callpeak spp settings\n")
 	print( "Threshold for # peak\t\t: $npeak\n")

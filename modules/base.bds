@@ -1,16 +1,32 @@
 #!/usr/bin/env bds
 
-helpUnsorted := true
+helpUnsorted := true // do not sort help
+
+script_path 	:= ""
+script_dir 	:= ""
+
+hostname 	:= ""
+
 
 // Relative script (BDS) file path : 
-// 	This is important because pipeline seeks for species file 
-//		or executables like .py .sh .R in the BDS script path if they are not defined globally in env. var. $PATH
-// 	Add more relative path here if you want to keep your .py .sh .R in subdirectories (or parent) of your BDS script directory.
+//   This is important because pipeline seeks for executables like .py .sh .R in the BDS script path if they are not defined globally in env. var. $PATH
+//   Add more relative path here if you want to keep your .py .sh .R in subdirectories (or parent) of your BDS script directory.
 
-hostname 	:= get_hostname()
-rel_script_file_paths 	:= [".","..","modules","utils","chipseq/modules","chipseq/utils"]
-rel_species_file_paths 	:= [".","..","species","chipseq/species"]
+rel_script_file_paths 	:= [".","modules","utils"]
 
+
+init_base()
+
+
+void init_base() {
+
+	script_path 	= "$ppwd/$programPath"
+	if (!script_path.exists()) script_path = "$programPath"
+
+	script_dir 	= script_path.dirName()
+
+	hostname 	= get_hostname()
+}
 
 // command line argument functions
 
@@ -320,6 +336,7 @@ string rm_comment( string str ) { // remove substring after double slash "//"
 }
 
 string rm_str_at_end( string str, string rm ) {
+
 	trimmed := str.trim()
 	
 	if ( trimmed.substr( trimmed.length()-rm.length() ).toLower() == rm.toLower() ) {
@@ -330,16 +347,19 @@ string rm_str_at_end( string str, string rm ) {
 }
 
 string array_to_str( string[] arr, string delim ) {
+
 	string ret
 	for ( string str : arr ) ret = ret + str + delim	
 	return ret
 }
 
 string array_to_str( string[] arr ) {
+
 	return array_to_str( arr, "\n")
 }
 
 string[] concat( string[] s1, string[] s2 ) {
+
 	string[] ret	
 	for ( string str : s1 ) ret.add(str)
 	for ( string str : s2 ) ret.add(str)
@@ -347,6 +367,7 @@ string[] concat( string[] s1, string[] s2 ) {
 }
 
 string[] concat( string[] s1, string[] s2, string[] s3 ) {
+
 	string[] ret	
 	for ( string str : s1 ) ret.add(str)
 	for ( string str : s2 ) ret.add(str)
@@ -355,6 +376,7 @@ string[] concat( string[] s1, string[] s2, string[] s3 ) {
 }
 
 string[] concat( string[] s1, string[] s2, string[] s3, string[] s4 ) {
+
 	string[] ret	
 	for ( string str : s1 ) ret.add(str)
 	for ( string str : s2 ) ret.add(str)
@@ -364,6 +386,7 @@ string[] concat( string[] s1, string[] s2, string[] s3, string[] s4 ) {
 }
 
 bool is_in_array( string str, string[] arr ) { // case-insensitive
+
 	for( string val : arr ) \
 		if ( val.toLower() == str.toLower() ) \
 			return true
@@ -371,15 +394,18 @@ bool is_in_array( string str, string[] arr ) { // case-insensitive
 }
 
 string change_dir( string file, string out_dir ) {
+
 	return out_dir + "/" + get_basename( file )
 }
 
 string get_path( string str ) {
+
 	base := rm_str_at_end( str, "/" ).path()
 	return base
 }
 
 string mkdir_path( string str ) { 
+
 	// make filename full path and mkdir -p
 	path := get_path( str )
 
@@ -393,6 +419,7 @@ string mkdir_path( string str ) {
 }
 
 bool path_exists( string path ) {
+
 	if ( path!="" ) {
 		if ( path.exists() ) {
 			if ( path.isFile() ) {
@@ -407,16 +434,11 @@ bool path_exists( string path ) {
 }
 
 string[] get_script_file_paths( string suffix ) {
-	script_file 	:= "$ppwd/$programPath"	// path of your BDS script
-
-	if (!script_file.exists()) script_file = "$programPath"
-
-	script_path := script_file.dirName()
 
 	string[] ret
 
 	for ( string path : rel_script_file_paths ) {
-		path = "$script_path/$path"
+		path = "$script_dir/$path"
 		if ( path.exists() ) ret.add( path + suffix )
 	}
 
@@ -424,29 +446,8 @@ string[] get_script_file_paths( string suffix ) {
 }
 
 string[] get_script_file_paths() {
+
 	return get_script_file_paths( "" )
-}
-
-
-string[] get_species_file_paths( string suffix ) {
-	species_file 	:= "$ppwd/$programPath"	// path of your BDS species
-
-	if (!species_file.exists()) species_file = "$programPath"
-
-	species_path := species_file.dirName()
-
-	string[] ret
-
-	for ( string path : rel_species_file_paths ) {
-		path = "$species_path/$path"
-		if ( path.exists() ) ret.add( path + suffix )
-	}
-
-	return ret
-}
-
-string[] get_species_file_paths() {
-	return get_species_file_paths( "" )
 }
 
 void save_data( string file, string[] data ) { // ; separated array
@@ -547,4 +548,11 @@ bool is_kundaje_lab() {
 		if ( name == name_ ) return true
 	}
 	return false
+}
+
+string get_svr() {
+
+	if ( is_kundaje_lab() ) return "kundaje"
+	else if ( is_scg3() ) 	return "scg3"
+	else 			return ""
 }

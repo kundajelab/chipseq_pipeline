@@ -501,6 +501,30 @@ if [ ! -f $FLAGDIR/PYTHON2DEEP ]; then
  chk_exit_code $FLAGDIR/PYTHON2DEEP
 fi
 
+# for atac
+#if [ ! -f $FLAGDIR/PYTHON2PYBEDTOOLS ]; then
+#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pybedtools
+# chk_exit_code $FLAGDIR/PYTHON2PYBEDTOOLS
+#fi
+
+# for atac
+#if [ ! -f $FLAGDIR/PYTHON2PANDAS ]; then
+#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pandas
+# chk_exit_code $FLAGDIR/PYTHON2PANDAS
+#fi
+
+# for atac
+#if [ ! -f $FLAGDIR/PYTHON2METASEQ ]; then
+#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" metaseq
+# chk_exit_code $FLAGDIR/PYTHON2METASEQ
+#fi
+
+# for atac
+#if [ ! -f $FLAGDIR/PYTHON2JINJA2 ]; then
+#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" jinja2
+# chk_exit_code $FLAGDIR/PYTHON2JINJA2
+#fi
+
 if [ ! -f $FLAGDIR/MACS2 ]; then
  # Local installation instruction for MACS2
  cd $SOFTWARE

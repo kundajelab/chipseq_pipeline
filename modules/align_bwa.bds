@@ -18,16 +18,13 @@ init_align_bwa()
 
 void init_align_bwa() {
 
-	if ( conf_file_exists() ) {
+	param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["param_bwa_aln"] )
 
-		param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["param_bwa_aln"] )
-
-		nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["nth_bwa_aln"] )
-		wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["wt_bwa_aln"] )
-		mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["mem_bwa_aln"] )
-		wt_bwa_sam 	= get_conf_val( wt_bwa_sam, 		["wt_bwa_sam"] )
-		mem_bwa_sam 	= get_conf_val( mem_bwa_sam, 		["mem_bwa_sam"] )
-	}
+	nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["nth_bwa_aln"] )
+	wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["wt_bwa_aln"] )
+	mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["mem_bwa_aln"] )
+	wt_bwa_sam 	= get_conf_val( wt_bwa_sam, 		["wt_bwa_sam"] )
+	mem_bwa_sam 	= get_conf_val( mem_bwa_sam, 		["mem_bwa_sam"] )
 
 	print("\n\n== align bwa settings\n")
 	print( "Param. for bwa aln\t: $param_bwa_aln\n")
