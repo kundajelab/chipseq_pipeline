@@ -17,14 +17,13 @@ umap_hic	:= "" 		help Unique mappability tracks directory path (for HiC, DO NOT 
 bwa_idx 	:= ""		help BWA index (full path prefix of *.bwt file) .
 bwt_idx		:= ""		help Bowtie index (full path prefix of *.1.ebwt file).
 bwt2_idx	:= ""		help Bowtie2 index (full path prefix of *.1.bt2 file).
-vplot_idx 	:= "" 		help V plot index.
+vplot_idx 	:= "" 		help V plot index (TSS bed for vplot and ataqc).
 
 blacklist_idr 	:= "" 		help Blacklist bed for IDR.
 
 ref_fa 		:= ""		help Reference genome sequence fasta.
 blacklist 	:= "" 		help Blacklist bed for ataqc.
 dnase 		:= ""		help DNase bed for ataqc.
-tss 		:= ""		help TSS bed for ataqc.
 prom 		:= ""		help Promoter bed for ataqc.
 enh 		:= ""		help Enhancer bed for ataqc.
 reg2map 	:= ""		help Reg2map for ataqc.
@@ -94,7 +93,6 @@ void read_species() { // check for species configruation files
 				ref_fa 		= get_conf_val( ref_fa, 	["ref_fa"], _conf )
 				blacklist 	= get_conf_val( blacklist, 	["blacklist"], _conf )
 				dnase 		= get_conf_val( dnase, 		["dnase"], _conf )
-				tss 		= get_conf_val( tss, 		["tss"], _conf )
 				prom 		= get_conf_val( prom, 		["prom"], _conf )
 				enh 		= get_conf_val( enh, 		["enh"], _conf )
 				reg2map 	= get_conf_val( reg2map, 	["reg2map"], _conf )
@@ -118,7 +116,6 @@ void read_species() { // check for species configruation files
 	print( "Ref. genome seq. fasta\t: $ref_fa\n" )
 	print( "Black list for ataqc\t: $blacklist\n" )
 	print( "DNase bed for ataqc\t: $dnase\n" )
-	print( "TSS bed for ataqc\t: $tss\n" )
 	print( "Promoter bed for ataqc\t: $prom\n" )
 	print( "Enhancer bed for ataqc\t: $enh\n" )
 	print( "Reg2map bed for ataqc\t: $reg2map\n" )
