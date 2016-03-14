@@ -34,6 +34,7 @@ libboost-all-dev
 graphviz
 libcurl4-openssl-dev
 libxp6
+libgsl0-dev
 )
 #libboost-all-dev
 
@@ -59,6 +60,7 @@ graphviz
 libcurl-devel
 libpng-devel
 bzip2
+gsl-devel
 )
 #boost-devel
 
@@ -638,6 +640,7 @@ fi
 # for atac
 if [ ! -f $FLAGDIR/PRESEQ ]; then
  cd $SOFTWARE
+ rm -rf preseq
  git clone https://github.com/smithlabcode/preseq --recursive
  cd preseq
  git checkout tags/v2.0.2
