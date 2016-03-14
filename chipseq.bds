@@ -83,8 +83,6 @@ report()
 
 void init_chipseq() {
 
-//	if ( conf_file_exists() ) {
-
 	pe		= get_conf_val_bool( pe, 		["pe"] )
 	final_stage	= get_conf_val( final_stage, 		["final_stage"] )
 
@@ -97,7 +95,6 @@ void init_chipseq() {
 	sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
 	make_wig	= get_conf_val_bool( make_wig, 		["make_wig"] )
 	no_bw		= get_conf_val_bool( no_bw, 		["no_bw"] )
-//	}
 
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
@@ -120,8 +117,6 @@ void init_chipseq() {
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "No bigwig\t\t\t: $no_bw\n" )
 	print( "Root dir. for dependencies\t\t: $dir_sw\n" )
-
-print("\nDEBUG: $SHCMD_INIT\n\n")
 
 	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
 }

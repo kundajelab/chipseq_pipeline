@@ -11,6 +11,7 @@ hostname 	:= ""
 // Relative script (BDS) file path : 
 //   This is important because pipeline seeks for executables like .py .sh .R in the BDS script path if they are not defined globally in env. var. $PATH
 //   Add more relative path here if you want to keep your .py .sh .R in subdirectories (or parent) of your BDS script directory.
+//   Make sure that you chmod 755 your .py .R .sh 
 
 rel_script_file_paths 	:= [".","modules","utils"]
 
