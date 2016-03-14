@@ -43,7 +43,7 @@ void init_species() {
 
 	print("\n\n== species and species file\n")
 	print( "Species\t: $species\n" )
-	print( "Species file\t: $species_file\n" )
+	print( "Species file\t: $species_file\n\n" )
 }
 
 void read_species() { // check for species configruation files
@@ -72,7 +72,7 @@ void read_species() { // check for species configruation files
 					_conf = read_conf( path, species ) // read species file
 				}
 
-				print("Species (or env./configuration) file found ($path,$i).\n")
+				print("Species file (or conf./env. file) found ($path,loop:$i).\n")
 
 				if ( _conf.size() == 0 ) continue // no species section (like [hg19], [mm9], ...) found, keep going with next
 

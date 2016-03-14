@@ -30,7 +30,7 @@ void init_conf() {
 	print( "\n\n== configuration file settings\n")
 	print( "Configuration file\t\t\t: $c\n" )
 	print( "Environment file\t\t\t: $env\n" )
-	print( "Root dir. for locally installed dependencies\t: $dir_sw\n" )
+	print( "\nRoot dir. for locally installed dependencies\t: $dir_sw\n" )
 
 	if ( env == env_ ) {
 
@@ -90,7 +90,7 @@ string{} read_conf( string file, string section ) {
 
 			//print( "\t$key : $val \n" )
 
-			ret{ key } = val.replace("\$script_dir","$script_dir")
+			ret{ key } = val.replace("\$script_dir","$script_dir").replace("~/","$HOME/").replace("\$HOME","$HOME")
 		}
 	}
 	return ret
