@@ -116,7 +116,6 @@ void init_chipseq() {
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "No bigwig\t\t\t: $no_bw\n" )
-	print( "Root dir. for dependencies\t\t: $dir_sw\n" )
 
 	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
 }

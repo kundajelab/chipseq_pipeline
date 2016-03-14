@@ -23,30 +23,25 @@ void init_conf() {
 	if ( is_first_arg_conf() ) c = args[0]
 
 	add_to_conf( c, "" ) // then read conf. file
-
 	dir_sw 		= get_conf_val( dir_sw, 	["dir_sw"] )
 	env		= get_conf_val( env, 		["env"] )
 
-	print( "\n\n== configuration file settings\n")
-	print( "Configuration file\t\t\t: $c\n" )
-	print( "Environment file\t\t\t: $env\n" )
-	print( "\nRoot dir. for locally installed dependencies\t: $dir_sw\n" )
-
 	if ( env == env_ ) {
-
-		if ( get_svr() == "" ) {
-
-			if ( path_exists( dir_sw ) ) add_to_conf( env, "local-install" )
-		}
-		else {
-			add_to_conf( env, get_svr() )
-		}
+		if ( get_svr() == "" && path_exists( dir_sw ) ) add_to_conf( env, "local-install" )
+		else if ( get_svr() != "" ) 			add_to_conf( env, get_svr() )
 	}
 	else {
 		add_to_conf( env )
 	}
 
 	add_to_conf( c, "" ) // read conf again to override
+
+	dir_sw 		= get_conf_val( dir_sw, 	["dir_sw"] ) // read again
+
+	print( "\n\n== configuration file settings\n")
+	print( "Configuration file\t\t\t: $c\n" )
+	print( "Environment file\t\t\t: $env\n" )
+	print( "\nRoot dir. for locally installed dependencies\t: $dir_sw\n" )
 }
 
 string{} read_conf( string file, string section ) {
@@ -89,13 +84,7 @@ string{} read_conf( string file, string section ) {
 			(key, val) = parse_conf_line( line )
 
 			//print( "\t$key : $val \n" )
-
-			val1 := val.replace("\$script_dir","$script_dir").replace("\${script_dir}","$script_dir")
-			val2 := val1.replace("\$dir_sw","$dir_sw").replace("\${dir_sw}","$dir_sw")
-			val3 := val2.replace("~/","$HOME/")
-			val4 := val3.replace("\$HOME","$HOME").replace("\${HOME}","$HOME")
-
-			ret{ key } = val4
+			ret{ key } = val
 		}
 	}
 	return ret
@@ -220,16 +209,26 @@ string get_conf_val( string curr_val, string key, string{} _conf ) {
 	if ( _conf.size() == 0 ) {
 		if ( conf.hasKey( key ) ) {
 			
-			return (conf{ key } != "") ? rm_comment( conf{ key } ) : curr_val
+			return (conf{ key } != "") ? substitute_var( rm_comment( conf{ key } ) ) : curr_val
 		}
 	}
 	else {
 		if ( _conf.hasKey( key ) ) {
 			
-			return (_conf{ key } != "") ? rm_comment( _conf{ key } ) : curr_val
+			return (_conf{ key } != "") ? substitute_var( rm_comment( _conf{ key } ) ) : curr_val
 		}
 	}
 	return curr_val
+}
+
+string substitute_var( string var ) {
+
+	var1 := var.replace("\$script_dir","$script_dir").replace("\${script_dir}","$script_dir")
+	var2 := var1.replace("\$dir_sw","$dir_sw").replace("\${dir_sw}","$dir_sw")
+	var3 := var2.replace("~/","$HOME/")
+	var4 := var3.replace("\$HOME","$HOME").replace("\${HOME}","$HOME")
+
+	return var4
 }
 
 string get_conf_val( string curr_val, string[] keys, string{} _conf ) {		
