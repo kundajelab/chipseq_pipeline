@@ -256,14 +256,6 @@ function chk_exit_code {
   fi
 }
 
-CONTENTS=(
-"export _JAVA_OPTIONS=\"-Xms256M -Xmx512M -XX:ParallelGCThreads=1\""
-"export MAX_JAVA_MEM=\"8G\""
-"export MALLOC_ARENA_MAX=4"
-"export PATH=\$PATH:\$HOME/.bds"
-)
-#add_to_bashrc
-
 echo
 echo "=============================================================================="
 echo "Starting automatic installation for dependencies for ChIP-seq pipeline."
@@ -290,6 +282,8 @@ if [ ! -f $FLAGDIR/BDS ]; then
  cp $SCRIPTDIR/bds.config $HOME/.bds/
  CONTENTS=("export PATH=\$PATH:\$HOME/.bds/")
  add_to_bashrc
+
+ rm -f bds_Linux.tgz
 fi
 
 if [ ! -f $FLAGDIR/TABIX ]; then
@@ -502,28 +496,28 @@ if [ ! -f $FLAGDIR/PYTHON2DEEP ]; then
 fi
 
 # for atac
-#if [ ! -f $FLAGDIR/PYTHON2PYBEDTOOLS ]; then
-#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pybedtools
-# chk_exit_code $FLAGDIR/PYTHON2PYBEDTOOLS
-#fi
+if [ ! -f $FLAGDIR/PYTHON2PYBEDTOOLS ]; then
+ $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pybedtools
+ chk_exit_code $FLAGDIR/PYTHON2PYBEDTOOLS
+fi
 
 # for atac
-#if [ ! -f $FLAGDIR/PYTHON2PANDAS ]; then
-#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pandas
-# chk_exit_code $FLAGDIR/PYTHON2PANDAS
-#fi
+if [ ! -f $FLAGDIR/PYTHON2PANDAS ]; then
+ $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" pandas
+ chk_exit_code $FLAGDIR/PYTHON2PANDAS
+fi
 
 # for atac
-#if [ ! -f $FLAGDIR/PYTHON2METASEQ ]; then
-#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" metaseq
-# chk_exit_code $FLAGDIR/PYTHON2METASEQ
-#fi
+if [ ! -f $FLAGDIR/PYTHON2METASEQ ]; then
+ $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" metaseq
+ chk_exit_code $FLAGDIR/PYTHON2METASEQ
+fi
 
 # for atac
-#if [ ! -f $FLAGDIR/PYTHON2JINJA2 ]; then
-#$SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" jinja2
-# chk_exit_code $FLAGDIR/PYTHON2JINJA2
-#fi
+if [ ! -f $FLAGDIR/PYTHON2JINJA2 ]; then
+ $SOFTWARE/python2.7/bin/python2.7 -m pip install --install-option="--prefix=$SOFTWARE/python2.7" jinja2
+ chk_exit_code $FLAGDIR/PYTHON2JINJA2
+fi
 
 if [ ! -f $FLAGDIR/MACS2 ]; then
  # Local installation instruction for MACS2
@@ -641,17 +635,16 @@ if [ ! -f $FLAGDIR/MCR ]; then
  rm -f MCR2010b.bin
 fi
 
+# for atac
+if [ ! -f $FLAGDIR/PRESEQ ]; then
+ cd $SOFTWARE
+ git clone https://github.com/smithlabcode/preseq --recursive
+ cd preseq
+ git checkout tags/v2.0.2
+ make
 
-#if [ ! -f $FLAGDIR/PRESEQ ]; then
-# cd $SOFTWARE
-# git clone https://github.com/smithlabcode/preseq --recursive
-# cd preseq
-# git checkout tags/v2.0.2
-# make
-#
-# chk_exit_code $FLAGDIR/PRESEQ
-#fi
-
+ chk_exit_code $FLAGDIR/PRESEQ
+fi
 
 # WARNING
 if [ $FAILED == 1 ]; then

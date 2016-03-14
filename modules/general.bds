@@ -139,7 +139,7 @@ void init_shell_env() {
 	}
 
 	// additional initialization
-	SHCMD_INIT = SHCMD_INIT + shellcmd + path + module
+	SHCMD_INIT = SHCMD_INIT + module + path + shellcmd
 	SHCMD_INIT = SHCMD_INIT.replace( ": :", ":" ).replace( "::", ":" )
 	SHCMD_INIT = SHCMD_INIT.replace( "; ;", ";" ).replace( ";;", ";" )
 
