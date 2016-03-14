@@ -90,7 +90,12 @@ string{} read_conf( string file, string section ) {
 
 			//print( "\t$key : $val \n" )
 
-			ret{ key } = val.replace("\$script_dir","$script_dir").replace("~/","$HOME/").replace("\$HOME","$HOME")
+			val1 := val.replace("\$script_dir","$script_dir").replace("\${script_dir}","$script_dir")
+			val2 := val1.replace("\$dir_sw","$dir_sw").replace("\${dir_sw}","$dir_sw")
+			val3 := val2.replace("~/","$HOME/")
+			val4 := val3.replace("\$HOME","$HOME").replace("\${HOME}","$HOME")
+
+			ret{ key } = val4
 		}
 	}
 	return ret
