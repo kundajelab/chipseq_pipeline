@@ -66,7 +66,7 @@ gsl-devel
 
 LINUX_ID_LIKE="non-debian,non-fedora"
 
-if [[ $(cat /etc/*-release | grep fedora | wc -l) > 0 ]]; then
+if [[ $(cat /etc/*-release | grep 'Red Hat\|fedora' | wc -l) > 0 ]]; then
   LINUX_ID_LIKE=fedora
 fi
 
