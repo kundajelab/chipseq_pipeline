@@ -17,13 +17,13 @@ $ tar zxvf bds_Linux.tgz
 $ rm bds_Linux.tgz
 ```
 
-Find bds.config and move it to $HOME/.bds/.
+Find bds.config and move it to `$HOME/.bds/`.
 ```
 $ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds/
 ```
 
-(Recommended if you don't know what these are) Add the following lines to your $HOME/.bashrc or $HOME/.bash_profile:
+(Recommended if you don't know what these are) Add the following lines to your `$HOME/.bashrc` or `$HOME/.bash_profile`:
 ```
 export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
 export MAX_JAVA_MEM="16G"
@@ -42,7 +42,7 @@ All dependencies except BDS have already been installed on SCG3. Follow the inst
 
 ### Installation on Kundaje lab clusters (mitra, nandi, vayu, kali, durga, wotan and amold)
 
-All dependencies have already been installed on lab servers. Find bds.config in the pipeline repo and move it to $HOME/.bds/.
+All dependencies have already been installed on lab servers. Find bds.config in the pipeline repo and move it to `$HOME/.bds/`.
 ```
 $ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds/
@@ -57,7 +57,7 @@ Create and move to your working directory. Run the following command:
 $ bds [PIPELINE_BDS] [PARAMETERS]
 ```
 
-DO NOT CLOSE A TERMINAL WHILE PIPELINE IS RUNNING! All tasks will be canceled and intermediate files will be deleted. Make a screen or make sure that a terminal don't close.
+DO NOT CLOSE A TERMINAL WHILE PIPELINE IS RUNNING! All tasks will be canceled and intermediate files will be deleted. Make a screen or make sure that the terminal doesn't close.
 
 Do not run multiple BDS pipelines on the same working directory. BDS creates an HTML report and temporary files on the working directory. Things will be messed up.
 
@@ -71,7 +71,7 @@ Press Ctrl + C on a terminal or just close it. Please not that this will delete 
 
 ### Running pipelines with a cluster engine
 
-You can run BDS pipeline with a specified cluster engine. Choose your cluster system (local: UNIX threads, sge: Sun Grid Engine, ...).
+You can run BDS pipeline with a specified cluster engine. Choose your cluster system (`local`: UNIX threads, `sge`: Sun Grid Engine, ...).
 ```
 $ bds -s [SYSTEM] [PIPELINE.BDS] ...
 ```
@@ -100,12 +100,12 @@ $ bds [PIPELINE_BDS]
 
 ### Resource settings (walltime and max. memory)
 
-Most clusters have resource limitation so that jobs submitted without it will be declined. By default, walltime is 11 hours and max memory is 8GB. To change them, add the following parameters to the command line. `-memory` does not apply to jobs with their own max. memory parameters (eg. spp with -mem_spp, bwa aln with -mem_bwa_aln, ...)
+Most clusters have resource limitation so that jobs submitted without it will be declined. By default, walltime is 11 hours and max memory is 8GB. To change them, add the following parameters to the command line. `-mem` does not apply to jobs with their own max. memory parameters (eg. spp with `-mem_spp`, bwa align with `-mem_bwa_aln`, ...)
 ```
 -wt [WALLTIME; examples: 13:20:20, 10h, 7200] -memory [MAX_MEMORY; examples: 5G, 2000K]
 ```
 
-To specify walltime and max. memory for a specific job (note that max. memory parameter is `-mem_XXX` instead of `-memory_XXX`). To see which job has specific resource settings, run the pipeline without parameters `$ bds [PIPELINE_BDS]` then it will display all parameters including resource settings and help. The following line is an example parameter to increase walltime and max. memory for MACS2 peak calling.
+You can specify walltime and max. memory for a specific job (with `-mem_[TASK_NAME] [MAX_MEM]`). To see which job has specific resource settings, run the pipeline without parameters `$ bds [PIPELINE_BDS]` then it will display all parameters including resource settings and help. The following line is an example parameter to increase walltime and max. memory for MACS2 peak calling.
 ```
 -wt_macs2 40h -mem_macs2 20G -nth_macs2 2
 ```
@@ -154,8 +154,8 @@ You can resume the pipeline by using the same command line you used to start it.
 1) Take a look at HTML report (which contains all STDERR/STDOUT for all jobs in the pipeline). It tells you everything about all pipeline jobs. Find which stage is errorneous. Carefully look at system messages (STDERR and STDOUT) for it.
 
 2) Correct errors.
-   2-1) Lack of memory: increase memory for all jobs (e.g. add -mem 20G) or a specific problematic job (e.g. add -mem_macs2 20G).
-   2-2) Timeout: increase walltime for all jobs (e.g. add -wt 24h) or a specific long job (e.g. add -wt_macs2 200h).
+   2-1) Lack of memory: increase memory for all jobs (e.g. add `-mem 20G`) or a specific problematic job (e.g. add `-mem_macs2 20G`).
+   2-2) Timeout: increase walltime for all jobs (e.g. add `-wt 24h`) or a specific long job (e.g. add `-wt_macs2 200h`).
                  (Warning! Most clusters have limit for walltime. Make it as shortest as you can to get your queued jobs executed quickly.)
    2-3) Wrong input: check all input files are available.
    2-4) Software error: use recommended software versions.
@@ -168,7 +168,7 @@ You can resume the pipeline by using the same command line you used to start it.
 
 ### How to define parameters?
 
-There are two ways to define parameters for pipelines. Default values are already given for most of parameters. Take a look at example commands and configuration files (./examples). Both methods share the same key names.
+There are two ways to define parameters for pipelines. Default values are already given for most of parameters. Take a look at example commands and configuration files (`./examples`). Both methods share the same key names.
 
 1) From command line arguments 
 ```
@@ -301,7 +301,7 @@ hg19 and mm9 are available for SCG3 and Kundaje lab clusters. If you are interes
 
 ### Useful HTML report for debugging
 
-BDS HTML report is located at the working folder with name [PIPELINE_NAME]_[TIMESTAMP]_report.html. This report is automatically generated by BDS and is very useful for debugging since it shows summary, timeline, Stdout and Stderr for all jobs in the pipeline.
+BDS HTML report is located at the working folder with name `[PIPELINE_NAME]_[TIMESTAMP]_report.html`. This report is automatically generated by BDS and is very useful for debugging since it shows summary, timeline, Stdout and Stderr for all jobs in the pipeline.
 
 
 
@@ -321,7 +321,7 @@ $ bds -dryRun [PIPELINE_BDS] ...
 
 Ignore this section if you are working on SCG3 or Kundaje lab clusters.
 
-It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. mod, shcmd and addpath are three convenient ways to define environment variables. Environment variables defined with mod, shcmd and addpath are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with mod. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
+It is important to define enviroment variables (like `$PATH`) to make bioinformatics softwares in the pipeline work properly. mod, shcmd and addpath are three convenient ways to define environment variables. Environment variables defined with mod, shcmd and addpath are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with mod. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
 
 1) mod
 
@@ -344,7 +344,7 @@ mod_lang= r/2.15.1; java/latest
 
 2) shcmd
 
-If you have softwares locally installed on your home, you may need to add to them environment variables like $PATH, $LD_LIBRARY_PATH and so on. <b>IMPORTANT!</b> Note that any pre-defined enviroment variables (like $PATH) should be referred in a curly bracket like ${PATH}. This is because BDS distinguishes environment variables from BDS variables by a curly bracket ${}.
+If you have softwares locally installed on your home, you may need to add to them environment variables like `$PATH`, `$LD_LIBRARY_PATH` and so on. <b>IMPORTANT!</b> Note that any pre-defined enviroment variables (like `$PATH`) should be referred in a curly bracket like `${PATH}`. This is because BDS distinguishes environment variables from BDS variables by a curly bracket ${}.
 ```
 shcmd= export PATH=${PATH}:path_to_your_program
 ```
@@ -362,7 +362,7 @@ shcmd_SLEEP_TEN_SECS_FOR_ALL_JOBS= echo "I am sleeping..."; sleep 10
 
 3) addpath
 
-If you just want to add something to your $PATH, use addpath instead of shcmd. It's much simpler. Use : or ; as a delimiter.
+If you just want to add something to your `$PATH`, use addpath instead of shcmd. It's much simpler. Use : or ; as a delimiter.
 
 ```
 addpath= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin/test
@@ -371,7 +371,7 @@ addpath= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin
 
 ### What are -mod, -shcmd and -addpath?
 
-They are command line argument versions of mod, shcmd and addpath. For example,
+They are command line argument versions of `mod`, `shcmd` and `addpath`. For example,
 
 ```
 $ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin'
@@ -399,7 +399,7 @@ nth_macs2 = 2 	// You can also have resource settings for other tasks
 ...
 ```
 
-Note that any pre-defined enviroment variables (like $PATH) should be referred in a curly bracket like ${PATH}. This is because BDS distinguishes environment variables from BDS variables by a curly bracket ${}.
+Note that any pre-defined enviroment variables (like `$PATH`) should be referred in a curly bracket like `${PATH}`. This is because BDS distinguishes environment variables from BDS variables by a curly bracket `${}`.
 
 Example environment file on scg3 (Stanford cluster).
 ```
@@ -463,9 +463,9 @@ If see the following error when you submit jobs to Sun Grid Enginee,
 /bin/bash: module: line 1: syntax error: unexpected end of file
 ```
 
-Check your $HOME/.bashrc if it has any errorneous lines.
+Check your `$HOME/.bashrc` if it has any errorneous lines.
 
-Remove the following line in you module initialization scripts ($modULESHOME/init/bash or /etc/profile.d/modules.sh).
+Remove the following line in you module initialization scripts (`$MODULESHOME/init/bash` or `/etc/profile.d/modules.sh`).
 ```
 export -f module
 ```

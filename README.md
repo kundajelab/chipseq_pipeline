@@ -47,7 +47,7 @@ $ tar zxvf bds_Linux.tgz
 
 Manually install dependencies and setup your shell environments with an environment file that is later explained in this README.
 
-Replace BDS's default bds.config with a correct one:
+Replace BDS's default `bds.config` with a correct one:
 ```
 $ cd TF_chipseq_pipeline
 $ mkdir -p $HOME/.bds
@@ -69,7 +69,7 @@ export MALLOC_ARENA_MAX=4
 
 ### Installation instruction (for Kundaje lab members)
 
-For Kundaje lab members, BDS and all dependencies have already been installed on lab servers (including SCG3). Do not run install_dependencies.sh on Kundaje lab servers.
+For Kundaje lab members, BDS and all dependencies have already been installed on lab servers (including SCG3). Do not run `install_dependencies.sh` on Kundaje lab servers.
 
 Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
 ```
@@ -86,7 +86,7 @@ $ bds chipseq.bds [...]
 
 ### Usage
 
-There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (./examples). Two methods share the same key names.
+There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names.
 
 
 1) Parameters from command line arguments: 
@@ -147,9 +147,9 @@ The AQUAS transcription factor ChIP-Seq pipeline goes through the following stag
 5) peak         : peak calling (tagaligns -> peaks)
 6) idr          : IDR (peaks -> IDR score and peaks)
 ```
-If you define '-final_stage [STAGE]', the pipeline stops right after the stage.
+If you define `-final_stage [STAGE]`, the pipeline stops right after the stage.
 
-This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL. Set -final_stage [FINAL STAGE]. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
+This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL. Set `-final_stage [FINAL STAGE]`. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
 
 Mapping for each replicate will go IN PARALLEL! Consider your computating resources before running the pipeline. If you start the pipeline with fastqs, lots of processors will be taken due to bwa_aln. Lower -nth_bwa_aln if you have limited computing resources. It's 2 by default.
 
@@ -186,13 +186,13 @@ The ENCODE ChIP-Seq pipeline can start from various types of data.
 5) peak
 ```
 
-For inputs:
-Define data path with -[DATA_TYPE][REPLICATE_ID].
+For repllicates:
+Define data path with `-[DATA_TYPE][REPLICATE_ID]`.
 
 For contols:
-Define data path with -ctl_[DATA_TYPE][CONTROL_ID].
+Define data path with `-ctl_[DATA_TYPE][CONTROL_ID]`.
 
-You can skip [REPLICATE_ID] or [CONTROL_ID] if it's 1. (eg. -fastq, -ctl_bam, -tag, ... )
+You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_bam`, `-tag`, ... )
 
 1) Starting from fastqs (see the example in the previous chapter)
 
@@ -300,13 +300,13 @@ $ bds chipseq.bds \
 
 ### Peak calling method
 
-Define peak calling method with -callpeak [METHOD], choose [METHOD] in [spp, macs2, gem]. spp is default.
-If you want to on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate), use '-true_rep'.
+Define peak calling method with `-callpeak [METHOD]`, choose `[METHOD]` in `[spp, macs2, gem]`. `spp` is default.
+If you want to on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate), use `-true_rep`.
 
 For spp, no additional parameter is required.
 
 Example for gem:
-Define additional parameters (-chrsz, -seq)
+Define additional parameters (`-chrsz`, `-seq`)
 ```
 $ bds chipseq.bds \
 ...
@@ -316,7 +316,7 @@ $ bds chipseq.bds \
 ```
 
 Example for macs2:
-Define additional parameters (-chrsz, -gensz)
+Define additional parameters (`-chrsz`, `-gensz`)
 ```
 $ bds chipseq.bds \
 ...
@@ -330,7 +330,7 @@ Seq is the directory where reference genome files exist. Chrsz is chrome sizes f
 
 ### Choose IDR method
 
-There are two versions of IDR. For full IDR QC report, specify a blacklist (for hg19, <a href="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeMapability/wgEncodeDacMapabilityConsensusExcludable.bed.gz">here</a> for IDR QC.
+There are two versions of IDR. For full IDR QC report, specify a blacklist (for hg19, <a href="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeMapability/wgEncodeDacMapabilityConsensusExcludable.bed.gz">here</a>).
 
 ```
 -blacklist_idr [BLACKLIST_IDR]
@@ -354,14 +354,14 @@ No additional parameter required.
 
 ### Signal track generation
 
-Define with -sigtrk [SIG_TRK_GEN_METHOD: aln2rawsig, deeptools) to generate signal track (bigwig).
+Define with `-sigtrk [SIG_TRK_GEN_METHOD: aln2rawsig, deeptools]` to generate signal track (bigwig).
 
-If you don't want to define parameters like seq, umap, chrsz for every pipeline run, use species file.
-Define all species specific parameters in the species file and add parameter '-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]'.
+If you don't want to define parameters like `seq`, `umap`, `chrsz` for every pipeline run, use species file.
+Define all species specific parameters in the species file and add parameter `-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]`.
 
-If you don't want to generate bigwig files, add '-no_bw'.
+If you don't want to generate bigwig files, add `-no_bw`.
 
-In order to generate signal track using macs2 do not use '-sigtrk macs2'. Use '-callpeak macs2' instead.
+In order to generate signal track using macs2 do not use `-sigtrk macs2`. Use `-callpeak macs2` instead.
 
 1) using align2rawsignal ( converts tagalign to bigwig, final_stage >= xcor )
 ```
@@ -372,8 +372,8 @@ $ bds chipseq.bds \
 -umap /DATA/encodeHg19Male/globalmap_k20tok54 \
 -chrsz /DATA/hg19.chrom.sizes
 ```
-If you want to create wig instead of bigwig, then add '-make_wig -no_bw'.
-If you want both bigwig and wig, then add '-make_wig'.
+If you want to create wig instead of bigwig, then add `-make_wig -no_bw`.
+If you want both bigwig and wig, then add `-make_wig`.
 
 
 2) using deepTools (bamCoverage) ( converts filt_bam to bigwig, final_stage >= filt_bam )
@@ -417,7 +417,7 @@ Some bioinformatics softwares like bwa 0.7.3, samtools 0.1.12 do not return non-
 
 The minimum memory requirement for the pipeline is 8GB, but we recommend to run the pipeline on computers with more than 16GB of memory. If you have memory issues, there are two options. Try with 2) first and if it doesn't work go 1). The difference between those two options is that even single thread jobs will be serialized for 1).
 
-1) (SLOW BUT STABLE) Turn off parallelization by using the flag "-no_par" in command line argument or "no_par=true" in a configuration file. However, individual jobs can still use multiple number of processors so increase the number of threads to speed up the pipeline.
+1) (SLOW BUT STABLE) Turn off parallelization by using the flag `-no_par` in command line argument or `no_par = true` in a configuration file. However, individual jobs can still use multiple number of processors so increase the number of threads to speed up the pipeline.
 
 Example: for desktop with 4 cores
 ```
