@@ -508,6 +508,51 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 
 
+### Software dependencies
+
+Recommended softwares and versions:
+
+```
+bwa/0.7.10
+samtools/0.1.19
+bedtools/2.19.1
+ucsc_tools/3.0.9
+picard-tools/1.92
+MACS2/2.1.0
+java/7
+gem/2.6
+r/2.15.1
+deepTools/1.5.12
+align2rawsignal/2.0
+phantompeakqualtools/2.0
+idr/latest (https://github.com/nboley/idr)
+MCR2010b
+
+python/2.7.2
+	packages: numpy, matplotlib, pysam==0.8.2, pyBigwig, scipy, python-levenshtein, deepTools==1.5.12
+
+python/3.4.3
+	packages: numpy, matplotlib, scipy, idr
+```
+
+Before installing the above softwares, make sure to install fundamental programs and libraries listed in the following:
+
+For Ubuntu/Debian based Linux,
+```
+$ sudo apt-get update
+$ sudo apt-get install build-essential zlib1g-dev libncurses5-dev gfortran openssl libssl-dev libfreetype6-dev liblapack-dev pkg-config poppler-utils libboost-all-dev graphviz libcurl4-openssl-dev libxp6 libgsl0-dev
+```
+
+For RedHat/Fedora based Linux,
+```
+$ sudo yum install gcc gcc-c++ kernel-devel lapack-devel libXpm-devel libXp-devel libXmu-devel wget bc zlib-devel ncurses-devel gcc-gfortran openssl openssl-devel freetype-devel poppler-utils
+boost-devel graphviz libcurl-devel libpng-devel bzip2 gsl-devel
+```
+
+See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/install_dependencies.sh" target=_blank>here (dep. installer)</a>
+
+
+
 
 ### Troubleshooting
 
@@ -659,7 +704,6 @@ Replace `$HOME/.bds/bds.config` with the one in the repo.
 ```
 $ cp /path/to/repo/bds.config $HOME/.bds/
 ```
-
 
 
 
