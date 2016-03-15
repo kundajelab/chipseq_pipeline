@@ -343,6 +343,7 @@ if [ ! -f $FLAGDIR/UCSCTOOLS ]; then
  wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig -N
  wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig -N
  wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo -N
+ wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedClip -N
 
  chk_exit_code $FLAGDIR/UCSCTOOLS
 
