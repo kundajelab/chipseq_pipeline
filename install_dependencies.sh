@@ -338,7 +338,7 @@ fi
 if [ ! -f $FLAGDIR/UCSCTOOLS ]; then
  # Local installation for UCSC tools
  cd $SOFTWARE
- mkdir ucsc_tools
+ mkdir -p ucsc_tools
  cd ucsc_tools
  wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig -N
  wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig -N
@@ -494,7 +494,7 @@ if [ ! -f $FLAGDIR/PYTHON2LEVEN ]; then
 fi
 
 if [ ! -f $FLAGDIR/PYTHON2DEEP ]; then
- $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools==1.5.9.1
+ $SOFTWARE/python2.7/bin/python2.7 -m pip install --upgrade --install-option="--prefix=$SOFTWARE/python2.7" deeptools==1.5.12
  chk_exit_code $FLAGDIR/PYTHON2DEEP
 fi
 
@@ -537,9 +537,10 @@ fi
 if [ ! -f $FLAGDIR/DEEPTOOLS ]; then
  # deepTools (signal track gen.)
  cd $SOFTWARE
+ rm -rf deepTools
  git clone https://github.com/fidelram/deepTools
  cd deepTools
- git checkout tags/1.6.0
+ git checkout tags/1.5.12
  $SOFTWARE/python2.7/bin/python2.7 setup.py install --prefix=$SOFTWARE/python2.7
  chk_exit_code $FLAGDIR/DEEPTOOLS
 fi
