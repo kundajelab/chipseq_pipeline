@@ -82,7 +82,7 @@ string _tag_to_bdg( string tag, string fraglen, string out_dir, string info ) {
 string _bam_to_bw( string nodup_bam, string out_dir, string info ) { // deeptools
 
 	prefix 	:= change_dir( remove_ext( nodup_bam, ["bam"] ), out_dir )
-	bigwig 	:= "$prefix.bigwig"
+	bigwig 	:= "$prefix.bam2bw.bigwig"
 	
 	in 	:= [ nodup_bam ]
 	out 	:= bigwig
