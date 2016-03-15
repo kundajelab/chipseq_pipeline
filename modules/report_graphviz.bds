@@ -1,4 +1,5 @@
 #!/usr/bin/env bds
+#vim: syntax=java
 
 include "report.bds"
 
