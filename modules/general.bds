@@ -60,7 +60,7 @@ void init_shell_env() {
 	if (MODULESHOME!="") init_mods.add("$MODULESHOME/init/bash")
 
 	// init shell environments
-	init_paths 	:= ["/bin","/usr/bin","/usr/local/bin"] // basic unix paths and BigDataScript bin path (pick all)
+	SHCMD_INIT	= "export PATH=/bin:/usr/bin:/usr/local/bin:\${HOME}/.bds:\${PATH}; "
 
 	string shellcmd, module, path
 
@@ -125,9 +125,7 @@ void init_shell_env() {
 	// check directories to add to PATH
 	script_file_paths := get_script_file_paths()
 
-	paths_to_find := concat( script_file_paths, init_paths )
-
-	for ( string _path : paths_to_find ) {
+	for ( string _path : script_file_paths ) {
 		
 		if ( _path.exists() ) {
 			path = path + _path + ":"
@@ -135,7 +133,7 @@ void init_shell_env() {
 	}
 
 	if ( path !="" ) {
-		path = "export PATH=$path:\${HOME}/.bds:\${PATH}; "
+		path = "export PATH=$path:\${PATH}; "
 	}
 
 	// additional initialization
