@@ -60,9 +60,6 @@ void init_shell_env() {
 	MODULESHOME := get_shell_var("MODULESHOME").replace("\n","")
 	if (MODULESHOME!="") init_mods.add("$MODULESHOME/init/bash")
 
-	// init shell environments
-	SHCMD_INIT	= "export PATH=/bin:/usr/bin:/usr/local/bin:\${HOME}/.bds:\${PATH}; "
-
 	string shellcmd, module, path
 
 	// find env. modules init script
@@ -134,7 +131,7 @@ void init_shell_env() {
 	}
 
 	if ( path !="" ) {
-		path = "export PATH=$path:\${PATH}; "
+		path = " export PATH=$path:\${PATH}:/bin:/usr/bin:/usr/local/bin:\${HOME}/.bds;"
 	}
 
 	// additional initialization
