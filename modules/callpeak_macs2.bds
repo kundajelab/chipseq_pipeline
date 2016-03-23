@@ -150,7 +150,7 @@ string[] _macs2_atac( string non_mito_bed, string fraglen, string out_dir, strin
 
 	prefix 	:= change_dir( remove_ext( non_mito_bed, "bed" ), out_dir ) + ".pf"
 
-	peakfile 	:= "$prefix"+"_peaks.narrowPeak"
+	peakfile 	:= "$prefix"+"_peaks.narrowPeak.gz"
 	fc_bedgraph 	:= "$prefix.fc.signal.bedgraph"
 	fc_bedgraph_srt	:= "$prefix.fc.signal.srt.bedgraph"	
 	fc_bigwig 	:= "$prefix.fc.signal.bigwig"
@@ -172,6 +172,9 @@ string[] _macs2_atac( string non_mito_bed, string fraglen, string out_dir, strin
 		sys macs2 callpeak \
 			-t <(${adjustedBed}) -f BED -n "$prefix" -g "$gensz" -p 1e-2 \
 			--nomodel --shift "$fraglen" -B --SPMR --keep-dup all --call-summits
+
+		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
+		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $peakfile
 
 		sys macs2 bdgcmp \
 			-t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg \
