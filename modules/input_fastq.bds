@@ -39,28 +39,28 @@ string get_fastq( int ctl, int rep, int pe ) {
 
 
 	if ( (ctl==0) && (rep==1) && (pe==1) && (fastq1_1 != "") ) {
-		return fastq1_1
+		return get_path( fastq1_1 )
 	}
 	else if ( (ctl==0) && (rep==1) && (pe==2) && (fastq1_2 != "") ) {
-		return fastq1_2
+		return get_path( fastq1_2 )
 	}
 	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE ) ) {
-		return get_cmd_line_arg_val( key_wo_PE )
+		return get_path( get_cmd_line_arg_val( key_wo_PE ) )
 	}
 	else if ( (pe==1) && cmd_line_arg_has_key( key_wo_PE2 ) ) {
-		return get_cmd_line_arg_val( key_wo_PE2 )
+		return get_path( get_cmd_line_arg_val( key_wo_PE2 ) )
 	}
 	else if ( (pe==1) && (rep==1) && cmd_line_arg_has_key( key_wo_PE3 ) ) {
-		return get_cmd_line_arg_val( key_wo_PE3 )
+		return get_path( get_cmd_line_arg_val( key_wo_PE3 ) )
 	}
 	else if ( cmd_line_arg_has_key( key ) ) {
-		return get_cmd_line_arg_val( key )
+		return get_path( get_cmd_line_arg_val( key ) )
 	}
 	else if ( cmd_line_arg_has_key( key2 ) ) {
-		return get_cmd_line_arg_val( key2 )
+		return get_path( get_cmd_line_arg_val( key2 ) )
 	}	
 	else if ( (rep==1) && cmd_line_arg_has_key( key3 ) ) {
-		return get_cmd_line_arg_val( key3 )
+		return get_path( get_cmd_line_arg_val( key3 ) )
 	}
 	else if ( (pe==1) && conf.hasKey( key_wo_PE ) ) {
 		return get_path( conf{ key_wo_PE } )
