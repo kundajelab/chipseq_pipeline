@@ -173,8 +173,8 @@ string make_vs_basename_wo_gz( string file1, string file2, string suffix ) {
 		"_VS_" + rm_str_at_end( get_basename( file2 ),".gz" )
 
 	// linux filename length limitation is 255
-	if ( ret.length() > 210 ) {
-		ret = ret.substr(0, 210)
+	if ( ret.length() > 220 ) {
+		ret = ret.substr(0, 220)
 	}
 
 	ret = ret + suffix
@@ -187,8 +187,8 @@ string make_x_basename_wo_gz( string file1, string file2, string suffix ) {
 		"_x_" + rm_str_at_end( get_basename( file2 ),".gz" )
 
 	// linux filename length limitation is 255
-	if ( ret.length() > 210 ) {
-		ret = ret.substr(0, 210)
+	if ( ret.length() > 219 ) {
+		ret = ret.substr(0, 219)
 	}
 
 	ret = ret + suffix
