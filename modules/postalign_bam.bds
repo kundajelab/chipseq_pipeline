@@ -289,7 +289,7 @@ string _srt_bam( string bam, string out_dir, string info ) {
 }
 
 string _bam_to_tag( string bam, string out_dir, string info ) {
-	
+
 	prefix 	:= change_dir( remove_ext( bam, "bam" ), out_dir )
 
 	tag 	:= "$prefix.tagAlign.gz"
@@ -297,7 +297,7 @@ string _bam_to_tag( string bam, string out_dir, string info ) {
 	in 	:= [ bam ]
 	out 	:= tag
 
-	RM_CHR_ := "echo"	
+	RM_CHR_ := "echo"
 
 	if ( rm_chr_from_tag != "" ) {
 		RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
@@ -337,6 +337,38 @@ string _bam_to_bedpe( string nmsrt_bam, string out_dir, string info ) {
 
 		//# Create BEDPE file
 		sys bedtools bamtobed -bedpe -mate1 -i $nmsrt_bam | gzip -c > $bedpe
+	}
+
+	wait_par()
+
+	return out
+}
+
+string _bedpe_to_tag( string bedpe, string out_dir, string info ) {
+	
+	prefix 	:= change_dir( remove_ext( bedpe, ["bedpe","bed"] ), out_dir )
+
+	tag 	:= "$prefix.tagAlign.gz"
+
+	in 	:= [ bedpe ]
+	out 	:= tag
+
+	RM_CHR_ := "echo"	
+
+	if ( rm_chr_from_tag != "" ) {
+		RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
+	}
+
+	task( taskName:= "bedpe_to_tag "+info, \
+		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
+		out<-in ) {
+
+		sys $SHCMD_INIT
+
+		sys zcat $bedpe | awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}' | \
+			gzip -c > $tag
+
+		sys $RM_CHR_			
 	}
 
 	wait_par()

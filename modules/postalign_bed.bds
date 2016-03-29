@@ -131,30 +131,6 @@ string _subsample_bedpe( string bedpe, string out_dir, string info ) {
 	return out
 }
 
-string _bedpe_to_tag( string bedpe, string out_dir, string info ) {
-	
-	prefix 		:= change_dir( remove_ext( bedpe, ["bedpe","bed"] ), out_dir )
-
-	tag 		:= "$prefix.tagAlign.gz"
-
-	in 		:= [ bedpe ]
-	out 		:= tag
-
-	task( taskName:= "bedpe_to_tag "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
-
-		sys $SHCMD_INIT
-
-		sys zcat $bedpe | awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}' | \
-			gzip -c > $tag
-	}
-
-	wait_par()
-
-	return out
-}
-
 string _shift_tag( string tag, string out_dir, string info ) {
 	
 	prefix 		:= change_dir( remove_ext( tag, ["tagAlign","tag","bed"] ), out_dir )
