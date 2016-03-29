@@ -20,22 +20,22 @@ string get_tag( int ctl, int rep ) {
 	key6 := ( ctl > 0 ? "ctl_tagalign" : "tagalign" )
 
 	if ( cmd_line_arg_has_key( key ) ) {
-		return get_cmd_line_arg_val( key )
+		return get_path( get_cmd_line_arg_val( key ) )
 	}
 	else if ( cmd_line_arg_has_key( key2 ) ) {
-		return get_cmd_line_arg_val( key2 )
+		return get_path( get_cmd_line_arg_val( key2 ) )
 	}
 	else if ( cmd_line_arg_has_key( key3 ) ) {
-		return get_cmd_line_arg_val( key3 )
+		return get_path( get_cmd_line_arg_val( key3 ) )
 	}
 	else if ( cmd_line_arg_has_key( key4 ) ) {
-		return get_cmd_line_arg_val( key4 )
+		return get_path( get_cmd_line_arg_val( key4 ) )
 	}
 	else if ( (rep==1) && cmd_line_arg_has_key( key5 ) ) {
-		return get_cmd_line_arg_val( key5 )
+		return get_path( get_cmd_line_arg_val( key5 ) )
 	}
 	else if ( (rep==1) && cmd_line_arg_has_key( key6 ) ) {
-		return get_cmd_line_arg_val( key6 )
+		return get_path( get_cmd_line_arg_val( key6 ) )
 	}
 	else if ( conf.hasKey( key ) ) {
 		return get_path( conf{ key } )
