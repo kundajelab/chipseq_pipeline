@@ -513,7 +513,8 @@ int get_no_lines( string file ) {
 
 string get_hostname() { 
 	// get full hostname including domain name (http://serverfault.com/questions/367141/how-to-get-the-fully-qualified-name-fqn-on-unix-in-a-bash-script)
-	return get_stdout("fqn=$(host -TtA $(hostname)|grep 'has address'|awk '{print $1}'); if [[ '${fqn}' == '' ]] ; then fqn=$(hostname) ; fi ; echo ${fqn}").replace("\n","")
+	//return get_stdout("fqn=$(host -TtA $(hostname)|grep 'has address'|awk '{print $1}'); if [[ '${fqn}' == '' ]] ; then fqn=$(hostname) ; fi ; echo ${fqn}").replace("\n","")
+	return get_stdout("hostname -f").replace("\n","")
 }
 
 bool is_system_sge() {
@@ -530,7 +531,7 @@ bool is_system_generic() {
 
 	return system == "generic"
 }
-
+/*
 bool is_scg3() {
 
 	name := hostname.toLower()
@@ -558,3 +559,4 @@ string get_svr() {
 	else if ( is_scg3() ) 	return "scg3"
 	else 			return ""
 }
+*/

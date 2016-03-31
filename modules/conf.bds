@@ -10,7 +10,6 @@ env		:= "$script_dir/conf/env.conf"	help Environment file path.
 dir_sw 		:= "$HOME/software_bds" 	help Root directory for dependencies installed with 'install_dependencies.sh [DIR_SW]'.
 
 
-env_ := "$script_dir/conf/env.conf" 	// default environment file
 string{} conf 	// map for configuration
 
 
@@ -18,6 +17,8 @@ init_conf()
 
 
 void init_conf() {
+
+	env_ := "$script_dir/conf/env.conf" 	// default environment file
 
 	if ( is_cmd_line_arg_empty() ) print( "\nWarning: No parameters are given (specify cmd. line arguments or configuration file)!\n\n")
 	
@@ -27,12 +28,14 @@ void init_conf() {
 	dir_sw 		= get_conf_val( dir_sw, 	["dir_sw"] )
 	env		= get_conf_val( env, 		["env"] )
 
-	if ( env == env_ ) {
-		if ( get_svr() == "" && path_exists( dir_sw ) ) add_to_conf( env, "local-install" )
-		else if ( get_svr() != "" ) 			add_to_conf( env, get_svr() )
+	add_to_conf( env, "" )
+
+	if ( env==env_ && path_exists( dir_sw ) ) {
+
+		add_to_conf( env, "local-install" )
 	}
 	else {
-		add_to_conf( env )
+		add_to_conf( env, hostname )
 	}
 
 	add_to_conf( c, "" ) // read conf again to override
@@ -40,12 +43,15 @@ void init_conf() {
 	dir_sw 		= get_conf_val( dir_sw, 	["dir_sw"] ) // read again
 
 	print( "\n\n== configuration file settings\n")
+	print( "Hostname\t\t\t\t: $hostname\n")
 	print( "Configuration file\t\t\t: $c\n" )
 	print( "Environment file\t\t\t: $env\n" )
 	print( "\nRoot dir. for locally installed dependencies\t: $dir_sw\n" )
 }
 
 string{} read_conf( string file, string section ) {
+
+	section = section.trim().toLower()
 
 	string{} ret
 
@@ -58,25 +64,58 @@ string{} read_conf( string file, string section ) {
 	//print( "read_conf: $file, $section\n" )
 
 	for ( string line : lines ) {
+
 		line = rm_comment( line.trim() )
 
 		if ( line == "" ) continue
 		
 		if ( line.startsWith( "[" ) && line.endsWith( "]" ) )  {
 
-			line = line.replace( "[","" ).replace( "]","").trim()
+			line2 := line.substr(1,line.length()-1)
 
-			if ( section != "" ) {
-				if ( line.toLower() == section.toLower() ) {
-					can_read = true
-				}
-				else {
-					can_read = false
+			string[] hostnames
+			string alias
+
+			// find alias if exists
+			arr := line2.split(":")
+
+			//print("DEBUG: $line2 :" + arr[0] + "\n")
+			if ( arr.size() > 1 ) 	alias = arr[1].trim().toLower()
+
+			hostnames = arr[0].split(",")
+
+			if ( section == "" ) {
+
+				can_read = false
+			}
+			else { 
+
+				for ( string host : hostnames ) {
+
+					host = host.trim().toLower()
+
+					if ( section == host ) {
+
+						if ( section == alias ) {
+							error("Recursion (section name == alias) found in a conf. or an env. file! (file: $file, section: $section, alias: $alias)\n")
+						}
+						else if ( alias != "" ) {
+							print("\tReading parameters from section ($section) or alias($alias) in file($file)...\n")
+
+							return read_conf( file, alias )
+						}
+						else {
+							print("\tReading parameters from section ($section) or alias($alias) in file($file)...\n")
+
+							can_read = true
+						}
+					}
+					else {
+						can_read = false
+					}
 				}
 			}
-			else {
-				can_read = false				
-			}
+
 			continue
 		}
 

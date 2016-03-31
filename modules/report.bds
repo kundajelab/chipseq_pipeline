@@ -297,7 +297,7 @@ string _peak_to_hammock( string peak ) {
 	// choose correct converter .py : narrowpeak (regionpeak), broadpeak, gappedpeak to hammock
 	// they are under git_repo_root/utils/
 	
-	conv := programPath.dirName()+"/utils/"
+	conv := "$script_dir/utils/"
 
 	if ( peak.toLower().indexOf( "regionpeak" ) > -1 ) 	conv += "narrowpeak.py"
 	else if ( peak.toLower().indexOf( "narrowpeak" ) > -1 ) conv += "narrowpeak.py"

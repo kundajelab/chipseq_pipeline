@@ -51,7 +51,7 @@ void read_species() { // check for species configruation files
 	// value for key will be overriden as loop goes. so the last element in species_paths has the priority
 	string[] species_paths
 
-	if ( env != env_ ) species_paths.add( env )
+	if ( env != "" ) species_paths.add( env )
 	if ( c != "" ) species_paths.add( c )
 	species_paths.add( species_file )
 

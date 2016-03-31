@@ -18,7 +18,7 @@ shcmd 		:= ""		help Shell commands separated by ;. Shell var. must be written as
 addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (example: "/bin/test:${HOME}/utils").
 
 
-// system var (do not touch)
+// system var
 init_mod 	:= "" // module init. shell script found
 SHCMD_INIT 	:= ""  // IMPORTANT! Shell command executed prior to all BigDataScript tasks (use this for setting environemts)
 walltimeout 	:= 3600*24*100 // BigDataScript internal variable
@@ -167,14 +167,15 @@ string get_rel_path( string path ) {
 
 int parse_time_or_skip( string str ) {
 
-	return (use_sys_default || is_system_local() || is_kundaje_lab()) ? -1 : parse_time( str )
+	return (use_sys_default || is_system_local() ) ? -1 : parse_time( str )
 }
 
 int parse_mem_or_skip( string str ) {
 
-	return (use_sys_default || is_system_local() || is_kundaje_lab()) ? -1 : parse_mem( str )
+	return (use_sys_default || is_system_local() ) ? -1 : parse_mem( str )
 }
 
 void wait_par() {
+
 	if ( no_par ) wait //barrier for parallel tasks
 }
