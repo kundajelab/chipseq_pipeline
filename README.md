@@ -490,6 +490,9 @@ You can have mod, shcmd and addpath in your configuration file or `-mod` `-shcmd
 $ bds chipseq.bds ... -env [ENV_FILE]
 
 $ cat [ENV_FILE]
+
+[carmack.stanford.edu] 	# environment settings per hostname
+
 mod_any_suffix = bwa/0.7.3 samtools/1.2
 addpath_any_suffix = ${HOME}/program1/bin
 shcmd_any_suffix = export R_PATH=/home/userid/R-2.15.1
@@ -502,6 +505,10 @@ wt_spp  = 10:00:00
 
 nth_macs2 = 2 	// You can also have resource settings for other tasks
 ...
+
+[crick.stanford.edu, crick2.stanford.edu]	# same environment settings are shared with multiple hostnames
+...
+
 ```
 
 See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
