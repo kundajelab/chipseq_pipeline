@@ -8,14 +8,15 @@ help == vplot settings (requirements: -vplot_idx)
 
 
 void chk_vplot() {
+
 	if ( !path_exists( vplot_idx ) ) error("Vplot index (-vplot_idx) is missing or doesn't exists! (file: $vplot_idx)")
 }
 
 
-string _vplot( string srt_bam, string out_dir, string info ) {
+string _vplot( string srt_bam, string o_dir, string label ) {
 
-//	prefix 		:= change_dir( remove_ext( srt_bam, ["bam"] ) , out_dir )
-	prefix 		:= change_dir( srt_bam, out_dir )
+//	prefix 		:= replace_dir( rm_ext( srt_bam, ["bam"] ) , o_dir )
+	prefix 		:= replace_dir( srt_bam, o_dir )
 	vp_idx_base 	:= get_basename( vplot_idx )
 
 	vplot 	:= "$prefix.$vp_idx_base.vect.png"
@@ -23,13 +24,13 @@ string _vplot( string srt_bam, string out_dir, string info ) {
 	in 	:= [ srt_bam ]
 	out 	:= vplot
 
-	task( taskName:= "v_plot "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "v_plot "+label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
-		sys cd $out_dir
+		sys cd $o_dir
 
 		//# generate V plot
 		sys echo "Generating V Plot..."

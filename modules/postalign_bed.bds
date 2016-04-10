@@ -22,19 +22,18 @@ void init_postalign_bed() {
 	print( "# read for xcor subsample\t: $nreads\n")
 }
 
-string _subsample_tag( string tag, string out_dir, string info ) {
+string _subsample_tag( string tag, string o_dir, string label ) {
 
-	prefix 		:= change_dir( remove_ext( tag, ["tagAlign","tag","bed"] ), out_dir )
-
+	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	nreads_per_mill := (nreads/1000000)
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
 
-	in 		:= [ tag ]
-	out 		:= subsampled_tag
+	in 	:= [ tag ]
+	out 	:= subsampled_tag
 
-	task( taskName:= "_subsample_tag "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "_subsample_tag " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 	
@@ -50,19 +49,25 @@ string _subsample_tag( string tag, string out_dir, string info ) {
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
-string _subsample_tag_PE( string tag, string out_dir, string info ) {
-	
-	prefix 		:= change_dir( remove_ext( tag, ["tagAlign","bed"] ), out_dir )
+string _subsample_tag_PE( string tag, string o_dir, string label ) {
 
+	return _subsample_tag_PE( tag, o_dir, label, \
+					"tagalign\\n($label)", "subsampled\\ntagalign\\n($label)" )
+}
+
+string _subsample_tag_PE( string tag, string o_dir, string label, \
+				string label_in, string label_out ) {
+	
+	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","bed"] ), o_dir )
 	nreads_per_mill := (nreads/1000000)
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
 
-	in 		:= [ tag ]
-	out 		:= subsampled_tag
+	in 	:= [ tag ]
+	out 	:= subsampled_tag
 
-	task( taskName:= "_subsample_tag_PE "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "_subsample_tag_PE " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -74,24 +79,32 @@ string _subsample_tag_PE( string tag, string out_dir, string info ) {
 
 	wait_par()
 
+
+	_add_to_graphviz( [label_in], [tag], [label_out], [subsampled_tag] )
+
 	return out
 }
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
-string _subsample_bedpe_to_tag( string bedpe, string out_dir, string info ) {
-	
-	prefix 		:= change_dir( remove_ext( bedpe, ["bedpe","bed"] ), out_dir )
+string _subsample_bedpe_to_tag( string bedpe, string o_dir, string label ) {
 
+	return _subsample_bedpe_to_tag( bedpe, o_dir, label, \
+					"bedpe\\n($label)", "subsampled\\ntagalign\\n($label)" )
+}
+
+string _subsample_bedpe_to_tag( string bedpe, string o_dir, string label, \
+				string label_in, string label_out ) {
+	
+	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
 	nreads_per_mill := (nreads/1000000)
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
 
-	in 		:= [ bedpe ]
-	out 		:= subsampled_tag
+	in 	:= [ bedpe ]
+	out 	:= subsampled_tag
+	taskName:= "subsample_bedpe2tag" + label
 
-	task( taskName:= "subsample_bedpe2tag"+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -104,22 +117,23 @@ string _subsample_bedpe_to_tag( string bedpe, string out_dir, string info ) {
 
 	wait_par()
 
+	_add_to_graphviz( [label_in], [bedpe], [label_out], [subsampled_tag] )
+
 	return out
 }
 
-string _subsample_bedpe( string bedpe, string out_dir, string info ) {
+string _subsample_bedpe( string bedpe, string o_dir, string label ) {
 	
-	prefix 		:= change_dir( remove_ext( bedpe, ["bedpe","bed"] ), out_dir )
-
+	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
 	nreads_per_mill := (nreads/1000000)
 	subsampled_bedpe:= "$prefix.$nreads_per_mill.bedpe.gz"
 
-	in 		:= [ bedpe ]
-	out 		:= subsampled_bedpe
+	in 	:= [ bedpe ]
+	out 	:= subsampled_bedpe
 
-	task( taskName:= "subsample_bedpe "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "subsample_bedpe " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -131,18 +145,17 @@ string _subsample_bedpe( string bedpe, string out_dir, string info ) {
 	return out
 }
 
-string _shift_tag( string tag, string out_dir, string info ) {
+string _shift_tag( string tag, string o_dir, string label ) {
 	
-	prefix 		:= change_dir( remove_ext( tag, ["tagAlign","tag","bed"] ), out_dir )
-
+	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	shifted_tag 	:= "$prefix.shifted.tagAlign.gz"
 
-	in 		:= [ tag ]
-	out 		:= shifted_tag
+	in 	:= [ tag ]
+	out 	:= shifted_tag
 
-	task( taskName:= "shift_tag "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "shift_tag " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -154,29 +167,32 @@ string _shift_tag( string tag, string out_dir, string info ) {
 	return out
 }
 
-string[] _xcor( string tag, string out_dir, string info ) {
+string[] _xcor( string tag, string o_dir, string label ) {
+
+	return _xcor( tag, o_dir, label, "tagalign\\n($label)", "xcor_qc\\n($label)" )
+}
+
+string[] _xcor( string tag, string o_dir, string label, string label_in, string label_out ) {
 
 	// misc.
-	prefix 		:= change_dir( remove_ext( tag, ["tagAlign","tag","bed"] ), out_dir )
-
+	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	xcor_score 	:= "$prefix.cc.qc"
 	xcor_plot 	:= "$prefix.cc.plot.pdf"
-
         param_speak     := fraglen0 ? "-speak=0" : ""
 
-	in 		:= [ tag ]
-	out 		:= [ xcor_score, xcor_plot ]
+	in 	:= [ tag ]
+	out 	:= [ xcor_score, xcor_plot ]
 
-	task( taskName:= "xcor "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "xcor " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
 		//# CCSCORE FILE format
 		//# Filename <tab> numReads <tab> estFragLen <tab> correstFragLen <tab> PhantomPeak <tab> corrphantomPeak <tab> argmincorr <tab> mincorr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag
 		sys Rscript $(which run_spp_nodups.R) -rf \
-			-c=$tag -p=$nth \
+			-c=$tag -p=1 \
 			-filtchr=chrM -savp=$xcor_plot -out=$xcor_score $param_speak
 		sys sed -r 's/,[^\t]+//g' $xcor_score > $xcor_score.tmp
 		sys mv $xcor_score.tmp $xcor_score
@@ -184,23 +200,30 @@ string[] _xcor( string tag, string out_dir, string info ) {
 
 	wait_par()
 
+	_add_to_graphviz( [label_in], [tag], [label_out], [xcor_score], "cross-corr.\\n($label)", grp_color_xcor )
+
 	return out
 }
 
 // make spr(self_pseudo_replicate)
-string[] _spr( string tag, string out_dir, string info ) {
-	
-	prefix 	:= change_dir( remove_ext( tag, ["tagAlign","tag","bed"] ), out_dir )
 
+string[] _spr( string tag, string o_dir, string label ) {
+
+	return _spr( tag, o_dir, label, "tagalign\\n($label)", "tagalign pr1\\n($label)","tagalign pr2\\n($label)" ) 
+}
+
+string[] _spr( string tag, string o_dir, string label, string label_in, string label_out1, string label_out2 ) {
+	
+	prefix 	:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	tag_pr1	:= "$prefix.pr1.tagAlign.gz"
 	tag_pr2	:= "$prefix.pr2.tagAlign.gz"
 
 	in 	:= [ tag ]
 	out 	:= [ tag_pr1, tag_pr2 ]
 
-	task( taskName:= "spr "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "spr " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -221,12 +244,21 @@ string[] _spr( string tag, string out_dir, string info ) {
 
 	wait_par()
 
+	_add_to_graphviz( [label_in], [tag], [label_out1, label_out2], [tag_pr1,tag_pr2] )
+
 	return out
 }
 
-string[] _spr_PE( string bedpe, string out_dir, string info ) {
+string[] _spr_PE( string bedpe, string o_dir, string label ) {
+
+	return _spr_PE( bedpe, o_dir, label, \
+			"bedpe\\n($label)", "tagalign pr1\\n($label)", "tagalign pr2\\n($label)" )
+}
+
+string[] _spr_PE( string bedpe, string o_dir, string label, \
+			string label_in, string label_out1, string label_out2 ) {
 	
-	prefix 	:= change_dir( remove_ext( bedpe, ["bedpe","bed","tagAlign"] ), out_dir )
+	prefix 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed","tagAlign"] ), o_dir )
 
 	tag_pr1	:= "$prefix.pr1.tagAlign.gz"
 	tag_pr2	:= "$prefix.pr2.tagAlign.gz"
@@ -234,9 +266,9 @@ string[] _spr_PE( string bedpe, string out_dir, string info ) {
 	in 	:= [ bedpe ]
 	out 	:= [ tag_pr1, tag_pr2 ]
 
-	task( taskName:= "spr_PE "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "spr_PE " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -259,13 +291,21 @@ string[] _spr_PE( string bedpe, string out_dir, string info ) {
 	
 	wait_par()
 
+	_add_to_graphviz( [label_in], [bedpe], [label_out1, label_out2], [tag_pr1,tag_pr2] )
+
 	return out
 }
 
+string[] _spr_tag_PE( string tag, string o_dir, string label ) {
 
-string[] _spr_tag_PE( string tag, string out_dir, string info ) {
+	return _spr_tag_PE( tag, o_dir, label, \
+				"tagalign\\n($label)", "tagalign pr1\\n($label)", "tagalign pr2\\n($label)" )
+}
+
+string[] _spr_tag_PE( string tag, string o_dir, string label, \
+			string label_in, string label_out1, string label_out2 ) {
 	
-	prefix 	:= change_dir( remove_ext( tag, ["bed","tagAlign"] ), out_dir )
+	prefix 	:= replace_dir( rm_ext( tag, ["bed","tagAlign"] ), o_dir )
 
 	joined 	:= "$prefix.joined" // temporary file
 
@@ -275,9 +315,9 @@ string[] _spr_tag_PE( string tag, string out_dir, string info ) {
 	in 	:= [ tag ]
 	out 	:= [ tag_pr1, tag_pr2 ]
 
-	task( taskName:= "spr_tag_PE "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "spr_tag_PE " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -305,37 +345,48 @@ string[] _spr_tag_PE( string tag, string out_dir, string info ) {
 	
 	wait_par()
 
+	_add_to_graphviz( [label_in], [tag], [label_out1, label_out2], [tag_pr1,tag_pr2] )
+
 	return out
 }
 
-string[] _ppr( string tag1, string tag1_pr1, string tag1_pr2, string tag2, string tag2_pr1, string tag2_pr2, string out_dir, string info ) {
-	// make psr(pooled pseudo replicate)
-
-	tag_pooled 	:= _pool_tag( tag1, tag2, out_dir, info )
-	tag_ppr1 	:= _pool_tag( tag1_pr1, tag2_pr1, out_dir, info )
-	tag_ppr2 	:= _pool_tag( tag1_pr2, tag2_pr2, out_dir, info )
+// make ppr(pooled pseudo replicate)
+string[] _ppr( string tag1, string tag1_pr1, string tag1_pr2, string tag2, string tag2_pr1, string tag2_pr2, string o_dir, string label ) {
+	
+	tag_pooled 	:= _pool_tag( tag1, tag2, o_dir, label )
+	tag_ppr1 	:= _pool_tag( tag1_pr1, tag2_pr1, o_dir, label+"_ppr1" )
+	tag_ppr2 	:= _pool_tag( tag1_pr2, tag2_pr2, o_dir, label+"_ppr2" )
 
 	out 	:= [ tag_pooled, tag_ppr1, tag_ppr2 ]
 
 	wait_par()
 
+	_add_to_graphviz( ["tagalign\\n(rep1)","tagalign\\n(rep2)"], [tag1,tag2], \
+			  ["tagalign\\n(pooled)"], [tag_pooled] )
+
+	_add_to_graphviz( ["tagalign pr1\\n(rep1)","tagalign pr2\\n(rep2)"], [tag1_pr1,tag2_pr1], \
+			  ["tagalign\\n(ppr1)"], [tag_ppr1] )
+
+	_add_to_graphviz( ["tagalign pr2\\n(rep1)","tagalign pr2\\n(rep2)"], [tag1_pr2,tag2_pr2], \
+			  ["tagalign\\n(ppr2)"], [tag_ppr2] )
+
 	return out
 }
 
-string _pool_tag( string tag1, string tag2, string out_dir, string info ) {
+string _pool_tag( string tag1, string tag2, string o_dir, string label ) {
 
 // LINUX has limit on filename length (255), make it as shorter as possible
-//	prefix 		:= "$out_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )	
-	prefix 		:= change_dir( remove_ext( tag1, ["bed","tagAlign"] ), out_dir )	
+//	prefix 		:= "$o_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )	
+	prefix 		:= replace_dir( rm_ext( tag1, ["bed","tagAlign"] ), o_dir )	
 
 	tag_pooled 	:= "$prefix"+"_pooled.tagAlign.gz"
 
-	in 		:= [ tag1, tag2 ]
-	out 		:= tag_pooled
+	in 	:= [ tag1, tag2 ]
+	out 	:= tag_pooled
 
-	task( taskName:= "pool_tag "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "pool_tag " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled		
@@ -347,6 +398,7 @@ string _pool_tag( string tag1, string tag2, string out_dir, string info ) {
 }
 
 string get_fraglen( string xcor_score ) {   // get FRAGLEN (3rd column of cc score file) for spp(-speak=$FRAGLEN)	
+
 	cols := xcor_score.read().split("\t")
 	return cols[2]
 }

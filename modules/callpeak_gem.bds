@@ -32,9 +32,9 @@ void chk_callpeak_gem() {
 	if ( !path_exists("$seq/chr1.fa") ) error("\nReference genome sequence directory doesn't exists! (file: $seq/chr1.fa)\n")
 }
 
-string[] _gem( string tag, string ctl_tag, string out_dir, string info ) {
+string[] _gem( string tag, string ctl_tag, string o_dir, string info ) {
 
-	prefix 		:= "$out_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
+	prefix 		:= "$o_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
 	prefix_basename := get_basename( prefix )
 
 	peak 	:= "$prefix.narrowPeak.gz"
@@ -47,9 +47,10 @@ string[] _gem( string tag, string ctl_tag, string out_dir, string info ) {
 	in 	:= [ tag, ctl_tag ]
 	out 	:= [peak, ksm, pfm, html ]
 
-	task( taskName:= "gem "+info, \
-		cpus:=nth_gem, mem:=parse_mem_or_skip(mem_gem), timeout:=parse_time_or_skip(wt_gem), \
-		out<-in ) {
+	taskName:= "gem " + info
+	cpus 	:= nth_gem;	mem := get_res_mem(mem_gem);	timeout := get_res_wt(wt_gem)
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -75,7 +76,7 @@ string[] _gem( string tag, string ctl_tag, string out_dir, string info ) {
 		sys mv "$prefix/$prefix_basename"_result.htm $html
 	}
 
-	wait_par()
+	wait_par_peak( out<-in )
 
 	return out
 }

@@ -215,16 +215,16 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 		url 	:= get_url( file )
 
 		if ( type == "bigwig") {
-			
+			// deep pink
 			json 	+= 	'{ "type": "bigwig", "name": "'+trackname+'", "url": "'+url+'", "mode": 1,' + \
-					'  "qtc" : { "height": 30, "summeth":2, "smooth":3} },'
+					'  "qtc" : { "height": 30, "summeth":2, "smooth":3, "pr": 255, "pg": 20, "pb": 147,"thtype":1, "thmin":2, "thmax":40  } },'
 		}
 		else if ( type == "hammock") { // peak must be converted to hammock type (browser specific format)	
 
 			json 	+= 	' { "type": "hammock", "name": "'+trackname+'", "url": "'+url+'", "mode": "barplot", "showscoreidx":1,' + \
 					'   strokecolor:"#ff6600", scorescalelst:[{"type":1,"min":0,"max":40},{"type":0},{"type":0},{"type":0}],' + \
 					'   scorenamelst:["signal value", "P value (-log10)","Q value (-log10)"],' + \
-					' "qtc": { "height" : 30, "summeth":2, "fontsize":"0pt","fontfamily":"sans-serif"} },'
+					' "qtc": { "height" : 30, "summeth":2, "fontsize":"0pt","fontfamily":"sans-serif" } },'
 		}
 	}
 
@@ -276,7 +276,7 @@ string _html_img( string path, int width, string cap ) {
 
 string _pdf_to_png( string pdf ) { 
 
-	png 	:= remove_ext( pdf, "pdf" ) + ".png"
+	png 	:= rm_ext( pdf, "pdf" ) + ".png"
 
 	// Requirements: poppler-utils (sudo apt-get install poppler-utils)
 	task {
@@ -289,7 +289,7 @@ string _pdf_to_png( string pdf ) {
 
 string _peak_to_hammock( string peak ) {
 
-	prefix 	:= remove_ext( peak, ["gz"] )
+	prefix 	:= rm_ext( peak, ["gz"] )
 
 	hammock := "$prefix.hammock"
 	tmp 	:= "$prefix.tmp"
@@ -306,6 +306,7 @@ string _peak_to_hammock( string peak ) {
 
 	in 	:= peak
 	out 	:= hammock+".gz"
+	//taskName:= "peak2hammock "
 
 	task ( out<-in ) { // needs bgzip and tabix
 

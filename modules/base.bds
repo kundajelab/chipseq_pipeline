@@ -125,7 +125,7 @@ string get_common_basename( string f1, string f2 ) {
 	return common
 }
 
-string remove_ext( string file, string ext ) {
+string rm_ext( string file, string ext ) {
 	// remove .gz
 	if ( file.endsWith( ".gz" ) ) \
 		file = rm_str_at_end( file, ".gz" )
@@ -136,7 +136,7 @@ string remove_ext( string file, string ext ) {
 	return file
 }
 
-string remove_ext( string file, string[] exts ) {
+string rm_ext( string file, string[] exts ) {
 	// remove .gz
 	if ( file.endsWith( ".gz" ) ) \
 		file = rm_str_at_end( file, ".gz" )
@@ -151,8 +151,8 @@ string remove_ext( string file, string[] exts ) {
 }
 
 string concat_basename_wo_ext( string file1, string file2, string[] exts1, string[] exts2 ) {
-	base1_wo_ext := remove_ext( get_basename( file1 ), exts1 )
-	base2_wo_ext := remove_ext( get_basename( file2 ), exts2 )	
+	base1_wo_ext := rm_ext( get_basename( file1 ), exts1 )
+	base2_wo_ext := rm_ext( get_basename( file2 ), exts2 )	
 	return base1_wo_ext + "_" + base2_wo_ext
 }
 
@@ -202,7 +202,7 @@ int parse_time( string str ) {
 	if (  trimmed.indexOf("w")>=0 || trimmed.indexOf("d")>=0 || trimmed.indexOf("h")>=0 \
 		|| trimmed.indexOf("m")>=0 || trimmed.indexOf("s")>=0 ) {
 
-		int multiplier
+		real multiplier
 		string delimiter
 
 		if ( trimmed.indexOf("w")>=0 ) {
@@ -222,7 +222,7 @@ int parse_time( string str ) {
 		}
 
 		string[] arr = trimmed.split( delimiter )
-		return arr[0].parseInt()*multiplier
+		return round(arr[0].parseReal()*multiplier)
 	}
 	else if ( trimmed.indexOf(":")>=0 ) {
 		string[] arr = trimmed.split( ":" )
@@ -252,7 +252,7 @@ int parse_time( string str ) {
 int parse_mem( string str ) {
 	trimmed := str.trim().toLower()
 
-	int multiplier
+	real multiplier
 	string delimiter
 
 	if ( trimmed.indexOf("gb")>=0 ) {
@@ -284,11 +284,11 @@ int parse_mem( string str ) {
 		multiplier = 1
 	}
 	else {
-		return trimmed.parseInt()
+		return round( trimmed.parseReal() )
 	}
 
 	string[] arr = trimmed.split( delimiter )
-	return arr[0].parseInt()*multiplier
+	return round(arr[0].parseReal()*multiplier)
 }
 
 int parse_int( string str ) {
@@ -395,7 +395,7 @@ bool is_in_array( string str, string[] arr ) { // case-insensitive
 	return false
 }
 
-string change_dir( string file, string out_dir ) {
+string replace_dir( string file, string out_dir ) {
 
 	return out_dir + "/" + get_basename( file )
 }
@@ -477,11 +477,13 @@ string[] load_data( string file ) {
 }
 
 string get_stdout( string cmd ) {
-	cmd_ := "cmd_"+randInt()
+	rnd  := randInt()
+	cmd_ := "cmd_$rnd"
 	sys $cmd 1> $cmd_
 	wait
 	ret := cmd_.read()
-	cmd_.delete()
+	wait
+	cmd_.rm()
 	return ret
 }
 
@@ -490,7 +492,8 @@ string get_shell_var( string var ) {
 	sys echo "${$var}" > $var_
 	wait
 	ret := var_.read()
-	var_.delete()
+	wait
+	var_.rm()
 	return ret
 }
 
@@ -531,32 +534,3 @@ bool is_system_generic() {
 
 	return system == "generic"
 }
-/*
-bool is_scg3() {
-
-	name := hostname.toLower()
-
-	return  name.endsWith( ".stanford.edu" ) && \
-		( name.startsWith( "carmack" ) || name.startsWith( "crick" ) || name.startsWith( "scg3" ) )
-}
-
-bool is_kundaje_lab() {
-
-	name := hostname.toLower()
-
-	hostname_kundaje:= ["nandi.stanford.edu","mitra.stanford.edu","kali.stanford.edu","vayu.stanford.edu",\
-			    "wotan.stanford.edu","durga.stanford.edu","amold.stanford.edu","dhara.stanford.edu"]
-
-	for ( string name_ : hostname_kundaje ) {
-		if ( name == name_ ) return true
-	}
-	return false
-}
-
-string get_svr() {
-
-	if ( is_kundaje_lab() ) return "kundaje"
-	else if ( is_scg3() ) 	return "scg3"
-	else 			return ""
-}
-*/

@@ -4,23 +4,21 @@
 include "species.bds"
 
 
-string _trim_adapters( string fastq, string out_dir, string info ) {
+string _trim_adapters( string fastq, string o_dir, string label ) {
 
-	prefix	:= change_dir( remove_ext( fastq, ["fastq","fq"] ), out_dir )
-
+	prefix	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	p 	:= "$prefix"+"_trimmed.fq"
 	p_gz	:= "$p.gz"
-
 	in 	:= [ fastq ]
 	out 	:= p_gz
 
-	task( taskName:= "trim_adapters "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "trim_adapters " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
-		sys trim_galore $fastq -o $out_dir
+		sys trim_galore $fastq -o $o_dir
 		sys if [ ! -f $p_gz ]; then gzip $p; fi
 	}
 
@@ -29,27 +27,25 @@ string _trim_adapters( string fastq, string out_dir, string info ) {
 	return out
 }
 
-string[] _trim_adapters_PE( string fastq1, string fastq2, string out_dir, string info ) {
+string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string label ) {
 
-	prefix1	:= change_dir( remove_ext( fastq1, ["fastq","fq"] ), out_dir )
-	prefix2	:= change_dir( remove_ext( fastq2, ["fastq","fq"] ), out_dir )
-
+	prefix1	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir )
+	prefix2	:= replace_dir( rm_ext( fastq2, ["fastq","fq"] ), o_dir )
 	p1 	:= "$prefix1.trim.fastq"
 	p2 	:= "$prefix2.trim.fastq"
-
 	p1_gz	:= "$p1.gz"
 	p2_gz 	:= "$p2.gz"
 
 	in 	:= [ fastq1, fastq2 ]
 	out 	:= [ p1_gz, p2_gz ]
 
-	task( taskName:= "trim_adapters_PE "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "trim_adapters_PE " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
-		sys cd $out_dir
+		sys cd $o_dir
 		sys python $(which trimAdapters.py) -a $fastq1 -b $fastq2
 		sys gzip $p1
 		sys gzip $p2

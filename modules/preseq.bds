@@ -19,9 +19,9 @@ void init_callpeak_etc() {
 	print( "Xmax for preseq\t: $xmax\n")
 }
 
-string _preseq( string srt_bam, string out_dir, string info ) {
+string _preseq( string srt_bam, string o_dir, string label ) {
 
-	prefix 		:= change_dir( remove_ext( srt_bam, ["bam"] ) , out_dir )
+	prefix 		:= replace_dir( rm_ext( srt_bam, ["bam"] ) , o_dir )
 
 	preseq_file 	:= "$prefix.preseq.pdf"
 	preseq_gnu 	:= "$prefix.preseq.gnu"
@@ -32,13 +32,15 @@ string _preseq( string srt_bam, string out_dir, string info ) {
 	in 	:= [srt_bam]
 	out 	:= preseq_file
 
-	task( taskName:= "preseq "+info, cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), out<-in ) {
+	taskName:= "preseq " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
-		sys which gnuplot
+		//sys which gnuplot
 
-		sys cd $out_dir
+		sys cd $o_dir
 
 		sys echo "PRESEQ Analysis..."
 

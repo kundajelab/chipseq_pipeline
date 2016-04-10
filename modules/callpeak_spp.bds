@@ -29,32 +29,36 @@ void init_callpeak_spp() {
 	print( "Max. memory (spp)\t: $mem_spp\n")
 }
 
-string[] _spp( string tag, string ctl_tag, string fraglen, string out_dir, string info ) {
+string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label ) {
 
-	prefix_vs	:= "$out_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
-	prefix_x	:= "$out_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
+	return _spp( tag, ctl_tag, fraglen, o_dir, label, "tagalign\\n($label)", "tagalign\\n(ctl, $label)" )
+}
 
+string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label, \
+		string label_in1, string label_in2 ) {
+
+	prefix_vs	:= "$o_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
+	prefix_x	:= "$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
 	npeakfile_vs 	:= "$prefix_vs.narrowPeak.gz"
-	rpeakfile_vs 	:= "$prefix_vs.regionPeak.gz"
-	
+	rpeakfile_vs 	:= "$prefix_vs.regionPeak.gz"	
 	npeakfile 	:= "$prefix_x.narrowPeak.gz"
 	rpeakfile 	:= "$prefix_x.regionPeak.gz"
 	ccscore		:= "$prefix_x.ccscore"
-
-	pdf_tmp		:= change_dir( remove_ext( tag, ["gz"] ), out_dir ) + ".pdf"
+	pdf_tmp		:= replace_dir( rm_ext( tag, ["gz"] ), o_dir ) + ".pdf"
 	pdf 		:= "$prefix_x.pdf"
 
 	in 	:= [ tag, ctl_tag ]
 	out 	:= [ npeakfile, rpeakfile, ccscore, pdf ]
 
-	task( taskName:= "spp "+info, \
-		cpus:=nth_spp, mem:=parse_mem_or_skip(mem_spp), timeout:=parse_time_or_skip(wt_spp), \
-		out<-in ) {
+	taskName:= "spp " + label
+	cpus 	:= nth_spp;	mem := get_res_mem(mem_spp);	timeout := get_res_wt(wt_spp)
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
 		sys Rscript $(which run_spp_nodups.R) -c=$tag -p=$nth_spp -i=$ctl_tag \
-			-npeak=$npeak -odir=$out_dir -speak=$fraglen -savn -savr -savp -rf -out=$ccscore
+			-npeak=$npeak -odir=$o_dir -speak=$fraglen -savn -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
 		sys zcat $npeakfile_vs | awk 'BEGIN{OFS="\t"}{print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -c > $npeakfile
@@ -66,7 +70,9 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string out_dir, strin
 		sys mv $pdf_tmp $pdf
 	}
 
-	wait_par()
+	wait_par_peak( out<-in )
+
+	_add_to_graphviz( [label_in1,label_in2], [tag,ctl_tag], ["peak_spp\\n($label)"], [rpeakfile], "spp\\n($label)", grp_color_spp )
 
 	return out
 }

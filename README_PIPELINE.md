@@ -103,7 +103,7 @@ You can specify walltime and max. memory for a specific job (with `-mem_[TASK_NA
 -wt_macs2 40h -mem_macs2 20G -nth_macs2 2
 ```
 
-Note that max. memory defined with `-mem_XXX` is PER CPU! `-mem_macs2 20G -nth_macs2 2` in the above example will have max. memory limit of 40G. Also note that without a cluster engine (like Grid Engine) pipeline jobs can possible have no limit for max. memory according to your UNIX system. In such a case, reduce # of cpus with `-nth_XXX`.
+Note that max. memory defined with `-mem_XXX` is PER CPU! `-mem_macs2 20G -nth_macs2 2` in the above example will have max. memory limit of 40G. Also note that without a cluster engine (like Grid Engine) pipeline jobs can possible have no limit for max. memory according to your UNIX system. In such a case, reduce # of cpus with `-nth_TASKNAME`.
 
 If your system (either local or cluster engine) doesn't limit walltime and max. memory for jobs, add the following to the command line. Pipeline jobs will run without resource restriction.
 ```
@@ -310,7 +310,7 @@ shcmd= export PATH=${PATH}:path_to_your_program
 
 You can have multiple lines for shcmd since any suffix is allowed. Use ; as a delimiter. 
 ```
-shcmr_R= export PATH=${PATH}:/home/userid/R-2.15.1;
+shcmd_R= export PATH=${PATH}:/home/userid/R-2.15.1;
 shcmd_lib= export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/R-2.15.1/lib
 ```
 

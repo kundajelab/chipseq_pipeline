@@ -298,93 +298,101 @@ $ bds chipseq.bds \
 ```
 
 
+
 ### Peak calling method
 
-Define peak calling method with `-callpeak [METHOD]`, choose `[METHOD]` in `[spp, macs2, gem]`. `spp` is default.
+Define peak calling method with `-callpeak [METHOD]`, choose `[METHOD]` in `[spp, macs2]`. You can also choose both like `-callpeak spp,macs2` (default).
 If you want to on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate), use `-true_rep`.
 
-For spp, no additional parameter is required.
+Both spp and macs2 generate peaks but signal tracks (pvalue and fold enrichment) are generated from macs2 only. IDR analysis will take peaks from spp. For spp, no additional parameter is required. For macs2, define additional parameters (`-chrsz`, `-gensz`).
 
-Example for gem:
-Define additional parameters (`-chrsz`, `-seq`)
+Example for both spp and macs2 (you can omit `-callpeak spp,macs2` since it's by default):
 ```
 $ bds chipseq.bds \
 ...
--callpeak gem
+-callpeak spp,macs2 \
 -chrsz /DATA/hg19.chrom.sizes \
--seq /DATA/encodeHg19Male
-```
-
-Example for macs2:
-Define additional parameters (`-chrsz`, `-gensz`)
-```
-$ bds chipseq.bds \
-...
--callpeak macs2
--chrsz /DATA/hg19.chrom.sizes
 -gensz hs
 ```
-
 Seq is the directory where reference genome files exist. Chrsz is chrome sizes file. Gensz is hs for human and mm for mouse.
 
+If you don't want IDR analysis and want to get peaks and signal tracks from macs2 only:
+```
+-callpeak macs2 -chrsz /DATA/hg19.chrom.sizes -gensz hs
+```
 
-### Choose IDR method
+If you don't want to get peaks and signal tracks from macs2:
+```
+-callpeak spp
+```
 
-There are two versions of IDR. For full IDR QC report, specify a blacklist (for hg19, <a href="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeMapability/wgEncodeDacMapabilityConsensusExcludable.bed.gz">here</a>).
 
+
+### IDR
+
+IDR analysis is based on <a href="https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>. No additional parameter required but specify a blacklist (for hg19, <a href="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeMapability/wgEncodeDacMapabilityConsensusExcludable.bed.gz">here</a>) for full IDR QC.
 ```
 -blacklist_idr [BLACKLIST_IDR]
 ```
 
-1) IDR1
-
-Based on <a href="https://sites.google.com/site/anshulkundaje/projects/idr" target="_blank">https://sites.google.com/site/anshulkundaje/projects/idr</a>.
-
-```
-$ bds chipseq.bds \
-...
--use_idr1
-```
-
-2) IDR2 (default)
-
-Based on <a href="https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>.
-No additional parameter required. 
 
 
 ### Signal track generation
 
-Define with `-sigtrk [SIG_TRK_GEN_METHOD: aln2rawsig, deeptools]` to generate signal track (bigwig).
+Define with `-sigtrk [SIG_TRK_GEN_METHOD: tag2bw (or aln2rawsig), bam2bw (or deeptools)]` to generate signal track (bigwig).
 
 If you don't want to define parameters like `seq`, `umap`, `chrsz` for every pipeline run, use species file.
 Define all species specific parameters in the species file and add parameter `-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]`.
 
-If you don't want to generate bigwig files, add `-no_bw`.
-
 In order to generate signal track using macs2 do not use `-sigtrk macs2`. Use `-callpeak macs2` instead.
 
-1) using align2rawsignal ( converts tagalign to bigwig, final_stage >= xcor )
+1) using tag2bw (align2rawsignal; it converts tagalign to bigwig, final_stage >= xcor )
 ```
 $ bds chipseq.bds \
 ...
--sigtrk aln2rawsig \
+-sigtrk tag2bw \
 -seq /DATA/encodeHg19Male \
 -umap /DATA/encodeHg19Male/globalmap_k20tok54 \
 -chrsz /DATA/hg19.chrom.sizes
 ```
-If you want to create wig instead of bigwig, then add `-make_wig -no_bw`.
+Seq is the directory where reference genome files exist.
+Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/.
+
 If you want both bigwig and wig, then add `-make_wig`.
 
-
-2) using deepTools (bamCoverage) ( converts filt_bam to bigwig, final_stage >= filt_bam )
+2) using bam2bw (bamCoverage in deepTools; it converts filt_bam to bigwig, final_stage >= filt_bam )
 ```
 $ bds chipseq.bds \
 ...
--sigtrk deeptools
+-sigtrk bam2bw
 ```
 
-Seq is the directory where reference genome files exist.
-Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/.
+
+
+### Parallelization
+
+For completely serialized jobs:
+```
+-no_par
+```
+
+You can also set up the level of parallelization for the pipeline.
+```
+-par_lvl [PAR_LEVEL; 0-7]
+```
+0: no parallel jobs (identical to `-no_par`, all subtasks for each replicate will also be serialized)
+1: no replicates/controls in parallel (subtasks for each replicate can be parallelized)
+2: 2 replicates/controls in parallel
+3: 2 replicates/controls and 2 peak-callings in parallel (default)
+4: 4 replicates/controls and 2 peak-callings in parallel
+5: 4 replicates/controls and 4 peak-callings in parallel
+6: customized
+7: unlimited
+
+For customized parallelization:
+```
+-par_lvl 6 -reps_in_par [NO_REP_IN_PAR] -peaks_in_par [NO_PEAKCALLING_IN_PAR]
+```
 
 
 

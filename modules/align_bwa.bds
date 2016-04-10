@@ -2,6 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
+include "report_graphviz.bds"
 
 
 help == align bwa settings (requirements: -bwa_idx)
@@ -20,7 +21,6 @@ init_align_bwa()
 void init_align_bwa() {
 
 	param_bwa_aln 	= get_conf_val( param_bwa_aln, 		["param_bwa_aln"] )
-
 	nth_bwa_aln 	= get_conf_val_int( nth_bwa_aln,	["nth_bwa_aln"] )
 	wt_bwa_aln 	= get_conf_val( wt_bwa_aln, 		["wt_bwa_aln"] )
 	mem_bwa_aln 	= get_conf_val( mem_bwa_aln, 		["mem_bwa_aln"] )
@@ -41,9 +41,15 @@ void chk_align_bwa() {
 	if ( !path_exists("$bwa_idx.bwt") ) error("\nBwa index (-bwa_idx) doesn't exists! (file: $bwa_idx.bwt)\n")
 }
 
-string[] _bwa( string fastq, string out_dir, string info ) {
+string[] _bwa( string fastq, string o_dir, string label ) {
 
-	prefix 	:= change_dir( remove_ext( fastq, ["fastq","fq"] ), out_dir )
+	return _bwa( fastq, o_dir, label, \
+			"fastq\\n($label)", "bam\\n($label)" )
+}
+
+string[] _bwa( string fastq, string o_dir, string label, string label_in, string label_out ) {
+
+	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	bam 	:= "$prefix.bam"
 	qc 	:= "$prefix.flagstat.qc"
 
@@ -51,25 +57,32 @@ string[] _bwa( string fastq, string out_dir, string info ) {
 	out 	:= [ bam, qc ]
 
 	if ( out <- in ) { // compare file timestamps of in and out (to check if job is already done or not)
-		sai := _bwa_aln( fastq, out_dir, info )
+
+		sai := _bwa_aln( fastq, o_dir, label )
 		wait
 
-		_bwa_sam( fastq, sai, out_dir, info )
+		_bwa_sam( fastq, sai, o_dir, label )
 		wait
 
 		sai.rm() // delete intermediate file sai		
 	}
+
+	_add_to_graphviz( ["$label_in"], [fastq], ["$label_out"], [bam], "bwa\\n($label)", grp_color_bwa )
 
 	wait_par()
 
 	return out
 }
 
-string[] _bwa_PE( string fastq1, string fastq2, string out_dir, string info ) {
+string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string label ) {
 
-	//prefix 	:= "$out_dir/" + concat_basename_wo_ext( fastq1, fastq2, "fastq" )
-	prefix 	:= change_dir( remove_ext( fastq1, ["fastq","fq"] ), out_dir ) + ".PE2SE"
+	return _bwa_PE( fastq1, fastq2, o_dir, label, \
+			"fastq1\\n($label)", "fastq1\\n($label)", "bam\\n($label)" )
+}
 
+string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string label, string label_in1, string label_in2, string label_out ) {
+
+	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
 	bam 	:= "$prefix.bam"
 	qc 	:= "$prefix.flagstat.qc"
 
@@ -79,12 +92,12 @@ string[] _bwa_PE( string fastq1, string fastq2, string out_dir, string info ) {
 	if ( out <- in ) { // compare file timestamps of in and out (to check if job is already done or not)
 
 		// parallel jobs
-		sai1 := _bwa_aln( fastq1, out_dir, info ) 
-		sai2 := _bwa_aln( fastq2, out_dir, info )
+		sai1 := _bwa_aln( fastq1, o_dir, label+"_1" ) 
+		sai2 := _bwa_aln( fastq2, o_dir, label+"_2" )
 
 		wait
 
-		_bwa_sam_PE( fastq1, fastq2, sai1, sai2, out_dir, info )
+		_bwa_sam_PE( fastq1, fastq2, sai1, sai2, o_dir, label )
 		wait
 		
 		sai1.rm() // delete intermediate file sai1, sai2
@@ -93,21 +106,23 @@ string[] _bwa_PE( string fastq1, string fastq2, string out_dir, string info ) {
 
 	wait_par()
 
+	_add_to_graphviz( ["$label_in1","$label_in2"], [fastq1,fastq2], ["$label_out"], [bam], "bwa\\n($label)", grp_color_bwa )
+
 	return out
 }
 
-string _bwa_aln( string fastq, string out_dir, string info ) {
+string _bwa_aln( string fastq, string o_dir, string label ) {
 
-	prefix 	:= change_dir( remove_ext( fastq, "fastq" ), out_dir )
-
+	prefix 	:= replace_dir( rm_ext( fastq, "fastq" ), o_dir )
 	sai 	:= "$prefix.sai"	
 	
 	in 	:= [ fastq ]
 	out 	:= sai
 
-	task( taskName:= "bwa_aln "+info, \
-		cpus:=nth_bwa_aln, mem:=parse_mem_or_skip(mem_bwa_aln), timeout:=parse_time_or_skip(wt_bwa_aln), \
-		out<-in ) {
+	taskName:= "bwa_aln " + label
+	cpus 	:= nth_bwa_aln;	mem := get_res_mem(mem_bwa_aln); timeout := get_res_wt(wt_bwa_aln)
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -120,19 +135,19 @@ string _bwa_aln( string fastq, string out_dir, string info ) {
 	return out
 }
 
-string[] _bwa_sam( string fastq, string sai, string out_dir, string info ) {
+string[] _bwa_sam( string fastq, string sai, string o_dir, string label ) {
 
-	prefix 	:= change_dir( remove_ext( fastq, "fastq" ), out_dir )
-
+	prefix 	:= replace_dir( rm_ext( fastq, "fastq" ), o_dir )
 	bam 	:= "$prefix.bam"
 	qc	:= "$prefix.flagstat.qc"
 
 	in 	:= [ fastq, sai ]
 	out 	:= [ bam, qc ]
 
-	task( taskName:= "bwa_sam "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(mem_bwa_sam), timeout:=parse_time_or_skip(wt_bwa_sam), \
-		out<-in ) {
+	taskName:= "bwa_sam " + label
+	mem 	:= get_res_mem(mem_bwa_sam);	timeout:= get_res_wt(wt_bwa_sam)
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -145,11 +160,9 @@ string[] _bwa_sam( string fastq, string sai, string out_dir, string info ) {
 	return out
 }
 
-string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, string out_dir, string info ) {
+string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, string o_dir, string label ) {
 
-	//prefix 	:= "$out_dir/" + concat_basename_wo_ext( fastq1, fastq2, "fastq" )
-	prefix 	:= change_dir( remove_ext( fastq1, "fastq" ), out_dir ) + ".PE2SE"
-
+	prefix 	:= replace_dir( rm_ext( fastq1, "fastq" ), o_dir ) + ".PE2SE"
 	sam 	:= "$prefix.sam"
 	badcigar:= "$prefix.badReads"
 	bam 	:= "$prefix.bam"
@@ -158,9 +171,10 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 	in 	:= [ fastq1, fastq2, sai1, sai2 ]
 	out 	:= [ bam, qc ]
 
-	task( taskName:= "bwa_sam_PE "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(mem_bwa_sam), timeout:=parse_time_or_skip(wt_bwa_sam), \
-		out<-in ) {
+	taskName:= "bwa_sam_PE " + label
+	mem 	:= get_res_mem(mem_bwa_sam);	timeout := get_res_wt(wt_bwa_sam)
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 		

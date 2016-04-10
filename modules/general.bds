@@ -6,61 +6,121 @@ include "conf.bds"
 
 help == general pipeline settings
 out_dir 	:= "out"	help Output directory (default: out).
-no_par		:= false	help Serialize all jobs (individual job can still take multiple threads).
-nth		:= 1 		help Default # threads for all cluster jobs (default: 1).
-wt 		:= "11h"	help Default Walltime for all cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
-memory 		:= "8G"		help Default Maximum memory for all cluster jobs (example: 8G, 1000MB, default: 8G).
-use_sys_default	:= false 	help Use system default resource settings of your computer/cluster.
+
+help == parallelization settings
+no_par		:= false	help Serialize all jobs (identical to '-par_lvl 0', individual job can still use multiple threads).
+par_lvl		:= 3		help Level of parallelization (Max # of replicates / Max # of peak-calling jobs; 0: no par., 1: 1/1, 2: 2/1, 3: 2/2, 4: 4/2, 5: 4/4, 6: custom, 7: unlimited, default: 3).
+reps_in_par 	:= 2 		help Max # of replicates/controls to be processed in parallel (works with '-par_lvl 6' only, default: 2).
+peaks_in_par 	:= 2 		help Max # of peak-calling jobs in parallel ((works with '-par_lvl 6' only, default: 2).
+
+help == general resource settings
+wt 		:= "11h"	help Default Walltime for cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
+memory 		:= "8G"		help Default Maximum memory for cluster jobs (identical to '-mem', example: 4.5G, 1024MB, default: 8G).
+use_sys_default	:= false 	help Use system default resource settings (unlimited in most cases).
 
 help == shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
 shcmd 		:= ""		help Shell commands separated by ;. Shell var. must be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test"). 
 addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (example: "/bin/test:${HOME}/utils").
+env_py2 	:= ""		help Environment name for anaconda python2.
+env_py3 	:= ""		help Environment name for anaconda python3.
 
 
-// system var
-init_mod 	:= "" // module init. shell script found
-SHCMD_INIT 	:= ""  // IMPORTANT! Shell command executed prior to all BigDataScript tasks (use this for setting environemts)
-walltimeout 	:= 3600*24*100 // BigDataScript internal variable
+SHCMD_INIT 		:= ""  // Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
+SHCMD_INIT_ENV_PY3	:= ""  // for softwares using python3 
+
+cnt_rep 	:= 0 	// # of rep/ctl processed
+cnt_peak	:= 0	// # of peaks processed
 
 
-init_base()
+init_general()
 init_shell_env()
-print_cmd_line_params() 
 
 
-void init_base() { 
+void init_general() { 
 
-	out_dir = get_conf_val( out_dir, 	["out_dir"] )	
-	no_par 	= get_conf_val_bool( no_par, 	["no_par"] )
-
-	nth 	= get_conf_val_int( nth, 	["nth"] )
-	wt 	= get_conf_val( wt, 		["wt"] )
-	memory 	= get_conf_val( memory, 	["memory","mem"] )
+	out_dir 	= get_conf_val( out_dir, 		["out_dir"] )		
+	no_par 		= get_conf_val_bool( no_par, 		["no_par"] )
+	par_lvl 	= get_conf_val_int( par_lvl, 		["par_lvl"] )
+	reps_in_par 	= get_conf_val_int( reps_in_par, 	["reps_in_par"] )
+	peaks_in_par 	= get_conf_val_int( peaks_in_par, 	["peaks_in_par"] )
+	wt 		= get_conf_val( wt, 			["wt"] )
+	memory 		= get_conf_val( memory, 		["memory","mem"] )
+	use_sys_default	= get_conf_val_bool( use_sys_default, 	["use_sys_default"] )
+	env_py2		= get_conf_val( env_py2, 		["env_py2"] )
+	env_py3		= get_conf_val( env_py3, 		["env_py3"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
+
+	init_par()
 
 	print("\n\n== general pipeline settings\n")
 	print( "Output dir.\t\t: $out_dir\n" )
 	print( "No parallel jobs\t: $no_par\n" )
-	print( "# threads (general)\t: $nth\n" )
+	print( "Level of parallelization\t: $par_lvl\n" )
+	print( "Max # rep/ctl in parallel\t: $reps_in_par\n" )
+	print( "Max # peakcalling in parallel\t: $peaks_in_par\n" )
 	print( "Walltime (general)\t: $wt\n" )
 	print( "Max. memory (general)\t: $memory\n" )
+	print( "Env. name for anaconda python2\t: $env_py2\n" )
+	print( "Env. name for anaconda python3\t: $env_py3\n" )
 
 	if ( use_sys_default ) {
-		print( "System default resource settings will be used for walltime and max. memory!\n")
+		print( "System default resource settings (unlimited in most cases) will be used for walltime and max. memory!\n")
+	}
+
+	// cpus, mem and timeout are BDS variables for default resource settings
+	cpus 		= 1
+	mem 		= get_res_mem(memory)
+	timeout 	= get_res_wt(wt)
+	walltimeout 	= 3600*24*100 	// timeout var. in BigDataScript (100 days, jobs will never be stopped by BDS due to BDS timeout)
+}
+
+void init_par() {
+
+	if ( no_par ) 	par_lvl = 0
+
+	// set max. # of reps and peaks to be processed in parallel
+
+	if ( par_lvl >= 7 ) { // unlimited
+		reps_in_par 	= 100
+		peaks_in_par 	= 100
+	}	
+	else if ( par_lvl >= 6 ) { // custom
+		// vars are already read
+	}
+	else if ( par_lvl >= 5 ) {
+		reps_in_par	= 4
+		peaks_in_par 	= 4
+	}
+	else if ( par_lvl >= 4 ) {
+		reps_in_par	= 4
+		peaks_in_par 	= 2
+	}
+	else if ( par_lvl >= 3 ) {
+		reps_in_par	= 2
+		peaks_in_par 	= 2
+	}
+	else if ( par_lvl >= 2 ) {
+		reps_in_par	= 2
+		peaks_in_par 	= 1
+	}
+	else {
+		reps_in_par	= 1
+		peaks_in_par 	= 1		
 	}
 }
 
-void init_shell_env() {	
+void init_shell_env() {
 
 	init_mods 	:= ["/etc/profile.d/modules.sh", "/etc/profile.d/modules.bash"] // environment modules (bash) initialization file paths (pick from the first if exists)
+	init_mod 	:= "" // module init. shell script found
 
 	// get shell var MODULESHOME if exists
 	MODULESHOME := get_shell_var("MODULESHOME").replace("\n","")
 	if (MODULESHOME!="") init_mods.add("$MODULESHOME/init/bash")
 
-	string shellcmd, module, path
+	string shellcmd, module, path, conda_py2, conda_py3
 
 	// find env. modules init script
 	for ( string file : init_mods ) {
@@ -134,27 +194,23 @@ void init_shell_env() {
 		path = " export PATH=$path:\${PATH}:/bin:/usr/bin:/usr/local/bin:\${HOME}/.bds;"
 	}
 
+	if ( env_py2 != "" ) {
+		conda_py2 = "source activate $env_py2; "
+	}
+
+	if ( env_py3 != "" ) {
+		conda_py3 = "source activate $env_py2; "
+	}
+
 	// additional initialization
-	SHCMD_INIT = SHCMD_INIT + module + path + shellcmd
-	SHCMD_INIT = SHCMD_INIT.replace( ": :", ":" ).replace( "::", ":" )
-	SHCMD_INIT = SHCMD_INIT.replace( "; ;", ";" ).replace( ";;", ";" )
+	SHCMD_INIT += (module + path + shellcmd)
+	SHCMD_INIT = SHCMD_INIT.replace( ": :", ":" ).replace( "::", ":" ).replace( "; ;", ";" ).replace( ";;", ";" )
 
-	print( "\nShell cmd. for init.\t: $SHCMD_INIT\n" )
-}
+	SHCMD_INIT_ENV_PY3 = conda_py3 + SHCMD_INIT
+	SHCMD_INIT 	   = conda_py2 + SHCMD_INIT
 
-void print_cmd_line_params() {
-
-	string line
-	for ( string arg : args ) {
-		line = line + arg + " "
-	}
-
-	if ( args.size() > 0 ) {
-
-		print( "\nCommand line arguments\t: $line\n\n")
-
-		//sys DATE=$(date "+%Y%m%d_%H%M%S"); echo $line > cmd_line_parameters.${DATE}.txt
-	}
+	print( "\nShell command for initialization\t: $SHCMD_INIT\n" )
+	print( "\nShell command for initialization (py3)\t: $SHCMD_INIT_ENV_PY3\n" )
 }
 
 string get_rel_path( string path ) {
@@ -165,17 +221,42 @@ string get_rel_path( string path ) {
 	else 				return rel_path
 }
 
-int parse_time_or_skip( string str ) {
+int get_res_wt( string str ) {
 
 	return (use_sys_default || is_system_local() ) ? -1 : parse_time( str )
 }
 
-int parse_mem_or_skip( string str ) {
+int get_res_mem( string str ) {
 
 	return (use_sys_default || is_system_local() ) ? -1 : parse_mem( str )
 }
 
 void wait_par() {
 
-	if ( no_par ) wait //barrier for parallel tasks
+	if ( par_lvl <= 0 ) wait
 }
+
+void wait_par_rep() {  // put this function at the end of each replicate/control processing
+
+	return wait_par_rep( true )
+}
+
+void wait_par_rep( bool out_in ) {
+
+	if ( out_in ) cnt_rep++
+
+	if ( (par_lvl <= 0) || (cnt_rep % reps_in_par == 0) ) wait
+}
+
+void wait_par_peak() { // put this function at the end of each peak calling processing
+
+	return wait_par_peak( true )
+}
+
+void wait_par_peak( bool out_in ) {
+
+	if ( out_in ) cnt_peak++
+
+	if ( (par_lvl <= 0) || (cnt_peak % peaks_in_par == 0) ) wait
+}
+

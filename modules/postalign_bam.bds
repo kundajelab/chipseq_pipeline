@@ -47,9 +47,14 @@ void init_postalign_bam() {
 	print( "Max. memory (picard markdup)\t: $mem_markdup\n")
 }
 
-string[] _dedup_bam( string bam, string out_dir, string info ) {
+string[] _dedup_bam( string bam, string o_dir, string label ) {
 
-	prefix 		:= change_dir( remove_ext( bam, "bam" ), out_dir )
+	return _dedup_bam( bam, o_dir, label, "bam\\n($label)", "filt_bam\\n($label)" ) 
+}
+
+string[] _dedup_bam( string bam, string o_dir, string label, string label_in, string label_out ) {
+
+	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 
 	nodup_bam 	:= "$prefix.nodup.bam"
 	nodup_bam_idx 	:= "$prefix.nodup.bai"
@@ -63,9 +68,10 @@ string[] _dedup_bam( string bam, string out_dir, string info ) {
 	in 		:= [ bam ]
 	out 		:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
-	task( taskName:= "dedup_bam "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(mem_markdup), timeout:=parse_time_or_skip(wt_markdup), \
-		out<-in ) {
+	taskName:= "dedup_bam " + label
+	mem 	:= get_res_mem(mem_markdup);	timeout := get_res_wt(wt_markdup)
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -123,14 +129,21 @@ string[] _dedup_bam( string bam, string out_dir, string info ) {
 		sys rm -f $tmp_filt_bam
 	}
 
+	_add_to_graphviz( [label_in], [bam], [label_out], [nodup_bam], "filter\\n($label)", grp_color_dedup_bam )
+
 	wait_par()
 
 	return out
 }
 
-string[] _dedup_bam_PE( string bam, string out_dir, string info ) {
+string[] _dedup_bam_PE( string bam, string o_dir, string label ) {
 
-	prefix 		:= change_dir( remove_ext( bam, "bam" ), out_dir )
+	return _dedup_bam_PE( bam, o_dir, label, "bam\\n($label)", "filt_bam\\n($label)" )
+}
+
+string[] _dedup_bam_PE( string bam, string o_dir, string label, string label_in, string label_out ) {
+
+	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 
 	nodup_bam 	:= "$prefix.nodup.bam"
 	nodup_bam_idx 	:= "$prefix.nodup.bai"
@@ -148,9 +161,10 @@ string[] _dedup_bam_PE( string bam, string out_dir, string info ) {
 	in 		:= [ bam ]
 	out 		:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
-	task( taskName:= "dedup_bam_PE "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(mem_markdup), timeout:=parse_time_or_skip(wt_markdup), \
-		out<-in ) {
+	taskName:= "dedup_bam_PE " + label
+	mem 	:= get_res_mem(mem_markdup);	timeout := get_res_wt(wt_markdup)
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -227,22 +241,23 @@ string[] _dedup_bam_PE( string bam, string out_dir, string info ) {
 
 	wait_par()
 
+	_add_to_graphviz( [label_in], [bam], [label_out], [filt_bam], "filter\\n($label)", grp_color_dedup_bam )
+
 	return out
 }
 
-string _nmsrt_bam( string bam, string out_dir, string info ) {
+string _nmsrt_bam( string bam, string o_dir, string label ) {
 
-	prefix 		:= change_dir( remove_ext( bam, "bam" ), out_dir )
-
+	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	nmsrt_bam 	:= "$prefix.nmsrt.bam"
 	nmsrt_bam_prefix:= "$prefix.nmsrt"
 
-	in 		:= [ bam ]
-	out 		:= nmsrt_bam
+	in 	:= [ bam ]
+	out 	:= nmsrt_bam
 
-	task( taskName:= "nmsrt_bam "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "nmsrt_bam " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -254,20 +269,19 @@ string _nmsrt_bam( string bam, string out_dir, string info ) {
 	return out	
 }
 
-string _srt_bam( string bam, string out_dir, string info ) {
+string _srt_bam( string bam, string o_dir, string label ) {
 
-	prefix 		:= change_dir( remove_ext( bam, "bam" ), out_dir )
-
+	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	srt_bam 	:= "$prefix.srt.bam"
 	srt_bam_prefix 	:= "$prefix.srt"
 	srt_bam_idx 	:= "$prefix.srt.bai"
 
-	in 		:= [ bam ]
-	out 		:= srt_bam
+	in 	:= [ bam ]
+	out 	:= srt_bam
 
-	task( taskName:= "srt_bam "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "srt_bam " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -288,24 +302,27 @@ string _srt_bam( string bam, string out_dir, string info ) {
 	return out	
 }
 
-string _bam_to_tag( string bam, string out_dir, string info ) {
+string _bam_to_tag( string bam, string o_dir, string label ) {
 
-	prefix 	:= change_dir( remove_ext( bam, "bam" ), out_dir )
+	return _bam_to_tag( bam, o_dir, label, "bam\\n($label)", "tagalign\\n($label)" )
+}
 
+string _bam_to_tag( string bam, string o_dir, string label, \
+			string label_in, string label_out ) {
+
+	prefix 	:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	tag 	:= "$prefix.tagAlign.gz"
-
-	in 	:= [ bam ]
-	out 	:= tag
-
 	RM_CHR_ := "echo"
-
 	if ( rm_chr_from_tag != "" ) {
 		RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
 	}
 
-	task( taskName:= "bam_to_tag "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	in 	:= [ bam ]
+	out 	:= tag
+
+	taskName:= "bam_to_tag " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 	
@@ -317,51 +334,67 @@ string _bam_to_tag( string bam, string out_dir, string info ) {
 
 	wait_par()
 
+	_add_to_graphviz( [label_in], [bam], [label_out], [tag], "align\\n($label)", "orange" )
+
 	return out
 }
 
-string _bam_to_bedpe( string nmsrt_bam, string out_dir, string info ) {
+string _bam_to_bedpe( string bam, string o_dir, string label ) {
 
-	prefix 		:= change_dir( remove_ext( nmsrt_bam, "bam" ), out_dir )
+	return _bam_to_bedpe( bam, o_dir, label, "bam\\n($label)", "bedpe\\n($label)" )
+}
 
+string _bam_to_bedpe( string bam, string o_dir, string label, \
+			string label_in, string label_out ) {
+
+	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
+	nmsrt_bam 	:= "$prefix.nmsrt.bam"
 	bedpe 		:= "$prefix.bedpe.gz"
 
-	in 		:= [ nmsrt_bam ]
-	out 		:= bedpe
+	in 	:= [ bam ]
+	out 	:= bedpe
 
-	task( taskName:= "bam_to_bedpe "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	if ( out <- in ) {
 
-		sys $SHCMD_INIT
+		nmsrt_bam = _nmsrt_bam( bam, o_dir, label )
 
-		//# Create BEDPE file
-		sys bedtools bamtobed -bedpe -mate1 -i $nmsrt_bam | gzip -c > $bedpe
+		taskName:= "bam_to_bedpe " + label
+
+		task( out <- nmsrt_bam ) {
+
+			sys $SHCMD_INIT
+
+			//# Create BEDPE file
+			sys bedtools bamtobed -bedpe -mate1 -i $nmsrt_bam | gzip -c > $bedpe
+		}
+
+		wait
+
+		nmsrt_bam.rm()
 	}
 
 	wait_par()
 
+	_add_to_graphviz( [label_in], [bam], [label_out], [bedpe] )
+
 	return out
 }
 
-string _bedpe_to_tag( string bedpe, string out_dir, string info ) {
+string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 	
-	prefix 	:= change_dir( remove_ext( bedpe, ["bedpe","bed"] ), out_dir )
-
+	prefix 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
 	tag 	:= "$prefix.tagAlign.gz"
-
-	in 	:= [ bedpe ]
-	out 	:= tag
-
 	RM_CHR_ := "echo"	
-
 	if ( rm_chr_from_tag != "" ) {
 		RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
 	}
 
-	task( taskName:= "bedpe_to_tag "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	in 	:= [ bedpe ]
+	out 	:= tag
+
+	taskName:= "bedpe_to_tag " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
@@ -376,23 +409,21 @@ string _bedpe_to_tag( string bedpe, string out_dir, string info ) {
 	return out
 }
 
-string _bam_to_bed_atac( string nodup_bam, string out_dir, string info ) {
+string _bam_to_bed_atac( string nodup_bam, string o_dir, string label ) {
 
-	prefix 		:= change_dir( remove_ext( nodup_bam, "bam" ), out_dir )
-
+	prefix 		:= replace_dir( rm_ext( nodup_bam, "bam" ), o_dir )
 	mito_bam 	:= "$prefix.chrM.bam"
 	non_mito_bam 	:= "$prefix.nonchrM.bam"
 	non_mito_bam_hist_grp := "$non_mito_bam.hist_graph.pdf"
 	non_mito_bam_hist_log := "$non_mito_bam.hist_data.log"
-
 	bed 	:= "$prefix.nonchrM.tn5.bed.gz"
 
 	in 	:= [nodup_bam]
 	out 	:= bed //, mito_bam, non_mito_bam, non_mito_bam_hist_grp ]
 
-	task( taskName:= "bam_to_bed_atac "+info, \
-		cpus:=nth, mem:=parse_mem_or_skip(memory), timeout:=parse_time_or_skip(wt), \
-		out<-in ) {
+	taskName:= "bam_to_bed_atac " + label
+
+	task( out<-in ) {
 
 		sys $SHCMD_INIT
 
