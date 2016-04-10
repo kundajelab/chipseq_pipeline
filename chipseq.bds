@@ -95,7 +95,14 @@ void init_chipseq() {
 	if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
 
 	if ( !control_exists() ) num_ctl = 0
+
+	print_chipseq()
 	
+	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
+}
+
+void print_chipseq() {
+
 	print( "\n\n== chipseq pipeline settings\n")
 	print( "Final stage for ChIP-Seq\t: $final_stage\n" )
 	print( "# replicates \t\t\t: "+get_num_rep()+"\n" )
@@ -105,8 +112,6 @@ void init_chipseq() {
 	print( "Control rep. depth ratio\t: $ctl_depth_ratio\n" )
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
-
-	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
 }
 
 void chk_input() {
@@ -120,10 +125,10 @@ void chk_input() {
 	if ( is_final_stage_idr() ) 	chk_idr()
 
 	if ( is_align_only_mode() ) { 	
-		print("Align only mode (no peak calling) for " + get_num_rep() + " replicates.\n")
+		print("Align-only mode (no peak calling) for " + get_num_rep() + " replicates.\n")
 	}
 	else if ( get_num_rep() > 2 ) {
-		error("For peak calling, # replicates (" + get_num_rep() + ") should be <= 2.\n")
+		error("For calling peaks, # replicates (" + get_num_rep() + ") should be <= 2.\n")
 	}
 
 	print("\n")
@@ -235,7 +240,7 @@ void _align( int ctl, int rep ) {
 	if ( is_single_ended( ctl, rep ) ) 	_align_SE( ctl, rep )
 	else 					_align_PE( ctl, rep )
 
-	wait_par_rep()
+	wait_par_rep() // count # of replicates being processed and wait (barrier) par.
 }
 
 void _align_SE( int ctl, int rep ) {
@@ -516,13 +521,8 @@ void _call_peaks( string peakcaller ) {
 
 	if ( !control_exists() ) {
 
-		if ( peakcaller != "macs2" ) {
-			//print("\nWarning: Cannot call peaks without control data with $peakcaller!\n")
-			return
-		}
+		if ( peakcaller != "macs2" ) return
 
-		//tag{"1,1"} = ""
-		//tag{"1,2"} = ""
 		tag_ctl1_ = ""
 		tag_ctl2_ = ""
 		tag_ctl_pooled_ = ""
@@ -554,8 +554,6 @@ void _call_peaks( string peakcaller ) {
 
 			print("\n\nNumber of reads in controls differ by a factor of $ctl_depth_ratio. Using pooled controls.\n" )
 
-			//tag{"1,1"} = tag_ctl_pooled
-			//tag{"1,2"} = tag_ctl_pooled
 			tag_ctl1_ = tag_ctl_pooled
 			tag_ctl2_ = tag_ctl_pooled
 
@@ -567,7 +565,6 @@ void _call_peaks( string peakcaller ) {
 
 				print("\n\nFewer reads in control replicate 1 than experiment replicate 1. Using pooled controls for replicate 1.\n")
 
-				//tag{"1,1"} = tag_ctl_pooled
 				tag_ctl1_ = tag_ctl_pooled
 
 				tag_ctl1_graphviz_id = "tagalign\\n(ctl, pooled)"
@@ -577,7 +574,6 @@ void _call_peaks( string peakcaller ) {
 
 				print("\n\nFewer reads in control replicate 2 than experiment replicate 2. Using pooled controls for replicate 2.\n")
 
-				//tag{"1,2"} = tag_ctl_pooled
 				tag_ctl2_ = tag_ctl_pooled
 
 				tag_ctl1_graphviz_id = "tagalign\\n(ctl1)"
@@ -587,9 +583,6 @@ void _call_peaks( string peakcaller ) {
 
 	}
 	else { // otherwise, no pooling. use control 1 for all replicates
-
-		//tag_ctl_pooled 	= tag{"1,1"}
-		//tag{"1,2"} 	= tag{"1,1"}
 
 		tag_ctl1_ 	= tag{"1,1"}
 		tag_ctl2_ 	= tag{"1,1"}
@@ -748,7 +741,7 @@ void report() { // HTML chipseq report
 	sys cp $script_dir/html/jquery.treetable.* $out_dir    # move report js/css files to out_dir
 
 	report_file 	:= "$out_dir/Report.html"
-	report_header 	:= "$script_dir/rpt_header.html"
+	report_header 	:= "$script_dir/html/rpt_header.html"
 
 	html := report_header.read()
 
@@ -835,31 +828,7 @@ string _html_chipseq_files() {
 				if ( signal_trk.hasKey(key) ) html += "<tr data-tt-id='signal_$key' data-tt-parent-id='signal'><td>" + "pval ($info)" + "</td><td>"+ _html_link_url( signal_trk{key} )+"</td></tr>"
 			}
 		}		
-/*
-		// true rep
-		html += "<tr data-tt-id='peak_truerep' data-tt-parent-id='peak'><td>" + "True replicates"+ "</td><td>"+ _html_link_url( peak_out_dir+"/true_replicates" ) +"</td></tr>"
-
-		if ( signal_trk_pval.hasKey("rep1") ) html += "<tr data-tt-id='signal_pval1' data-tt-parent-id='signal'><td>" + "pval (rep1)" + "</td><td>"+ _html_link_url( signal_trk_pval{"rep1"} )+"</td></tr>"
-		if ( signal_trk_pval.hasKey("rep2") ) html += "<tr data-tt-id='signal_pval2' data-tt-parent-id='signal'><td>" + "pval (rep2)" + "</td><td>"+ _html_link_url( signal_trk_pval{"rep2"} )+"</td></tr>"
-		if ( signal_trk_fc.hasKey("rep1") ) html += "<tr data-tt-id='signal_fc1' data-tt-parent-id='signal'><td>" + "fc (rep1)" + "</td><td>"+ _html_link_url( signal_trk_fc{"rep1"} )+"</td></tr>"
-		if ( signal_trk_fc.hasKey("rep2") ) html += "<tr data-tt-id='signal_fc2' data-tt-parent-id='signal'><td>" + "fc (rep2)" + "</td><td>"+ _html_link_url( signal_trk_fc{"rep2"} )+"</td></tr>"
-
-		if ( signal_trk_pval.hasKey("rep1_pr1") ) html += "<tr data-tt-id='signal_pval1_pr1' data-tt-parent-id='signal'><td>" + "pval (rep1_pr1)" + "</td><td>"+ _html_link_url( signal_trk_pval{"rep1_pr1"} )+"</td></tr>"
-		if ( signal_trk_pval.hasKey("rep1_pr2") ) html += "<tr data-tt-id='signal_pval1_pr2' data-tt-parent-id='signal'><td>" + "pval (rep1_pr2)" + "</td><td>"+ _html_link_url( signal_trk_pval{"rep1_pr2"} )+"</td></tr>"
-		if ( signal_trk_pval.hasKey("rep2_pr1") ) html += "<tr data-tt-id='signal_pval2_pr1' data-tt-parent-id='signal'><td>" + "pval (rep2_pr1)" + "</td><td>"+ _html_link_url( signal_trk_pval{"rep2_pr1"} )+"</td></tr>"
-		if ( signal_trk_pval.hasKey("rep2_pr2") ) html += "<tr data-tt-id='signal_pval2_pr2' data-tt-parent-id='signal'><td>" + "pval (rep2_pr2)" + "</td><td>"+ _html_link_url( signal_trk_pval{"rep2_pr2"} )+"</td></tr>"
-		if ( signal_trk_pval.hasKey("pooled") ) html += "<tr data-tt-id='signal_pval_pooled' data-tt-parent-id='signal'><td>" + "pval (pooled)" + "</td><td>"+ _html_link_url( signal_trk_pval{"pooled"} )+"</td></tr>"
-		if ( signal_trk_pval.hasKey("ppr1") ) html += "<tr data-tt-id='signal_pval_ppr1' data-tt-parent-id='signal'><td>" + "pval (ppr1)" + "</td><td>"+ _html_link_url( signal_trk_pval{"ppr1"} )+"</td></tr>"
-		if ( signal_trk_pval.hasKey("ppr2") ) html += "<tr data-tt-id='signal_pval_ppr2' data-tt-parent-id='signal'><td>" + "pval (ppr2)" + "</td><td>"+ _html_link_url( signal_trk_pval{"ppr2"} )+"</td></tr>"
-
-		if ( signal_trk_fc.hasKey("rep1_pr1") ) html += "<tr data-tt-id='signal_fc1_pr1' data-tt-parent-id='signal'><td>" + "fc (rep1_pr1)" + "</td><td>"+ _html_link_url( signal_trk_fc{"rep1_pr1"} )+"</td></tr>"
-		if ( signal_trk_fc.hasKey("rep1_pr2") ) html += "<tr data-tt-id='signal_fc1_pr2' data-tt-parent-id='signal'><td>" + "fc (rep1_pr2)" + "</td><td>"+ _html_link_url( signal_trk_fc{"rep1_pr2"} )+"</td></tr>"
-		if ( signal_trk_fc.hasKey("rep2_pr1") ) html += "<tr data-tt-id='signal_fc2_pr1' data-tt-parent-id='signal'><td>" + "fc (rep2_pr1)" + "</td><td>"+ _html_link_url( signal_trk_fc{"rep2_pr1"} )+"</td></tr>"
-		if ( signal_trk_fc.hasKey("rep2_pr2") ) html += "<tr data-tt-id='signal_fc2_pr2' data-tt-parent-id='signal'><td>" + "fc (rep2_pr2)" + "</td><td>"+ _html_link_url( signal_trk_fc{"rep2_pr2"} )+"</td></tr>"
-		if ( signal_trk_fc.hasKey("pooled") ) html += "<tr data-tt-id='signal_fc_pooled' data-tt-parent-id='signal'><td>" + "fc (pooled)" + "</td><td>"+ _html_link_url( signal_trk_fc{"pooled"} )+"</td></tr>"
-		if ( signal_trk_fc.hasKey("ppr1") ) html += "<tr data-tt-id='signal_fc_ppr1' data-tt-parent-id='signal'><td>" + "fc (ppr1)" + "</td><td>"+ _html_link_url( signal_trk_fc{"ppr1"} )+"</td></tr>"
-		if ( signal_trk_fc.hasKey("ppr2") ) html += "<tr data-tt-id='signal_fc_ppr2' data-tt-parent-id='signal'><td>" + "fc (ppr2)" + "</td><td>"+ _html_link_url( signal_trk_fc{"ppr2"} )+"</td></tr>"
-*/
+		
 		peak_out_dir := "$out_dir/peaks_macs2"
 
 		// true rep

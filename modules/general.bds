@@ -22,12 +22,12 @@ help == shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
 shcmd 		:= ""		help Shell commands separated by ;. Shell var. must be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test"). 
 addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (example: "/bin/test:${HOME}/utils").
-env_py2 	:= ""		help Environment name for anaconda python2.
-env_py3 	:= ""		help Environment name for anaconda python3.
+conda_env 	:= ""		help Environment name for anaconda python2.
+conda_env3 	:= ""		help Environment name for anaconda python3.
 
 
-SHCMD_INIT 		:= ""  // Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
-SHCMD_INIT_ENV_PY3	:= ""  // for softwares using python3 
+SHCMD_INIT 	:= ""  // Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
+SHCMD_INIT_PY3	:= ""  // for softwares using python3
 
 cnt_rep 	:= 0 	// # of rep/ctl processed
 cnt_peak	:= 0	// # of peaks processed
@@ -47,27 +47,13 @@ void init_general() {
 	wt 		= get_conf_val( wt, 			["wt"] )
 	memory 		= get_conf_val( memory, 		["memory","mem"] )
 	use_sys_default	= get_conf_val_bool( use_sys_default, 	["use_sys_default"] )
-	env_py2		= get_conf_val( env_py2, 		["env_py2"] )
-	env_py3		= get_conf_val( env_py3, 		["env_py3"] )
+	conda_env	= get_conf_val( conda_env, 		["conda_env"] )
+	conda_env3	= get_conf_val( conda_env3, 		["conda_env3"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
 	init_par()
-
-	print("\n\n== general pipeline settings\n")
-	print( "Output dir.\t\t: $out_dir\n" )
-	print( "No parallel jobs\t: $no_par\n" )
-	print( "Level of parallelization\t: $par_lvl\n" )
-	print( "Max # rep/ctl in parallel\t: $reps_in_par\n" )
-	print( "Max # peakcalling in parallel\t: $peaks_in_par\n" )
-	print( "Walltime (general)\t: $wt\n" )
-	print( "Max. memory (general)\t: $memory\n" )
-	print( "Env. name for anaconda python2\t: $env_py2\n" )
-	print( "Env. name for anaconda python3\t: $env_py3\n" )
-
-	if ( use_sys_default ) {
-		print( "System default resource settings (unlimited in most cases) will be used for walltime and max. memory!\n")
-	}
+	print_general()
 
 	// cpus, mem and timeout are BDS variables for default resource settings
 	cpus 		= 1
@@ -111,14 +97,36 @@ void init_par() {
 	}
 }
 
+void print_general() {
+
+	print("\n\n== general pipeline settings\n")
+	print( "Output dir.\t\t: $out_dir\n" )
+	print( "No parallel jobs\t: $no_par\n" )
+	print( "Level of parallelization\t: $par_lvl\n" )
+	print( "Max # rep/ctl in parallel\t: $reps_in_par\n" )
+	print( "Max # peakcalling in parallel\t: $peaks_in_par\n" )
+	print( "Walltime (general)\t: $wt\n" )
+	print( "Max. memory (general)\t: $memory\n" )
+	print( "Env. for anaconda python2\t: $conda_env\n" )
+	print( "Env. for anaconda python3\t: $conda_env3\n" )
+
+	if ( use_sys_default ) {
+		print( "System default resource settings (unlimited in most cases) will be used for walltime and max. memory!\n")
+	}
+}
+
 void init_shell_env() {
 
 	init_mods 	:= ["/etc/profile.d/modules.sh", "/etc/profile.d/modules.bash"] // environment modules (bash) initialization file paths (pick from the first if exists)
 	init_mod 	:= "" // module init. shell script found
 
 	// get shell var MODULESHOME if exists
-	MODULESHOME := get_shell_var("MODULESHOME").replace("\n","")
-	if (MODULESHOME!="") init_mods.add("$MODULESHOME/init/bash")
+	moduleshome := get_shell_var("MODULESHOME").replace("\n","")
+	if (moduleshome!="") init_mods.add("$moduleshome/init/bash")
+
+	// check if conda is installed
+//	conda_exists := get_stdout("conda activate")
+//print("\nDEBUG: conda_exists\n\n")
 
 	string shellcmd, module, path, conda_py2, conda_py3
 
@@ -134,6 +142,7 @@ void init_shell_env() {
 		print("\n\nInfo: Environments module not found on your system (e.g. /etc/profile.d/modules.sh). Ignoring shell env. parameters like '-mod'. \n")
 	}
 
+	// read from conf./env. file
 	for( string k : conf.keys() ) {		
 		string val = conf{k}	
 
@@ -156,6 +165,7 @@ void init_shell_env() {
 		}
 	}
 
+	// read from cmd. line arg.
 	if ( mod!="" ) {
 		string module_header = ". $init_mod;"
 
@@ -174,13 +184,11 @@ void init_shell_env() {
 		path = path + addpath.trim().replace(",",":").replace(";",":").replace(" ",":").replace(":::",":").replace("::",":") + ":"
 	}
 
-	// finally concat all
-
 	if ( module !="" ) {
 		module = ". $init_mod; module add " + module + ";"
 	}
 
-	// check directories to add to PATH
+	// check script directories to add to PATH
 	script_file_paths := get_script_file_paths()
 
 	for ( string _path : script_file_paths ) {
@@ -194,23 +202,24 @@ void init_shell_env() {
 		path = " export PATH=$path:\${PATH}:/bin:/usr/bin:/usr/local/bin:\${HOME}/.bds;"
 	}
 
-	if ( env_py2 != "" ) {
-		conda_py2 = "source activate $env_py2; "
+	// add conda env
+	if ( conda_env != "" ) {
+		conda_py2 = "source activate $conda_env; "
 	}
 
-	if ( env_py3 != "" ) {
-		conda_py3 = "source activate $env_py2; "
+	if ( conda_env3 != "" ) {
+		conda_py3 = "source activate $conda_env3; "
 	}
 
 	// additional initialization
 	SHCMD_INIT += (module + path + shellcmd)
 	SHCMD_INIT = SHCMD_INIT.replace( ": :", ":" ).replace( "::", ":" ).replace( "; ;", ";" ).replace( ";;", ";" )
 
-	SHCMD_INIT_ENV_PY3 = conda_py3 + SHCMD_INIT
-	SHCMD_INIT 	   = conda_py2 + SHCMD_INIT
+	SHCMD_INIT_PY3 	= conda_py3 + SHCMD_INIT
+	SHCMD_INIT 	= conda_py2 + SHCMD_INIT
 
 	print( "\nShell command for initialization\t: $SHCMD_INIT\n" )
-	print( "\nShell command for initialization (py3)\t: $SHCMD_INIT_ENV_PY3\n" )
+	print( "\nShell command for initialization (py3)\t: $SHCMD_INIT_PY3\n" )
 }
 
 string get_rel_path( string path ) {

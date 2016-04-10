@@ -175,7 +175,7 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 
 	task( out<-in ) {
 		
-		sys $SHCMD_INIT
+		sys $SHCMD_INIT_PY3
 
 		sys idr --samples $peak1 $peak2 --peak-list $pooled --input-file-type narrowPeak \
 			--output-file $idr_output --rank signal.value --soft-idr-threshold $idr_thresh \

@@ -3,10 +3,43 @@ BigDataScript (BDS) Pipelines
 
 
 
+### Installation instruction for java and git
 
-### Installation instruction
+Make sure that you have java (jdk >= 1.7 or jre >= 1.7) and git on your system.
 
-Get BigDataScript (v0.9999) is stable and doesn't require high java version).
+For Debian/Ubuntu based Linux,
+```
+$ sudo apt-get install git openjdk-8-jre
+```
+
+For Fedora/Red-Hat based Linux,
+```
+$ sudo yum install git java-1.8.0-openjdk
+```
+
+
+### Installation instruction for Miniconda3
+
+Get the latest Miniconda3 installer at <a href="http://conda.pydata.org/miniconda.html" target=_blank>http://conda.pydata.org/miniconda.html</a> and install it. The following command is for Anaconda Python3 on 64bit Linux system.
+```
+$ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+$ bash Miniconda3-latest-Linux-x86_64.sh
+```
+
+Choose `yes` for the final question. If you choose `no`, you need to manually add Miniconda3 to your `.bashrc`.
+```
+Do you wish the installer to prepend the Miniconda2 install location
+to PATH in your /your/home/.bashrc ? [yes|no]
+[no] >>> yes
+```
+
+Open a new terminal after installation.
+
+
+
+### Installation instruction for BigDataScript
+
+Get BigDataScript v0.9999:
 ```
 $ git clone https://github.com/pcingola/BigDataScript
 $ cd BigDataScript
@@ -14,33 +47,34 @@ $ git checkout tags/v0.9999
 $ cp distro/bds_Linux.tgz $HOME
 $ cd $HOME
 $ tar zxvf bds_Linux.tgz
-$ rm bds_Linux.tgz
 ```
+
+Add the following lines to your bash initialization script (`$HOME/.bashrc` or `$HOME/.bash_profile`):
+```
+export PATH=$PATH:$HOME/.bds
+```
+
+If java memory occurs, add the following lines to your bash initialization script (`$HOME/.bashrc` or `$HOME/.bash_profile`):
+```
+export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
+export MAX_JAVA_MEM="8G"
+export MALLOC_ARENA_MAX=4
+```
+
+
+### Installation instruction for BigDataScript pipelines
+
+Install java (jdk >= 1.7 or jre >= 1.7) and the latest git on your system. 
+
+Install Anaconda Python (or Miniconda) on your system. Open a new terminal after installation.
+
+Install BigDataScript v0.9999 on your system.
 
 Find bds.config and move it to `$HOME/.bds/`.
 ```
 $ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds/
 ```
-
-(Recommended if you don't know what these are) Add the following lines to your `$HOME/.bashrc` or `$HOME/.bash_profile`:
-```
-export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
-export MAX_JAVA_MEM="16G"
-export MALLOC_ARENA_MAX=4
-export PATH=$PATH:$HOME/.bds
-```
-
-
-
-### Installation on Kundaje lab clusters (mitra, nandi, vayu, kali, durga, wotan and amold) and SCG3 (scg3, carmack and crick)
-
-All dependencies including BDS have already been installed on lab servers. Find bds.config in the pipeline repo and move it to `$HOME/.bds/`.
-```
-$ mkdir -p $HOME/.bds
-$ cp bds.config $HOME/.bds/
-```
-
 
 
 ### How to run pipelines?
@@ -144,6 +178,19 @@ There is no limit for walltime and max. memory on Kundaje lab clusters.
 3) Resume pipeline with the same command line that you used for starting it. Previous successful stages will be automatically skipped.
 
 
+
+### Debugging BDS pipelines
+
+```
+# make BDS verbose
+$ bds -v chipseq.bds ...
+
+# display debugging information
+$ bds -d chipseq.bds ...
+
+# test run (this actually does nothing) to check input/output file names and commands
+$ bds -dryRun chipseq.bds ...
+```
 
 
 
@@ -322,19 +369,25 @@ shcmd_SLEEP_TEN_SECS_FOR_ALL_JOBS= echo "I am sleeping..."; sleep 10
 3) addpath
 
 If you just want to add something to your `$PATH`, use addpath instead of shcmd. It's much simpler. Use : or ; as a delimiter.
-
 ```
 addpath= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin/test
 ```
 
+4) conda_env and conda_env3
+
+You can also use Anaconda virtual environment in the pipeline. BDS pipelines usually take two conda environments since there is a conflict between softwares based on python3 and python2. Make sure that the environment corresponding to `conda_env` has python2 installed and that corresponding to `conda_env3` has python3 installed.
+```
+conda_env= [CONDA_ENV_NAME]		# python2 must be installed in this env.
+conda_env3= [CONDA_ENV_NAME_FOR_PY3] 	# python3 must be installed in this env.
+```
 
 
-### What are -mod, -shcmd and -addpath?
+
+### What are -mod, -shcmd, -addpath, -conda_env and -conda_env3?
 
 They are command line argument versions of `mod`, `shcmd` and `addpath`. However NO SUFFIX is allowed. For example,
-
 ```
-$ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin'
+$ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -conda_env my_env -conda_env3 my_env_py3
 ```
 
 
@@ -382,6 +435,9 @@ mem_spp = 4G
 wt_spp  = 10:00:00
 
 nth_macs2 = 2 	// You can also have resource settings for other tasks
+
+conda_env = my_conda_env_py2
+conda_env3 = my_conda_env_py3
 ...
 ```
 
@@ -389,7 +445,6 @@ Note that any pre-defined enviroment variables (like `$PATH`) should be referred
 
 Example environment file on scg3 (Stanford cluster).
 ```
-
 [scg3-ln01.stanford.edu, scg3-ln01.stanford.edu, carmack.stanford.edu, crick.stanford.edu : scg3] 	# four hostnames for SCG3
 [scg3] 	# alias
 

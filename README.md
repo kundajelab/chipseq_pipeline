@@ -19,60 +19,35 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 
 ### Installation instruction
 
+Install java (jdk >= 1.7 or jre >= 1.7) and the latest git on your system. 
+
+Install Anaconda Python3 (or Miniconda3) on your system. Open a new terminal after installation.
+
+Install BigDataScript v0.9999 on your system.
+
+See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
+
 Get the latest version of chipseq pipelines.
 ```
 $ git clone https://github.com/kundajelab/TF_chipseq_pipeline
 ```
 
-Install software dependencies automatically (DO NOT run this on kundaje clusters or scg3). You can specify destination for installation.
+Install software dependencies automatically (DO NOT run this on kundaje clusters or SCG3). It will create two conda environments (aquas_chipseq and aquas_chipseq_py3) in Miniconda3.
 ```
-$ cd TF_chipseq_pipeline
-$ ./install_dependencies.sh [ROOT_DIR]  # this will take longer than 30 minutes depending on your system
+$ ./install_dependencies.sh
 ```
-
-If you specify `[ROOT_DIR]`, add `-dir_sw [ROOT_DIR]` to the command line when you run pipeline. You can skip this if you installed without `[ROOT_DIR]`.
-```
-$ bds chipseq.bds ... -dir_sw [ROOT_DIR]
-```
-
-If you choose not to use `install_dependencies.sh` and want to manually install all external dependencies (softwares) for the pipeline, get BigDataScript v0.9999 first:
-```
-$ git clone https://github.com/pcingola/BigDataScript
-$ cd BigDataScript
-$ git checkout tags/v0.9999
-$ cp distro/bds_Linux.tgz $HOME
-$ cd $HOME
-$ tar zxvf bds_Linux.tgz
-```
-
-Manually install dependencies and setup your shell environments with an environment file that is later explained in this README.
 
 Replace BDS's default `bds.config` with a correct one:
 ```
-$ cd TF_chipseq_pipeline
-$ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds
 ```
 
-Add the following lines to your `$HOME/.bashrc` or `$HOME/.bash_profile`:
-```
-export PATH=$PATH:$HOME/.bds
-```
 
-If java memory occurs, add the following lines to your `$HOME/.bashrc` or `$HOME/.bash_profile`:
+### Installation instruction (for Kundaje lab clusters and SCG3)
+
+BDS and all dependencies have already been installed on lab servers (including SCG3). Do not run `install_dependencies.sh` on these servers. Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
 ```
-export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
-export MAX_JAVA_MEM="8G"
-export MALLOC_ARENA_MAX=4
-```
-
-
-### Installation instruction (for Kundaje lab members)
-
-For Kundaje lab members, BDS and all dependencies have already been installed on lab servers (including SCG3). Do not run `install_dependencies.sh` on Kundaje lab servers.
-
-Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
-```
+$ git clone https://github.com/kundajelab/TF_chipseq_pipeline
 $ cd TF_chipseq_pipeline
 $ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds/
@@ -80,7 +55,7 @@ $ cp bds.config $HOME/.bds/
 
 For Kundaje lab servers (mitra, nandi, durga, kali, vayu, amold and wotan) and SCG3 (carmack*, crick*, scg3*), the pipeline automatically determines the type of servers and set shell environments and species database.
 ```
-$ bds chipseq.bds [...]
+$ bds chipseq.bds ... -species [SPECIES; hg19, mm9, ... ]
 ```
 
 
@@ -136,7 +111,7 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 
 
-### Pipeline stages and Mapping only mode
+### Pipeline stages and Mapping-only mode
 
 The AQUAS transcription factor ChIP-Seq pipeline goes through the following stages:
 ```
@@ -185,6 +160,7 @@ The ENCODE ChIP-Seq pipeline can start from various types of data.
 4) tag
 5) peak
 ```
+Except for fastq, add `-pe` if your data set is paired-end.
 
 For repllicates:
 Define data path with `-[DATA_TYPE][REPLICATE_ID]`.
@@ -302,7 +278,7 @@ $ bds chipseq.bds \
 ### Peak calling method
 
 Define peak calling method with `-callpeak [METHOD]`, choose `[METHOD]` in `[spp, macs2]`. You can also choose both like `-callpeak spp,macs2` (default).
-If you want to on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate), use `-true_rep`.
+If you want to call peaks on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate) only, add `-true_rep`.
 
 Both spp and macs2 generate peaks but signal tracks (pvalue and fold enrichment) are generated from macs2 only. IDR analysis will take peaks from spp. For spp, no additional parameter is required. For macs2, define additional parameters (`-chrsz`, `-gensz`).
 
@@ -369,7 +345,7 @@ $ bds chipseq.bds \
 
 
 
-### Parallelization
+### Parallelization (IMPORTANT!)
 
 For completely serialized jobs:
 ```
@@ -380,7 +356,7 @@ You can also set up the level of parallelization for the pipeline.
 ```
 -par_lvl [PAR_LEVEL; 0-7]
 ```
-0: no parallel jobs (identical to `-no_par`, all subtasks for each replicate will also be serialized)
+0: no parallel jobs (equivalent to `-no_par`, all subtasks for each replicate will also be serialized)
 1: no replicates/controls in parallel (subtasks for each replicate can be parallelized)
 2: 2 replicates/controls in parallel
 3: 2 replicates/controls and 2 peak-callings in parallel (default)
@@ -412,7 +388,6 @@ The pipeline automatically generate a nice HTML report (Report.html) on its outp
 Move your output directory to a web directory (for example, /var/www/somewhere) or make a softlink of it to a web directory. For genome browser tracks, specify your web directory root for your output  While keeping its structure. Make sure that you have bgzip and tabix installed on your system.
 
 Add the following to the command line:
-
 ```
 -url_base http://your/url/to/output
 ```
@@ -452,21 +427,6 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 
 
 
-
-### Debugging pipeline
-
-```
-# make BDS verbose
-$ bds -v chipseq.bds ...
-
-# display debugging information
-$ bds -d chipseq.bds ...
-
-# test run (this actually does nothing) to check input/output file names and commands
-$ bds -dryRun chipseq.bds ...
-```
-
-
 ### List of all parameters for ChIP-Seq pipelines
 
 For advanced users, all command line parameters for the pipeline will be listed if you run bds chipseq.bds without any arguments.
@@ -476,7 +436,7 @@ $ bds chipseq.bds
 ```
 
 
-### How to set shell environments (What are mod, shcmd and addpath?)
+### How to set shell environments (What are `mod`, `shcmd`, `addpath`, `conda_env` and `conda_env3`?)
 
 It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. mod, shcmd and addpath are three convenient ways to define environment variables. Environment variables defined with mod, shcmd and addpath are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with mod. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
 
@@ -484,7 +444,7 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 They are command line argument versions of mod, shcmd and addpath. For example,
 ```
-$ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin'
+$ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -conda_env my_conda_env_py2 -conda_env3 my_conda_env_py3
 ```
 
 See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
@@ -493,7 +453,7 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 ### Using Environment file
 
-You can have mod, shcmd and addpath in your configuration file or `-mod` `-shcmd` and `-addpath` in your command line arguments, but it will be more convenient to have a separate file to define your own shell environments.
+You can have mod, shcmd and addpath in your configuration file or `-mod` `-shcmd` and `-addpath` in your command line arguments, but it will be more convenient to have a separate file to define your own shell environments. Please note that this environment file is NOT an Anaconda virtual environment.
 ```
 $ bds chipseq.bds ... -env [ENV_FILE]
 
@@ -512,7 +472,11 @@ mem_spp = 4G
 wt_spp  = 10:00:00
 
 nth_macs2 = 2 	// You can also have resource settings for other tasks
+
+conda_env  = my_conda_env_py2
+conda_env3 = my_conda_env_py3
 ...
+
 
 [crick.stanford.edu, crick2.stanford.edu]	# same environment settings are shared with multiple hostnames
 ...
@@ -525,8 +489,9 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 ### Software dependencies
 
-Recommended softwares and versions:
+IMPORTANT! Install dependencies with `install_dependencies.sh`. It will install them on Anaconda virtual environment (`aquas_chipseq` for python2 and `aquas_chipseq_py3` for python3) and you don't need super-user privileges.
 
+Recommended softwares and versions:
 ```
 bwa/0.7.10
 samtools/0.1.19
@@ -720,6 +685,13 @@ Replace `$HOME/.bds/bds.config` with the one in the repo.
 $ cp /path/to/repo/bds.config $HOME/.bds/
 ```
 
+
+7) Unable to access jarfile /picard.jar
+
+Define a shell variable `PICARDROOT` for your environment. Add the following to your `~/.bashrc` or conda `activate`:
+```
+export PICARDROOT=/path/to/your/picard-tool
+```
 
 
 ### Contributors

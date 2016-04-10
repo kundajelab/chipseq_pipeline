@@ -1,0 +1,20 @@
+bwa ==0.7.13
+samtools ==0.1.19
+bedtools ==2.19.1
+ucsc-wigtobigwig
+ucsc-bedgraphtobigwig
+ucsc-bigwiginfo
+ucsc-bedclip
+picard ==1.97
+python ==2.7.3
+deeptools ==2.2.2
+macs2 ==2.1.0
+r ==2.15.3
+#java-jdk ==7.0.91
+
+### packages that are not in official conda repos
+### run install_dependencies.sh to install these softwares
+# r-spp ==1.13
+# phantompeakqualtools ==2.0
+# align2rawsignal ==2.0
+# mcr ==2010b
