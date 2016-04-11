@@ -693,6 +693,12 @@ Define a shell variable `PICARDROOT` for your environment. Add the following to 
 export PICARDROOT=/path/to/your/picard-tool
 ```
 
+8) awk: cmd. line:1: fatal: division by zero attempted
+
+This error happens when picard tool's MarkDuplicate is running out of memory.
+Balance memory usage among parallel tasks, add `-no_par` or reduce level of parallelization (`-par_lvl [PARALLEL_LEVEL <= 2]`).
+
+
 
 ### Contributors
 
