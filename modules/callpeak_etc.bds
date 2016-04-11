@@ -4,9 +4,35 @@
 include "species.bds"
 include "report_graphviz.bds"
 
+help == callpeak etc settings
+npeak_filt	 	:= 500000 	help # top peaks filtered from a narrow peak files (default: 500000).
+
+
+string _filt_out_bad_npeaks( string npeakfile, string o_dir, string label ) {
+
+	prefix 		:= replace_dir( rm_ext( npeakfile, ["narrowPeak"] ), o_dir )
+	npeakfile_filt 	:= "$prefix.$npeak_filt.narrowPeak.gz"
+
+	in 	:= [ npeakfile ]
+	out 	:= npeakfile_filt
+	taskName:= "filt_out_bad_npeaks " + label
+
+	task ( out<-in ) {
+
+		sys $shcmd_init
+
+		// sort by 8th (-log10(pval) ) column and take top $npeak_filt lines
+		sys zcat $npeakfile | sort -grk8 | head -n $npeak_filt | gzip -c > $npeakfile_filt
+	}
+
+	wait_par()
+
+	return out	
+}
+
 
 string _naive_overlap_thresh( string filetype, string peak_pooled, string peak_rep1, string peak_rep2, \
-				string peak_ppr1, string peak_ppr2, string o_dir, string info ) {
+				string peak_ppr1, string peak_ppr2, string o_dir, string label ) {
 
 	prefix 	:= replace_dir( rm_ext( peak_pooled, ["narrowPeak","narrowpeak","broadPeak","broadpeak","gappedPeak","gappedpeak",filetype] ), o_dir )
 	peak_PooledInRep1AndRep2 	:= "$prefix.PooledInRep1AndRep2.$filetype.gz"
@@ -34,7 +60,7 @@ string _naive_overlap_thresh( string filetype, string peak_pooled, string peak_r
 	in 	:= [ peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2 ]
 	out 	:= peak_final
 	
-	taskName:= "naive_overlap_thresh " + info
+	taskName:= "naive_overlap_thresh " + label
 
 	task( out<-in ) {
 
@@ -64,19 +90,19 @@ string _naive_overlap_thresh( string filetype, string peak_pooled, string peak_r
 }
 
 string _naive_overlap_thresh_narrowpeak( string peak_pooled, string peak_rep1, string peak_rep2, \
-					 string peak_ppr1, string peak_ppr2, string o_dir, string info ) {
+					 string peak_ppr1, string peak_ppr2, string o_dir, string label ) {
 
-	return _naive_overlap_thresh( "narrowpeak", peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2, o_dir, info )
+	return _naive_overlap_thresh( "narrowpeak", peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2, o_dir, label )
 }
 
 string _naive_overlap_thresh_broadpeak( string peak_pooled, string peak_rep1, string peak_rep2, \
-					 string peak_ppr1, string peak_ppr2, string o_dir, string info ) {
+					 string peak_ppr1, string peak_ppr2, string o_dir, string label ) {
 
-	return _naive_overlap_thresh( "broadpeak", peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2, o_dir, info )
+	return _naive_overlap_thresh( "broadpeak", peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2, o_dir, label )
 }
 
 string _naive_overlap_thresh_gappedpeak( string peak_pooled, string peak_rep1, string peak_rep2, \
-					 string peak_ppr1, string peak_ppr2, string o_dir, string info ) {
+					 string peak_ppr1, string peak_ppr2, string o_dir, string label ) {
 
-	return _naive_overlap_thresh( "gappedpeak", peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2, o_dir, info )
+	return _naive_overlap_thresh( "gappedpeak", peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2, o_dir, label )
 }

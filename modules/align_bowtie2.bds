@@ -59,6 +59,63 @@ string[] _bowtie2( string fastq, string o_dir, string info ) {
 	return out
 }
 
+string[] _bowtie2( string fastq, string o_dir, string info ) {
+
+	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
+	bam 	:= "$prefix.bam"
+	log 	:= "$prefix.align.log"
+
+	in 	:= [ fastq ]
+	out 	:= [ bam, log ]
+
+	taskName:= "bowtie2 "+info
+	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
+
+	task( out<-in ) {
+
+		sys $shcmd_init
+
+		//sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) -S /dev/stdout 2> $log | \
+		//	samtools view -o $bam -b /dev/stdin
+		sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) 2> $log | \
+			samtools view -bS - > $bam
+	}
+
+	wait_par()
+
+	return out
+}
+
+string[] _bowtie2_csem( string fastq, string o_dir, string info ) {
+
+	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
+	sam 		:= "$prefix.sam"
+	log 		:= "$prefix.align.log"
+	srt_bam		:= "$prefix.csem.sorted.bam"
+	srt_bam_prefix 	:= "$prefix.csem"
+
+	in 	:= [ fastq ]
+	out 	:= [ srt_bam, log ]
+
+	taskName:= "bowtie2_csem "+info
+	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
+
+	task( out<-in ) {
+
+		sys $shcmd_init
+
+		sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) 2> $log > $sam
+
+		sys run-csem --sam -p $nth_bwt2 $sam 100 $srt_bam_prefix
+
+		sys rm -f $sam
+	}
+
+	wait_par()
+
+	return out
+}
+
 string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string info ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
@@ -79,6 +136,38 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string info ) 
 			-1 $fastq1 -2 $fastq2 \
 			2>$log | \
 			samtools view -bS - > $bam
+	}
+
+	wait_par()
+
+	return out
+}
+
+string[] _bowtie2_csem_PE( string fastq1, string fastq2, string o_dir, string info ) {
+
+	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
+	sam 		:= "$prefix.sam"
+	log 		:= "$prefix.align.log"
+	srt_bam		:= "$prefix.csem.sorted.bam"
+	srt_bam_prefix 	:= "$prefix.csem"
+
+	in 	:= [ fastq1, fastq2 ]
+	out 	:= [ srt_bam, log ]
+
+	taskName:= "bowtie2_csem_PE "+info
+	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
+
+	task( out<-in ) {
+
+		sys $shcmd_init
+
+		sys bowtie2 -X2000 --mm --threads $nth_bwt2 -x $bwt2_idx \
+			-1 $fastq1 -2 $fastq2 \
+			2>$log > $sam
+
+		sys run-csem --sam -p $nth_bwt2 $sam 100 $srt_bam_prefix
+
+		sys rm -f $sam
 	}
 
 	wait_par()

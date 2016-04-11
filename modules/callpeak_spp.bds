@@ -56,7 +56,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 
 	task( out<-in ) {
 
-		sys $shcmd_init
+		sys $shcmd_init_r2
 
 		sys Rscript $(which run_spp_nodups.R) -c=$tag -p=$nth_spp -i=$ctl_tag \
 			-npeak=$npeak -odir=$o_dir -speak=$fraglen -savn -savr -savp -rf -out=$ccscore

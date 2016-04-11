@@ -6,25 +6,30 @@ conda config --add channels bioconda
 conda config --add channels astro
 
 conda create -n aquas_chipseq --file requirements.txt -y
+conda create -n aquas_chipseq_r2 --file requirements_r2.txt -y
 conda create -n aquas_chipseq_py3 --file requirements_py3.txt -y
 
+function add_to_activate {
+  for i in "${CONTENTS[@]}"; do
+    if [ $(grep "$i" "$CONDA_INIT" | wc -l ) == 0 ]; then
+      echo $i >> "$CONDA_INIT"
+    fi
+  done
+}
 
 ############ install additional packages
 source activate aquas_chipseq
 
-CONDA_ACTIVATE=$(which activate)
+if [ $? != 0 ]; then
+  echo Anaconda environment not found!
+  exit
+fi
+
 CONDA_BIN=$(dirname $(which activate))
-CONDA_EXTRA="$CONDA_BIN/extras"
-
-mkdir -p $CONDA_EXTRA
-
-function add_to_activate {
-  for i in "${CONTENTS[@]}"; do
-    if [ $(grep "$i" "$CONDA_ACTIVATE" | wc -l ) == 0 ]; then
-      echo $i >> "$CONDA_ACTIVATE"
-    fi
-  done
-}
+CONDA_EXTRA="$CONDA_BIN/../extra"
+CONDA_ACTIVATE_D="$CONDA_BIN/../etc/conda/activate.d"
+CONDA_INIT="$CONDA_ACTIVATE_D/init.sh"
+mkdir -p $CONDA_EXTRA $CONDA_ACTIVATE_D
 
 ### BDS
 CONTENTS=("export PATH=\$PATH:\$HOME/.bds")
@@ -36,39 +41,11 @@ ln -s picard-1.97.jar picard.jar
 CONTENTS=("export PICARDROOT=$CONDA_BIN/../share/picard-1.97-0")
 add_to_activate
 
-#### install R 2.x.x packages
-cd $CONDA_EXTRA
-wget http://mitra.stanford.edu/kundaje/software/spp_1.13.tar.gz -N
-echo > tmp.R
-echo 'withCallingHandlers(install.packages("snow", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
-echo 'withCallingHandlers(install.packages("snowfall", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
-echo 'withCallingHandlers(install.packages("bitops", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
-echo 'withCallingHandlers(install.packages("caTools", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
-echo 'source("http://bioconductor.org/biocLite.R")' >> tmp.R
-echo 'biocLite("Rsamtools",suppressUpdates=TRUE)' >> tmp.R
-echo 'withCallingHandlers(install.packages("./spp_1.13.tar.gz"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
-export RHOME=$(R RHOME)
-Rscript tmp.R
-rm -f tmp.R spp_1.13.tar.gz
-CONTENTS=("export RHOME=\$(R RHOME)")
-add_to_activate
-
-#### install run_spp.R (Anshul's phantompeakqualtool)
-cd $CONDA_EXTRA
-wget https://phantompeakqualtools.googlecode.com/files/ccQualityControl.v.1.1.tar.gz -N
-tar zxvf ccQualityControl.v.1.1.tar.gz
-rm -f ccQualityControl.v.1.1.tar.gz
-chmod 755 -R phantompeakqualtools
-cd $CONDA_BIN
-CONTENTS=("export PATH=\$PATH:$CONDA_EXTRA/phantompeakqualtools")
-add_to_activate
-
 #### install Wiggler (for generating signal tracks)
 cd $CONDA_EXTRA
 wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz -N
 tar zxvf align2rawsignal.2.0.tgz
 rm -f align2rawsignal.2.0.tgz
-cd $CONDA_BIN
 CONTENTS=("export PATH=\$PATH:$CONDA_EXTRA/align2rawsignal/bin")
 add_to_activate
 
@@ -93,5 +70,46 @@ CONTENTS=(
 "export XAPPLRESDIR")
 add_to_activate
 
+source deactivate
+
+
+source activate aquas_chipseq_r2
+
+if [ $? != 0 ]; then
+  echo Anaconda environment not found!
+  exit
+fi
+
+CONDA_BIN=$(dirname $(which activate))
+CONDA_EXTRA="$CONDA_BIN/../extra"
+CONDA_ACTIVATE_D="$CONDA_BIN/../etc/conda/activate.d"
+CONDA_INIT="$CONDA_ACTIVATE_D/init.sh"
+mkdir -p $CONDA_EXTRA $CONDA_ACTIVATE_D
+
+#### install R 2.x.x packages
+cd $CONDA_EXTRA
+wget http://mitra.stanford.edu/kundaje/software/spp_1.13.tar.gz -N
+echo > tmp.R
+echo 'withCallingHandlers(install.packages("snow", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
+echo 'withCallingHandlers(install.packages("snowfall", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
+echo 'withCallingHandlers(install.packages("bitops", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
+echo 'withCallingHandlers(install.packages("caTools", repos="http://cran.us.r-project.org"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
+echo 'source("http://bioconductor.org/biocLite.R")' >> tmp.R
+echo 'biocLite("Rsamtools",suppressUpdates=TRUE)' >> tmp.R
+echo 'withCallingHandlers(install.packages("./spp_1.13.tar.gz"),warning = function(w) quit(save = "no", status = 1, runLast = FALSE))' >> tmp.R
+export RHOME=$(R RHOME)
+Rscript tmp.R
+rm -f tmp.R spp_1.13.tar.gz
+CONTENTS=("export RHOME=\$(R RHOME)")
+add_to_activate
+
+#### install run_spp.R (Anshul's phantompeakqualtool)
+cd $CONDA_EXTRA
+wget https://phantompeakqualtools.googlecode.com/files/ccQualityControl.v.1.1.tar.gz -N
+tar zxvf ccQualityControl.v.1.1.tar.gz
+rm -f ccQualityControl.v.1.1.tar.gz
+chmod 755 -R phantompeakqualtools
+CONTENTS=("export PATH=\$PATH:$CONDA_EXTRA/phantompeakqualtools")
+add_to_activate
 
 source deactivate

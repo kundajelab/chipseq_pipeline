@@ -6,9 +6,10 @@ include "species.bds"
 
 help == callpeak macs2 settings (requirements: -chrsz -gensz)
 //help *resources: 
-nth_macs2	:= 2 		help # threads for MACS2 (default: 2)
-wt_macs2	:= "10h"	help Walltime for MACS2 (default: 10h, 10:00:00).
-mem_macs2	:= "8G" 	help Max. memory for MACS2 (default: 8G).
+nth_macs2		:= 2 		help # threads for MACS2 (default: 2)
+wt_macs2		:= "10h"	help Walltime for MACS2 (default: 10h, 10:00:00).
+mem_macs2		:= "8G" 	help Max. memory for MACS2 (default: 8G).
+pval_thresh_macs2	:= "0.01" 	help P-value threshold in MACS2 peak calling (default: 0.01).
 
 
 init_callpeak_macs2()
@@ -16,14 +17,17 @@ init_callpeak_macs2()
 
 void init_callpeak_macs2() {
 
-	nth_macs2 	= get_conf_val_int( nth_macs2,		["nth_macs2"] )
-	wt_macs2 	= get_conf_val( wt_macs2, 		["wt_macs2"] )
-	mem_macs2 	= get_conf_val( mem_macs2, 		["mem_macs2"] )
+	nth_macs2 		= get_conf_val_int( nth_macs2,		["nth_macs2"] )
+	wt_macs2 		= get_conf_val( wt_macs2, 		["wt_macs2"] )
+	mem_macs2 		= get_conf_val( mem_macs2, 		["mem_macs2"] )
+
+	pval_thresh_macs2 	= get_conf_val( pval_thresh_macs2, 	["pval_thresh_macs2"] )
 
 	print("\n\n== callpeak macs2 settings\n")
-	print( "# threads (macs2)\t: $nth_macs2\n")
-	print( "Walltime (macs2)\t: $wt_macs2\n")
-	print( "Max. memory (macs2)\t: $mem_macs2\n")
+	print( "# threads (macs2)\t\t: $nth_macs2\n")
+	print( "Walltime (macs2)\t\t: $wt_macs2\n")
+	print( "Max. memory (macs2)\t\t: $mem_macs2\n")
+	print( "P-value threshold (macs2)\t: $pval_thresh_macs2\n")
 }
 
 void chk_callpeak_macs2() {
@@ -72,7 +76,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string o_dir, strin
 		//==========================================
 		//# Generate narrow peaks and preliminary signal tracks
 		//============================================
-		sys macs2 callpeak -t $tag $ctl -f BED -n $o_dir/$prefix_basename -g $gensz -p 1e-2 --nomodel --shift 0 --extsize $fraglen --keep-dup all -B --SPMR
+		sys macs2 callpeak -t $tag $ctl -f BED -n $o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --nomodel --shift 0 --extsize $fraglen --keep-dup all -B --SPMR
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $npeakfile
@@ -85,7 +89,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string o_dir, strin
 		//===========================================
 		//# Generate Broad and Gapped Peaks
 		//============================================
-		sys macs2 callpeak -t $tag $ctl -f BED -n $o_dir/$prefix_basename -g $gensz -p 1e-2 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
+		sys macs2 callpeak -t $tag $ctl -f BED -n $o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
 
 		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $bpeakfile
@@ -156,8 +160,45 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string o_dir, strin
 string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string label ) {
 
 	prefix 	:= replace_dir( rm_ext( non_mito_bed, "bed" ), o_dir ) + ".pf"
+	//prefix 	:= replace_dir( rm_ext( non_mito_bed, "bed", "tagAlign" ), o_dir ) + ".pf"
+	
+	// peaks
+	pval_str 	:= (pval_thresh_macs2=="0.01") ? "" : ".pval$pval_thresh_macs2"
 
-	peakfile 	:= "$prefix"+"_peaks.narrowPeak.gz"
+	peakfile 	:= "$prefix$pval_str.narrowPeak.gz"
+	bpeakfile	:= "$prefix$pval_str.broadPeak.gz"
+	gpeakfile	:= "$prefix$pval_str.gappedPeak.gz"
+
+	taskName:= "macs2_atac_callpeak "+label
+	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
+
+	task( [ peakfile, bpeakfile, gpeakfile ]<-[ non_mito_bed ] ) {
+	
+		sys $shcmd_init
+		sys LC_COLLATE=C
+
+		sys adjustedBed="slopBed -i $non_mito_bed -g $chrsz -l 75 -r -75 -s"
+		sys macs2 callpeak \
+			-t <(${adjustedBed}) -f BED -n "$prefix" -g "$gensz" -p $pval_thresh_macs2 \
+			--nomodel --shift "$fraglen" -B --SPMR --keep-dup all --call-summits
+
+		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
+		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $peakfile
+		sys rm -f "$prefix"_peaks.narrowPeak
+
+		sys macs2 callpeak \
+			-t <(${adjustedBed}) -f BED -n "$prefix" -g "$gensz" -p $pval_thresh_macs2 \
+			--nomodel --shift "$fraglen" --broad --keep-dup all
+
+		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
+		sys sort -k 8gr,8gr "$prefix"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $bpeakfile
+		sys sort -k 14gr,14gr "$prefix"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $gpeakfile
+		sys rm -f "$prefix"_peaks.broadPeak
+		sys rm -f "$prefix"_peaks.gappedPeak
+	}
+
+	// signal tracks
+
 	fc_bedgraph 	:= "$prefix.fc.signal.bedgraph"
 	fc_bedgraph_srt	:= "$prefix.fc.signal.srt.bedgraph"	
 	fc_bigwig 	:= "$prefix.fc.signal.bigwig"
@@ -165,24 +206,13 @@ string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string 
 	pval_bedgraph_srt := "$prefix.pval.signal.srt.bedgraph"	
 	pval_bigwig 	:= "$prefix.pval.signal.bigwig"
 
-	in 	:= [ non_mito_bed ]
-	out 	:= [ peakfile, fc_bigwig, pval_bigwig ]
+	taskName= "macs2_atac_bdgcmp "+label
+	cpus	= 1;		mem = get_res_mem(mem_macs2);	timeout = get_res_wt(wt_macs2)
 
-	taskName:= "macs2_atac "+label
-	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
+	task( [ fc_bigwig, pval_bigwig ]<-[ non_mito_bed ] ) {
 
-	task( out<-in ) {
-	
 		sys $shcmd_init
 		sys LC_COLLATE=C
-
-		sys adjustedBed="slopBed -i $non_mito_bed -g $chrsz -l 75 -r -75 -s"
-		sys macs2 callpeak \
-			-t <(${adjustedBed}) -f BED -n "$prefix" -g "$gensz" -p 1e-2 \
-			--nomodel --shift "$fraglen" -B --SPMR --keep-dup all --call-summits
-
-		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $peakfile
 
 		sys macs2 bdgcmp \
 			-t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg \
@@ -210,6 +240,9 @@ string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string 
 
 		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
 	}
+
+	in 	:= [ non_mito_bed ]
+	out 	:= [ peakfile, fc_bigwig, pval_bigwig ]
 
 	wait_par_peak( out<-in )
 

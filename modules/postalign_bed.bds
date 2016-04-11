@@ -150,6 +150,7 @@ string _shift_tag( string tag, string o_dir, string label ) {
 	
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	shifted_tag 	:= "$prefix.shifted.tagAlign.gz"
+	//shifted_tag 	:= "$prefix.tn5.tagAlign.gz"
 
 	in 	:= [ tag ]
 	out 	:= shifted_tag
@@ -188,7 +189,7 @@ string[] _xcor( string tag, string o_dir, string label, string label_in, string 
 
 	task( out<-in ) {
 
-		sys $shcmd_init
+		sys $shcmd_init_r2
 
 		//# CCSCORE FILE format
 		//# Filename <tab> numReads <tab> estFragLen <tab> correstFragLen <tab> PhantomPeak <tab> corrphantomPeak <tab> argmincorr <tab> mincorr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag

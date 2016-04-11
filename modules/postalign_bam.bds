@@ -418,6 +418,7 @@ string _bam_to_bed_atac( string nodup_bam, string o_dir, string label ) {
 	non_mito_bam_hist_grp := "$non_mito_bam.hist_graph.pdf"
 	non_mito_bam_hist_log := "$non_mito_bam.hist_data.log"
 	bed 	:= "$prefix.nonchrM.tn5.bed.gz"
+	//bed 	:= "$prefix.tn5.bed.gz"
 
 	in 	:= [nodup_bam]
 	out 	:= bed //, mito_bam, non_mito_bam, non_mito_bam_hist_grp ]
