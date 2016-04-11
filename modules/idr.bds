@@ -2,6 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
+include "report_graphviz.bds"
 
 
 help == idr settings

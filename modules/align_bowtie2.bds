@@ -2,6 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
+include "report_graphviz.bds"
 
 
 help == align bowtie2 settings (requirements: -bwt2_idx)

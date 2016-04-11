@@ -2,6 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
+include "report_graphviz.bds"
 
 
 string _naive_overlap_thresh( string filetype, string peak_pooled, string peak_rep1, string peak_rep2, \
