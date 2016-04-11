@@ -9,6 +9,7 @@ picard ==1.97
 python ==2.7.3
 deeptools ==2.2.2
 macs2 ==2.1.0
+boost ==1.57.0
 r ==2.15.3
 
 ## picard tool does not have a shell variable PICARDROOT and jar is not picard.jar but picard-1.97.jar
