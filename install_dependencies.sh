@@ -1,8 +1,12 @@
 #!/bin/bash
 
 ############ install in conda env.
-conda create -n aquas_chipseq --file requirements.txt --channel astro -y
-conda create -n aquas_chipseq_py3 --file requirements_py3.txt --channel bioconda -y
+conda config --add channels r
+conda config --add channels bioconda
+conda config --add channels astro
+
+conda create -n aquas_chipseq --file requirements.txt -y
+conda create -n aquas_chipseq_py3 --file requirements_py3.txt -y
 
 
 ############ install additional packages

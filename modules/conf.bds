@@ -116,7 +116,9 @@ string{} read_conf( string file, string section ) {
 		}
 	}
 
-	if ( !found_section ) read_conf( file, "default" )
+	if ( !found_section ) {
+		return read_conf( file, "default" )
+	}
 
 	return ret
 }
