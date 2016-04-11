@@ -52,7 +52,7 @@ string[] _gem( string tag, string ctl_tag, string o_dir, string info ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys export _JAVA_OPTIONS="-Xms256M $Xmx"; export MAX_JAVA_MEM=$mem_gem;
 		

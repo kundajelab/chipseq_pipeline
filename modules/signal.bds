@@ -77,7 +77,7 @@ string _tag_to_bdg( string tag, string fraglen, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys align2rawsignal -i=$tag -o=$bedgraph -s=$seq -u=$umap -of=bg -l=$fraglen -mm=4
 	}
@@ -101,7 +101,7 @@ string _bdg_to_bw( string bedgraph, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 		
 		sys sort -k1,1 -k2,2n $bedgraph > $sorted_bg
 
@@ -126,7 +126,7 @@ string _tag_to_wig( string tag, string fraglen, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys align2rawsignal -i=$tag -o=$wig -s=$seq -u=$umap -of=wig -l=$fraglen -mm=4
 	}
@@ -154,7 +154,7 @@ string _bam_to_bw( string filt_bam, string o_dir, string label, string label_in,
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys bamCoverage -v -b $filt_bam -o $bigwig -of bigwig -p $nth_bam_cvrg $param_bam_cvrg
 	}

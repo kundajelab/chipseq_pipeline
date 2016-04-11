@@ -10,10 +10,14 @@ python ==2.7.3
 deeptools ==2.2.2
 macs2 ==2.1.0
 r ==2.15.3
-#java-jdk ==7.0.91
 
-### packages that are not in official conda repos
-### run install_dependencies.sh to install these softwares
+## picard tool does not have a shell variable PICARDROOT and jar is not picard.jar but picard-1.97.jar
+## a softlink picard.jar will be created and linked to it in install_dependencies.sh
+## also PICARDROOT will be defined in conda activate.
+
+## there are packages that are not in official conda repos
+## run install_dependencies.sh to install these softwares
+
 # r-spp ==1.13
 # phantompeakqualtools ==2.0
 # align2rawsignal ==2.0

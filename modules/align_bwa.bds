@@ -9,10 +9,10 @@ help == align bwa settings (requirements: -bwa_idx)
 param_bwa_aln	:= "-q 5 -l 32 -k 2" 	help Parameters for bwa aln (default: "-q 5 -l 32 -k 2").
 //help *resources
 nth_bwa_aln	:= 2 			help # threads for bwa aln (default: 2).
-wt_bwa_aln	:= "10h"		help Walltime for bwa aln (default: 10h, 10:00:00).
-mem_bwa_aln	:= "8G"	 		help Max. memory for bwa aln (default: 8G).
-wt_bwa_sam	:= "12h"		help Walltime for bwa sampe/samse (default: 12h, 12:00:00).
-mem_bwa_sam	:= "8G"			help Max. memory for bwa sampe/samse (default: 8G).
+wt_bwa_aln	:= "23h"		help Walltime for bwa aln (default: 23, 23:00:00).
+mem_bwa_aln	:= "10G"	 	help Max. memory for bwa aln (default: 10G).
+wt_bwa_sam	:= "23h"		help Walltime for bwa sampe/samse (default: 23h, 23:00:00).
+mem_bwa_sam	:= "12G"		help Max. memory for bwa sampe/samse (default: 12G).
 
 
 init_align_bwa()
@@ -124,7 +124,7 @@ string _bwa_aln( string fastq, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//# Map reads to create raw SAM file
 		sys bwa aln $param_bwa_aln -t $nth_bwa_aln $bwa_idx $fastq > $sai
@@ -149,7 +149,7 @@ string[] _bwa_sam( string fastq, string sai, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su - | samtools sort - $prefix
 		sys samtools flagstat $bam > $qc
@@ -176,7 +176,7 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 		
 		sys bwa sampe $bwa_idx $sai1 $sai2 $fastq1 $fastq2 | gzip -c > $sam
 

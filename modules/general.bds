@@ -26,8 +26,8 @@ conda_env 	:= ""		help Environment name for anaconda python2.
 conda_env3 	:= ""		help Environment name for anaconda python3.
 
 
-SHCMD_INIT 	:= ""  // Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
-SHCMD_INIT_PY3	:= ""  // for softwares using python3
+shcmd_init 	:= ""  // Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
+shcmd_init_py3	:= ""  // for softwares using python3
 
 cnt_rep 	:= 0 	// # of rep/ctl processed
 cnt_peak	:= 0	// # of peaks processed
@@ -124,10 +124,6 @@ void init_shell_env() {
 	moduleshome := get_shell_var("MODULESHOME").replace("\n","")
 	if (moduleshome!="") init_mods.add("$moduleshome/init/bash")
 
-	// check if conda is installed
-//	conda_exists := get_stdout("conda activate")
-//print("\nDEBUG: conda_exists\n\n")
-
 	string shellcmd, module, path, conda_py2, conda_py3
 
 	// find env. modules init script
@@ -204,22 +200,22 @@ void init_shell_env() {
 
 	// add conda env
 	if ( conda_env != "" ) {
-		conda_py2 = "source activate $conda_env; "
+		conda_py2 = "if [[ -f $(which activate) ]]; then source activate $conda_env; fi; "
 	}
 
 	if ( conda_env3 != "" ) {
-		conda_py3 = "source activate $conda_env3; "
+		conda_py3 = "if [[ -f $(which activate) ]]; then source activate $conda_env3; fi; "
 	}
 
 	// additional initialization
-	SHCMD_INIT += (module + path + shellcmd)
-	SHCMD_INIT = SHCMD_INIT.replace( ": :", ":" ).replace( "::", ":" ).replace( "; ;", ";" ).replace( ";;", ";" )
+	shcmd_init_ := module + path + shellcmd
+	shcmd_init_ = shcmd_init_.replace( ": :", ":" ).replace( "::", ":" ).replace( "; ;", ";" ).replace( ";;", ";" )
 
-	SHCMD_INIT_PY3 	= conda_py3 + SHCMD_INIT
-	SHCMD_INIT 	= conda_py2 + SHCMD_INIT
+	shcmd_init 	= conda_py2 + shcmd_init_
+	shcmd_init_py3 	= conda_py3 + shcmd_init_
 
-	print( "\nShell command for initialization\t: $SHCMD_INIT\n" )
-	print( "\nShell command for initialization (py3)\t: $SHCMD_INIT_PY3\n" )
+	print( "\nShell command for initialization\t: $shcmd_init\n" )
+	print( "\nShell command for initialization (py3)\t: $shcmd_init_py3\n" )
 }
 
 string get_rel_path( string path ) {

@@ -45,7 +45,7 @@ string[] _bowtie2( string fastq, string o_dir, string info ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) -S /dev/stdout 2> $log | \
 		//	samtools view -o $bam -b /dev/stdin
@@ -72,7 +72,7 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string info ) 
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys bowtie2 -X2000 --mm --threads $nth_bwt2 -x $bwt2_idx \
 			-1 $fastq1 -2 $fastq2 \

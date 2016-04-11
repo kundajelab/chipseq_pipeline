@@ -73,7 +73,7 @@ string[] _dedup_bam( string bam, string o_dir, string label, string label_in, st
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//# =============================
 		//# Remove  unmapped, mate unmapped
@@ -166,7 +166,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string label, string label_in,
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//# =============================
 		//# Remove  unmapped, mate unmapped
@@ -259,7 +259,7 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys samtools sort -n $bam $nmsrt_bam_prefix
 	}
@@ -283,7 +283,7 @@ string _srt_bam( string bam, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//sys samtools sort -Ttmp -l0 -Obam $bam -o $srt_bam
 		//sys samtools index $srt_bam $srt_bam.bai
@@ -324,7 +324,7 @@ string _bam_to_tag( string bam, string o_dir, string label, \
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 	
 		//# Create SE tagAlign file
 		sys bedtools bamtobed -i $bam | awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}' | gzip -c > $tag
@@ -362,7 +362,7 @@ string _bam_to_bedpe( string bam, string o_dir, string label, \
 
 		task( out <- nmsrt_bam ) {
 
-			sys $SHCMD_INIT
+			sys $shcmd_init
 
 			//# Create BEDPE file
 			sys bedtools bamtobed -bedpe -mate1 -i $nmsrt_bam | gzip -c > $bedpe
@@ -396,7 +396,7 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys zcat $bedpe | awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}' | \
 			gzip -c > $tag
@@ -425,7 +425,7 @@ string _bam_to_bed_atac( string nodup_bam, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys nonMitoChromosomes=$(samtools view -H "$nodup_bam" | \
 					grep chr | cut -f2 | sed 's/SN://g' | grep -v chrM)

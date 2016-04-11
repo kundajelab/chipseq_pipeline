@@ -32,7 +32,7 @@ string _html_graphviz() { // graphviz diagram
 
 	// run graphviz
 	task {
-		sys $SHCMD_INIT
+		sys $shcmd_init
 		sys cat $dot_tmp | awk '!x[$0]++' > $dot 	# remove duplicate lines
 		sys dot -Tsvg $dot > $svg 			# dot to svg
 		sys rm -f $dot_tmp

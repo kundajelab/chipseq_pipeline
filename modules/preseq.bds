@@ -36,7 +36,7 @@ string _preseq( string srt_bam, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//sys which gnuplot
 

@@ -37,7 +37,7 @@ string _naive_overlap_thresh( string filetype, string peak_pooled, string peak_r
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//# Find pooled peaks that overlap Rep1 and Rep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  >= 0.5
 		sys intersectBed -wo -a $peak_pooled -b $peak_rep1 | \

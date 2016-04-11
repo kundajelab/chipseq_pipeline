@@ -66,7 +66,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string o_dir, strin
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 		sys LC_COLLATE=C
 		
 		//==========================================
@@ -173,7 +173,7 @@ string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string 
 
 	task( out<-in ) {
 	
-		sys $SHCMD_INIT
+		sys $shcmd_init
 		sys LC_COLLATE=C
 
 		sys adjustedBed="slopBed -i $non_mito_bed -g $chrsz -l 75 -r -75 -s"

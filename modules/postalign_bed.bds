@@ -35,7 +35,7 @@ string _subsample_tag( string tag, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 	
 		//# Subsample tagAlign file
 		sys zcat $tag | \
@@ -69,7 +69,7 @@ string _subsample_tag_PE( string tag, string o_dir, string label, \
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		// join two consecutive lines in tag, subsample it and then take one read per pair
 		sys zcat $tag | sed 'N;s/\n/\t/' | \
@@ -106,7 +106,7 @@ string _subsample_bedpe_to_tag( string bedpe, string o_dir, string label, \
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//# Subsample tagAlign file
 		//# Restrict to one read end per pair for CC analysis
@@ -135,7 +135,7 @@ string _subsample_bedpe( string bedpe, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys zcat $bedpe | grep -v "chrM" | shuf -n $nreads | gzip -c > $subsampled_bedpe
 	}
@@ -157,7 +157,7 @@ string _shift_tag( string tag, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		sys zcat $tag | awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' | gzip -c > $shifted_tag
 	}
@@ -187,7 +187,7 @@ string[] _xcor( string tag, string o_dir, string label, string label_in, string 
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//# CCSCORE FILE format
 		//# Filename <tab> numReads <tab> estFragLen <tab> correstFragLen <tab> PhantomPeak <tab> corrphantomPeak <tab> argmincorr <tab> mincorr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag
@@ -225,7 +225,7 @@ string[] _spr( string tag, string o_dir, string label, string label_in, string l
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//# Get total number of read pairs
 		sys nlines=$( zcat $tag | wc -l )
@@ -270,7 +270,7 @@ string[] _spr_PE( string bedpe, string o_dir, string label, \
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		//# Get total number of read pairs
 		sys nlines=$( zcat $bedpe | wc -l )
@@ -319,7 +319,7 @@ string[] _spr_tag_PE( string tag, string o_dir, string label, \
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 
 		// join consecutive two lines into one
 		sys zcat $tag | sed 'N;s/\n/\t/' > $joined
@@ -388,7 +388,7 @@ string _pool_tag( string tag1, string tag2, string o_dir, string label ) {
 
 	task( out<-in ) {
 
-		sys $SHCMD_INIT
+		sys $shcmd_init
 		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled		
 	}
 
