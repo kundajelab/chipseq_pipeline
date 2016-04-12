@@ -487,9 +487,17 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 
 
-### Software dependencies
+### Requirements 
 
-IMPORTANT! Install dependencies with `install_dependencies.sh`. It will install them on Anaconda virtual environment (`aquas_chipseq` for python2 and `aquas_chipseq_py3` for python3) and you don't need super-user privileges.
+For python2 (python 2.x >= 2.7), <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements.txt" target=_blank>here</a>
+
+For python3, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements_py3.txt" target=_blank>here</a>
+
+For R-2.x, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements_r2.txt" target=_blank>here</a>
+
+IMPORTANT! Install dependencies with `install_dependencies.sh`. It will install them on Anaconda virtual environment (`aquas_chipseq` for python2, `aquas_chipseq_py3` for python3 and `aquas_chipseq_r2` for R-2.x) and you don't need super-user privileges.
+
+However, if you are a super-user, it's recommended to install the following softwares on the system and share it with your colleagues.
 
 Recommended softwares and versions:
 ```
@@ -502,14 +510,14 @@ MACS2/2.1.0
 java/7
 gem/2.6
 r/2.15.1
-deepTools/1.5.12
+deepTools/2.2.3
 align2rawsignal/2.0
 phantompeakqualtools/2.0
 idr/latest (https://github.com/nboley/idr)
 MCR2010b
 
 python/2.7.2
-	packages: numpy, matplotlib, pysam==0.8.2, pyBigwig, scipy, python-levenshtein, deepTools==1.5.12
+	packages: numpy, matplotlib, pysam, pyBigwig, scipy, python-levenshtein, deepTools==2.2.3
 
 python/3.4.3
 	packages: numpy, matplotlib, scipy, idr

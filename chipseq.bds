@@ -767,9 +767,9 @@ string _html_chipseq_files() {
 
 	html := "<div id='chipseq_files'><b>Directories and files</b>"
 
-	html += "<table id='chipseq_filetable'> <caption>"+\
-		"<a href='#' onclick=\"jQuery('#chipseq_filetable').treetable('expandAll'); return false;\">Expand all</a> &nbsp&nbsp" + \
-		"<a href='#' onclick=\"jQuery('#chipseq_filetable').treetable('collapseAll'); return false;\">Collapse all</a>" + \
+	html += "<table id='filetable'> <caption>"+\
+		"<a href='#' onclick=\"jQuery('#filetable').treetable('expandAll'); return false;\">Expand all</a> &nbsp&nbsp" + \
+		"<a href='#' onclick=\"jQuery('#filetable').treetable('collapseAll'); return false;\">Collapse all</a>" + \
 		"</caption> <thead><tr><th>Files</th><th>Path</th></tr></thead> <tbody>"
 
 	for ( int ctl=0; ctl <= num_ctl; ctl++) {
