@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import sys,glob,gzip,os
 
 # axt format: http://genome.ucsc.edu/goldenPath/help/axt.html

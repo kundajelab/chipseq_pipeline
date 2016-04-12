@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import sys,os
 sys.path.append('/home/xzhou/subtleKnife/script/genescript')
 import parseUcscgenestruct

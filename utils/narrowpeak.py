@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import sys,os
 
 if len(sys.argv)!=3:
