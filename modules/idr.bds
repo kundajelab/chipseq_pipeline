@@ -230,13 +230,26 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, string idr_ppr, string o_dir, string label, \
 			string label_in1, string label_in2, string label_in3, string label_in4 ) {
 
-	if ( !path_exists( blacklist_idr ) ) return [""]
+	string idr_tr_filt, idr_ppr_filt
+
+	string remarks
+
+	if ( path_exists( blacklist_idr ) ) {
+		
+		idr_tr_filt 	= _filter_idr_peak( idr_tr, o_dir, "true" )
+		idr_ppr_filt 	= _filter_idr_peak( idr_ppr, o_dir, "ppr" )
+		wait
+
+		remarks		= "filtered tr and ppr"
+	}
+	else {
+		idr_tr_filt 	= idr_tr
+		idr_ppr_filt 	= idr_ppr
+
+		remarks		= "no blacklist"
+	}
 
 	// compute IDR scores
-	idr_tr_filt 	:= _filter_idr_peak( idr_tr, o_dir, "true" )
-	idr_ppr_filt 	:= _filter_idr_peak( idr_ppr, o_dir, "ppr" )
-
-	wait
 
 	Nt :=  get_no_lines( idr_tr_filt )
 	N1 :=  get_no_lines( idr_pr_rep1 ) 
@@ -277,8 +290,8 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 
 		sys $shcmd_init
 
-		sys echo -e "Nt\tN1\tN2\tNp\tconservative_set\toptimal_set\trescue_ratio\tself_consistency_ratio\treproducibility" > $qc
-		sys echo -e "$Nt\t$N1\t$N2\t$Np\t$conservative_set\t$optimal_set\t$rescue_ratio\t$self_consistency_ratio\t$reproducibility" >> $qc
+		sys echo -e "Nt\tN1\tN2\tNp\tconservative_set\toptimal_set\trescue_ratio\tself_consistency_ratio\treproducibility\tremarks" > $qc
+		sys echo -e "$Nt\t$N1\t$N2\t$Np\t$conservative_set\t$optimal_set\t$rescue_ratio\t$self_consistency_ratio\t$reproducibility\t$remarks" >> $qc
 	}
 
 	wait_par()
