@@ -67,7 +67,7 @@ string[] _bwa( string fastq, string o_dir, string label, string label_in, string
 		sai.rm() // delete intermediate file sai		
 	}
 
-	_add_to_graphviz( ["$label_in"], [fastq], ["$label_out"], [bam], "bwa\\n($label)", grp_color_bwa )
+	_add_to_graphviz( [label_in], [fastq], [label_out], [bam], "bwa\\n($label)", grp_color_bwa )
 
 	wait_par()
 
@@ -106,7 +106,7 @@ string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string label, stri
 
 	wait_par()
 
-	_add_to_graphviz( ["$label_in1","$label_in2"], [fastq1,fastq2], ["$label_out"], [bam], "bwa\\n($label)", grp_color_bwa )
+	_add_to_graphviz( [label_in1,label_in2], [fastq1,fastq2], ["$label_out"], [bam], "bwa\\n($label)", grp_color_bwa )
 
 	return out
 }

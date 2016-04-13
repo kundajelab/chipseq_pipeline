@@ -272,6 +272,11 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 
 string _srt_bam( string bam, string o_dir, string label ) {
 
+	return _srt_bam( bam, o_dir, label, "bam\\n($label)", "srt_bam\\n($label)" )
+}
+
+string _srt_bam( string bam, string o_dir, string label, string label_in, string label_out ) {
+
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	srt_bam 	:= "$prefix.srt.bam"
 	srt_bam_prefix 	:= "$prefix.srt"
@@ -297,6 +302,8 @@ string _srt_bam( string bam, string o_dir, string label ) {
 			cp $srt_bam.bai $srt_bam_idx; \
 			fi
 	}
+
+	_add_to_graphviz( [label_in], [bam], [label_out], [srt_bam] )
 
 	wait_par()
 
@@ -410,9 +417,14 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 	return out
 }
 
-string _bam_to_bed_atac( string nodup_bam, string o_dir, string label ) {
+string _bam_to_bed_atac( string filt_bam, string o_dir, string label ) {
 
-	prefix 		:= replace_dir( rm_ext( nodup_bam, "bam" ), o_dir )
+	return _bam_to_bed_atac( filt_bam, o_dir, label, "filt_bam\\n($label)", "tagalign\\n($label)" )
+}
+
+string _bam_to_bed_atac( string filt_bam, string o_dir, string label, string label_in, string label_out ) {
+
+	prefix 		:= replace_dir( rm_ext( filt_bam, "bam" ), o_dir )
 	mito_bam 	:= "$prefix.chrM.bam"
 	non_mito_bam 	:= "$prefix.nonchrM.bam"
 	non_mito_bam_hist_grp := "$non_mito_bam.hist_graph.pdf"
@@ -420,7 +432,7 @@ string _bam_to_bed_atac( string nodup_bam, string o_dir, string label ) {
 	//bed 	:= "$prefix.nonchrM.tn5.bed.gz"
 	bed 	:= "$prefix.tn5.bed.gz"
 
-	in 	:= [nodup_bam]
+	in 	:= [filt_bam]
 	out 	:= bed //, mito_bam, non_mito_bam, non_mito_bam_hist_grp ]
 
 	taskName:= "bam_to_bed_atac " + label
@@ -429,11 +441,11 @@ string _bam_to_bed_atac( string nodup_bam, string o_dir, string label ) {
 
 		sys $shcmd_init
 
-		sys nonMitoChromosomes=$(samtools view -H "$nodup_bam" | \
+		sys nonMitoChromosomes=$(samtools view -H "$filt_bam" | \
 					grep chr | cut -f2 | sed 's/SN://g' | grep -v chrM)
 
-		sys samtools view -b "$nodup_bam" ${nonMitoChromosomes} > "$non_mito_bam"		
-		sys samtools view -b "$nodup_bam" chrM > "$mito_bam"
+		sys samtools view -b "$filt_bam" ${nonMitoChromosomes} > "$non_mito_bam"		
+		sys samtools view -b "$filt_bam" chrM > "$mito_bam"
 
 		//# Process only non chrM reads
 		// embedded adjustBedTn5.sh
@@ -451,6 +463,8 @@ string _bam_to_bed_atac( string nodup_bam, string o_dir, string label ) {
 				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
 			fi
 	}
+
+	_add_to_graphviz( [label_in], [filt_bam], [label_out], [bed] )
 
 	wait_par()
 

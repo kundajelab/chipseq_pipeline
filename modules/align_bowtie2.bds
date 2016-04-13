@@ -32,7 +32,12 @@ void chk_align_bwt2() {
 	if ( !path_exists("$bwt2_idx.1.bt2") ) error("Bowtie2 index (-bwt2_idx) doesn't exists! (file: $bwt2_idx.1.bt2)\n")
 }
 
-string[] _bowtie2( string fastq, string o_dir, string info ) {
+string[] _bowtie2( string fastq, string o_dir, string label ) {
+
+	return _bowtie2( fastq, o_dir, label, "fastq\\n($label)", "bam\\n($label)" )
+}
+
+string[] _bowtie2( string fastq, string o_dir, string label, string label_in, string label_out ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	bam 	:= "$prefix.bam"
@@ -41,7 +46,7 @@ string[] _bowtie2( string fastq, string o_dir, string info ) {
 	in 	:= [ fastq ]
 	out 	:= [ bam, log ]
 
-	taskName:= "bowtie2 "+info
+	taskName:= "bowtie2 "+label
 	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
 	task( out<-in ) {
@@ -54,39 +59,20 @@ string[] _bowtie2( string fastq, string o_dir, string info ) {
 			samtools view -bS - > $bam
 	}
 
-	wait_par()
-
-	return out
-}
-
-string[] _bowtie2( string fastq, string o_dir, string info ) {
-
-	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
-	bam 	:= "$prefix.bam"
-	log 	:= "$prefix.align.log"
-
-	in 	:= [ fastq ]
-	out 	:= [ bam, log ]
-
-	taskName:= "bowtie2 "+info
-	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
-
-	task( out<-in ) {
-
-		sys $shcmd_init
-
-		//sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) -S /dev/stdout 2> $log | \
-		//	samtools view -o $bam -b /dev/stdin
-		sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) 2> $log | \
-			samtools view -bS - > $bam
-	}
+	_add_to_graphviz( [label_in], [fastq], [label_out], [bam], \
+				"bowtie2\\n($label)", grp_color_bwt2 )
 
 	wait_par()
 
 	return out
 }
 
-string[] _bowtie2_csem( string fastq, string o_dir, string info ) {
+string[] _bowtie2_csem( string fastq, string o_dir, string label ) {
+
+	return _bowtie2_csem( fastq, o_dir, label, "fastq\\n($label)", "bam\\n($label)" )
+}
+
+string[] _bowtie2_csem( string fastq, string o_dir, string label, string label_in, string label_out ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	sam 		:= "$prefix.sam"
@@ -97,7 +83,7 @@ string[] _bowtie2_csem( string fastq, string o_dir, string info ) {
 	in 	:= [ fastq ]
 	out 	:= [ srt_bam, log ]
 
-	taskName:= "bowtie2_csem "+info
+	taskName:= "bowtie2_csem "+label
 	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
 	task( out<-in ) {
@@ -111,12 +97,20 @@ string[] _bowtie2_csem( string fastq, string o_dir, string info ) {
 		sys rm -f $sam
 	}
 
+	_add_to_graphviz( [label_in], [fastq], [label_out], [srt_bam], \
+				"bowtie2_csem\\n($label)", grp_color_bwt2 )
+
 	wait_par()
 
 	return out
 }
 
-string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string info ) {
+string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string label ) {
+
+	return _bowtie2_PE( fastq1, fastq2, o_dir, label, "fastq1\\n($label)", "fastq2\\n($label)", "bam\\n($label)" )
+}
+
+string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string label, string label_in1, string label_in2, string label_out ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
 	bam 	:= "$prefix.bam"
@@ -125,7 +119,7 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string info ) 
 	in 	:= [ fastq1, fastq2 ]
 	out 	:= [ bam, log ]
 
-	taskName:= "bowtie2_PE "+info
+	taskName:= "bowtie2_PE "+label
 	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
 	task( out<-in ) {
@@ -140,10 +134,13 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string info ) 
 
 	wait_par()
 
+	_add_to_graphviz( [label_in1,label_in2], [fastq1,fastq2], [label_out], [bam], \
+				"bowtie2\\n($label)", grp_color_bwt2 )
+
 	return out
 }
-
-string[] _bowtie2_csem_PE( string fastq1, string fastq2, string o_dir, string info ) {
+/*
+string[] _bowtie2_csem_PE( string fastq1, string fastq2, string o_dir, string label ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
 	sam 		:= "$prefix.sam"
@@ -154,7 +151,7 @@ string[] _bowtie2_csem_PE( string fastq1, string fastq2, string o_dir, string in
 	in 	:= [ fastq1, fastq2 ]
 	out 	:= [ srt_bam, log ]
 
-	taskName:= "bowtie2_csem_PE "+info
+	taskName:= "bowtie2_csem_PE "+label
 	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
 	task( out<-in ) {
@@ -174,3 +171,4 @@ string[] _bowtie2_csem_PE( string fastq1, string fastq2, string o_dir, string in
 
 	return out
 }
+*/

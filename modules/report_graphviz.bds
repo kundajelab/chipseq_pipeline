@@ -10,15 +10,24 @@ grp_fontsize_box 	:= 12
 grp_fontsize_node 	:= 10
 grp_color_node 		:= "whitesmoke"
 
+grp_color_trim_adapter 	:= "darkorange"
 grp_color_bwa 		:= "salmon"
-grp_color_spp		:= "skyblue"
-grp_color_macs2		:= "lightgreen"
+grp_color_bwt2		:= "salmon"
 grp_color_dedup_bam 	:= "lightcoral"
 grp_color_xcor 		:= "yellowgreen"
+
 grp_color_sigtrk 	:= "yellow"
+
+grp_color_spp		:= "skyblue"
+grp_color_macs2		:= "lightgreen"
+
 grp_color_idr 		:= "limegreen" 
 
+grp_color_ataqc 	:= "pink"
+
+
 dot_lines 	:= "" // graphviz dot contents
+
 
 
 string _html_graphviz() { // graphviz diagram
@@ -26,7 +35,7 @@ string _html_graphviz() { // graphviz diagram
 	dot_tmp := "$out_dir/workflow_tmp.dot"
 	dot 	:= "$out_dir/workflow.dot"
 	svg 	:= "$out_dir/workflow.svg"
-//\n\ngraph [ratio=compress,size=\"10,20!\"]
+
 	dot_tmp.write( "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,fixedsize=shape,margin=0,fontsize=$grp_fontsize_node];\nedge [fontsize=$grp_fontsize_node];\n\n" \
 		   	+ dot_lines + "\n\n}" )
 
