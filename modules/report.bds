@@ -54,27 +54,85 @@ string _parse_flagstat_to_html( string id, string[] names, string[] logs, string
 		name := names[i]
 		lines := log.readLines()
 
-		tmp1 := lines[0].split(" in total ")
-		line1 := tmp1[0]
-			tmp1 = line1.split( " \\+ " )
-			read1 := tmp1[0]
-			read2 := tmp1[1]
+		string read1, read2, dupe1, dupe2, mapped, percent
 
-		tmp2 := lines[1].split(" duplicates")
-		line2 := tmp2[0]
-			tmp2 = line2.split( " \\+ " )
-			dupe1 := tmp2[0]
-			dupe2 := tmp2[1]
+		for ( string line : lines ) {
 
-		tmp3 := lines[2].split(" mapped \\(")
-		line3_1 := tmp3[0]
-			tmp3_1 := line3_1.split( " \\+ " )
-			mapped := tmp3_1[0]
-		line3_2 := tmp3[1]
-			tmp3_2 := line3_2.split( "\\%\\:" )
-			percent := tmp3_2[0]
+			if ( line.indexOf(" in total ") > -1 ) {
+
+				tmp1 := line.split(" in total ")
+				line1 := tmp1[0]
+					tmp1 = line1.split( " \\+ " )
+					read1 = tmp1[0]
+					read2 = tmp1[1]
+			}
+
+			if ( line.indexOf(" duplicates") > -1 ) {
+
+				tmp2 := line.split(" duplicates")
+				line2 := tmp2[0]
+					tmp2 = line2.split( " \\+ " )
+					dupe1 = tmp2[0]
+					dupe2 = tmp2[1]
+			}
+
+			if ( line.indexOf(" mapped (") > -1 ) {
+
+				tmp3 := line.split(" mapped \\(")				
+				line3_1 := tmp3[0]
+					tmp3_1 := line3_1.split( " \\+ " )
+					mapped = tmp3_1[0]
+				line3_2 := tmp3[1]
+					tmp3_2 := line3_2.split( "\\%\\:" )					
+					percent = tmp3_2[0]
+			}
+		}
 
 		html += "<tr><td>"+_html_link( log, name )+"</td><td>$read1</td><td>$read2</td><td>$dupe1</td><td>$dupe2</td><td>$mapped</td><td>$percent</td></tr>"
+	}
+
+	html += "</table>"
+	html += "</div></div><br>"
+
+	return html
+}
+
+
+// bowtie2 logs (*.align.log): 1 table
+string _parse_align_log_to_html( string id, string[] names, string[] logs, string[] header ) {
+
+	if ( logs.size() == 0 ) return ""
+
+	html := "<div id='bwt2_log_$id'><b>Bowtie2 QC ($id)</b><div style='padding-left: "+padding_left+"px'>"
+
+	html += _html_table_header( ["&nbsp","Total Reads","% Aligned"] )
+
+	// parse dup.qc
+	for ( int i=0; i<logs.size(); i++ ) {
+
+		// quite ugly parsing.... sorry
+		log := logs[i]
+		name := names[i]
+		lines := log.readLines()
+
+		string read1, percent
+
+		for ( string line : lines ) {
+
+			if ( line.indexOf(" reads; of these:") > -1 ) {
+
+				tmp1 := line.split(" reads")
+				read1 = tmp1[0]
+			}
+
+			if ( line.indexOf(" overall alignment rate") > -1 ) {
+
+				tmp2 := line.split("\\%")
+				percent = tmp2[0]
+			}
+		}
+
+		html += "<tr><td>"+_html_link( log, name )+"</td><td>$read1</td><td>$percent</td></tr>"
 	}
 
 	html += "</table>"
@@ -199,7 +257,7 @@ string _parse_idr_to_html( string id, string log ) {
 
 	html += _html_link( log, get_basename( log ) )
 
-	html += _html_table_header( ["Nt","N1","N2","Np","conservative_set","optimal_set","rescue_ratio","self_consistency_ratio","reproducibility"] )
+	html += _html_table_header( ["Nt","N1","N2","Np","conservative_set","optimal_set","rescue_ratio","self_consistency_ratio","reproducibility","remarks"] )
 
 	lines := log.readLines()
 

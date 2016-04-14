@@ -59,5 +59,5 @@ fout.close()
 
 os.system('sort -k1,1 -k2,2n '+OF+' > xx')
 os.system('mv xx '+OF)
-os.system('bgzip '+OF)
+os.system('bgzip -f '+OF)
 os.system('tabix -p bed '+OF+'.gz')
