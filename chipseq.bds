@@ -736,11 +736,6 @@ void report() { // HTML chipseq report
 
 	wait
 	
-	sys cp $script_dir/html/jquery.treetable.* $out_dir    # move report js/css files to out_dir
-
-	report_file 	:= "$out_dir/Report.html"
-	report_header 	:= "$script_dir/html/rpt_header.html"
-
 	html := report_header.read()
 
 	html += _html_chipseq_files() 	// treeview for directory and file structure 

@@ -32,9 +32,9 @@ dot_lines 	:= "" // graphviz dot contents
 
 string _html_graphviz() { // graphviz diagram
 
-	dot_tmp := "$out_dir/workflow_tmp.dot"
-	dot 	:= "$out_dir/workflow.dot"
-	svg 	:= "$out_dir/workflow.svg"
+	dot_tmp := "$rpt_aux_dir/workflow_tmp.dot"
+	dot 	:= "$rpt_aux_dir/workflow.dot"
+	svg 	:= "$rpt_aux_dir/workflow.svg"
 
 	dot_tmp.write( "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,fixedsize=shape,margin=0,fontsize=$grp_fontsize_node];\nedge [fontsize=$grp_fontsize_node];\n\n" \
 		   	+ dot_lines + "\n\n}" )
@@ -69,7 +69,7 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 		in += "\""+in_id[i]+"\" "
 
-		path 	:= get_rel_path( in_path[i] )
+		path 	:= "../" + get_rel_path( in_path[i] ) // ../ is because .svg is located at $out_dir/report/
 
 		lines += "\t\""+in_id[i]+"\" [id=\""+in_id[i]+"\",style=filled,fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];\n"
 	}
@@ -85,7 +85,7 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 		out += "\""+out_id[i]+"\" "
 
-		path 	:= get_rel_path( out_path[i] )
+		path 	:= "../" + get_rel_path( out_path[i] )
 
 		lines += "\t\""+out_id[i]+"\" [id=\""+out_id[i]+"\",style=filled,fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];\n"			
 	}

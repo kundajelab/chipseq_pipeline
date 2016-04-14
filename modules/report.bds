@@ -7,8 +7,11 @@ include "general.bds"
 help == report settings
 url_base 	:= "" 		help URL base for output directory.
 
+padding_left	:= 20
 
-padding_left	:= 20 
+rpt_aux_dir 	:= ""
+report_file  	:= ""
+report_header 	:= ""
 
 
 init_report()
@@ -16,8 +19,20 @@ init_report()
 
 void init_report() {
 
-	url_base	= get_conf_val( url_base, 		["url_base"] )
-	
+	url_base	= get_conf_val( url_base, 	["url_base"] )
+
+	rpt_aux_dir 	= mkdir_path( "$out_dir/report" )
+
+	sys cp $script_dir/html/jquery.treetable.* $rpt_aux_dir    # move report js/css files to out_dir
+
+	report_file 	= "$out_dir/Report.html"
+	report_header 	= "$script_dir/html/rpt_header.html"
+
+	print_report()
+}
+
+void print_report() {
+
 	print("\n\n== report settings\n")
 	print( "URL root for output directory\t: $url_base\n" )
 }
@@ -201,7 +216,9 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 
 	if ( files.size() == 0 ) return ""
 
-	html := "<div id='viz'><b>Visualization</b><div style='padding-left: "+padding_left+"px'>"
+	warn := (url_base=="") ? "(add <i>-url_base [URL_ROOT_DIR_FOR_OUT_DIR]</i> to the command line.)" : ""
+
+	html := "<div id='viz'><b>Visualization $warn </b><div style='padding-left: "+padding_left+"px'>"
 
 	json := "[ " // json array starts here
 
