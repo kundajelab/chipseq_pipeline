@@ -157,12 +157,12 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string o_dir, strin
 	return out
 }
 
-string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string label ) {
+string[] _macs2_atac( string non_mito_bed, string smooth_window, string o_dir, string label ) {
 
-	return _macs2_atac( non_mito_bed, fraglen, o_dir, label, "tagalign\\n($label)" )
+	return _macs2_atac( non_mito_bed, smooth_window, o_dir, label, "tagalign\\n($label)" )
 }
 
-string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string label, string label_in ) {
+string[] _macs2_atac( string non_mito_bed, string smooth_window, string o_dir, string label, string label_in ) {
 
 	prefix 		:= replace_dir( rm_ext( non_mito_bed, ["bed","tagAlign"] ), o_dir ) + ".pf"
 	
@@ -180,9 +180,11 @@ string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string 
 	pval_bedgraph 	:= "$prefix$pval_str.pval.signal.bedgraph"
 	pval_bedgraph_srt := "$prefix$pval_str.pval.signal.srt.bedgraph"	
 	pval_bigwig 	:= "$prefix$pval_str.pval.signal.bigwig"
+ 
+	shiftsize := round( smooth_window.parseReal()/2.0 )
 
 	in 	:= [ non_mito_bed ]
-	out 	:= [ peakfile, fc_bigwig, pval_bigwig] //, bpeakfile, gpeakfile ]
+	out 	:= [ peakfile, fc_bigwig, pval_bigwig ] //, bpeakfile, gpeakfile ]
 
 	taskName:= "macs2_atac " + label
 	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
@@ -192,11 +194,9 @@ string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string 
 		sys $shcmd_init
 		sys LC_COLLATE=C
 
-		sys adjustedBed="slopBed -i $non_mito_bed -g $chrsz -l 75 -r -75 -s"
-
 		sys macs2 callpeak \
-			-t <(${adjustedBed}) -f BED -n "$prefix" -g "$gensz" -p $pval_thresh_macs2 \
-			--nomodel --shift "$fraglen" --broad --keep-dup all
+			-t $non_mito_bed -f BED -n "$prefix" -g "$gensz" -p $pval_thresh_macs2 \
+			--nomodel --shift -$shiftsize --extsize $smooth_window --broad --keep-dup all
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $bpeakfile
@@ -205,8 +205,8 @@ string[] _macs2_atac( string non_mito_bed, string fraglen, string o_dir, string 
 		sys rm -f "$prefix"_peaks.gappedPeak
 
 		sys macs2 callpeak \
-			-t <(${adjustedBed}) -f BED -n "$prefix" -g "$gensz" -p $pval_thresh_macs2 \
-			--nomodel --shift "$fraglen" -B --SPMR --keep-dup all --call-summits
+			-t $non_mito_bed -f BED -n "$prefix" -g "$gensz" -p $pval_thresh_macs2 \
+			--nomodel --shift -$shiftsize --extsize $smooth_window -B --SPMR --keep-dup all --call-summits
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $peakfile
