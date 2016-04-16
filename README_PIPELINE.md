@@ -373,21 +373,25 @@ If you just want to add something to your `$PATH`, use addpath instead of shcmd.
 addpath= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin/test
 ```
 
-4) conda_env and conda_env3
+4) virt_env and virt_env_py3
 
-You can also use Anaconda virtual environment in the pipeline. BDS pipelines usually take two conda environments since there is a conflict between softwares based on python3 and python2. Make sure that the environment corresponding to `conda_env` has python2 installed and that corresponding to `conda_env3` has python3 installed.
+You can also use Anaconda virtual environment in the pipeline. BDS pipelines usually take two conda environments since there is a conflict between softwares based on python3 and python2. Make sure that the environment corresponding to `virt_env` has python2 installed and that corresponding to `virt_env_py3` has python3 installed.
 ```
-conda_env= [CONDA_ENV_NAME]		# python2 must be installed in this env.
-conda_env3= [CONDA_ENV_NAME_FOR_PY3] 	# python3 must be installed in this env.
+virt_env= [VIRT_ENV_NAME]		# python2 must be installed in this virt. env.
+virt_env_py3= [VIRT_ENV_NAME_FOR_PY3] 	# python3 must be installed in this virt. env.
+```
+
+If you have a separate virtual environment for R-2.x.x. 
+```
+virt_env_r2= [VIRT_ENV_NAME_FOR_R2]		# R-2.x.x must be installed in this virt. env.
 ```
 
 
-
-### What are -mod, -shcmd, -addpath, -conda_env and -conda_env3?
+### What are -mod, -shcmd, -addpath, -virt_env and -virt_env_py3?
 
 They are command line argument versions of `mod`, `shcmd` and `addpath`. However NO SUFFIX is allowed. For example,
 ```
-$ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -conda_env my_env -conda_env3 my_env_py3
+$ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -virt_env my_env -virt_env_py3 my_env_py3
 ```
 
 
@@ -436,8 +440,8 @@ wt_spp  = 10:00:00
 
 nth_macs2 = 2 	// You can also have resource settings for other tasks
 
-conda_env = my_conda_env_py2
-conda_env3 = my_conda_env_py3
+virt_env = my_virt_env_py2
+virt_env_py3 = my_virt_env_py3
 ...
 ```
 
