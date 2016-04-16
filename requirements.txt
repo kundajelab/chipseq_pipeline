@@ -9,11 +9,13 @@ ucsc-bigwiginfo
 ucsc-bedclip
 picard ==1.97
 deeptools ==2.2.3
-numpy ==1.10.4
+numpy ==1.10.4 #==1.9.3 (conflict)
 matplotlib ==1.5.1
 macs2 ==2.1.0
 boost ==1.57.0
 openssl ==1.0.2g-0
+
+#r ==2.15.3 (conflict), this will be later installed (with --force; ignoring dependencies)
 
 #### wrong environment
 # picard ==1.97

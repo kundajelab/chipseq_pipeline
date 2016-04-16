@@ -6,7 +6,8 @@ conda config --add channels bioconda
 conda config --add channels astro
 
 conda create -n aquas_chipseq --file requirements.txt -y
-conda create -n aquas_chipseq_r2 --file requirements_r2.txt -y
+conda install -n aquas_chipseq --file requirements_r2.txt -y --force # force install R-2.15.3
+
 conda create -n aquas_chipseq_py3 --file requirements_py3.txt -y
 
 function add_to_activate {
@@ -70,21 +71,6 @@ CONTENTS=(
 "export XAPPLRESDIR")
 add_to_activate
 
-source deactivate
-
-
-source activate aquas_chipseq_r2
-
-if [ $? != 0 ]; then
-  echo Anaconda environment not found!
-  exit
-fi
-
-CONDA_BIN=$(dirname $(which activate))
-CONDA_EXTRA="$CONDA_BIN/../extra"
-CONDA_ACTIVATE_D="$CONDA_BIN/../etc/conda/activate.d"
-CONDA_INIT="$CONDA_ACTIVATE_D/init.sh"
-mkdir -p $CONDA_EXTRA $CONDA_ACTIVATE_D
 
 #### install R 2.x.x packages
 cd $CONDA_EXTRA

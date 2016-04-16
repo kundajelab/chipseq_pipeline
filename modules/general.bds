@@ -210,6 +210,9 @@ void init_shell_env() {
 	if ( conda_env_r2 != "" ) {
 		conda_r2  = "if [[ -f $(which activate) ]]; then source activate $conda_env_r2; fi; "
 	}
+	else if ( conda_env != "" ) {
+		conda_r2 = "if [[ -f $(which activate) ]]; then source activate $conda_env; fi; "
+	}
 
 	if ( conda_env_py3 != "" ) {
 		conda_py3 = "if [[ -f $(which activate) ]]; then source activate $conda_env_py3; fi; "
