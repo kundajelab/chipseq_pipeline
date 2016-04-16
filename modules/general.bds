@@ -22,9 +22,9 @@ help == shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
 shcmd 		:= ""		help Shell commands separated by ;. Shell var. must be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test"). 
 addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (example: "/bin/test:${HOME}/utils").
-conda_env 	:= ""		help Environment name for Anaconda python2.
-conda_env_r2 	:= ""		help Environment name for R 2.x.
-conda_env_py3 	:= ""		help Environment name for Anaconda python3.
+virt_env 	:= ""		help Virtual environment name for Python2.
+virt_env_r2 	:= ""		help Virtual environment name for R-2.x. YOu can skip it if R-2.x is installed on your Python2 virt. env. ('-virt_env').
+virt_env_py3 	:= ""		help Virtual environment name for Python3.
 
 
 shcmd_init 	:= ""  // Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
@@ -49,9 +49,9 @@ void init_general() {
 	wt 		= get_conf_val( wt, 			["wt"] )
 	memory 		= get_conf_val( memory, 		["memory","mem"] )
 	use_sys_default	= get_conf_val_bool( use_sys_default, 	["use_sys_default"] )
-	conda_env	= get_conf_val( conda_env, 		["conda_env"] )
-	conda_env_r2	= get_conf_val( conda_env_r2, 		["conda_env_r2"] )
-	conda_env_py3	= get_conf_val( conda_env_py3, 		["conda_env_py3"] )
+	virt_env	= get_conf_val( virt_env, 		["virt_env"] )
+	virt_env_r2	= get_conf_val( virt_env_r2, 		["virt_env_r2"] )
+	virt_env_py3	= get_conf_val( virt_env_py3, 		["virt_env_py3"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
@@ -110,9 +110,9 @@ void print_general() {
 	print( "Max # peakcalling in parallel\t: $peaks_in_par\n" )
 	print( "Walltime (general)\t: $wt\n" )
 	print( "Max. memory (general)\t: $memory\n" )
-	print( "Env. for Anaconda python2\t: $conda_env\n" )
-	print( "Env. for R 2.x\t\t: $conda_env_r2\n" )
-	print( "Env. for Anaconda python3\t: $conda_env_py3\n" )
+	print( "Env. for Anaconda python2\t: $virt_env\n" )
+	print( "Env. for R 2.x\t\t: $virt_env_r2\n" )
+	print( "Env. for Anaconda python3\t: $virt_env_py3\n" )
 
 	if ( use_sys_default ) {
 		print( "System default resource settings (unlimited in most cases) will be used for walltime and max. memory!\n")
@@ -203,19 +203,19 @@ void init_shell_env() {
 	}
 
 	// add conda env
-	if ( conda_env != "" ) {
-		conda_py2 = "if [[ -f $(which activate) ]]; then source activate $conda_env; fi; "
+	if ( virt_env != "" ) {
+		conda_py2 = "if [[ -f $(which activate) ]]; then source activate $virt_env; fi; "
 	}
 
-	if ( conda_env_r2 != "" ) {
-		conda_r2  = "if [[ -f $(which activate) ]]; then source activate $conda_env_r2; fi; "
+	if ( virt_env_r2 != "" ) {
+		conda_r2  = "if [[ -f $(which activate) ]]; then source activate $virt_env_r2; fi; "
 	}
-	else if ( conda_env != "" ) {
-		conda_r2 = "if [[ -f $(which activate) ]]; then source activate $conda_env; fi; "
+	else if ( virt_env != "" ) {
+		conda_r2 = "if [[ -f $(which activate) ]]; then source activate $virt_env; fi; "
 	}
 
-	if ( conda_env_py3 != "" ) {
-		conda_py3 = "if [[ -f $(which activate) ]]; then source activate $conda_env_py3; fi; "
+	if ( virt_env_py3 != "" ) {
+		conda_py3 = "if [[ -f $(which activate) ]]; then source activate $virt_env_py3; fi; "
 	}
 
 	// additional initialization

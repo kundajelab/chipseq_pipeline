@@ -436,7 +436,7 @@ $ bds chipseq.bds
 ```
 
 
-### How to set shell environments (What are `mod`, `shcmd`, `addpath`, `conda_env` and `conda_env3`?)
+### How to set shell environments (What are `mod`, `shcmd`, `addpath`, `virt_env` and `virt_env_py3`?)
 
 It is important to define enviroment variables (like $PATH) to make bioinformatics softwares in the pipeline work properly. mod, shcmd and addpath are three convenient ways to define environment variables. Environment variables defined with mod, shcmd and addpath are preloaded for all tasks on the pipeline. For example, if you define environment variables for bwa/0.7.3 with mod. bwa of version 0.7.3 will be used throughout the whole pipeline (including bwa aln, bwa same and bwa sampe).
 
@@ -444,7 +444,7 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 They are command line argument versions of mod, shcmd and addpath. For example,
 ```
-$ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -conda_env my_conda_env_py2 -conda_env3 my_conda_env_py3
+$ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -virt_env my_virt_env_py2 -virt_env_py3 my_virt_env_py3
 ```
 
 See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
@@ -473,8 +473,8 @@ wt_spp  = 10:00:00
 
 nth_macs2 = 2 	// You can also have resource settings for other tasks
 
-conda_env  = my_conda_env_py2
-conda_env3 = my_conda_env_py3
+virt_env  = my_virt_env_py2
+virt_env_py3 = my_virt_env_py3
 ...
 
 
