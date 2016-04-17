@@ -548,7 +548,6 @@ void _call_peaks( string peakcaller ) {
 		real ntags_rep2 = get_no_lines( tag{"0,2"} )		
 		real ntags_ctl1 = get_no_lines( tag{"1,1"} )
 		real ntags_ctl2 = get_no_lines( tag{"1,2"} )
-		wait
 
 		ratio_ctl_reads := ntags_ctl1/ntags_ctl2
 
@@ -829,6 +828,8 @@ string _html_chipseq_tracks() {
 	if ( signal_trk_fc.hasKey( "pooled" ) )   { track_types += "bigwig"; track_names += "fc (pooled)";   track_files += signal_trk_fc{"pooled"}   }
 	if ( idr_opt != "" ) {	track_types += "hammock"; track_names += "peak idr (opt. set)"; track_files += _peak_to_hammock( idr_opt ) }
 	if ( idr_consv != "" ) {track_types += "hammock"; track_names += "peak idr (cons. set)"; track_files += _peak_to_hammock( idr_consv ) }
+
+	if ( peak.hasKey("macs2,1") ) {track_types += "hammock"; track_names += "MACS2 peak rep1"; track_files += _peak_to_hammock( peak{"macs2,1"} ) }
 
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 

@@ -64,7 +64,7 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 		sys idr_thresh_transformed=$(awk -v p=$idr_thresh 'BEGIN{print -log(p)/log(10)}')
 
 		//# Get peaks passing global IDR threshold and convert file to narrowPeak format (Step 9)
-		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' $idr_output \
+		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}' $idr_output \
 			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr
 
 		sys echo -e "$label\t$(zcat $peak_idr | wc -l)" >> $npeaks_file
@@ -119,8 +119,8 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 
 	if ( path_exists( blacklist_idr ) ) {
 		
-		idr_tr_filt 	= _filter_idr_peak( idr_tr, o_dir, "true" )
-		idr_ppr_filt 	= _filter_idr_peak( idr_ppr, o_dir, "ppr" )
+		idr_tr_filt 	= _filter_idr_peak( idr_tr, "", "true" )
+		idr_ppr_filt 	= _filter_idr_peak( idr_ppr, "", "ppr" )
 		wait
 
 		remarks		= "filtered tr and ppr"
@@ -141,7 +141,7 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 
 	optimal_set := (Nt > Np) ? "true_rep" : "pooled_pseudo_rep"
 	idr_opt_set := (Nt > Np) ? idr_tr_filt : idr_ppr_filt
-	
+
 	conservative_set := "true_rep"
 	idr_consv_set  	 := idr_tr_filt
 

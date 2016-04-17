@@ -395,9 +395,9 @@ bool is_in_array( string str, string[] arr ) { // case-insensitive
 	return false
 }
 
-string replace_dir( string file, string out_dir ) {
+string replace_dir( string file, string o_dir ) {
 
-	return out_dir + "/" + get_basename( file )
+	return o_dir!="" ? ( o_dir + "/" + get_basename( file ) ) : file
 }
 
 string get_path( string str ) {

@@ -307,10 +307,18 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 		}
 		else if ( type == "hammock") { // peak must be converted to hammock type (browser specific format)	
 
-			json 	+= 	' { "type": "hammock", "name": "'+trackname+'", "url": "'+url+'", "mode": "barplot", "showscoreidx":1,' + \
+			if ( file.indexOf(".IDR") > -1 ) { // IDR narrowpeak has 11th (local IDR) and 12th (global IDR) columns
+				json += ' { "type": "hammock", "name": "'+trackname+'", "url": "'+url+'", "mode": "barplot", "showscoreidx":4,' + \
+					'   strokecolor:"#ff6600", scorescalelst:[{"type":1,"min":0,"max":40},{"type":0},{"type":0},{"type":0},{"type":0}],' + \
+					'   scorenamelst:["signal value","P value (-log10)","Q value (-log10)","local IDR (-log10)","global IDR (-log10)"],' + \
+					' "qtc": { "height" : 30, "summeth":2, "fontsize":"0pt","fontfamily":"sans-serif" } },'
+			}
+			else {
+				json += ' { "type": "hammock", "name": "'+trackname+'", "url": "'+url+'", "mode": "barplot", "showscoreidx":1,' + \
 					'   strokecolor:"#ff6600", scorescalelst:[{"type":1,"min":0,"max":40},{"type":0},{"type":0},{"type":0}],' + \
 					'   scorenamelst:["signal value", "P value (-log10)","Q value (-log10)"],' + \
 					' "qtc": { "height" : 30, "summeth":2, "fontsize":"0pt","fontfamily":"sans-serif" } },'
+			}
 		}
 	}
 
@@ -385,8 +393,12 @@ string _peak_to_hammock( string peak ) {
 	
 	conv := "$script_dir/utils/"
 
-	if ( peak.toLower().indexOf( "regionpeak" ) > -1 ) 	conv += "narrowpeak.py"
-	else if ( peak.toLower().indexOf( "narrowpeak" ) > -1 ) conv += "narrowpeak.py"
+	if ( peak.toLower().indexOf( "regionpeak" ) > -1 || \
+	     peak.toLower().indexOf( "narrowpeak" ) > -1 ) {
+
+		if ( peak.indexOf( ".IDR" ) > -1 ) 		conv += "narrowpeak_idr.py"
+		else 						conv += "narrowpeak.py"
+	}
 	else if ( peak.toLower().indexOf( "broadpeak" ) > -1 ) 	conv += "broadpeak.py"
 	else if ( peak.toLower().indexOf( "gappedpeak" ) > -1 ) conv += "gappedpeak.py"
 
