@@ -16,8 +16,7 @@ void chk_vplot() {
 
 string _vplot( string srt_bam, string o_dir, string label ) {
 
-//	prefix 		:= replace_dir( rm_ext( srt_bam, ["bam"] ) , o_dir )
-	prefix 		:= replace_dir( srt_bam, o_dir )
+	prefix 		:= replace_dir( rm_ext( srt_bam, ["bam"] ) , o_dir )
 	vp_idx_base 	:= get_basename( vplot_idx )
 
 	vplot 	:= "$prefix.$vp_idx_base.vect.png"

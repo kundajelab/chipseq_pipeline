@@ -1,0 +1,253 @@
+#!/usr/bin/env bds
+#vim: syntax=java
+
+include "general.bds"
+
+
+// L1_ is to distinguish the grandest parent
+
+// for label of filetable entry
+string{} map_label
+
+// level1
+map_label{"L1_align"}		= "Alignment"
+map_label{"L1_signal"} 		= "Signal tracks"
+map_label{"L1_peak"} 		= "Peaks"
+map_label{"L1_idr"} 		= "IDR peaks"
+
+// level2 (supports up to rep100 and ctl100)
+for (int i=1; i<=100; i++) \
+map_label{"rep$i"} 		= "Replicate $i"
+for (int i=1; i<=100; i++) \
+map_label{"ctl$i"} 		= "Control $i"
+
+map_label{"pooled_rep"} 	= "Pooled replicate"
+map_label{"pooled_ctl"} 	= "Pooled control"
+map_label{"pooled_reps"}	= "Pooled replicates"
+map_label{"true_reps"}		= "True replicates"
+map_label{"pseudo_reps"}	= "Pseudo-replicates"
+map_label{"pooled_pseudo_reps"} = "Pooled pseudo-replicate"
+
+// level3
+map_label{"pr1"} 		= "Pseudo-replicate 1"
+map_label{"pr2"} 		= "Pseudo-replicate 2"
+map_label{"ppr1"} 		= "Pooled pseudo-replicate 1"
+map_label{"ppr2"} 		= "Pooled pseudo-replicate 2"
+
+// level3 or 4
+map_label{"idr_qc"} 		= "IDR QC"
+map_label{"fastq"} 		= "fastq"
+map_label{"trimmed_fastq"} 	= "trimmed fastq"
+map_label{"bam"} 		= "bam"
+map_label{"filt_bam"} 		= "filtered bam"
+map_label{"srt_bam"} 		= "sorted bam"
+map_label{"bedpe"} 		= "bedpe"
+map_label{"tagalign"} 		= "tagalign"
+map_label{"subsampled_tagalign"}= "subsampled tagalign"
+map_label{"xcor_qc"}		= "cross-corr. QC"
+map_label{"pval"} 		= "p-value"
+map_label{"fc"} 		= "fold enrichment"
+map_label{"npeak"} 		= "narrow peak"
+map_label{"rpeak"} 		= "region peak"
+map_label{"bpeak"} 		= "broad peak"
+map_label{"gpeak"} 		= "gapped peak"
+map_label{"idr_peak"} 		= "IDR peak"
+map_label{"peak"} 		= "peak"
+map_label{"peak_filt"} 		= "filtered peak"
+
+// for sorting filetable
+int{} map_rank
+
+// level1
+map_rank{"L1_align"} 		= 1
+map_rank{"L1_signal"} 		= 2
+map_rank{"L1_peak"} 		= 3
+map_rank{"L1_idr"} 		= 4
+
+_rank := 0
+// level2
+for (int i=1; i<=100; i++) {
+	map_rank{"rep$i"} = ++_rank
+}
+for (int i=1; i<=100; i++) {
+	map_rank{"ctl$i"} = ++_rank
+}
+
+map_rank{"pooled_rep"} 		= ++_rank
+map_rank{"pooled_ctl"} 		= ++_rank
+map_rank{"pooled_reps"}		= ++_rank
+map_rank{"pseudo_reps"}		= ++_rank
+map_rank{"pooled_pseudo_reps"} 	= ++_rank
+
+// level3
+map_rank{"pr1"} 		= 1
+map_rank{"pr2"} 		= 2
+map_rank{"ppr1"} 		= 3
+map_rank{"ppr2"} 		= 4
+
+// level3 or 4
+map_rank{"idr_qc"} 		= 0
+map_rank{"fastq"} 		= 1
+map_rank{"trimmed_fastq"} 	= 2
+map_rank{"bam"} 		= 3
+map_rank{"filt_bam"} 		= 4
+map_rank{"srt_bam"} 		= 5
+map_rank{"bedpe"} 		= 6
+map_rank{"tagalign"} 		= 7
+map_rank{"subsampled_tagalign"}	= 8
+map_rank{"xcor_qc"}		= 9
+map_rank{"pval"} 		= 10
+map_rank{"fc"} 			= 11
+map_rank{"npeak"} 		= 12
+map_rank{"rpeak"} 		= 13
+map_rank{"bpeak"} 		= 14
+map_rank{"gpeak"} 		= 15
+map_rank{"idr_peak"} 		= 16
+map_rank{"peak"} 		= 17
+map_rank{"peak_filt"} 		= 18
+
+
+string{} filetable_label // key: hierarchy
+string{} filetable_path
+int{} filetable_rank
+
+/*
+_spinlock := false
+
+void _lock() {
+	 while( _spinlock ) {
+
+	 }
+}
+
+void _unlock() {
+
+}
+*/
+
+string _html_filetable() { // graphviz diagram
+
+	html := "<div id='dirs_and_files'><b>Directories and files</b>"
+
+	html += "<table id='filetable'> <caption>"+\
+		"<a href='#' onclick=\"jQuery('#filetable').treetable('expandAll'); return false;\">Expand all</a> &nbsp&nbsp" + \
+		"<a href='#' onclick=\"jQuery('#filetable').treetable('collapseAll'); return false;\">Collapse all</a>" + \
+		"</caption> <thead><tr><th>Files</th><th>Path</th></tr></thead> <tbody>"
+
+	sorted_hrchy := _find_children_and_sort( "" )
+
+	for ( string hrchy : sorted_hrchy ) {
+
+		parent 	:= _get_parent( hrchy )
+		label 	:= filetable_label{ hrchy }
+		path 	:= filetable_path{ hrchy }
+
+		if ( parent == "" ) \
+			html += "<tr data-tt-id='$hrchy'><td> $label </td><td>"+ _html_link_url( path ) +"</td></tr>"
+		else \
+			html += "<tr data-tt-id='$hrchy' data-tt-parent-id='$parent'><td> $label </td><td>"+ _html_link_url( path ) +"</td></tr>"
+	}
+
+	html += "</tbody></table>"
+	html += "</div><br>\n"
+
+	return html
+}
+
+string[] _get_children( string hrchy ) { // not including grand ones
+
+	string[] children
+
+	for ( string hrchy_ : filetable_label.keys() ) {
+
+		if ( hrchy == "" ) {
+			if ( hrchy_.indexOf("/") < 0 ) \
+				children.push( hrchy_ )
+		}
+		else if ( hrchy_.toLower().startsWith( hrchy.toLower() + "/" ) ) {
+
+			if ( hrchy_.lastIndexOf("/") <= hrchy.length() ) \
+				children.push( hrchy_ )
+		}			
+	}
+
+	return children
+}
+
+string[] _find_children_and_sort( string hrchy ) {
+
+	string[] ret
+
+	children := _get_children( hrchy )
+
+	if ( children.size() == 0 ) return ret
+
+	// for bubble sort
+	int[] ranks
+
+	for ( string child : children ) {
+
+		curr := _get_curr( child )
+		ranks.add( map_rank.hasKey(curr) ? map_rank{curr} : 0 )
+	}
+
+	sorted := _bubble_sort( ranks, children )
+
+	for ( string child : sorted ) {
+
+		ret = ret + [child] + _find_children_and_sort( child )
+	}
+
+	return ret
+}
+
+// returns rank of item
+void _add_to_filetable( string hrchy, string path ) {
+
+	if ( hrchy == "" ) return
+
+	if ( filetable_label.hasKey( hrchy ) ) return // filetable_rank{ hrchy }
+
+	curr 	:= _get_curr( hrchy )
+	parent 	:= _get_parent( hrchy )
+
+	filetable_label{hrchy} 	= map_label.hasKey(curr) ? map_label{curr} : curr
+	filetable_path{hrchy} 	= path
+
+	_add_to_filetable( parent, "" )
+
+	// recursively adds up rank from parent
+	//filetable_rank{hrchy}	= (map_rank.hasKey(curr) ? map_rank{curr} : 0) + _add_to_filetable( parent, "" )
+/*
+	print("hrchy: $hrchy, curr: $curr, parent: $parent, " + filetable_rank{hrchy} + "\n" )
+
+	if ( hrchy == "L1_align/rep1/bam" || hrchy == "L1_align/rep2/bam" || \
+		hrchy == "L1_align/ctl1/bam" || hrchy == "L1_align/ctl2/bam" ) {
+		for ( string key : filetable_rank.keys() ) {
+			
+			print("\t$key, " + filetable_rank{key} + "\n")
+		}
+	}
+*/
+	//return filetable_rank{hrchy}	
+}
+
+void _add_to_filetable( string[] out_hrchy, string[] out_path ) {
+
+	for ( int i=0; i<out_hrchy.size(); i++ )  {
+
+		if ( out_hrchy[i] == "" ) continue
+
+		_add_to_filetable( out_hrchy[i], out_path[i] )
+	}
+}
+
+string _get_parent( string hrchy ) { // "a/b/c" return a/b
+
+	return hrchy.substr( 0, hrchy.lastIndexOf("/") )
+}
+
+string _get_curr( string hrchy ) { // "a/b/c" return c
+
+	return hrchy.substr( hrchy.lastIndexOf("/")+1 )
+}

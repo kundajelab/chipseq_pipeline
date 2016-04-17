@@ -534,3 +534,33 @@ bool is_system_generic() {
 
 	return system == "generic"
 }
+
+// sorting algorithm
+
+string[] _bubble_sort( int[] a, string[] s ) {
+
+	if ( a.size() != s.size() ) error("Array sizes do not match in _bubble_sort()!")
+
+	int temp; //for swapping
+	string temp2;
+
+	n := a.size()
+
+	for (int i = 0 ; i < n - 1 ; i++) {
+
+		for (int j = 0 ; j < n - 1 ; j++) {
+
+			if ( a[j] > a[j + 1] ) {
+				temp = a[j];
+				a[j]=a[j + 1];
+				a[j + 1] = temp;
+
+				temp2 = s[j];
+				s[j]=s[j + 1];
+				s[j + 1] = temp2;
+			}
+		}
+	}
+
+	return s
+}

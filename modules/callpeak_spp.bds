@@ -32,11 +32,11 @@ void init_callpeak_spp() {
 
 string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label ) {
 
-	return _spp( tag, ctl_tag, fraglen, o_dir, label, "tagalign\\n($label)", "tagalign\\n(ctl, $label)" )
+	return _spp( tag, ctl_tag, fraglen, o_dir, label, "", "", "", "" )
 }
 
 string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label, \
-		string label_in1, string label_in2 ) {
+		string graph_in1, string graph_in2, string graph_out, string hrchy_out ) {
 
 	prefix_vs	:= "$o_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
 	prefix_x	:= "$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
@@ -73,7 +73,9 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 
 	wait_par_peak( out<-in )
 
-	_add_to_graphviz( [label_in1,label_in2], [tag,ctl_tag], ["peak_spp\\n($label)"], [rpeakfile], "spp\\n($label)", grp_color_spp )
+	_add_to_graphviz( [graph_in1,graph_in2], [tag,ctl_tag], [graph_out], [rpeakfile], "spp_($label)", grp_color_spp )
+
+	_add_to_filetable( [hrchy_out], [rpeakfile] )
 
 	return out
 }

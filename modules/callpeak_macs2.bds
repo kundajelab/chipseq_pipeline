@@ -38,11 +38,13 @@ void chk_callpeak_macs2() {
 
 string[] _macs2( string tag, string ctl_tag, string fraglen, string o_dir, string label ) {
 
-	return _macs2( tag, ctl_tag, fraglen, o_dir, label, "tagalign\\n($label)", "tagalign\\n(ctl, $label)" )
+	return _macs2( tag, ctl_tag, fraglen, o_dir, label, "", "", "", "", "", "", "", "" )
 }
 
 string[] _macs2( string tag, string ctl_tag, string fraglen, string o_dir, string label, \
-		 string label_in1, string label_in2 ) {
+		 string graph_in1, string graph_in2, \
+		 string graph_out1, string graph_out2, string graph_out3, \
+		 string hrchy_out1, string hrchy_out2, string hrchy_out3 ) {
 
 	prefix 		:= (ctl_tag != "") ? 	("$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
 						: replace_dir( rm_ext( tag, "tagAlign" ), o_dir )
@@ -150,19 +152,23 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string o_dir, strin
 
 	wait_par_peak( out<-in )
 
-	_add_to_graphviz( [label_in1,label_in2], [tag, ctl_tag], \
-			  ["pval sig.\\n($label)","fc sig.\\n($label)","n peak\\n($label)"], [pval_bigwig,fc_bigwig,npeakfile], \
-			  "macs2\\n($label)", grp_color_macs2 )
+	_add_to_graphviz( [graph_in1,graph_in2], [tag, ctl_tag], [graph_out1,graph_out2,graph_out3], [npeakfile,pval_bigwig,fc_bigwig], \
+			  "macs2_($label)", grp_color_macs2 )
+
+	_add_to_filetable( [hrchy_out1,hrchy_out2,hrchy_out3], [npeakfile,pval_bigwig,fc_bigwig] )
 
 	return out
 }
 
 string[] _macs2_atac( string non_mito_bed, string smooth_window, string o_dir, string label ) {
 
-	return _macs2_atac( non_mito_bed, smooth_window, o_dir, label, "tagalign\\n($label)" )
+	return _macs2_atac( non_mito_bed, smooth_window, o_dir, label, "", "", "", "", "", "", "" )
 }
 
-string[] _macs2_atac( string non_mito_bed, string smooth_window, string o_dir, string label, string label_in ) {
+string[] _macs2_atac( string non_mito_bed, string smooth_window, string o_dir, string label, \
+			string graph_in, \
+			string graph_out1, string graph_out2, string graph_out3, \
+		 	string hrchy_out1, string hrchy_out2, string hrchy_out3 ) {
 
 	prefix 		:= replace_dir( rm_ext( non_mito_bed, ["bed","tagAlign"] ), o_dir ) + ".pf"
 	
@@ -241,9 +247,10 @@ string[] _macs2_atac( string non_mito_bed, string smooth_window, string o_dir, s
 
 	wait_par_peak( out<-in )
 
-	_add_to_graphviz( [label_in], [non_mito_bed], \
-			  ["pval sig.\\n($label)","fc sig.\\n($label)","n peak\\n($label)", "g peak\\n($label)"], \
-			  [pval_bigwig,fc_bigwig,peakfile,gpeakfile], \
-			  "macs2\\n($label)", grp_color_macs2 )
+	_add_to_graphviz( [graph_in], [non_mito_bed], [graph_out1, graph_out2, graph_out3], [peakfile,pval_bigwig,fc_bigwig], \
+			  "macs2_($label)", grp_color_macs2 )
+
+	_add_to_filetable( [hrchy_out1, hrchy_out2, hrchy_out3], [peakfile,pval_bigwig,fc_bigwig] )
+
 	return out
 }

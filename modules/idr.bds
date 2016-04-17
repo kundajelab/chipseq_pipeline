@@ -31,135 +31,14 @@ void chk_idr() {
 	if ( !path_exists( blacklist_idr ) ) print("\nWarning: Blacklist bed (-blacklist_idr) for final IDR QC is missing! (file: $blacklist_idr)\n\n")
 }
 
-/*
-string[] _idr( string peak1, string peak2, string pooled, string o_dir, string label ) {
-
-	if ( peak1=="" || peak2=="" || pooled=="" ) return ["","",""]
-
-	// write three peak filenames to file (just for information)
-	save_data("$o_dir/$label"+"_filenames.txt", \
-		get_basename( [peak1, peak2, pooled] ), "\n" )
-
-	// do IDR
-	if ( use_idr1 ) {
-		return _idr1( peak1, peak2, pooled, o_dir, info )
-	}
-	else {
-		return _idr2( peak1, peak2, pooled, o_dir, info )
-	}
-
-	_add_to_graphviz( ["peak\\n(true rep1)","peak\\n(true rep2)","peak\\n(pooled)"], [peak{1},peak{2},peak_pooled], \
-			  ["peak_idr\\n(Nt)"], [idr_tr], \
-			  "idr\\n(true rep)", "limegreen" )	
-}
-
-string[] _idr1( string peak1, string peak2, string pooled, string o_dir, string label ) {
-
-	prefix 		:= "$o_dir/$label"
-	npeaks_file 	:= prefix.dirName()+"/$idr_summary"
-	pooled_common_peaks 	:= "$prefix.POOLED_COMMON_PEAKS.gz"
-	common_rep1_match 	:= "$prefix.COMMON_REP1_MATCH.gz"
-	common_rep2_match 	:= "$prefix.COMMON_REP2_MATCH.gz"
-	recal_pooled_common_peaks := "$prefix.RECAL_POOLED_COMMON_PEAKS.gz"
-	pooled_common_peaks_idr := "$prefix.POOLED_COMMON_PEAKS_IDR.gz"
-	idr_output 		:= "$prefix.IDR"+idr_thresh+".narrowPeak.gz"
-	create_idr_summary( npeaks_file ) // do nothing if it already exists
-
-	in 	:= [ peak1, peak2, pooled ]
-	out 	:= [ idr_output, pooled_common_peaks_idr ]
-
-	taskName:= "idr1 " + label
-
-	task( out<-in ) {
-
-		sys $shcmd_init
-
-		//# =============================
-		//# Find peaks in pooled set common to both replicates
-		//# =============================
-		sys bedtools intersect -u -a $pooled -b $peak1 | bedtools intersect -u -a stdin -b $peak2 \
-			| sort -k7n,7n -k1,1 -k2n,2n -k3n,3n -k10n,10n | gzip -c > $pooled_common_peaks
-
-		//# =============================
-		//# Create 2 new peak file per replicate with coordinates from common pooled set but scores from replicates by first computing overlaps, then then matching to closest summit, then recalibration coordinates to be +/- 2 bp from pooled set summit
-		//# =============================
-		sys bedtools intersect -wa -wb -a $pooled_common_peaks -b $peak1 \
-			| awk 'BEGIN{OFS="\t"}{d=$2+$10-$12-$20;$21=sqrt(d^2);print $0}' \
-			| bedtools groupby -i stdin -g 1,2,3,10 -c 21 -o min -full | sort -k7n,7n -k1,1 -k2n,2n -k3n,3n -k10n,10n \
-			| awk 'BEGIN{OFS="\t"}{print $1,$2+$10-2,$2+$10+2,$4,$5,$6,$17,$18,$19,2}' | gzip -c > $common_rep1_match
-		sys bedtools intersect -wa -wb -a $pooled_common_peaks -b $peak2 \
-			| awk 'BEGIN{OFS="\t"}{d=$2+$10-$12-$20;$21=sqrt(d^2);print $0}' \
-			| bedtools groupby -i stdin -g 1,2,3,10 -c 21 -o min -full | sort -k7n,7n -k1,1 -k2n,2n -k3n,3n -k10n,10n \
-			| awk 'BEGIN{OFS="\t"}{print $1,$2+$10-2,$2+$10+2,$4,$5,$6,$17,$18,$19,2}' | gzip -c > $common_rep2_match
-
-		//# =============================
-		//# Pass recalibrated peak files to IDR
-		//# Rscript batch-consistency-analysis.r [peakfile1] [peakfile2] [peak.half.width] [outfile.prefix] [min.overlap.ratio] [is.broadpeak] [ranking.measure]
-		//# For SPP & GEM use [ranking.measure] as signal.value. For PeakSeq use q.value
-		//# make sure the genome_table.txt file is set to the correct version of the genome
-		//# =============================
-		sys cd $(dirname $(which batch-consistency-analysis.r))
-		sys Rscript batch-consistency-analysis.r $common_rep1_match $common_rep2_match -1 $prefix 0 F signal.value
-		sys cd $o_dir
-
-		//# =============================
-		//# Convert IDR overlap file to narrowPeak format 
-		//# =============================
-		sys sed 1d $prefix-overlapped-peaks.txt | sed -r 's/"//g' | sort -k11g,11g \
-			| awk '{if ($3 <=$7) st=$3 ; else st=$7 ; if ($4 >= $8) sto=$4 ; else sto=$8 ; printf "%s\t%d\t%d\t%d\t%s\t.\t%s\t%f\t%f\n",$2,st,sto,NR,$5,$9,$10,$11}' \
-			| gzip -c > $prefix.npk.gz
-
-		//# =============================
-		//# Create a recalibrated vesion of $POOLED_COMMON_PEAKS where coordinates are to be +/- 2 bp from pooled set summit. This is so we can match it with IDR output and retranslate back to original pooled set coordinates
-		//# =============================
-		sys zcat $pooled_common_peaks | awk 'BEGIN{OFS="\t"}{$11=$2;$12=$3;$2=$2+$10-2;$3=$2+$10+2; print $0}' \
-			| gzip -c > $recal_pooled_common_peaks
-
-		//# =============================
-		//# Overlap IDR output with $RECAL_POOLED_COMMON_PEAKS to add in IDR scores and switch back to original common pooled set coordinates
-		//# Columns 1-10 are same as pooled common peaks columns
-		//# Col 11: ranking measure from Rep1
-		//# Col 12: ranking measure from Rep2
-		//# Col 13: local IDR score
-		//# Col 14: global IDR score
-		//# IMPORTANT: DCC should store this file! All other files are temporary
-		//# =============================
-		sys bedtools intersect -wa -wb -a $recal_pooled_common_peaks -b  $prefix.npk.gz \
-			| awk 'BEGIN{OFS="\t"}{print $1,$11,$12,$4,$5,$6,$7,$8,$9,$10,$17,$19,$20,$21}' | gzip -c > $pooled_common_peaks_idr
-
-		//# =============================
-		//# Get peaks passing IDR threshold of 2%
-		//# =============================
-		//sys IDR_THRESH=0.02
-		sys zcat $pooled_common_peaks_idr | awk 'BEGIN{OFS="\t"} $14<='"$idr_thresh"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' \
-			| sort -k7n,7n | gzip -c > $idr_output
-
-		sys NPEAKS_IDR=$(zcat $idr_output | wc -l)
-
-		//# =============================
-		//# Format: Rscript batch-consistency-plot.r [npairs] [output.prefix] [input.file.prefix1] [input.file.prefix2] [input.file.prefix3] ....
-		//# =============================
-		sys cd $(dirname $(which batch-consistency-plot.r))
-		sys Rscript batch-consistency-plot.r 1 $prefix $prefix
-		sys cd $o_dir
-
-		sys echo -e "$label\t${NPEAKS_IDR}" >> $npeaks_file
-	}
-
-	wait_par()
-
-	return out
-}
-*/
 string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string label ) {
 
-	return _idr2( peak1, peak2, pooled, o_dir, label, "peak\\n(rep1)", "peak\\n(rep2)", "peak\\n(pooled)" )
+	return _idr2( peak1, peak2, pooled, o_dir, label, "", "", "", "", "" )
 }
 
 string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string label, \
-		string label_in1, string label_in2, string label_in3 ) {
-
-	//if ( peak1=="" || peak2=="" || pooled=="" ) return ["","",""]
+		string graph_in1, string graph_in2, string graph_in3, string graph_out, \
+		string hrchy_out ) {
 
 	prefix 		:= "$o_dir/$label"
 	npeaks_file 	:= prefix.dirName()+"/$idr_summary"
@@ -193,8 +72,10 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 
 	wait_par()
 
-	_add_to_graphviz( [label_in1, label_in2, label_in3], [peak1, peak2, pooled], \
-			  ["peak_idr\\n($label)"], [peak_idr], "idr\\n($label)", grp_color_idr )
+	_add_to_graphviz( [graph_in1, graph_in2, graph_in3], [peak1, peak2, pooled], \
+			  [graph_out], [peak_idr], "idr_($label)", grp_color_idr )
+
+	_add_to_filetable( [hrchy_out], [peak_idr] )
 
 	return out
 }
@@ -224,11 +105,13 @@ string _filter_idr_peak( string idr_peak, string o_dir, string label ) {
 string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, string idr_ppr, string o_dir, string label ) {
 
 	return _idr_final_qc( idr_tr, idr_pr_rep1, idr_pr_rep2, idr_ppr, o_dir, label, \
-				"peak_idr\\n(true)","peak_idr\\n(rep1_pr)","peak_idr\\n(rep2_pr)","peak_idr\\n(ppr)" )
+				"idr_peak_(true)","idr_peak_(rep1-pr)","idr_peak_(rep2-pr)","idr_peak_(ppr)", \
+				"idr_qc", "L1_idr/idr_qc" )
 }
 
 string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, string idr_ppr, string o_dir, string label, \
-			string label_in1, string label_in2, string label_in3, string label_in4 ) {
+			string graph_in1, string graph_in2, string graph_in3, string graph_in4, \
+			string graph_out, string hrchy_out ) {
 
 	string idr_tr_filt, idr_ppr_filt
 
@@ -296,7 +179,9 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 
 	wait_par()
 
-	_add_to_graphviz( [label_in1, label_in2, label_in3, label_in4], [idr_tr,idr_pr_rep1,idr_pr_rep2,idr_ppr], ["idr_qc"], [qc] )
+	_add_to_graphviz( [graph_in1, graph_in2, graph_in3, graph_in4], [idr_tr,idr_pr_rep1,idr_pr_rep2,idr_ppr], ["idr_qc"], [qc] )
+
+	_add_to_filetable( [hrchy_out], [qc] )
 
 	//return out
 	return [qc, idr_opt_set, idr_consv_set]

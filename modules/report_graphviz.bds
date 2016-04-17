@@ -1,7 +1,10 @@
 #!/usr/bin/env bds
 #vim: syntax=java
 
-include "report.bds"
+include "general.bds"
+
+
+rpt_aux_dir 	:= ""
 
 
 grp_shape_box 		:= "box"
@@ -15,22 +18,28 @@ grp_color_bwa 		:= "salmon"
 grp_color_bwt2		:= "salmon"
 grp_color_dedup_bam 	:= "lightcoral"
 grp_color_xcor 		:= "yellowgreen"
-
 grp_color_sigtrk 	:= "yellow"
-
 grp_color_spp		:= "skyblue"
 grp_color_macs2		:= "lightgreen"
-
 grp_color_idr 		:= "limegreen" 
-
 grp_color_ataqc 	:= "pink"
 
 
 dot_lines 	:= "" // graphviz dot contents
+//string[] dot_lines
 
 
+init_report_graphviz()
+
+
+void init_report_graphviz() {
+
+	rpt_aux_dir 	= mkdir_path( "$out_dir/report" )
+}
 
 string _html_graphviz() { // graphviz diagram
+
+	html := "<div id='graphviz'><b>Workflow diagram</b><br>"
 
 	dot_tmp := "$rpt_aux_dir/workflow_tmp.dot"
 	dot 	:= "$rpt_aux_dir/workflow.dot"
@@ -46,8 +55,11 @@ string _html_graphviz() { // graphviz diagram
 		sys dot -Tsvg $dot > $svg 			# dot to svg
 		sys rm -f $dot_tmp
 	}
-	// add workflow diagram
-	return "<div id='graphviz'><object data='"+ get_rel_path( svg ) + "'></object></div><br>"
+
+	html += "<object data='"+ get_rel_path( svg ) + "'></object></div><br>"
+	html += "</div><br>\n"
+
+	return html
 }
 
 // add graphviz element (in -> box -> out) to 'dot_lines'
@@ -67,11 +79,14 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 		found_in = true
 
-		in += "\""+in_id[i]+"\" "
+		in_ := in_id[i]
+		in_ = in_.replace("_","\\n")
+
+		in += "\""+ in_ +"\" "
 
 		path 	:= "../" + get_rel_path( in_path[i] ) // ../ is because .svg is located at $out_dir/report/
 
-		lines += "\t\""+in_id[i]+"\" [id=\""+in_id[i]+"\",style=filled,fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];\n"
+		lines += "\t\""+in_+"\" [id=\""+in_+"\",style=filled,fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];\n"
 	}
 
 	found_out := false
@@ -83,11 +98,14 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 		found_out = true
 
-		out += "\""+out_id[i]+"\" "
+		out_ := out_id[i]
+		out_ = out_.replace("_","\\n") //.substr( out_.lastIndexOf("/")+1 ).replace("_","\\n")
+
+		out += "\""+out_+"\" "
 
 		path 	:= "../" + get_rel_path( out_path[i] )
 
-		lines += "\t\""+out_id[i]+"\" [id=\""+out_id[i]+"\",style=filled,fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];\n"			
+		lines += "\t\""+out_+"\" [id=\""+out_+"\",style=filled,fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];\n"			
 	}
 
 	in  += "}"; out += "}"
@@ -96,6 +114,8 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 		lines += "\t$in -> $out;\n"
 	}
 	else {
+		box = box.replace("_","\\n")
+
 		lines += "\t\"$box\" [fontsize=$grp_fontsize_box,shape=$grp_shape_box,style=filled,fillcolor=$box_color];\n" + \
 			 "\t$in -> \"$box\";\n" + \
 			 "\t\"$box\" -> $out;\n"

@@ -1,7 +1,9 @@
 #!/usr/bin/env bds
 #vim: syntax=java
 
-include "general.bds"
+include "report_graphviz.bds"
+include "report_filetable.bds"
+
 
 
 help == report settings
@@ -9,9 +11,9 @@ url_base 	:= "" 		help URL base for output directory.
 
 padding_left	:= 20
 
-rpt_aux_dir 	:= ""
 report_file  	:= ""
 report_header 	:= ""
+
 
 
 init_report()
@@ -20,8 +22,6 @@ init_report()
 void init_report() {
 
 	url_base	= get_conf_val( url_base, 	["url_base"] )
-
-	rpt_aux_dir 	= mkdir_path( "$out_dir/report" )
 
 	sys cp $script_dir/html/jquery.treetable.* $rpt_aux_dir    # move report js/css files to out_dir
 
@@ -35,6 +35,17 @@ void print_report() {
 
 	print("\n\n== report settings\n")
 	print( "URL root for output directory\t: $url_base\n" )
+}
+
+void report( string body ) { // HTML report
+
+	wait
+	
+	html := report_header.read()
+	html += body
+	html += "<br></body></html>"
+
+	report_file.write( html )
 }
 
 // bwa logs (*.flagstat.qc): 1 table

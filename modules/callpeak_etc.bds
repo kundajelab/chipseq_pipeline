@@ -12,10 +12,11 @@ npeak_filt	 	:= 500000 	help # top peaks filtered from a narrow peak files (defa
 string _filt_out_bad_npeaks( string npeakfile, string o_dir, string label ) {
 
 	return _filt_out_bad_npeaks( npeakfile, o_dir, label, \
-				"n peak\\n($label)", "n peak filt\\n($label)" )
+				"peak_macs2_($label)", "peak_macs2_filt_($label)", "L1_peak/peak/$label/peak_filt" )
 }
 
-string _filt_out_bad_npeaks( string npeakfile, string o_dir, string label, string label_in, string label_out ) {
+string _filt_out_bad_npeaks( string npeakfile, string o_dir, string label, \
+			string graph_in, string graph_out, string hrchy_out ) {
 
 	prefix 		:= replace_dir( rm_ext( npeakfile, ["narrowPeak"] ), o_dir )
 	npeakfile_filt 	:= "$prefix.$npeak_filt.narrowPeak.gz"
@@ -32,20 +33,14 @@ string _filt_out_bad_npeaks( string npeakfile, string o_dir, string label, strin
 		sys zcat $npeakfile | sort -grk8 | head -n $npeak_filt | gzip -c > $npeakfile_filt
 	}
 
-	_add_to_graphviz( [label_in], [npeakfile], [label_out], [npeakfile_filt] )
+	_add_to_graphviz( [graph_in], [npeakfile], [graph_out], [npeakfile_filt] )
+
+	_add_to_filetable( [hrchy_out], [npeakfile_filt] )
 
 	wait_par()
 
 	return out	
 }
-
-/*
-string _naive_overlap_thresh( string filetype, string peak_pooled, string peak_rep1, string peak_rep2, \
-				string peak_ppr1, string peak_ppr2, string o_dir, string label ) {
-
-	return 
-}
-*/
 
 string _naive_overlap_thresh( string filetype, string peak_pooled, string peak_rep1, string peak_rep2, \
 				string peak_ppr1, string peak_ppr2, string o_dir, string label ) {
