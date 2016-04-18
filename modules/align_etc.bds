@@ -2,7 +2,8 @@
 #vim: syntax=java
 
 include "species.bds"
-include "report_graphviz.bds"
+include "report.bds"
+
 
 string _trim_adapters( string fastq, string o_dir, string label ) {
 
@@ -16,8 +17,10 @@ string _trim_adapters( string fastq, string o_dir, string label, \
 	prefix	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	p 	:= "$prefix"+"_trimmed.fq"
 	p_gz	:= "$p.gz"
+	p2 	:= "$prefix"+"_trimmed.fastq"
+	p2_gz 	:= "$p2.gz"
 	in 	:= [ fastq ]
-	out 	:= p_gz
+	out 	:= p2_gz
 
 	taskName:= "trim_adapters " + label
 
@@ -27,11 +30,13 @@ string _trim_adapters( string fastq, string o_dir, string label, \
 
 		sys trim_galore $fastq -o $o_dir
 		sys if [ ! -f $p_gz ]; then gzip $p; fi
+		sys mv $p_gz $p2_gz
+		sys rm -f $p_gz $p
 	}
 
-	_add_to_graphviz( [graph_in], [fastq], [graph_out], [p_gz], "trim_galore\\n($label)", grp_color_trim_adapter )
+	_add_to_graphviz( [graph_in], [fastq], [graph_out], [p2_gz], "trim_galore\\n($label)", grp_color_trim_adapter )
 
-	_add_to_filetable( [graph_out], [p_gz] )
+	_add_to_filetable( [hrchy_out], [p2_gz] )
 
 	wait_par()
 
@@ -47,7 +52,7 @@ string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string l
 
 string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string label, \
 			string graph_in1, string graph_in2, string graph_out1, string graph_out2, \
-			string hrchy_out1, string hrchy_out1 ) {
+			string hrchy_out1, string hrchy_out2 ) {
 
 	prefix1	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir )
 	prefix2	:= replace_dir( rm_ext( fastq2, ["fastq","fq"] ), o_dir )

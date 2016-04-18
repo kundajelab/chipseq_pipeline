@@ -2,7 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
-include "report_graphviz.bds"
+include "report.bds"
 
 
 help == align bowtie2 settings (requirements: -bwt2_idx)
@@ -62,8 +62,8 @@ string[] _bowtie2( string fastq, string o_dir, string label, \
 	}
 
 	_add_to_graphviz( [graph_in], [fastq], [graph_out], [bam], "bowtie2_($label)", grp_color_bwt2 )
-
-	_add_to_graphviz( [hrchy_out], [bam] )
+	
+	_add_to_filetable( [hrchy_out], [bam] )
 
 	wait_par()
 

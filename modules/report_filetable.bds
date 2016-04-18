@@ -3,11 +3,9 @@
 
 include "general.bds"
 
-
 // L1_ is to distinguish the grandest parent
-
-// for label of filetable entry
-string{} map_label
+string{} map_label 	// for label of filetable entry
+int{} map_rank 		// for sorting filetable
 
 // level1
 map_label{"L1_align"}		= "Alignment"
@@ -17,9 +15,9 @@ map_label{"L1_idr"} 		= "IDR peaks"
 
 // level2 (supports up to rep100 and ctl100)
 for (int i=1; i<=100; i++) \
-map_label{"rep$i"} 		= "Replicate $i"
+	map_label{"rep$i"} 	= "Replicate $i"
 for (int i=1; i<=100; i++) \
-map_label{"ctl$i"} 		= "Control $i"
+	map_label{"ctl$i"} 	= "Control $i"
 
 map_label{"pooled_rep"} 	= "Pooled replicate"
 map_label{"pooled_ctl"} 	= "Pooled control"
@@ -27,6 +25,9 @@ map_label{"pooled_reps"}	= "Pooled replicates"
 map_label{"true_reps"}		= "True replicates"
 map_label{"pseudo_reps"}	= "Pseudo-replicates"
 map_label{"pooled_pseudo_reps"} = "Pooled pseudo-replicate"
+map_label{"opt_set"} 		= "Optimal set"
+map_label{"consv_set"} 		= "Conservative set"
+map_label{"overlap"} 		= "Naive overlap"
 
 // level3
 map_label{"pr1"} 		= "Pseudo-replicate 1"
@@ -42,6 +43,7 @@ map_label{"bam"} 		= "bam"
 map_label{"filt_bam"} 		= "filtered bam"
 map_label{"srt_bam"} 		= "sorted bam"
 map_label{"bedpe"} 		= "bedpe"
+map_label{"subsampled_bedpe"} 	= "subsampled bedpe"
 map_label{"tagalign"} 		= "tagalign"
 map_label{"subsampled_tagalign"}= "subsampled tagalign"
 map_label{"xcor_qc"}		= "cross-corr. QC"
@@ -54,9 +56,7 @@ map_label{"gpeak"} 		= "gapped peak"
 map_label{"idr_peak"} 		= "IDR peak"
 map_label{"peak"} 		= "peak"
 map_label{"peak_filt"} 		= "filtered peak"
-
-// for sorting filetable
-int{} map_rank
+map_label{"peak_overlap"} 	= "peak"
 
 // level1
 map_rank{"L1_align"} 		= 1
@@ -66,18 +66,19 @@ map_rank{"L1_idr"} 		= 4
 
 _rank := 0
 // level2
-for (int i=1; i<=100; i++) {
-	map_rank{"rep$i"} = ++_rank
-}
-for (int i=1; i<=100; i++) {
-	map_rank{"ctl$i"} = ++_rank
-}
+for (int i=1; i<=100; i++) \
+	map_rank{"rep$i"} 	= ++_rank
+for (int i=1; i<=100; i++) \
+	map_rank{"ctl$i"} 	= ++_rank
 
 map_rank{"pooled_rep"} 		= ++_rank
 map_rank{"pooled_ctl"} 		= ++_rank
 map_rank{"pooled_reps"}		= ++_rank
 map_rank{"pseudo_reps"}		= ++_rank
 map_rank{"pooled_pseudo_reps"} 	= ++_rank
+map_rank{"opt_set"} 		= ++_rank
+map_rank{"consv_set"} 		= ++_rank
+map_rank{"overlap"} 		= ++_rank
 
 // level3
 map_rank{"pr1"} 		= 1
@@ -93,37 +94,27 @@ map_rank{"bam"} 		= 3
 map_rank{"filt_bam"} 		= 4
 map_rank{"srt_bam"} 		= 5
 map_rank{"bedpe"} 		= 6
-map_rank{"tagalign"} 		= 7
-map_rank{"subsampled_tagalign"}	= 8
-map_rank{"xcor_qc"}		= 9
-map_rank{"pval"} 		= 10
-map_rank{"fc"} 			= 11
-map_rank{"npeak"} 		= 12
-map_rank{"rpeak"} 		= 13
-map_rank{"bpeak"} 		= 14
-map_rank{"gpeak"} 		= 15
-map_rank{"idr_peak"} 		= 16
-map_rank{"peak"} 		= 17
-map_rank{"peak_filt"} 		= 18
+map_rank{"subsampled_bedpe"} 	= 7
+map_rank{"tagalign"} 		= 8
+map_rank{"subsampled_tagalign"}	= 9
+map_rank{"xcor_qc"}		= 10
+map_rank{"pval"} 		= 11
+map_rank{"fc"} 			= 12
+map_rank{"npeak"} 		= 13
+map_rank{"rpeak"} 		= 14
+map_rank{"bpeak"} 		= 15
+map_rank{"gpeak"} 		= 16
+map_rank{"idr_peak"} 		= 17
+map_rank{"peak"} 		= 18
+map_rank{"peak_filt"} 		= 19
+map_rank{"peak_overlap"} 	= 20
+
 
 
 string{} filetable_label // key: hierarchy
 string{} filetable_path
 int{} filetable_rank
 
-/*
-_spinlock := false
-
-void _lock() {
-	 while( _spinlock ) {
-
-	 }
-}
-
-void _unlock() {
-
-}
-*/
 
 string _html_filetable() { // graphviz diagram
 

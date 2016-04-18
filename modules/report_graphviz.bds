@@ -23,6 +23,7 @@ grp_color_spp		:= "skyblue"
 grp_color_macs2		:= "lightgreen"
 grp_color_idr 		:= "limegreen" 
 grp_color_ataqc 	:= "pink"
+grp_color_naive_overlap := "skyblue"
 
 
 dot_lines 	:= "" // graphviz dot contents

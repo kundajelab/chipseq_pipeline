@@ -2,7 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
-include "report_graphviz.bds"
+include "report.bds"
 
 
 help == callpeak gem settings (requirements: -chrsz -seq)
@@ -51,6 +51,8 @@ string[] _gem( string tag, string ctl_tag, string o_dir, string info ) {
 	taskName:= "gem " + info
 	cpus 	:= nth_gem;	mem := get_res_mem(mem_gem);	timeout := get_res_wt(wt_gem)
 
+	wait_par_peak()
+
 	task( out<-in ) {
 
 		sys $shcmd_init
@@ -77,7 +79,8 @@ string[] _gem( string tag, string ctl_tag, string o_dir, string info ) {
 		sys mv "$prefix/$prefix_basename"_result.htm $html
 	}
 
-	wait_par_peak( out<-in )
+	//wait_par_peak( out<-in )
+	wait_par()
 
 	return out
 }

@@ -2,7 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
-include "report_graphviz.bds"
+include "report.bds"
 
 // has functions related to bam, and helps getting bam from configruation file or command line argument
 
@@ -481,6 +481,7 @@ string _bam_to_bed_atac( string filt_bam, string o_dir, string label, string gra
 				INPUT="$non_mito_bam" OUTPUT="$non_mito_bam_hist_log" \
 				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
 			fi
+		sys rm -f $non_mito_bam $mito_bam
 	}
 
 	_add_to_graphviz( [graph_in], [filt_bam], [graph_out], [bed] )

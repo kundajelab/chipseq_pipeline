@@ -2,6 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
+include "report.bds"
 
 
 help == bam input (raw or filtered) definition :

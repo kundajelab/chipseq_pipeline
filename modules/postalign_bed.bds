@@ -2,7 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
-include "report_graphviz.bds"
+include "report.bds"
 
 
 // has functions related to tagalign, and helps getting tagalign from configruation file or command line argument
@@ -60,6 +60,36 @@ string _subsample_tag( string tag, string o_dir, string label, \
 	return out
 }
 
+string _subsample_tag( string tag, int nlines, string o_dir, string label, \
+			string graph_in, string graph_out, string hrchy_out ) {
+
+	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
+	nreads_per_mill := (nlines/1000000)
+	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
+
+	in 	:= [ tag ]
+	out 	:= subsampled_tag
+
+	taskName:= "_subsample_tag " + label
+
+	task( out<-in ) {
+
+		sys $shcmd_init
+	
+		//# Subsample tagAlign file
+		sys zcat $tag | \
+			grep -v "chrM" | shuf -n $nlines | gzip -c > $subsampled_tag
+	}
+
+	wait_par()
+
+	_add_to_graphviz( [graph_in], [tag], [graph_out], [subsampled_tag] )
+
+	_add_to_filetable( [hrchy_out], [subsampled_tag] )
+
+	return out
+}
+
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
 string _subsample_tag_PE( string tag, string o_dir, string label ) {
@@ -102,14 +132,14 @@ string _subsample_tag_PE( string tag, string o_dir, string label, \
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
-string _subsample_bedpe_to_tag( string bedpe, string o_dir, string label ) {
+string _subsample_bedpe_to_tag_xcor( string bedpe, string o_dir, string label ) {
 
-	return _subsample_bedpe_to_tag( bedpe, o_dir, label, \
+	return _subsample_bedpe_to_tag_xcor( bedpe, o_dir, label, \
 				 	"bedpe_($label)", "subsampled_tagalign_($label)", \
 				 	"L1_align/$label/subsampled_tagalign" )
 }
 
-string _subsample_bedpe_to_tag( string bedpe, string o_dir, string label, \
+string _subsample_bedpe_to_tag_xcor( string bedpe, string o_dir, string label, \
 				string graph_in, string graph_out, string hrchy_out ) {
 	
 	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
@@ -162,6 +192,30 @@ string _subsample_bedpe( string bedpe, string o_dir, string label ) {
 
 	return out
 }
+
+string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) {
+	
+	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
+	nreads_per_mill := (nlines/1000000)
+	subsampled_bedpe:= "$prefix.$nreads_per_mill.bedpe.gz"
+
+	in 	:= [ bedpe ]
+	out 	:= subsampled_bedpe
+
+	taskName:= "subsample_bedpe " + label
+
+	task( out<-in ) {
+
+		sys $shcmd_init
+
+		sys zcat $bedpe | grep -v "chrM" | shuf -n $nlines | gzip -c > $subsampled_bedpe
+	}
+
+	wait_par()
+
+	return out
+}
+
 
 // Adjusts the read-ends in a read BED by Tn5 offsets
 string _shift_tag( string tag, string o_dir, string label ) {

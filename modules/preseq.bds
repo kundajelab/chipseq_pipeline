@@ -2,7 +2,8 @@
 #vim: syntax=java
 
 include "species.bds"
-include "report_graphviz.bds"
+include "report.bds"
+
 
 help == preseq analysis settings
 xmax 		:= 500		help Maximum # of reads for preseq analysis (default: 500).
