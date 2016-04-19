@@ -372,10 +372,15 @@ string _pdf_to_png( string pdf ) {
 
 	png 	:= rm_ext( pdf, "pdf" ) + ".png"
 
-	// Requirements: poppler-utils (sudo apt-get install poppler-utils)
+	//XXXXXXXXXXX Requirements: poppler-utils (sudo apt-get install poppler-utils)
+	// needs ghostscript installed
 	task {
 		sys $shcmd_init
-		sys pdftoppm -png $pdf > $png
+		sys gs -dFirstPage=1 -dLastPage=1 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r110x110 \
+			-dUseCropBox -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m \
+			-sOutputFile=$png \
+			-r144 $pdf
+		//sys pdftoppm -png $pdf > $png
 	}
 
 	return png
@@ -410,7 +415,8 @@ string _peak_to_hammock( string peak ) {
 
 		sys $shcmd_init
 		sys zcat $peak | sed '/^\(chr\)/!d' | sort -k1,1V -k2,2n > $tmp
-		sys python $conv $tmp $hammock
+		//sys python $conv $tmp $hammock
+		sys $conv $tmp $hammock
 		sys rm -f $tmp
 	}
 

@@ -2,6 +2,21 @@
 #vim: syntax=java
 
 
+// Functions usually have the following structure. Output naming policy is included in the function.
+// They find prefix of input and add suffix to output and then change output's directory (o_dir).
+// Therefore, output naming is already defined in each file. e.g. in bwa, PREFIX.fastq.gz -> PREFIX.bam
+// e.g. output (string or array of str.) = _do_something( input1, input2, ... , o_dir, info )
+
+// Don't be confused with additional code lines for each underscored( _ ) function and 'hrchy' and 'graph' things.
+// They are for automatic generation of graphviz diagram and HTML filetable
+
+// Variables can be declared with help context, they are automatically set as 'parameter variables' and become parameters on shell command line.
+// You can omit type of variable with ':='. e.g. str1 := "abc" is equivalent to string str1 = "abc".
+
+// Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
+// e.g. filt_bam{"rep1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
+
+
 help == chipseq pipeline settings
 
 pe 		:= false 	help Paired end data.
@@ -104,7 +119,7 @@ void init_chipseq() {
 	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
 }
 
-void calc_max_callpeak() {
+void calc_max_callpeak() { // limit # of peak calling in parallel for each peak caller
 
 	real r1 = peaks_in_par
 	real r2 = (is_callpeak_spp() ? 1:0) + (is_callpeak_macs2() ? 1:0)
