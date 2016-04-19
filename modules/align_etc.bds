@@ -71,7 +71,7 @@ string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string l
 		sys $shcmd_init
 
 		sys cd $o_dir
-		sys python $(which trimAdapters.py) -a $fastq1 -b $fastq2
+		sys $(which trimAdapters.py) -a $fastq1 -b $fastq2
 		sys gzip $p1
 		sys gzip $p2
 	}
