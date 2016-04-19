@@ -153,7 +153,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, string peak_o_dir, 
 		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
 	}
 
-	wait_par_peak( out<-in )
+	wait_par()
 
 	_add_to_graphviz( [graph_in1,graph_in2], [tag, ctl_tag], [graph_out1,graph_out2,graph_out3], [npeakfile,pval_bigwig,fc_bigwig], \
 			  "macs2_($label)", grp_color_macs2 )
@@ -249,7 +249,7 @@ string[] _macs2_atac( string non_mito_bed, string smooth_window, string peak_o_d
 		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
 	}
 
-	wait_par_peak( out<-in )
+	wait_par()
 
 	_add_to_graphviz( [graph_in], [non_mito_bed], [graph_out1, graph_out2, graph_out3], [peakfile,pval_bigwig,fc_bigwig], \
 			  "macs2_($label)", grp_color_macs2 )

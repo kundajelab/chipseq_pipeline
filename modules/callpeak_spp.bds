@@ -71,7 +71,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 		sys mv $pdf_tmp $pdf
 	}
 
-	wait_par_peak( out<-in )
+	wait_par()
 
 	_add_to_graphviz( [graph_in1,graph_in2], [tag,ctl_tag], [graph_out], [rpeakfile], "spp_($label)", grp_color_spp )
 
