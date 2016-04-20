@@ -954,10 +954,11 @@ string _html_chipseq_tracks() {
 
 	if ( signal_trk_pval.hasKey( "pooled" ) ) { track_types += "bigwig"; track_names += "pval (pooled)"; track_files += signal_trk_pval{"pooled"} }
 	if ( signal_trk_fc.hasKey( "pooled" ) )   { track_types += "bigwig"; track_names += "fc (pooled)";   track_files += signal_trk_fc{"pooled"}   }
+
+	if ( peak_overlap != "" ) { track_types += "hammock"; track_names += "peak overlap"; track_files += _peak_to_hammock( peak_overlap ) }
+
 	if ( idr_opt != "" ) {	track_types += "hammock"; track_names += "peak idr (opt. set)"; track_files += _peak_to_hammock( idr_opt ) }
 	if ( idr_consv != "" ) {track_types += "hammock"; track_names += "peak idr (cons. set)"; track_files += _peak_to_hammock( idr_consv ) }
-
-	if ( peak.hasKey("macs2,1") ) {track_types += "hammock"; track_names += "MACS2 peak rep1"; track_files += _peak_to_hammock( peak{"macs2,1"} ) }
 
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 

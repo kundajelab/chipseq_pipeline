@@ -218,7 +218,7 @@ string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) 
 
 
 // Adjusts the read-ends in a read BED by Tn5 offsets
-string _shift_tag( string tag, string o_dir, string label ) {
+string _tn5_shift_tag( string tag, string o_dir, string label ) {
 	
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	//shifted_tag 	:= "$prefix.shifted.tagAlign.gz"
