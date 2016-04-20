@@ -28,6 +28,11 @@ def fuzz_align(s_seq,l_seq,mismatch):
             return i, dist
             break
 
+# added by Jin Lee for hot fix (output name bug)
+def rreplace(s, old, new, occurrence):
+    li = s.rsplit(old, occurrence)
+    return new.join(li)
+
 #### OPTIONS ####
 # define options
 opts = OptionParser()

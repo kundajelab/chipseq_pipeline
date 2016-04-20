@@ -106,7 +106,7 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 
 	return _idr_final_qc( idr_tr, idr_pr_rep1, idr_pr_rep2, idr_ppr, o_dir, label, \
 				"idr_peak_(true)","idr_peak_(rep1-pr)","idr_peak_(rep2-pr)","idr_peak_(ppr)", \
-				"idr_qc", "L1_idr/idr_qc" )
+				"idr_qc", "L1_peak/idr/idr_qc" )
 }
 
 string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, string idr_ppr, string o_dir, string label, \
