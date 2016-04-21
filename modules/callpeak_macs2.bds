@@ -226,9 +226,10 @@ string[] _macs2_atac( string non_mito_bed, string smooth_window, string pval_thr
 		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $peakfile
 		sys rm -f "$prefix"_peaks.narrowPeak
 
-		sys rm -f "$prefix"_peaks.xls "$prefix"_summits.bed
+		sys rm -f "$prefix"_peaks.xls
+		sys rm -f "$prefix"_summits.bed
 
-		sys if [[ $make_sig == "false" ]]; then exit 0 fi
+		//sys if [[ $make_sig == "false" ]]; then exit 0 fi
 
 		sys macs2 bdgcmp \
 			-t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg \
