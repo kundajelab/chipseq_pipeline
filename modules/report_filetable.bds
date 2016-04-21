@@ -48,13 +48,16 @@ map_label{"tagalign"} 		= "tagalign"
 map_label{"subsampled_tagalign"}= "subsampled tagalign"
 map_label{"xcor_qc"}		= "cross-corr. QC"
 map_label{"pval"} 		= "p-value"
+map_label{"pval001"} 		= "p-value (thld: 0.01)"
 map_label{"fc"} 		= "fold enrichment"
+map_label{"fc001"} 		= "fold enrichment (thld: 0.01)"
 map_label{"npeak"} 		= "narrow peak"
 map_label{"rpeak"} 		= "region peak"
 map_label{"bpeak"} 		= "broad peak"
 map_label{"gpeak"} 		= "gapped peak"
 map_label{"idr_peak"} 		= "IDR peak"
 map_label{"peak"} 		= "peak"
+map_label{"peak001"} 		= "peak (thld: 0.01)"
 map_label{"peak_filt"} 		= "filtered peak"
 map_label{"peak_overlap"} 	= "peak"
 
@@ -99,15 +102,18 @@ map_rank{"tagalign"} 		= 8
 map_rank{"subsampled_tagalign"}	= 9
 map_rank{"xcor_qc"}		= 10
 map_rank{"pval"} 		= 11
-map_rank{"fc"} 			= 12
-map_rank{"npeak"} 		= 13
-map_rank{"rpeak"} 		= 14
-map_rank{"bpeak"} 		= 15
-map_rank{"gpeak"} 		= 16
-map_rank{"idr_peak"} 		= 17
-map_rank{"peak"} 		= 18
-map_rank{"peak_filt"} 		= 19
-map_rank{"peak_overlap"} 	= 20
+map_rank{"pval001"} 		= 12
+map_rank{"fc"} 			= 13
+map_rank{"fc001"} 		= 14
+map_rank{"npeak"} 		= 15
+map_rank{"rpeak"} 		= 16
+map_rank{"bpeak"} 		= 17
+map_rank{"gpeak"} 		= 18
+map_rank{"idr_peak"} 		= 19
+map_rank{"peak"} 		= 20
+map_rank{"peak001"} 		= 21
+map_rank{"peak_filt"} 		= 22
+map_rank{"peak_overlap"} 	= 23
 
 
 
