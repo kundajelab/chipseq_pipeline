@@ -866,7 +866,7 @@ void do_idr() {
 				sys cp $idr_consv_ $idr_consv
 			}
 
-			_add_to_filetable( ["L1_peak/idr/opt_set/idr_peak","L1_peak/idr/consv_set/idr_peak"], [idr_opt, idr_consv] )
+			//_add_to_filetable( ["L1_peak/idr/opt_set/idr_peak","L1_peak/idr/consv_set/idr_peak"], [idr_opt, idr_consv] )
 		}
 
 	}
