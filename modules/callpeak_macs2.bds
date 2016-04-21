@@ -260,7 +260,7 @@ string[] _macs2_atac( string non_mito_bed, string smooth_window, string pval_thr
 	wait_par()
 
 	_add_to_graphviz( [graph_in], [non_mito_bed], [graph_out1, graph_out2, graph_out3], [peakfile,pval_bigwig,fc_bigwig], \
-			  "macs2_pval-thld $pval_thresh"+"_($label)", grp_color_macs2 )
+			  "macs2_pval-thld._$pval_thresh"+"_($label)", grp_color_macs2 )
 
 	_add_to_filetable( [hrchy_out1, hrchy_out2, hrchy_out3], [peakfile,pval_bigwig,fc_bigwig] )
 
