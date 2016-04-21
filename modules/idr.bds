@@ -64,7 +64,7 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 		sys idr_thresh_transformed=$(awk -v p=$idr_thresh 'BEGIN{print -log(p)/log(10)}')
 
 		//# Get peaks passing global IDR threshold and convert file to narrowPeak format (Step 9)
-		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}' $idr_output \
+		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,"0"}' $idr_output \
 			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr
 
 		sys echo -e "$label\t$(zcat $peak_idr | wc -l)" >> $npeaks_file
