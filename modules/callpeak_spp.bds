@@ -54,7 +54,9 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 	taskName:= "spp " + label
 	cpus 	:= nth_spp;	mem := get_res_mem(mem_spp);	timeout := get_res_wt(wt_spp)
 
-	task( out<-in ) {
+	wait_par_peak()
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init_r2
 
@@ -70,7 +72,8 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 
 		sys mv $pdf_tmp $pdf
 	}
-
+	tids_callpeak.add(tid)
+	
 	wait_par()
 
 	_add_to_graphviz( [graph_in1,graph_in2], [tag,ctl_tag], [graph_out], [rpeakfile], "spp_($label)", grp_color_spp )

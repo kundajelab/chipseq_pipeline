@@ -32,6 +32,7 @@ shcmd_init_r2 	:= ""  // for softwares using R 2.x
 shcmd_init_py3	:= ""  // for softwares using python3
 
 _cnt_rep 	:= 0 	// # of rep/ctl processed
+string[] tids_callpeak	// array of task ids for peak calling jobs
 
 
 init_general()
@@ -263,4 +264,14 @@ void wait_par_rep( bool out_in ) {
 	if ( out_in ) _cnt_rep++
 
 	if ( (par_lvl <= 0) || (_cnt_rep % reps_in_par == 0) ) wait
+}
+
+void wait_par_peak() {
+
+	if ( tids_callpeak.size() >= peaks_in_par ) {
+		dummy := tids_callpeak // fails without dummy array, it's BDS bug
+		wait dummy
+
+		if ( tids_callpeak.size() > 0 ) tids_callpeak = []
+	}
 }

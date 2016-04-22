@@ -60,7 +60,6 @@ input 		:= ""
 num_ctl 	:= 1
 num_callpeak 	:= 2 	// spp (1), macs2 (2)
 peakcallers 	:= ["spp","macs2"]
-max_callpeak 	:= 1	// maximum # of peak calling in parallel
 
 // filepath of outputs
 string{} fastq, bam, filt_bam, tag, tag_pr1, tag_pr2 // replicate data: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
@@ -114,19 +113,9 @@ void init_chipseq() {
 
 	if ( !control_exists() ) num_ctl = 0
 
-	calc_max_callpeak()
-
 	print_chipseq()
 	
 	out_dir = mkdir_path( out_dir ) // create output directory and get absolute path for it	
-}
-
-void calc_max_callpeak() { // limit # of peak calling in parallel for each peak caller
-
-	real r1 = peaks_in_par
-	real r2 = (is_callpeak_spp() ? 1:0) + (is_callpeak_macs2() ? 1:0)
-	
-	max_callpeak = round( ceil( r1/r2 ) )
 }
 
 void print_chipseq() {
@@ -605,8 +594,6 @@ void _call_peaks( string peakcaller ) {
 	//////////////// call peaks /////////////////
 	/// Note that two additional lines  for each peak calling are for visualization and file table.
 
-	cnt_callpeak := 0 // count peak calling 
-	
 	// create directories
 	peak_o_dir 	:= mkdir_path( "$out_dir/peak/$peakcaller") // peak directory structure
 	sig_o_dir 	:= mkdir_path( "$out_dir/signal/$peakcaller") // signal directory structure
@@ -620,8 +607,6 @@ void _call_peaks( string peakcaller ) {
 				\
 				"tagalign_(rep1)", tag_ctl1_label, "peak_$peakcaller"+"_(rep1)", "pval_signal_(rep1)", "fc_signal_(rep1)", \
 				"L1_peak/$rep1_hrchy/peak", "L1_signal/$rep1_hrchy/pval", "L1_signal/$rep1_hrchy/fc" )
-
-	if ( !path_exists( peak{"$peakcaller,1"} ) && ++cnt_callpeak % max_callpeak == 0 ) wait
 
 	if ( !true_rep ) {
 
@@ -638,14 +623,10 @@ void _call_peaks( string peakcaller ) {
 					"tagalign_(rep1-pr1)", tag_ctl1_label, "peak_$peakcaller"+"_(rep1-pr1)", "pval_signal_(rep1-pr1)", "fc_signal_(rep1-pr1)", \
 					"L1_peak/$rep1_pr1_hrchy/peak", "L1_signal/$rep1_pr1_hrchy/pval", "L1_signal/$rep1_pr1_hrchy/fc" )
 
-		if ( !path_exists( peak_pr1{"$peakcaller,1"} ) && ++cnt_callpeak % max_callpeak == 0 ) wait
-
 		peak_pr2{"$peakcaller,1"} = _call_peaks( peakcaller, tag_pr2{"0,1"}, tag_ctl1_, fraglen_pr2{1}, false, rep1_pr2_o_dir, rep1_pr2_sig_o_dir, "rep1-pr2", \
 						\
 					"tagalign_(rep1-pr2)", tag_ctl1_label, "peak_$peakcaller"+"_(rep1-pr2)", "pval_signal_(rep1-pr2)", "fc_signal_(rep1-pr2)", \
 					"L1_peak/$rep1_pr2_hrchy/peak", "L1_signal/$rep1_pr2_hrchy/pval", "L1_signal/$rep1_pr2_hrchy/fc" )
-
-		if ( !path_exists( peak_pr2{"$peakcaller,1"} ) && ++cnt_callpeak % max_callpeak == 0 ) wait
 	}
 
 	if ( is_data_available( 0, 2 ) ) { // if replicate 2 exists
@@ -660,8 +641,6 @@ void _call_peaks( string peakcaller ) {
 						"tagalign_(rep2)", tag_ctl2_label, "peak_$peakcaller"+"_(rep2)", "pval_signal_(rep2)", "fc_signal_(rep2)", \
 						"L1_peak/$rep2_hrchy/peak", "L1_signal/$rep2_hrchy/pval", "L1_signal/$rep2_hrchy/fc" )
 
-		if ( !path_exists( peak{"$peakcaller,2"} ) && ++cnt_callpeak % max_callpeak == 0 ) wait
-
 		pooled_o_dir	:= mkdir_path( "$peak_o_dir/pooled_rep" )
 		pooled_sig_o_dir:= mkdir_path( "$sig_o_dir/pooled_rep" )
 
@@ -671,8 +650,6 @@ void _call_peaks( string peakcaller ) {
 						\
 						"tagalign_(pooled)", tag_ctl_pooled_label, "peak_$peakcaller"+"_(pooled)", "pval_signal_(pooled)", "fc_signal_(pooled)", \
 						"L1_peak/$pooled_hrchy/peak", "L1_signal/$pooled_hrchy/pval", "L1_signal/$pooled_hrchy/fc" )
-
-		if ( !path_exists( peak_pooled{"$peakcaller"} ) && ++cnt_callpeak % max_callpeak == 0 ) wait
 
 		if ( !true_rep ) {
 
@@ -689,14 +666,10 @@ void _call_peaks( string peakcaller ) {
 							"tagalign_(rep2-pr1)",tag_ctl2_label, "peak_$peakcaller"+"_(rep2-pr1)", "pval_signal_(rep2-pr1)", "fc_signal_(rep2-pr1)", \
 							"L1_peak/$rep2_pr1_hrchy/peak", "L1_signal/$rep2_pr1_hrchy/pval", "L1_signal/$rep2_pr1_hrchy/fc" )
 
-			if ( !path_exists( peak_pr1{"$peakcaller,2"} ) && ++cnt_callpeak % max_callpeak == 0 ) wait
-
 			peak_pr2{"$peakcaller,2"} = _call_peaks( peakcaller, tag_pr2{"0,2"}, tag_ctl2_, fraglen_pr2{2}, false, rep2_pr2_o_dir, rep2_pr2_sig_o_dir, "rep2-pr2", \
 							\
 							"tagalign_(rep2-pr2)",tag_ctl2_label, "peak_$peakcaller"+"_(rep2-pr2)", "pval_signal_(rep2-pr2)", "fc_signal_(rep2-pr2)", \
 							"L1_peak/$rep2_pr2_hrchy/peak", "L1_signal/$rep2_pr2_hrchy/pval", "L1_signal/$rep2_pr2_hrchy/fc" )
-
-			if ( !path_exists( peak_pr2{"$peakcaller,2"} ) && ++cnt_callpeak % max_callpeak == 0 ) wait
 
 			ppr1_o_dir 	:= mkdir_path( "$peak_o_dir/pooled_pseudo_reps/ppr1" )
 			ppr1_sig_o_dir 	:= mkdir_path( "$sig_o_dir/pooled_pseudo_reps/ppr1" )
@@ -710,8 +683,6 @@ void _call_peaks( string peakcaller ) {
 							\
 							"tagalign_(ppr1)",tag_ctl_pooled_label, "peak_$peakcaller"+"_(ppr1)", "pval_signal_(ppr1)", "fc_signal_(ppr1)", \
 							"L1_peak/$ppr1_hrchy/peak", "L1_signal/$ppr1_hrchy/pval", "L1_signal/$ppr1_hrchy/fc" )
-
-			if ( !path_exists( peak_ppr1{"$peakcaller"} ) && ++cnt_callpeak % max_callpeak == 0 ) wait
 
 			peak_ppr2{"$peakcaller"} = _call_peaks( peakcaller, tag_ppr2, tag_ctl_pooled_, fraglen_ppr2, false, ppr2_o_dir, ppr2_sig_o_dir, "ppr2", \
 							\
