@@ -107,7 +107,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 		  "$prefix"_peaks.gappedPeak \
 		  "$prefix"_summits.bed
 
-		sys if [[ $make_sig == "false" ]]; then exit 0 fi
+		//sys if [[ $make_sig == "false" ]]; then exit 0 fi
 
 		//===========================================
 		//# For Fold enrichment signal tracks
