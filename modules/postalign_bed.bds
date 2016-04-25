@@ -25,14 +25,6 @@ void init_postalign_bed() {
 
 string _subsample_tag( string tag, string o_dir, string label ) {
 
-	return _subsample_tag( tag, o_dir, label, \
-			 	"tagalign_($label)", "subsampled_tagalign_($label)", \
-			 	"L1_align/$label/subsampled_tagalign")
-}
-
-string _subsample_tag( string tag, string o_dir, string label, \
-			string graph_in, string graph_out, string hrchy_out ) {
-
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	nreads_per_mill := (nreads/1000000)
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
@@ -52,16 +44,18 @@ string _subsample_tag( string tag, string o_dir, string label, \
 	}
 
 	wait_par()
+/*
+ 	graph_in 	:= ["tagalign_($label)"]
+ 	graph_out 	:= ["subsampled_tagalign_($label)"]
+	hrchy_out 	:= ["L1_align/$label/subsampled_tagalign"]
 
-	_add_to_graphviz( [graph_in], [tag], [graph_out], [subsampled_tag] )
-
-	_add_to_filetable( [hrchy_out], [subsampled_tag] )
-
+	_add_to_graphviz( graph_in, in, graph_out, [out] )
+	_add_to_filetable( hrchy_out, [out] )
+*/
 	return out
 }
 
-string _subsample_tag( string tag, int nlines, string o_dir, string label, \
-			string graph_in, string graph_out, string hrchy_out ) {
+string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	nreads_per_mill := (nlines/1000000)
@@ -82,26 +76,13 @@ string _subsample_tag( string tag, int nlines, string o_dir, string label, \
 	}
 
 	wait_par()
-
-	_add_to_graphviz( [graph_in], [tag], [graph_out], [subsampled_tag] )
-
-	_add_to_filetable( [hrchy_out], [subsampled_tag] )
-
 	return out
 }
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
-string _subsample_tag_PE( string tag, string o_dir, string label ) {
+string _subsample_tag_PE_xcor( string tag, string o_dir, string label ) {
 
-	return _subsample_tag_PE( tag, o_dir, label, \
-				"tagalign_($label)", "subsampled_tagalign_($label)", \
-				"L1_align/$label/subsampled_tagalign" )
-}
-
-string _subsample_tag_PE( string tag, string o_dir, string label, \
-				string graph_in, string graph_out, string hrchy_out ) {
-	
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","bed"] ), o_dir )
 	nreads_per_mill := (nreads/1000000)
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
@@ -122,25 +103,20 @@ string _subsample_tag_PE( string tag, string o_dir, string label, \
 	}
 
 	wait_par()
+/*
+	graph_in  := ["tagalign_($label)"]
+	graph_out := ["subsampled_tagalign_($label)"]
+	hrchy_out := ["L1_align/$label/subsampled_tagalign"]
 
-	_add_to_graphviz( [graph_in], [tag], [graph_out], [subsampled_tag] )
-
-	_add_to_filetable( [hrchy_out], [subsampled_tag] )
-
+	_add_to_graphviz( graph_in, in, graph_out, [out] )
+	_add_to_filetable( hrchy_out, [out] )
+*/
 	return out
 }
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
 string _subsample_bedpe_to_tag_xcor( string bedpe, string o_dir, string label ) {
-
-	return _subsample_bedpe_to_tag_xcor( bedpe, o_dir, label, \
-				 	"bedpe_($label)", "subsampled_tagalign_($label)", \
-				 	"L1_align/$label/subsampled_tagalign" )
-}
-
-string _subsample_bedpe_to_tag_xcor( string bedpe, string o_dir, string label, \
-				string graph_in, string graph_out, string hrchy_out ) {
 	
 	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
 	nreads_per_mill := (nreads/1000000)
@@ -162,11 +138,14 @@ string _subsample_bedpe_to_tag_xcor( string bedpe, string o_dir, string label, \
 	}
 
 	wait_par()
+/*
+	graph_in  := ["bedpe_($label)"]
+	graph_out := ["subsampled_tagalign_($label)"]
+	hrchy_out := ["L1_align/$label/subsampled_tagalign"]
 
-	_add_to_graphviz( [graph_in], [bedpe], [graph_out], [subsampled_tag] )
-
-	_add_to_filetable( [hrchy_out], [subsampled_tag] )
-
+	_add_to_graphviz( graph_in, in, graph_out, [out] )
+	_add_to_filetable( hrchy_out, [out] )
+*/
 	return out
 }
 
@@ -216,7 +195,6 @@ string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) 
 	return out
 }
 
-
 // Adjusts the read-ends in a read BED by Tn5 offsets
 string _tn5_shift_tag( string tag, string o_dir, string label ) {
 	
@@ -241,15 +219,7 @@ string _tn5_shift_tag( string tag, string o_dir, string label ) {
 	return out
 }
 
-string[] _xcor( string tag, string o_dir, string label ) {
-
-	return _xcor( tag, o_dir, label, \
-			"subsampled_tagalign_($label)", "xcor_qc_($label)",\
-			"L1_align/$label/xcor_qc" )
-}
-
-string[] _xcor( string tag, string o_dir, string label, \
-		string graph_in, string graph_out, string hrchy_out ) {
+string[] _xcor( string tag, string o_dir, string label, string hrchy ) {
 
 	// misc.
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
@@ -277,27 +247,18 @@ string[] _xcor( string tag, string o_dir, string label, \
 
 	wait_par()
 
-	_add_to_graphviz( [graph_in], [tag], [graph_out], [xcor_score], "cross-corr.\\n($label)", grp_color_xcor )
+	graph_in  := ["subsampled_tagalign_($label)"]
+	graph_out := ["xcor_qc_($label)"]	
+	hrchy_out := ["L1_qc/$hrchy/xcor_qc"]
 
-	_add_to_filetable( [hrchy_out], [xcor_score] )
+	//_add_to_graphviz( graph_in, in, graph_out, out, "cross-corr.\\n($label)", grp_color_xcor )
+	_add_to_filetable( hrchy_out, out )
 
 	return out
 }
 
 // make spr(self_pseudo_replicate)
-
 string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
-
-	return _spr( tag, pr1_o_dir, pr2_o_dir, label, \
-			"tagalign_($label)", \
-			"tagalign_($label-pr1)", "tagalign_($label-pr2)", \
-			"L1_align/pseudo_reps/$label/pr1/tagalign", \
-			"L1_align/pseudo_reps/$label/pr2/tagalign" ) 
-}
-
-string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label, \
-		string graph_in, string graph_out1, string graph_out2, \
-		string hrchy_out1, string hrchy_out2 ) {
 	
 	prefix_pr1 	:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), pr1_o_dir )
 	prefix_pr2	:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), pr2_o_dir )
@@ -330,25 +291,18 @@ string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label, \
 
 	wait_par()
 
-	_add_to_graphviz( [graph_in], [tag], [graph_out1, graph_out2], [tag_pr1,tag_pr2] )
+	graph_in  := ["tagalign_($label)"]
+	graph_out := ["tagalign_($label-pr1)", "tagalign_($label-pr2)"]
+	hrchy_out := ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"]
 
-	_add_to_filetable( [hrchy_out1, hrchy_out2], [tag_pr1,tag_pr2] )
+	_add_to_graphviz( graph_in, in, graph_out, out )
+
+	_add_to_filetable( hrchy_out, out )
 
 	return out
 }
 
 string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label ) {
-
-	return _spr_PE( bedpe, pr1_o_dir, pr2_o_dir, label, \
-			"bedpe_($label)", \
-			"tagalign_($label-pr1)", "tagalign_($label-pr2)", \
-			"L1_align/pseudo_reps/$label/pr1/tagalign", \
-			"L1_align/pseudo_reps/$label/pr2/tagalign" ) 
-}
-
-string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label, \
-			string graph_in, string graph_out1, string graph_out2, \
-			string hrchy_out1, string hrchy_out2 ) {
 	
 	prefix_pr1 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed","tagAlign"] ), pr1_o_dir )
 	prefix_pr2 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed","tagAlign"] ), pr2_o_dir )
@@ -384,25 +338,18 @@ string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label
 	
 	wait_par()
 
-	_add_to_graphviz( [graph_in], [bedpe], [graph_out1, graph_out2], [tag_pr1,tag_pr2] )
+	graph_in  := ["bedpe_($label)"]
+	graph_out := ["tagalign_($label-pr1)", "tagalign_($label-pr2)"]
+	hrchy_out := ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"]
 
-	_add_to_filetable( [hrchy_out1, hrchy_out2], [tag_pr1,tag_pr2] )
+	_add_to_graphviz( graph_in, in, graph_out, out )
+
+	_add_to_filetable( hrchy_out, out )
 
 	return out
 }
 
 string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
-
-	return _spr_tag_PE( tag, pr1_o_dir, pr2_o_dir, label, \
-			"tagalign_($label)", \
-			"tagalign_($label-pr1)", "tagalign_($label-pr2)", \
-			"L1_align/pseudo_reps/$label/pr1/tagalign", \
-			"L1_align/pseudo_reps/$label/pr2/tagalign" ) 
-}
-
-string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string label, \
-			string graph_in, string graph_out1, string graph_out2, \
-			string hrchy_out1, string hrchy_out2 ) {
 	
 	prefix_pr1 	:= replace_dir( rm_ext( tag, ["bed","tagAlign"] ), pr1_o_dir )
 	prefix_pr2 	:= replace_dir( rm_ext( tag, ["bed","tagAlign"] ), pr2_o_dir )
@@ -445,9 +392,13 @@ string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string lab
 	
 	wait_par()
 
-	_add_to_graphviz( [graph_in], [tag], [graph_out1, graph_out2], [tag_pr1,tag_pr2] )
+	graph_in  := ["tagalign_($label)"]
+	graph_out := ["tagalign_($label-pr1)", "tagalign_($label-pr2)"]
+	hrchy_out := ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"]
 
-	_add_to_filetable( [hrchy_out1, hrchy_out2], [tag_pr1,tag_pr2] )
+	_add_to_graphviz( graph_in, in, graph_out, out )
+
+	_add_to_filetable( hrchy_out, out )
 
 	return out
 }

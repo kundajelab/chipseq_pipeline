@@ -73,7 +73,7 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 	found_in := false
 
-	for ( int i=0; i<in_id.size(); i++ )  {
+	for ( int i=0; i< min(in_id.size(),in_path.size()); i++ )  {
 
 		//if ( in_id[i] == "" || !path_exists( in_path[i] ) ) continue
 		if ( in_id[i] == "" ) continue
@@ -92,7 +92,7 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 	found_out := false
 
-	for ( int i=0; i<out_id.size(); i++ ) {
+	for ( int i=0; i<min(out_id.size(),out_path.size()); i++ ) {
 
 		//if ( out_id[i] == "" || !path_exists( out_path[i] ) ) continue
 		if ( out_id[i] == "" ) continue

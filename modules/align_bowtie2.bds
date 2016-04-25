@@ -32,18 +32,12 @@ void chk_align_bwt2() {
 	if ( !path_exists("$bwt2_idx.1.bt2") ) error("Bowtie2 index (-bwt2_idx) doesn't exists! (file: $bwt2_idx.1.bt2)\n")
 }
 
-string[] _bowtie2( string fastq, string o_dir, string label ) {
-
-	return _bowtie2( fastq, o_dir, label, \
-			"fastq_($label)", "bam_($label)", "L1_align/$label/bam" )
-}
-
-string[] _bowtie2( string fastq, string o_dir, string label, \
-		string graph_in, string graph_out, string hrchy_out ) {
+string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, bool trimmed ) { 
 
 	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
+	prefix2	:= replace_dir( prefix, log_o_dir )
 	bam 	:= "$prefix.bam"
-	log 	:= "$prefix.align.log"
+	log 	:= "$prefix2.align.log"
 
 	in 	:= [ fastq ]
 	out 	:= [ bam, log ]
@@ -61,27 +55,25 @@ string[] _bowtie2( string fastq, string o_dir, string label, \
 			samtools view -bS - > $bam
 	}
 
-	_add_to_graphviz( [graph_in], [fastq], [graph_out], [bam], "bowtie2_($label)", grp_color_bwt2 )
-	
-	_add_to_filetable( [hrchy_out], [bam] )
+	graph_in := trimmed ? 	["trimmed_fastq_($label)"] : ["fastq_($label)"]
+	graph_out := ["bam_($label)"]//,"align_qc_($label)"]
+	hrchy_out := ["L1_align/$label/bam","L1_qc/$label/bwt2_qc"]
+
+	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_($label)", grp_color_bwt2 )
+
+	_add_to_filetable( hrchy_out, out )	
 
 	wait_par()
 
 	return out
 }
 
-string[] _bowtie2_csem( string fastq, string o_dir, string label ) {
-
-	return _bowtie2_csem( fastq, o_dir, label, \
-			"fastq_($label)", "bam_($label)", "L1_align/$label/bam" )
-}
-
-string[] _bowtie2_csem( string fastq, string o_dir, string label, \
-			string graph_in, string graph_out, string hrchy_out ) {
+string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string label, bool trimmed ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
+	prefix2 := replace_dir( prefix, log_o_dir )
 	sam 		:= "$prefix.sam"
-	log 		:= "$prefix.align.log"
+	log 		:= "$prefix2.align.log"
 	srt_bam		:= "$prefix.csem.sorted.bam"
 	srt_bam_prefix 	:= "$prefix.csem"
 
@@ -102,27 +94,26 @@ string[] _bowtie2_csem( string fastq, string o_dir, string label, \
 		sys rm -f $sam
 	}
 
-	_add_to_graphviz( [graph_in], [fastq], [graph_out], [srt_bam], "bowtie2_csem_($label)", grp_color_bwt2 )
+	graph_in  := trimmed ? 	["trimmed_fastq1_($label)"] : ["fastq_($label)"]
+	graph_out := ["bam_($label)"]//,"align_qc_($label)"]
+	hrchy_out := ["L1_align/$label/bam","L1_qc/$label/bwt2_qc"]
 
-	_add_to_filetable( [hrchy_out], [srt_bam] )
+	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_($label)", grp_color_bwt2 )
+
+	_add_to_filetable( hrchy_out, out )	
 
 	wait_par()
 
 	return out
 }
 
-string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string label ) {
-
-	return _bowtie2_PE( fastq1, fastq2, o_dir, label, \
-			"fastq1_($label)", "fastq2_($label)", "bam_($label)", "L1_align/$label/bam" )
-}
-
-string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string label, \
-		string graph_in1, string graph_in2, string graph_out, string hrchy_out ) {
+// trimmed_fastq : fastqs are trimmed or not
+string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, string label, bool trimmed ) { 
 
 	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
+	prefix2 := replace_dir( prefix, log_o_dir )
 	bam 	:= "$prefix.bam"
-	log 	:= "$prefix.align.log"
+	log 	:= "$prefix2.align.log"
 
 	in 	:= [ fastq1, fastq2 ]
 	out 	:= [ bam, log ]
@@ -140,11 +131,16 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string label, 
 			samtools view -bS - > $bam
 	}
 
+	graph_in := trimmed ? 	["trimmed_fastq1_($label)","trimmed_fastq2_($label)"] : \
+				["fastq1_($label)","fastq2_($label)"]
+	graph_out := ["bam_($label)"]//,"align_qc_($label)"]
+	hrchy_out := ["L1_align/$label/bam","L1_qc/$label/bwt2_qc"]
+
+	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_($label)", grp_color_bwt2 )
+
+	_add_to_filetable( hrchy_out, out )	
+
 	wait_par()
-
-	_add_to_graphviz( [graph_in1,graph_in2], [fastq1,fastq2], [graph_out], [bam], "bowtie2_($label)", grp_color_bwt2 )
-
-	_add_to_filetable( [hrchy_out], [bam] )	
 
 	return out
 }

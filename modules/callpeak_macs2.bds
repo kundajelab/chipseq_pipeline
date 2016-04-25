@@ -33,18 +33,9 @@ void chk_callpeak_macs2() {
 	if ( !path_exists( chrsz ) ) error("Chromosome size file (-chrsz) is missing! (file: $chrsz)")
 }
 
-string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
-		string peak_o_dir, string sig_o_dir, string label ) {
-
-	return _macs2( tag, ctl_tag, fraglen, make_sig, \
-		peak_o_dir, sig_o_dir, label, "", "", "", "", "", "", "", "" )
-}
 
 string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
-		string peak_o_dir, string sig_o_dir, string label, \
-		 string graph_in1, string graph_in2, \
-		 string graph_out1, string graph_out2, string graph_out3, \
-		 string hrchy_out1, string hrchy_out2, string hrchy_out3 ) {
+		string peak_o_dir, string sig_o_dir, string label, string label_ctl, string hrchy ) {
 
 	prefix 		:= (ctl_tag != "") ? 	("$peak_o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
 						: replace_dir( rm_ext( tag, "tagAlign" ), peak_o_dir )
@@ -67,7 +58,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 					"sval=$(echo \"${chipReads}\" | awk '{printf \"%f\",$1}');"
 
 	in 	:= (ctl_tag != "") ? [ tag, ctl_tag ] : [ tag ]
- 	out 	:= make_sig ? [ npeakfile, bpeakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile, bpeakfile, gpeakfile ]
+ 	out 	:= make_sig ? [ npeakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile, gpeakfile ]
 
  	taskName:= "macs2 " + label
 	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
@@ -107,101 +98,93 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 		  "$prefix"_peaks.gappedPeak \
 		  "$prefix"_summits.bed
 
-		//sys if [[ $make_sig == "false" ]]; then exit 0 fi
-
 		//===========================================
 		//# For Fold enrichment signal tracks
 		//============================================
 		//# This file is a tab delimited file with 2 columns Col1 (chromosome name), Col2 (chromosome size in bp).
-
-		sys macs2 bdgcmp -t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg --outdir $peak_o_dir -o "$prefix_basename"_FE.bdg -m FE
-
 		//# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
-		sys slopBed -i "$prefix"_FE.bdg -g $chrsz -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $chrsz $fc_bedgraph
-
-		sys rm -f "$prefix"_FE.bdg
-
 		//# Convert bedgraph to bigwig
-		sys sort -k1,1 -k2,2n $fc_bedgraph > $fc_bedgraph_srt
-		sys bedGraphToBigWig $fc_bedgraph_srt $chrsz $fc_bigwig
-
-		sys rm -f $fc_bedgraph $fc_bedgraph_srt
-
 		//===========================================
 		//# For -log10(p-value) signal tracks
 		//============================================
-
 		//# Compute sval = min(no. of reads in ChIP, no. of reads in control) / 1,000,000
-
-		sys chipReads=$(zcat $tag | wc -l | awk '{printf "%f", $1/1000000}');
-
-		//sys controlReads=$(zcat $ctl_tag | wc -l | awk '{printf "%f", $1/1000000}');
-		sys $controlReads_line
-
-		//sys sval=$(echo "${chipReads} ${controlReads}" | awk '$1>$2{printf "%f",$2} $1<=$2{printf "%f",$1}');
-		sys $sval_line
-
-		sys macs2 bdgcmp -t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg --outdir $peak_o_dir -o "$prefix_basename"_ppois.bdg -m ppois -S "${sval}"
-
 		//# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
-		sys slopBed -i "$prefix"_ppois.bdg -g $chrsz -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $chrsz $peak_o_dir/$prefix_basename.pval.signal.bedgraph
-
-		sys rm -rf "$prefix"_ppois.bdg
-
 		//# Convert bedgraph to bigwig
-		sys sort -k1,1 -k2,2n $pval_bedgraph > $pval_bedgraph_srt		
-		sys bedGraphToBigWig $pval_bedgraph_srt $chrsz $pval_bigwig
 
-		sys rm -f $pval_bedgraph $pval_bedgraph_srt
+		sys if [[ $make_sig == "true" ]]; then \
+			\
+			macs2 bdgcmp -t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg --outdir $peak_o_dir -o "$prefix_basename"_FE.bdg -m FE; \
+			slopBed -i "$prefix"_FE.bdg -g $chrsz -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $chrsz $fc_bedgraph; \
+			rm -f "$prefix"_FE.bdg; \
+			\
+			sort -k1,1 -k2,2n $fc_bedgraph > $fc_bedgraph_srt; \
+			bedGraphToBigWig $fc_bedgraph_srt $chrsz $fc_bigwig; \
+			rm -f $fc_bedgraph $fc_bedgraph_srt; \
+			\
+			chipReads=$(zcat $tag | wc -l | awk '{printf "%f", $1/1000000}'); \
+			$controlReads_line; \
+			$sval_line; \
+			macs2 bdgcmp -t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg --outdir $peak_o_dir -o "$prefix_basename"_ppois.bdg -m ppois -S "${sval}"; \
+			slopBed -i "$prefix"_ppois.bdg -g $chrsz -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $chrsz $peak_o_dir/$prefix_basename.pval.signal.bedgraph; \
+			rm -rf "$prefix"_ppois.bdg; \
+			\
+			sort -k1,1 -k2,2n $pval_bedgraph > $pval_bedgraph_srt; \
+			bedGraphToBigWig $pval_bedgraph_srt $chrsz $pval_bigwig; \
+			\
+			rm -f $pval_bedgraph $pval_bedgraph_srt; \
+			fi
+
 		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
 	}
 	tids_callpeak.add(tid)
 
+	graph_in  := [ "tagalign_($label)","tagalign_($label_ctl)"]
+
+	graph_out := [	"peak_macs2_($label)",\
+			"gpeak_macs2_($label)",\
+		      	"p-val_sig._($label)",\
+		      	"fc_sig._($label)" ]
+
+	hrchy_out := [	"L1_peak/macs2/$hrchy/peak",\
+			"L1_peak/macs2/$hrchy/gpeak",\
+		   	"L1_signal/macs2/$hrchy/pval", \
+		   	"L1_signal/macs2/$hrchy/fc" ]
+
+	_add_to_graphviz( graph_in, in, graph_out, out, "macs2_($label)", grp_color_macs2 )
+
+	_add_to_filetable( hrchy_out, out )
+
 	wait_par()
-
-	_add_to_graphviz( [graph_in1,graph_in2], [tag, ctl_tag], [graph_out1,graph_out2,graph_out3], [npeakfile,pval_bigwig,fc_bigwig], \
-			  "macs2_($label)", grp_color_macs2 )
-
-	_add_to_filetable( [hrchy_out1,hrchy_out2,hrchy_out3], [npeakfile,pval_bigwig,fc_bigwig] )
 
 	return out
 }
 
-string[] _macs2_atac( string non_mito_bed, string smooth_window, string pval_thresh, bool make_sig, \
-			string peak_o_dir, string sig_o_dir, string label ) {
+string[] _macs2_atac( string tag, string smooth_window, string pval_thresh, bool make_sig, \
+			string peak_o_dir, string sig_o_dir, \
+			string label, string hrchy ) {
 
-	return _macs2_atac( non_mito_bed, smooth_window, pval_thresh, make_sig, \
-			peak_o_dir, sig_o_dir, label, "", "", "", "", "", "", "" )
-}
-
-string[] _macs2_atac( string non_mito_bed, string smooth_window, string pval_thresh, bool make_sig, \
-			string peak_o_dir, string sig_o_dir, string label, \
-			string graph_in, \
-			string graph_out1, string graph_out2, string graph_out3, \
-		 	string hrchy_out1, string hrchy_out2, string hrchy_out3 ) {
-
-	prefix 		:= replace_dir( rm_ext( non_mito_bed, ["bed","tagAlign"] ), peak_o_dir ) + ".pf"
+	pval_str 	:= (pval_thresh=="0.01") ? "" : ".pval$pval_thresh"	
+	prefix 		:= replace_dir( rm_ext( tag, ["bed","tagAlign"] ), peak_o_dir ) + ".pf$pval_str"
 	prefix_sig 	:= replace_dir( prefix, sig_o_dir )
 	
 	// peaks
-	pval_str 	:= (pval_thresh=="0.01") ? "" : ".pval$pval_thresh"
 
-	peakfile 	:= "$prefix$pval_str.narrowPeak.gz"
-	bpeakfile	:= "$prefix$pval_str.broadPeak.gz"
-	gpeakfile	:= "$prefix$pval_str.gappedPeak.gz"
+	peakfile 	:= "$prefix.narrowPeak.gz"
+	bpeakfile	:= "$prefix.broadPeak.gz"
+	gpeakfile	:= "$prefix.gappedPeak.gz"
 
-	fc_bedgraph 	:= "$prefix$pval_str.fc.signal.bedgraph"
-	fc_bedgraph_srt	:= "$prefix$pval_str.fc.signal.srt.bedgraph"	
-	fc_bigwig 	:= "$prefix_sig$pval_str.fc.signal.bigwig"
+	fc_bedgraph 	:= "$prefix.fc.signal.bedgraph"
+	fc_bedgraph_srt	:= "$prefix.fc.signal.srt.bedgraph"	
+	fc_bigwig 	:= "$prefix_sig.fc.signal.bigwig"
 
-	pval_bedgraph 	:= "$prefix$pval_str.pval.signal.bedgraph"
-	pval_bedgraph_srt := "$prefix$pval_str.pval.signal.srt.bedgraph"	
-	pval_bigwig 	:= "$prefix_sig$pval_str.pval.signal.bigwig"
+	pval_bedgraph 	:= "$prefix.pval.signal.bedgraph"
+	pval_bedgraph_srt 	:= "$prefix.pval.signal.srt.bedgraph"	
+	pval_bigwig 	:= "$prefix_sig.pval.signal.bigwig"
  
 	shiftsize := round( smooth_window.parseReal()/2.0 )
 
-	in 	:= [ non_mito_bed ]
-	out 	:= make_sig ? [ peakfile, fc_bigwig, pval_bigwig ] : [ peakfile ]
+	in 	:= [ tag ]
+	out 	:= make_sig ? [ peakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ peakfile, gpeakfile ]
 
 	taskName:= "macs2_atac " + label
 	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
@@ -214,7 +197,7 @@ string[] _macs2_atac( string non_mito_bed, string smooth_window, string pval_thr
 		sys LC_COLLATE=C
 
 		sys macs2 callpeak \
-			-t $non_mito_bed -f BED -n "$prefix" -g "$gensz" -p $pval_thresh \
+			-t $tag -f BED -n "$prefix" -g "$gensz" -p $pval_thresh \
 			--nomodel --shift -$shiftsize --extsize $smooth_window --broad --keep-dup all
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
@@ -224,13 +207,12 @@ string[] _macs2_atac( string non_mito_bed, string smooth_window, string pval_thr
 		sys rm -f "$prefix"_peaks.gappedPeak
 
 		sys macs2 callpeak \
-			-t $non_mito_bed -f BED -n "$prefix" -g "$gensz" -p $pval_thresh \
+			-t $tag -f BED -n "$prefix" -g "$gensz" -p $pval_thresh \
 			--nomodel --shift -$shiftsize --extsize $smooth_window -B --SPMR --keep-dup all --call-summits
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -c > $peakfile
 		sys rm -f "$prefix"_peaks.narrowPeak
-
 		sys rm -f "$prefix"_peaks.xls
 		sys rm -f "$prefix"_summits.bed
 
@@ -246,7 +228,7 @@ string[] _macs2_atac( string non_mito_bed, string smooth_window, string pval_thr
 			rm -f $fc_bedgraph $fc_bedgraph_srt; \
 			\
 			# sval counts the number of tags per million in the (compressed) BED file; \
-			sval=$(wc -l <(zcat -f "$non_mito_bed") | awk '{printf "%f", $1/1000000}'); \
+			sval=$(wc -l <(zcat -f "$tag") | awk '{printf "%f", $1/1000000}'); \
 			\
 			macs2 bdgcmp \
 				-t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg \
@@ -258,17 +240,35 @@ string[] _macs2_atac( string non_mito_bed, string smooth_window, string pval_thr
 			bedGraphToBigWig $pval_bedgraph_srt "$chrsz" "$pval_bigwig"; \
 			rm -f $pval_bedgraph $pval_bedgraph_srt; \
 			\
-			rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg; \
 			fi
+
+		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
 	}
 	tids_callpeak.add(tid)
 
 	wait_par()
 
-	_add_to_graphviz( [graph_in], [non_mito_bed], [graph_out1, graph_out2, graph_out3], [peakfile,pval_bigwig,fc_bigwig], \
-			  "macs2_pval-thld._$pval_thresh"+"_($label)", grp_color_macs2 )
+	// graphviz diagram and filetable
 
-	_add_to_filetable( [hrchy_out1, hrchy_out2, hrchy_out3], [peakfile,pval_bigwig,fc_bigwig] )
+	suffix	:= (pval_thresh=="0.01") ? ",0.01" : ""
+
+	graph_in  := ["tagalign_($label)"]
+
+	graph_out := [	"peak_macs2_($label$suffix)",\
+			"gpeak_macs2_($label$suffix)",\
+		      	"p-val_sig._($label$suffix)",\
+		      	"fc_sig._($label$suffix)" ]
+
+	hrchy_out := [	"L1_peak/macs2/$hrchy/peak$suffix",\
+			"L1_peak/macs2/$hrchy/gpeak$suffix",\
+		   	"L1_signal/macs2/$hrchy/pval$suffix", \
+		   	"L1_signal/macs2/$hrchy/fc$suffix" ]
+
+	box 	:= "macs2_p-val-thld._$pval_thresh"+"_($label)"	
+
+	_add_to_graphviz( graph_in, in, graph_out, out, box, grp_color_macs2 )
+
+	_add_to_filetable( hrchy_out, out )
 
 	return out
 }

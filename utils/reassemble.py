@@ -68,9 +68,9 @@ import os
 os.system('sort -k1,1 -k2,2n '+fn1+' > x')
 os.system('mv x '+fn1)
 os.system('bgzip -f '+fn1)
-os.system('tabix -p bed '+fn1+'.gz')
+os.system('tabix -f -p bed '+fn1+'.gz')
 
 os.system('sort -k1,1 -k2,2n '+fn2+' > x')
 os.system('mv x '+fn2)
-os.system('bgzip '+fn2)
-os.system('tabix -p bed '+fn2+'.gz')
+os.system('bgzip -f '+fn2)
+os.system('tabix -f -p bed '+fn2+'.gz')

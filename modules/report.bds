@@ -420,6 +420,9 @@ string _peak_to_hammock( string peak ) {
 		sys rm -f $tmp
 	}
 
+	wait
+	//wait_par()
+
 	return out
 }
 

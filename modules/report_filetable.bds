@@ -3,6 +3,10 @@
 
 include "general.bds"
 
+// key: filepath
+string{} map_hrchy
+
+
 // L1_ is to distinguish the grandest parent
 string{} map_label 	// for label of filetable entry
 int{} map_rank 		// for sorting filetable
@@ -11,9 +15,8 @@ int{} map_rank 		// for sorting filetable
 map_label{"L1_align"}		= "Alignment"
 map_label{"L1_signal"} 		= "Signal tracks"
 map_label{"L1_peak"} 		= "Peaks"
-map_label{"L1_idr"} 		= "IDR peaks"
+map_label{"L1_qc"} 		= "QC and logs"
 
-// level2 (supports up to rep100 and ctl100)
 for (int i=1; i<=100; i++) \
 	map_label{"rep$i"} 	= "Replicate $i"
 for (int i=1; i<=100; i++) \
@@ -28,47 +31,61 @@ map_label{"pooled_pseudo_reps"} = "Pooled pseudo-replicate"
 map_label{"opt_set"} 		= "Optimal set"
 map_label{"consv_set"} 		= "Conservative set"
 map_label{"overlap"} 		= "Naive overlap"
+map_label{"idr"} 		= "IDR"
+map_label{"spp"} 		= "SPP"
+map_label{"macs2"} 		= "MACS2"
 
-// level3
 map_label{"pr1"} 		= "Pseudo-replicate 1"
 map_label{"pr2"} 		= "Pseudo-replicate 2"
 map_label{"ppr1"} 		= "Pooled pseudo-replicate 1"
 map_label{"ppr2"} 		= "Pooled pseudo-replicate 2"
 
-// level3 or 4
 map_label{"idr_qc"} 		= "IDR QC"
 map_label{"fastq"} 		= "fastq"
+map_label{"fastq1"} 		= "fastq1"
+map_label{"fastq2"} 		= "fastq2"
 map_label{"trimmed_fastq"} 	= "trimmed fastq"
+map_label{"trimmed_fastq1"} 	= "trimmed fastq1"
+map_label{"trimmed_fastq2"} 	= "trimmed fastq2"
+map_label{"bwt2_qc"} 		= "bowtie2 QC"
+map_label{"bwa_qc"} 		= "bwa QC"
 map_label{"bam"} 		= "bam"
 map_label{"filt_bam"} 		= "filtered bam"
 map_label{"srt_bam"} 		= "sorted bam"
+map_label{"dup_qc"} 		= "dup. QC"
+map_label{"map_qc"} 		= "map QC"
+map_label{"pbc_qc"} 		= "PBC QC"
 map_label{"bedpe"} 		= "bedpe"
 map_label{"subsampled_bedpe"} 	= "subsampled bedpe"
 map_label{"tagalign"} 		= "tagalign"
 map_label{"subsampled_tagalign"}= "subsampled tagalign"
 map_label{"xcor_qc"}		= "cross-corr. QC"
 map_label{"pval"} 		= "p-value"
-map_label{"pval001"} 		= "p-value (thld: 0.01)"
+map_label{"pval,0.01"} 		= "p-value"
 map_label{"fc"} 		= "fold enrichment"
-map_label{"fc001"} 		= "fold enrichment (thld: 0.01)"
+map_label{"fc,0.01"} 		= "fold enrichment"
 map_label{"npeak"} 		= "narrow peak"
 map_label{"rpeak"} 		= "region peak"
 map_label{"bpeak"} 		= "broad peak"
 map_label{"gpeak"} 		= "gapped peak"
 map_label{"idr_peak"} 		= "IDR peak"
 map_label{"peak"} 		= "peak"
-map_label{"peak001"} 		= "peak (thld: 0.01)"
+map_label{"peak,0.01"} 		= "peak (p-val thld: 0.01)"
 map_label{"peak_filt"} 		= "filtered peak"
+map_label{"peak_macs2_filt"} 	= "filtered peak"
+map_label{"gpeak,0.01"} 	= "gapped peak (p-val thld: 0.01)"
+map_label{"gpeak_filt"} 	= "filtered gapped peak"
+map_label{"gpeak_macs2_filt"} 	= "filtered gapped peak"
 map_label{"peak_overlap"} 	= "peak"
+map_label{"gpeak_overlap"} 	= "gapped peak"
+map_label{"ataqc"} 		= "ATAQC"
 
-// level1
 map_rank{"L1_align"} 		= 1
 map_rank{"L1_signal"} 		= 2
 map_rank{"L1_peak"} 		= 3
-map_rank{"L1_idr"} 		= 4
+map_rank{"L1_qc"} 		= 4
 
 _rank := 0
-// level2
 for (int i=1; i<=100; i++) \
 	map_rank{"rep$i"} 	= ++_rank
 for (int i=1; i<=100; i++) \
@@ -82,38 +99,56 @@ map_rank{"pooled_pseudo_reps"} 	= ++_rank
 map_rank{"opt_set"} 		= ++_rank
 map_rank{"consv_set"} 		= ++_rank
 map_rank{"overlap"} 		= ++_rank
+map_rank{"idr"} 		= ++_rank
+map_rank{"spp"} 		= ++_rank
+map_rank{"macs2"} 		= ++_rank
 
-// level3
 map_rank{"pr1"} 		= 1
 map_rank{"pr2"} 		= 2
 map_rank{"ppr1"} 		= 3
 map_rank{"ppr2"} 		= 4
 
-// level3 or 4
-map_rank{"idr_qc"} 		= 0
-map_rank{"fastq"} 		= 1
-map_rank{"trimmed_fastq"} 	= 2
-map_rank{"bam"} 		= 3
-map_rank{"filt_bam"} 		= 4
-map_rank{"srt_bam"} 		= 5
-map_rank{"bedpe"} 		= 6
-map_rank{"subsampled_bedpe"} 	= 7
-map_rank{"tagalign"} 		= 8
-map_rank{"subsampled_tagalign"}	= 9
-map_rank{"xcor_qc"}		= 10
-map_rank{"pval"} 		= 11
-map_rank{"pval001"} 		= 12
-map_rank{"fc"} 			= 13
-map_rank{"fc001"} 		= 14
-map_rank{"npeak"} 		= 15
-map_rank{"rpeak"} 		= 16
-map_rank{"bpeak"} 		= 17
-map_rank{"gpeak"} 		= 18
-map_rank{"idr_peak"} 		= 19
-map_rank{"peak"} 		= 20
-map_rank{"peak001"} 		= 21
-map_rank{"peak_filt"} 		= 22
-map_rank{"peak_overlap"} 	= 23
+_rank = 0
+map_rank{"idr_qc"} 		= ++_rank
+map_rank{"fastq"} 		= ++_rank
+map_rank{"fastq1"} 		= ++_rank
+map_rank{"fastq2"} 		= ++_rank
+map_rank{"trimmed_fastq"} 	= ++_rank
+map_rank{"trimmed_fastq1"} 	= ++_rank
+map_rank{"trimmed_fastq2"} 	= ++_rank
+map_rank{"bwt2_qc"} 		= ++_rank
+map_rank{"bwa_qc"} 		= ++_rank
+map_rank{"map_qc"} 		= ++_rank
+map_rank{"bam"} 		= ++_rank
+map_rank{"filt_bam"} 		= ++_rank
+map_rank{"srt_bam"} 		= ++_rank
+map_rank{"dup_qc"} 		= ++_rank
+map_rank{"map_qc"} 		= ++_rank
+map_rank{"pbc_qc"} 		= ++_rank
+map_rank{"bedpe"} 		= ++_rank
+map_rank{"subsampled_bedpe"} 	= ++_rank
+map_rank{"tagalign"} 		= ++_rank
+map_rank{"subsampled_tagalign"}	= ++_rank
+map_rank{"xcor_qc"}		= ++_rank
+map_rank{"pval"} 		= ++_rank
+map_rank{"pval,0.01"} 		= ++_rank
+map_rank{"fc"} 			= ++_rank
+map_rank{"fc,0.01"} 		= ++_rank
+map_rank{"npeak"} 		= ++_rank
+map_rank{"rpeak"} 		= ++_rank
+map_rank{"bpeak"} 		= ++_rank
+map_rank{"gpeak"} 		= ++_rank
+map_rank{"idr_peak"} 		= ++_rank
+map_rank{"peak"} 		= ++_rank
+map_rank{"peak,0.01"} 		= ++_rank
+map_rank{"peak_filt"} 		= ++_rank
+map_rank{"peak_macs2_filt"} 	= ++_rank
+map_rank{"geak,0.01"} 		= ++_rank
+map_rank{"gpeak_filt"} 		= ++_rank
+map_rank{"gpeak_macs2_filt"} 	= ++_rank
+map_rank{"peak_overlap"} 	= ++_rank
+map_rank{"gpeak_overlap"} 	= ++_rank
+map_rank{"ataqc"} 		= ++_rank
 
 
 
@@ -231,7 +266,7 @@ void _add_to_filetable( string hrchy, string path ) {
 
 void _add_to_filetable( string[] out_hrchy, string[] out_path ) {
 
-	for ( int i=0; i<out_hrchy.size(); i++ )  {
+	for ( int i=0; i<min(out_hrchy.size(),out_path.size()); i++ )  {
 
 		if ( out_hrchy[i] == "" ) continue
 

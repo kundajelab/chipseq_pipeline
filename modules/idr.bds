@@ -31,14 +31,8 @@ void chk_idr() {
 	if ( !path_exists( blacklist_idr ) ) print("\nWarning: Blacklist bed (-blacklist_idr) for final IDR QC is missing! (file: $blacklist_idr)\n\n")
 }
 
-string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string label ) {
-
-	return _idr2( peak1, peak2, pooled, o_dir, label, "", "", "", "", "" )
-}
-
 string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string label, \
-		string graph_in1, string graph_in2, string graph_in3, string graph_out, \
-		string hrchy_out ) {
+		string graph_prefix, string[] graph_in, string hrchy ) {
 
 	prefix 		:= "$o_dir/$label"
 	npeaks_file 	:= prefix.dirName()+"/$idr_summary"
@@ -70,12 +64,15 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 		sys echo -e "$label\t$(zcat $peak_idr | wc -l)" >> $npeaks_file
 	}
 
+	for ( int i=0; i<graph_in.size(); i++) graph_in[i] = graph_prefix + "_(" + graph_in[i] + ")"
+	graph_out := ["idr_peak_($label)"]
+	hrchy_out := ["L1_peak/idr/$hrchy/idr_peak"]
+
+	_add_to_graphviz( graph_in, in, graph_out, out, "idr_($label)", grp_color_idr )
+
+	_add_to_filetable( hrchy_out, out )
+
 	wait_par()
-
-	_add_to_graphviz( [graph_in1, graph_in2, graph_in3], [peak1, peak2, pooled], \
-			  [graph_out], [peak_idr], "idr_($label)", grp_color_idr )
-
-	_add_to_filetable( [hrchy_out], [peak_idr] )
 
 	return out
 }
@@ -107,7 +104,7 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 	return _idr_final_qc( idr_tr, idr_pr_rep1, idr_pr_rep2, idr_ppr, o_dir, label, \
 				"idr_peak_(true)","idr_peak_(rep1-pr)","idr_peak_(rep2-pr)","idr_peak_(ppr)", \
 				"idr_qc","idr_peak_(opt)","idr_peak_(consv)", \
-				"L1_peak/idr/idr_qc","L1_peak/idr/opt_set/idr_peak","L1_peak/idr/consv_set/idr_peak" )
+				"L1_qc/idr_qc","L1_peak/idr/opt_set/idr_peak","L1_peak/idr/consv_set/idr_peak" )
 }
 
 string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, string idr_ppr, string o_dir, string label, \

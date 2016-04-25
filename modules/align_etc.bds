@@ -7,13 +7,6 @@ include "report.bds"
 
 string _trim_adapters( string fastq, string o_dir, string label ) {
 
-	return _trim_adapters( fastq, o_dir, label, \
-				"fastq_($label)", "trimmed_fastq_($label)", "L1_align/$label/trimmed_fastq" )
-}
-
-string _trim_adapters( string fastq, string o_dir, string label, \
-			string graph_in, string graph_out, string hrchy_out ) {
-
 	prefix	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	p 	:= "$prefix"+"_trimmed.fq"
 	p_gz	:= "$p.gz"
@@ -33,10 +26,14 @@ string _trim_adapters( string fastq, string o_dir, string label, \
 		sys mv $p_gz $p2_gz
 		sys rm -f $p_gz $p
 	}
+	
+	graph_in  := ["fastq_($label)"]
+	graph_out := ["trimmed_fastq_($label)"] 
+	hrchy_out := ["L1_align/$label/trimmed_fastq"]
 
-	_add_to_graphviz( [graph_in], [fastq], [graph_out], [p2_gz], "trim_galore\\n($label)", grp_color_trim_adapter )
+	_add_to_graphviz( graph_in, in, graph_out, [out], "trim_galore\\n($label)", grp_color_trim_adapter )
 
-	_add_to_filetable( [hrchy_out], [p2_gz] )
+	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
 
@@ -44,15 +41,6 @@ string _trim_adapters( string fastq, string o_dir, string label, \
 }
 
 string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string label ) {
-
-	return _trim_adapters_PE( fastq1, fastq2, o_dir, label, \
-				"fastq1_($label)", "fastq2_($label)", "trimmed_fastq1_($label)", "trimmed_fastq2_($label)",  \
-				"L1_align/$label/trimmed_fastq1", "L1_align/$label/trimmed_fastq2" )
-}
-
-string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string label, \
-			string graph_in1, string graph_in2, string graph_out1, string graph_out2, \
-			string hrchy_out1, string hrchy_out2 ) {
 
 	prefix1	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir )
 	prefix2	:= replace_dir( rm_ext( fastq2, ["fastq","fq"] ), o_dir )
@@ -76,10 +64,13 @@ string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string l
 		sys gzip $p2
 	}
 
-	_add_to_graphviz( [graph_in1,graph_in2], [fastq1,fastq2], [graph_out1,graph_out2], [p1_gz,p2_gz], \
-				"trim_adapter\\n($label)", grp_color_trim_adapter )
+	graph_in  := ["fastq1_($label)","fastq2_($label)"]
+	graph_out := ["trimmed_fastq1_($label)","trimmed_fastq2_($label)"] 
+	hrchy_out := ["L1_align/$label/trimmed_fastq1","L1_align/$label/trimmed_fastq2"]
 
-	_add_to_filetable( [hrchy_out1,hrchy_out2], [p1_gz,p2_gz] )
+	_add_to_graphviz( graph_in, in, graph_out, out, "trim_galore\\n($label)", grp_color_trim_adapter )
+
+	_add_to_filetable( hrchy_out, out )
 
 	wait_par()
 

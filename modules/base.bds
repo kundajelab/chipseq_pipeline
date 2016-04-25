@@ -125,6 +125,18 @@ string get_common_basename( string f1, string f2 ) {
 	return common
 }
 
+// if exist
+string get_actual_ext( string file ) {
+	// remove .gz
+	if ( file.endsWith( ".gz" ) ) {
+		file = rm_str_at_end( file, ".gz" )
+		return file.extName() + ".gz"
+	}
+	else {
+		return file.extName()
+	}
+}
+
 string rm_ext( string file, string ext ) {
 	// remove .gz
 	if ( file.endsWith( ".gz" ) ) \
@@ -404,6 +416,11 @@ string get_path( string str ) {
 
 	base := rm_str_at_end( str, "/" ).path()
 	return base
+}
+
+string mkdir( string str ) {
+
+	return mkdir_path( str )
 }
 
 string mkdir_path( string str ) { 

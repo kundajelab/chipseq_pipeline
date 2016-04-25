@@ -30,13 +30,8 @@ void init_callpeak_spp() {
 	print( "Max. memory (spp)\t: $mem_spp\n")
 }
 
-string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label ) {
-
-	return _spp( tag, ctl_tag, fraglen, o_dir, label, "", "", "", "" )
-}
-
 string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label, \
-		string graph_in1, string graph_in2, string graph_out, string hrchy_out ) {
+		string label_ctl, string hrchy ) {
 
 	prefix_vs	:= "$o_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
 	prefix_x	:= "$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
@@ -73,12 +68,15 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 		sys mv $pdf_tmp $pdf
 	}
 	tids_callpeak.add(tid)
-	
+
+	graph_in  := [ "tagalign_($label)","tagalign_($label_ctl)"]
+	graph_out := [ "peak_spp_($label)" ]
+	hrchy_out := [ "L1_peak/spp/$hrchy/peak" ]
+
+	_add_to_graphviz( graph_in, in, graph_out, out, "spp_($label)", grp_color_spp )
+	_add_to_filetable( hrchy_out, out )
+
 	wait_par()
-
-	_add_to_graphviz( [graph_in1,graph_in2], [tag,ctl_tag], [graph_out], [rpeakfile], "spp_($label)", grp_color_spp )
-
-	_add_to_filetable( [hrchy_out], [rpeakfile] )
 
 	return out
 }

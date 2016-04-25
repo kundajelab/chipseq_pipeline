@@ -48,22 +48,16 @@ void init_postalign_bam() {
 	print( "Max. memory (picard markdup)\t: $mem_markdup\n")
 }
 
-string[] _dedup_bam( string bam, string o_dir, string label ) {
-	
-	return _dedup_bam( bam, o_dir, label, \
-			"bam_($label)", "filt_bam_($label)", "L1_align/$label/filt_bam" )
-}
-
-string[] _dedup_bam( string bam, string o_dir, string label, \
-			string graph_in, string graph_out, string hrchy_out ) {
+string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
+	prefix2 	:= replace_dir( prefix, log_o_dir )
 
 	nodup_bam 	:= "$prefix.nodup.bam"
 	nodup_bam_idx 	:= "$prefix.nodup.bai"
-	dup_qc 		:= "$prefix.dup.qc"
-	map_qc 		:= "$prefix.nodup.flagstat.qc"
-	pbc_qc 		:= "$prefix.nodup.pbc.qc"
+	dup_qc 		:= "$prefix2.dup.qc"
+	map_qc 		:= "$prefix2.nodup.flagstat.qc"
+	pbc_qc 		:= "$prefix2.nodup.pbc.qc"
 	filt_bam_prefix	:= "$prefix.filt"
 	filt_bam 	:= "$prefix.filt.bam"
 	tmp_filt_bam 	:= "$prefix.dupmark.bam"
@@ -132,32 +126,30 @@ string[] _dedup_bam( string bam, string o_dir, string label, \
 		sys rm -f $tmp_filt_bam
 	}
 
-	_add_to_graphviz( [graph_in], [bam], [graph_out], [nodup_bam], "filter_($label)", grp_color_dedup_bam )
+	graph_in  := ["bam_($label)"]
+	graph_out := ["filt_bam_($label)"]
+	hrchy_out := ["L1_align/$label/filt_bam","L1_qc/$label/dup_qc","L1_qc/$label/map_qc","L1_qc/$label/pbc_qc"]
 
-	_add_to_filetable( [hrchy_out], [nodup_bam] )
+	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
+
+	_add_to_filetable( hrchy_out, out )
 
 	wait_par()
 
 	return out
 }
 
-string[] _dedup_bam_PE( string bam, string o_dir, string label ) {
-
-	return _dedup_bam_PE( bam, o_dir, label, \
-			"bam_($label)", "filt_bam_($label)", "L1_align/$label/filt_bam" )
-}
-
-string[] _dedup_bam_PE( string bam, string o_dir, string label, \
-			string graph_in, string graph_out, string hrchy_out ) {
+string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
+	prefix2 	:= replace_dir( prefix, log_o_dir )
 
 	nodup_bam 	:= "$prefix.nodup.bam"
 	nodup_bam_idx 	:= "$prefix.nodup.bai"
 
-	dup_qc 		:= "$prefix.dup.qc"
-	map_qc 		:= "$prefix.nodup.flagstat.qc"
-	pbc_qc 		:= "$prefix.nodup.pbc.qc"
+	dup_qc 		:= "$prefix2.dup.qc"
+	map_qc 		:= "$prefix2.nodup.flagstat.qc"
+	pbc_qc 		:= "$prefix2.nodup.pbc.qc"
 
 	filt_bam 	:= "$prefix.filt.bam"
 	filt_bam_prefix := "$prefix.filt"
@@ -246,11 +238,15 @@ string[] _dedup_bam_PE( string bam, string o_dir, string label, \
 		sys rm -f $tmp_filt_bam
 	}
 
+	graph_in  := ["bam_($label)"]
+	graph_out := ["filt_bam_($label)"]
+	hrchy_out := ["L1_align/$label/filt_bam","L1_qc/$label/dup_qc","L1_qc/$label/map_qc","L1_qc/$label/pbc_qc"]
+
+	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
+
+	_add_to_filetable( hrchy_out, out )
+
 	wait_par()
-
-	_add_to_graphviz( [graph_in], [bam], [graph_out], [filt_bam], "filter\\n($label)", grp_color_dedup_bam )
-
-	_add_to_filetable( [hrchy_out], [filt_bam] )
 
 	return out
 }
@@ -280,13 +276,6 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 
 string _srt_bam( string bam, string o_dir, string label ) {
 
-	return _srt_bam( bam, o_dir, label, \
-			"bam_($label)", "srt_bam_($label)", "L1_align/$label/srt_bam" )
-}
-
-string _srt_bam( string bam, string o_dir, string label, \
-		string graph_in, string graph_out, string hrchy_out ) {
-
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	srt_bam 	:= "$prefix.srt.bam"
 	srt_bam_prefix 	:= "$prefix.srt"
@@ -313,9 +302,13 @@ string _srt_bam( string bam, string o_dir, string label, \
 			fi
 	}
 
-	_add_to_graphviz( [graph_in], [bam], [graph_out], [srt_bam] )
+	graph_in  := ["bam_($label)"]
+	graph_out := ["srt_bam_($label)"]
+	hrchy_out := ["L1_align/$label/srt_bam"]
 
-	_add_to_filetable( [hrchy_out], [srt_bam] )
+	_add_to_graphviz( graph_in, in, graph_out, [out] )
+
+	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
 
@@ -323,13 +316,6 @@ string _srt_bam( string bam, string o_dir, string label, \
 }
 
 string _bam_to_tag( string bam, string o_dir, string label ) {
-
-	return _bam_to_tag( bam, o_dir, label, \
-			"filt_bam_($label)", "tagalign_($label)", "L1_align/$label/tagalign" )
-}
-
-string _bam_to_tag( string bam, string o_dir, string label, \
-			string graph_in, string graph_out, string hrchy_out ) {
 
 	prefix 	:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	tag 	:= "$prefix.tagAlign.gz"
@@ -353,23 +339,20 @@ string _bam_to_tag( string bam, string o_dir, string label, \
 		sys $RM_CHR_
 	}
 
+	graph_in  := ["filt_bam_($label)"]
+	graph_out := ["tagalign_($label)"]
+	hrchy_out := ["L1_align/$label/tagalign"]
+
+	_add_to_graphviz( graph_in, in, graph_out, [out], "align\\n($label)", "orange" )
+
+	_add_to_filetable( hrchy_out, [out] )
+
 	wait_par()
-
-	_add_to_graphviz( [graph_in], [bam], [graph_out], [tag], "align\\n($label)", "orange" )
-
-	_add_to_filetable( [hrchy_out], [tag] )
 
 	return out
 }
 
 string _bam_to_bedpe( string bam, string o_dir, string label ) {
-
-	return _bam_to_bedpe( bam, o_dir, label, \
-			"filt_bam_($label)", "bedpe_($label)", "L1_align/$label/bedpe" )
-}
-
-string _bam_to_bedpe( string bam, string o_dir, string label, \
-			string graph_in, string graph_out, string hrchy_out ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	nmsrt_bam 	:= "$prefix.nmsrt.bam"
@@ -397,11 +380,15 @@ string _bam_to_bedpe( string bam, string o_dir, string label, \
 		nmsrt_bam.rm()
 	}
 
+	graph_in  := ["filt_bam_($label)"]
+	graph_out := ["bedpe_($label)"]
+	hrchy_out := ["L1_align/$label/bedpe"]
+
+	_add_to_graphviz( graph_in, in, graph_out, [out] )
+
+	_add_to_filetable( hrchy_out, [out] )
+
 	wait_par()
-
-	_add_to_graphviz( [graph_in], [bam], [graph_out], [bedpe] )
-
-	_add_to_filetable( [hrchy_out], [bedpe] )
 
 	return out
 }
@@ -436,12 +423,6 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 }
 
 string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label ) {
-
-	return _bam_to_tn5_shift_bed_atac( filt_bam, o_dir, label, \
-				"filt_bam_($label)", "tagalign_($label)", "L1_align/$label/tagalign" )
-}
-
-string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label, string graph_in, string graph_out, string hrchy_out ) {
 
 	prefix 		:= replace_dir( rm_ext( filt_bam, "bam" ), o_dir )
 	mito_bam 	:= "$prefix.chrM.bam"
@@ -483,23 +464,20 @@ string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label, 
 		sys rm -f $non_mito_bam $mito_bam
 	}
 
-	_add_to_graphviz( [graph_in], [filt_bam], [graph_out], [bed] )
+	graph_in  := ["filt_bam_($label)"]
+	graph_out := ["tagalign_($label)"]
+	hrchy_out := ["L1_align/$label/tagalign"]
 
-	_add_to_filetable( [hrchy_out], [bed] )
+	_add_to_graphviz( graph_in, in, graph_out, [out] )
+
+	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
 
 	return out
 }
 
-
 string _bam_to_bed_atac( string filt_bam, string o_dir, string label ) {
-
-	return _bam_to_bed_atac( filt_bam, o_dir, label, \
-				"filt_bam_($label)", "tagalign_($label)", "L1_align/$label/tagalign" )
-}
-
-string _bam_to_bed_atac( string filt_bam, string o_dir, string label, string graph_in, string graph_out, string hrchy_out ) {
 
 	prefix 		:= replace_dir( rm_ext( filt_bam, "bam" ), o_dir )
 	mito_bam 	:= "$prefix.chrM.bam"
@@ -538,9 +516,13 @@ string _bam_to_bed_atac( string filt_bam, string o_dir, string label, string gra
 		sys rm -f $non_mito_bam $mito_bam
 	}
 
-	_add_to_graphviz( [graph_in], [filt_bam], [graph_out], [bed] )
+	graph_in  := ["filt_bam_($label)"]
+	graph_out := ["tagalign_($label)"]
+	hrchy_out := ["L1_align/$label/tagalign"]
 
-	_add_to_filetable( [hrchy_out], [bed] )
+	_add_to_graphviz( graph_in, in, graph_out, [out] )
+
+	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
 

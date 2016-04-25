@@ -82,8 +82,8 @@ fout.close()
 import os
 os.system('sort -k1,1 -k2,2n '+tkname+' > x')
 os.system('mv x '+tkname)
-os.system('bgzip '+tkname)
-os.system('tabix -p bed '+tkname+'.gz')
+os.system('bgzip -f '+tkname)
+os.system('tabix -f -p bed '+tkname+'.gz')
 
 print '''
 drop table if exists {0};
