@@ -53,19 +53,31 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 	peak_PooledInRep1AndRep2 	:= "$prefix.PooledInRep1AndRep2.$filetype.gz"
 	peak_final 			:= "$prefix.naive_overlap.$filetype.gz"
 
-	string awk_param
+	string awk_param, peakcaller, cut_param
 
-	if ( filetype.toLower() == "narrowpeak" || filetype.toLower() == "regionpeak" ) {
+	if ( filetype.toLower() == "narrowpeak" ) {
 
 		awk_param = "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
+		cut_param = "1-10"
+		peakcaller = "macs2"
+	}
+	else if ( filetype.toLower() == "regionpeak" ) {
+
+		awk_param = "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
+		cut_param = "1-10"
+		peakcaller = "spp"
 	}
 	else if ( filetype.toLower() == "broadpeak") { 
 
 		awk_param = "{s1=$3-$2; s2=$12-$11; if (($19/s1 >= 0.5) || ($19/s2 >= 0.5)) {print $0}}"
+		cut_param = "1-9"
+		peakcaller = "macs2"
 	}
 	else if ( filetype.toLower() == "gappedpeak") { 
 
 		awk_param = "{s1=$3-$2; s2=$18-$17; if (($31/s1 >= 0.5) || ($31/s2 >= 0.5)) {print $0}}"
+		cut_param = "1-15"
+		peakcaller = "macs2"
 	}
 	else {
 		error("Unsupport peak file type! ($filetype)\n")
@@ -82,9 +94,9 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 
 		//# Find pooled peaks that overlap Rep1 and Rep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  >= 0.5
 		sys intersectBed -wo -a $peak_pooled -b $peak_rep1 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f 1-10 | sort | uniq | \
+			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
 			intersectBed -wo -a stdin -b $peak_rep2 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f 1-10 | sort | uniq | gzip -c > $peak_PooledInRep1AndRep2
+			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | gzip -c > $peak_PooledInRep1AndRep2
 
 		//# Combine peak lists
 		sys zcat $peak_PooledInRep1AndRep2 | sort | uniq | gzip -c > $peak_final
@@ -94,7 +106,7 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 
 	graph_in  := ["$label_peak"+"_(rep1)","$label_peak"+"_(rep1-pr1)","$label_peak"+"_(rep1-pr2)"]
 	graph_out := ["$label_peak"+"_(overlap)"]
-	hrchy_out := ["L1_peak/macs2/overlap/$label"+"_overlap"]
+	hrchy_out := ["L1_peak/$peakcaller/overlap/$label"+"_overlap"]
 
 	_add_to_graphviz( graph_in, in, graph_out, [out], "naive_overlap_($label)", grp_color_naive_overlap )
 
@@ -118,31 +130,36 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 	peak_PooledInPsRep1AndPsRep2 	:= "$prefix.PooledInPsRep1AndPsRep2.$filetype.gz"
 	peak_final 			:= "$prefix.naive_overlap.$filetype.gz"
 
-	string awk_param, peakcaller
+	string awk_param, peakcaller, cut_param
 
 	if ( filetype.toLower() == "narrowpeak" ) {
 
 		awk_param = "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
+		cut_param = "1-10"
 		peakcaller = "macs2"
 	}
 	else if ( filetype.toLower() == "regionpeak" ) {
 
 		awk_param = "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
+		cut_param = "1-10"
 		peakcaller = "spp"
 	}
 	else if ( filetype.toLower() == "broadpeak") { 
 
 		awk_param = "{s1=$3-$2; s2=$12-$11; if (($19/s1 >= 0.5) || ($19/s2 >= 0.5)) {print $0}}"
+		cut_param = "1-9"
 		peakcaller = "macs2"
 	}
 	else if ( filetype.toLower() == "gappedpeak") { 
 
 		awk_param = "{s1=$3-$2; s2=$18-$17; if (($31/s1 >= 0.5) || ($31/s2 >= 0.5)) {print $0}}"
+		cut_param = "1-15"
 		peakcaller = "macs2"
 	}
 	else {
 		error("Unsupport peak file type! ($filetype)\n")
 	}
+
 
 	in 	:= [ peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2 ]
 	out 	:= peak_final
@@ -155,15 +172,15 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 
 		//# Find pooled peaks that overlap Rep1 and Rep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  >= 0.5
 		sys intersectBed -wo -a $peak_pooled -b $peak_rep1 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f 1-10 | sort | uniq | \
+			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
 			intersectBed -wo -a stdin -b $peak_rep2 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f 1-10 | sort | uniq | gzip -c > $peak_PooledInRep1AndRep2
+			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | gzip -c > $peak_PooledInRep1AndRep2
 
 		//# Find pooled peaks that overlap PseudoRep1 and PseudoRep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  >= 0.5
 		sys intersectBed -wo -a $peak_pooled -b $peak_ppr1 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f 1-10 | sort | uniq | \
+			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
 			intersectBed -wo -a stdin -b $peak_ppr2 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f 1-10 | sort | uniq | gzip -c > $peak_PooledInPsRep1AndPsRep2
+			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | gzip -c > $peak_PooledInPsRep1AndPsRep2
 
 		//# Combine peak lists
 		sys zcat $peak_PooledInRep1AndRep2 $peak_PooledInPsRep1AndPsRep2 | sort | uniq | gzip -c > $peak_final
