@@ -42,9 +42,11 @@ string _html_graphviz() { // graphviz diagram
 
 	html := "<div id='graphviz'><b>Workflow diagram</b><br>"
 
-	dot_tmp := "$rpt_aux_dir/workflow_tmp.dot"
-	dot 	:= "$rpt_aux_dir/workflow.dot"
-	svg 	:= "$rpt_aux_dir/workflow.svg"
+	prefix := title=="" ? "" : (title+"_")
+
+	dot_tmp := "$rpt_aux_dir/$prefix"+"workflow_tmp.dot"
+	dot 	:= "$rpt_aux_dir/$prefix"+"workflow.dot"
+	svg 	:= "$rpt_aux_dir/$prefix"+"workflow.svg"
 
 	dot_tmp.write( "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,fixedsize=shape,margin=0,fontsize=$grp_fontsize_node];\nedge [fontsize=$grp_fontsize_node];\n\n" \
 		   	+ dot_lines + "\n\n}" )

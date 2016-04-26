@@ -6,11 +6,10 @@ include "report.bds"
 
 
 help == idr settings
-//use_idr1	:= false	help Force to use IDR-1 code (not recommended).
 idr_thresh 	:= "0.02"	help IDR threshold : -log_10(score) (default: 0.02).
 
 
-idr_summary 	:= "NPEAKS_IDR.txt"	// file basename for summary of number of peaks found
+//idr_summary 	:= "NPEAKS_IDR.txt"	// file basename for summary of number of peaks found
 
 
 init_idr()
@@ -34,12 +33,12 @@ void chk_idr() {
 string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string label, \
 		string graph_prefix, string[] graph_in, string hrchy ) {
 
-	prefix 		:= "$o_dir/$label"
-	npeaks_file 	:= prefix.dirName()+"/$idr_summary"
+	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label
+	//npeaks_file 	:= prefix.dirName()+"/$idr_summary"
 	peak_idr	:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
 	idr_output 	:= "$prefix.overlapped-peaks.txt"
 	png 		:= "$prefix.overlapped-peaks.txt.png"
-	create_idr_summary( npeaks_file ) // do nothing if it already exists
+	//create_idr_summary( npeaks_file ) // do nothing if it already exists
 
 	in 	:= [peak1, peak2, pooled]
 	//out 	:= [idr_output, peak, png]
@@ -61,10 +60,11 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,"0"}' $idr_output \
 			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr
 
-		sys echo -e "$label\t$(zcat $peak_idr | wc -l)" >> $npeaks_file
+		//sys echo -e "$label\t$(zcat $peak_idr | wc -l)" >> $npeaks_file
 	}
 
 	for ( int i=0; i<graph_in.size(); i++) graph_in[i] = graph_prefix + "_(" + graph_in[i] + ")"
+
 	graph_out := ["idr_peak_($label)"]
 	hrchy_out := ["L1_peak/idr/$hrchy/idr_peak"]
 
@@ -160,8 +160,8 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 	// 4f. Fraction of Reads in Peaks (FRiP) will be added later
 
 	// filenames
-	qc 	:= "$o_dir/IDR_final.qc"
-
+	prefix 	:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label
+	qc 	:= prefix+"IDR_final.qc"
 
 	in 	:= [idr_tr, idr_pr_rep1, idr_pr_rep2, idr_ppr]
 	out 	:= qc
@@ -187,8 +187,9 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 	//return out
 	return [qc, idr_opt_set, idr_consv_set]
 }
-
+/*
 void create_idr_summary( string file ) { // create it if not exists	
 
 	if ( !file.exists() ) file.write( "Sample type\tNumber of peaks\n" )
 }
+*/

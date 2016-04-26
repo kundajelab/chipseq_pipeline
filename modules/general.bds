@@ -6,6 +6,7 @@ include "conf.bds"
 
 help == general pipeline settings
 out_dir 	:= "out"	help Output directory (default: out).
+title		:= ""		help Prefix for HTML report and outputs without given prefix.
 
 help == parallelization settings
 no_par		:= false	help Serialize all jobs (identical to '-par_lvl 0', individual job can still use multiple threads).
