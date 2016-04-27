@@ -251,8 +251,6 @@ void _align( int ctl, int rep ) {
 
 	if ( is_single_ended( ctl, rep ) ) 	_align_SE( ctl, rep )
 	else 					_align_PE( ctl, rep )
-
-	wait_par_rep() // count # of replicates being processed and wait (barrier) par.
 }
 
 void _align_SE( int ctl, int rep ) {
@@ -755,9 +753,9 @@ void do_idr() {
 
 	if ( get_num_rep() > 1 ) {
 
-		idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps" )
-		(idr_tr, idr_tr_png) = _idr2( peak{"spp,1"}, peak{"spp,2"}, peak_pooled{"spp"}, idr_true_o_dir, "true", \
-						"peak_spp", ["rep1","rep2","pooled"], "true_reps" )
+		idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep1-rep2" )
+		(idr_tr, idr_tr_png) = _idr2( peak{"spp,1"}, peak{"spp,2"}, peak_pooled{"spp"}, idr_true_o_dir, "rep1-rep2", \
+						"peak_spp", ["rep1","rep2","pooled"], "true_reps/rep1-rep2" )
 	}
 
 	if ( !true_rep ) {

@@ -250,19 +250,21 @@ string[] _macs2_atac( string tag, string smooth_window, string pval_thresh, bool
 
 	// graphviz diagram and filetable
 
-	suffix	:= (pval_thresh=="0.01") ? ",0.01" : ""
+	suffix	:= (pval_thresh=="0.01") ? "0.01_" : ""
 
 	graph_in  := ["tagalign_($label)"]
 
-	graph_out := [	"peak_macs2_($label$suffix)",\
-			"gpeak_macs2_($label$suffix)",\
-		      	"p-val_sig._($label$suffix)",\
-		      	"fc_sig._($label$suffix)" ]
+	graph_out := [	"peak_macs2_$suffix($label)",\
+			"gpeak_macs2_$suffix($label)",\
+		      	"p-val_sig._$suffix($label)",\
+		      	"fc_sig._$suffix($label)" ]
 
-	hrchy_out := [	"L1_peak/macs2/$hrchy/peak$suffix",\
-			"L1_peak/macs2/$hrchy/gpeak$suffix",\
-		   	"L1_signal/macs2/$hrchy/pval$suffix", \
-		   	"L1_signal/macs2/$hrchy/fc$suffix" ]
+	suffix2	:= (pval_thresh=="0.01") ? "0.01" : ""
+
+	hrchy_out := [	"L1_peak/macs2/$hrchy/peak,$suffix2",\
+			"L1_peak/macs2/$hrchy/gpeak,$suffix2",\
+		   	"L1_signal/macs2/$hrchy/pval,$suffix2", \
+		   	"L1_signal/macs2/$hrchy/fc,$suffix2" ]
 
 	box 	:= "macs2_p-val-thld._$pval_thresh"+"_($label)"	
 

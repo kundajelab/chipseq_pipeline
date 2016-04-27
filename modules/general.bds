@@ -254,12 +254,6 @@ void wait_par() {
 
 	if ( par_lvl <= 0 ) wait
 }
-/*
-void wait_par_rep() {  // put this function at the end of each replicate/control processing
-
-	if ( (par_lvl <= 0) || (_cnt_rep++ % reps_in_par == 0) ) wait
-}
-*/
 
 void wait_par_rep() {
 

@@ -344,7 +344,6 @@ string _bam_to_tag( string bam, string o_dir, string label ) {
 	hrchy_out := ["L1_align/$label/tagalign"]
 
 	_add_to_graphviz( graph_in, in, graph_out, [out], "align\\n($label)", "orange" )
-
 	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
@@ -416,6 +415,13 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 
 		sys $RM_CHR_			
 	}
+
+	graph_in  := ["bedpe_($label)"]
+	graph_out := ["tagalign_($label)"]
+	hrchy_out := ["L1_align/$label/tagalign"]
+
+	_add_to_graphviz( graph_in, in, graph_out, [out], "align\\n($label)", "orange" )
+	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
 

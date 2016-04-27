@@ -39,6 +39,9 @@ map_label{"pr1"} 		= "Pseudo-replicate 1"
 map_label{"pr2"} 		= "Pseudo-replicate 2"
 map_label{"ppr1"} 		= "Pooled pseudo-replicate 1"
 map_label{"ppr2"} 		= "Pooled pseudo-replicate 2"
+map_label{"rep1-rep2"} 		= "Rep. 1 vs Rep. 2"
+map_label{"rep1-rep3"} 		= "Rep. 1 vs Rep. 3"
+map_label{"rep2-rep3"} 		= "Rep. 2 vs Rep. 3"
 
 map_label{"idr_qc"} 		= "IDR QC"
 map_label{"fastq"} 		= "fastq"
@@ -110,6 +113,9 @@ map_rank{"pr1"} 		= 1
 map_rank{"pr2"} 		= 2
 map_rank{"ppr1"} 		= 3
 map_rank{"ppr2"} 		= 4
+map_rank{"rep1-rep2"} 		= 5
+map_rank{"rep1-rep3"} 		= 6
+map_rank{"rep2-rep3"} 		= 7
 
 _rank = 0
 map_rank{"idr_qc"} 		= ++_rank
