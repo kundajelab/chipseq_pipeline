@@ -11,6 +11,9 @@ conda install -n aquas_chipseq --file requirements_r2.txt -y --force # force ins
 conda create -n aquas_chipseq_py3 --file requirements_py3.txt -y
 
 function add_to_activate {
+  if [ ! -f $CONDA_INIT ]; then
+    echo > $CONDA_INIT
+  fi
   for i in "${CONTENTS[@]}"; do
     if [ $(grep "$i" "$CONDA_INIT" | wc -l ) == 0 ]; then
       echo $i >> "$CONDA_INIT"
