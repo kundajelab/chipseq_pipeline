@@ -7,11 +7,17 @@ include "general.bds"
 rpt_aux_dir 	:= ""
 
 
+grp_shape_subgraph	:= "box"
 grp_shape_box 		:= "box"
 grp_shape_node 		:= "ellipse"
 grp_fontsize_box 	:= 12
 grp_fontsize_node 	:= 10
+grp_color_subgraph	:= "gainsboro"
 grp_color_node 		:= "whitesmoke"
+grp_color_edge		:= "gray"
+grp_style_subgraph 	:= "filled,rounded"
+grp_style_node 		:= "filled,rounded"
+
 
 grp_color_trim_adapter 	:= "darkorange"
 grp_color_bwa 		:= "salmon"
@@ -24,10 +30,12 @@ grp_color_macs2		:= "lightgreen"
 grp_color_idr 		:= "limegreen" 
 grp_color_ataqc 	:= "pink"
 grp_color_naive_overlap := "skyblue"
+grp_color_idr_final	:= "pink" 
 
 
-dot_lines 	:= "" // graphviz dot contents
-//string[] dot_lines
+string{} nodes // key: file type, contents: 1 line node definition
+string{} boxes // key: box name, contents: 1 line node definition
+string{} links // key: replicate/control id (rep1, ctl1, ...), contents: multiple links for replicate
 
 
 init_report_graphviz()
@@ -40,23 +48,46 @@ void init_report_graphviz() {
 
 string _html_graphviz() { // graphviz diagram
 
-	html := "<div id='graphviz'><b>Workflow diagram</b><br>"
+	html := "<div id='graphviz'><b>Workflow diagram</b>&nbsp<small>(rep : Replicate, ctl : Control, pr : Pseudo-replicate, ppr : Pooled pseudo-replicate)</small><br>"
 
 	prefix := title=="" ? "" : (title+"_")
 
-	dot_tmp := "$rpt_aux_dir/$prefix"+"workflow_tmp.dot"
 	dot 	:= "$rpt_aux_dir/$prefix"+"workflow.dot"
 	svg 	:= "$rpt_aux_dir/$prefix"+"workflow.svg"
 
-	dot_tmp.write( "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,fixedsize=shape,margin=0,fontsize=$grp_fontsize_node];\nedge [fontsize=$grp_fontsize_node];\n\n" \
-		   	+ dot_lines + "\n\n}" )
+	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [nodesep=0.75,shape=$grp_shape_node,style=\"$grp_style_node\",fixedsize=shape,margin=0,fontsize=$grp_fontsize_node];\nedge [weight=1.2,color=$grp_color_edge,fontsize=$grp_fontsize_node];\n\n";
+
+	for ( string node : nodes ) dot_contents += (node + "\n")
+	for ( string box : boxes ) dot_contents += (box + "\n")
+
+	for ( string key : links.keys() ) {
+
+		link := links{key}
+
+		if ( key == "outside" ) {
+
+			dot_contents += link+"\n\n";
+		}
+		else {
+			subgraph := "subgraph cluster_"+key.replace("-","_")+" {\n\n"
+			subgraph += link+"\n"
+			subgraph += "color=\"$grp_color_subgraph\";"
+			subgraph += "style=\"$grp_style_subgraph\";"
+			subgraph += "label=\"$key\";"
+			subgraph += "}\n\n"
+
+			dot_contents += subgraph
+		}	
+	}
+
+	dot_contents += "\n\n}"
+
+	dot.write( dot_contents )
 
 	// run graphviz
 	task {
 		sys $shcmd_init
-		sys cat $dot_tmp | awk '!x[$0]++' > $dot 	# remove duplicate lines
-		sys dot -Tsvg $dot > $svg 			# dot to svg
-		sys rm -f $dot_tmp
+		sys dot -Tsvg $dot > $svg
 	}
 
 	html += "<object data='"+ get_rel_path( svg ) + "'></object></div><br>"
@@ -65,69 +96,133 @@ string _html_graphviz() { // graphviz diagram
 	return html
 }
 
-// add graphviz element (in -> box -> out) to 'dot_lines'
+// add graphviz element (in -> box -> out)
 void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string[] out_path, string box, string box_color ) {
 
-	lines := ""
 	// {in1, in2, ...} -> box -> {out1, out2, ...}		
 
-	in  := "{"; out := "{"
-
-	found_in := false
-
-	for ( int i=0; i< min(in_id.size(),in_path.size()); i++ )  {
-
-		//if ( in_id[i] == "" || !path_exists( in_path[i] ) ) continue
-		if ( in_id[i] == "" ) continue
-
-		found_in = true
-
-		in_ := in_id[i]
-		in_ = in_.replace("_","\\n")
-
-		in += "\""+ in_ +"\" "
-
-		path 	:= "../" + get_rel_path( in_path[i] ) // ../ is because .svg is located at $out_dir/report/
-
-		lines += "\t\""+in_+"\" [id=\""+in_+"\",style=filled,fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];\n"
-	}
-
-	found_out := false
-
-	for ( int i=0; i<min(out_id.size(),out_path.size()); i++ ) {
-
-		//if ( out_id[i] == "" || !path_exists( out_path[i] ) ) continue
-		if ( out_id[i] == "" ) continue
-
-		found_out = true
-
-		out_ := out_id[i]
-		out_ = out_.replace("_","\\n") //.substr( out_.lastIndexOf("/")+1 ).replace("_","\\n")
-
-		out += "\""+out_+"\" "
-
-		path 	:= "../" + get_rel_path( out_path[i] )
-
-		lines += "\t\""+out_+"\" [id=\""+out_+"\",style=filled,fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];\n"			
-	}
-
-	in  += "}"; out += "}"
-
 	if ( box == "" ) {
-		lines += "\t$in -> $out;\n"
+
+		for ( int i=0; i< min(in_id.size(),in_path.size()); i++ )  {
+
+			if ( in_id[i] == "" ) continue
+
+			in 	:= in_id[i]
+			in 	= in.replace("_","\\n")
+			path 	:= "../" + get_rel_path( in_path[i] ) // ../ is because .svg is located at $out_dir/report/
+
+			in_label	:= _get_label( in )
+			in_id_wo_label	:= _rm_label( in )
+
+			nodes{in} = "\t\"$in\" [label=\"$in\",id=\"$in\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];"
+
+			for ( int j=0; j<min(out_id.size(),out_path.size()); j++ ) {
+
+				if ( out_id[j] == "" ) continue
+
+				out 	:= out_id[j]
+				out 	= out.replace("_","\\n") //.substr( out_.lastIndexOf("/")+1 ).replace("_","\\n")
+				path 	:= "../" + get_rel_path( out_path[j] )
+
+				out_label 	:= _get_label( out )
+				out_id_wo_label	:= _rm_label( out )
+
+				nodes{out} = "\t\"$out\" [label=\"$out\",id=\"$out\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];"
+
+				if ( in_label == out_label ) {
+					if ( links.hasKey(in_label) ) 	links{in_label} += "\t\"$in\" -> \"$out\";\n"
+					else 				links{in_label} = "\t\"$in\" -> \"$out\";\n"
+				}
+				else {
+					if ( links.hasKey("outside") ) 	links{"outside"} += "\t\"$in\" -> \"$out\";\n"
+					else 				links{"outside"} = "\t\"$in\" -> \"$out\";\n"
+				}
+			}
+		}
 	}
 	else {
 		box = box.replace("_","\\n")
 
-		lines += "\t\"$box\" [fontsize=$grp_fontsize_box,shape=$grp_shape_box,style=filled,fillcolor=$box_color];\n" + \
-			 "\t$in -> \"$box\";\n" + \
-			 "\t\"$box\" -> $out;\n"
-	}
+		box_label 	:= _get_label( box )
+		box_id_wo_label := _rm_label( box ).toUpper().replace("\\N","\\n")
 
-	if ( found_in || found_out ) dot_lines += lines
+		boxes{box} = "\t\"$box\" [label=\"$box_id_wo_label\",fontsize=$grp_fontsize_box,shape=$grp_shape_box,style=\"$grp_style_node\",fillcolor=$box_color];"
+
+		for ( int i=0; i< min(in_id.size(),in_path.size()); i++ )  {
+
+			if ( in_id[i] == "" ) continue
+
+			in 	:= in_id[i]
+			in 	= in.replace("_","\\n")
+			path 	:= "../" + get_rel_path( in_path[i] ) // ../ is because .svg is located at $out_dir/report/
+
+			in_label	:= _get_label( in )
+			in_id_wo_label	:= _rm_label( in )
+
+			nodes{in} = "\t\"$in\" [label=\"$in\",id=\"$in\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];"
+
+			if ( in_label == box_label && box_label != "" ) {
+				if ( links.hasKey(in_label) ) 	links{in_label} += "\t\"$in\" -> \"$box\";\n"
+				else 				links{in_label} = "\t\"$in\" -> \"$box\";\n"
+			}
+			else {
+				if ( links.hasKey("outside") ) 	links{"outside"} += "\t\"$in\" -> \"$box\";\n"
+				else 				links{"outside"} = "\t\"$in\" -> \"$box\";\n"
+			}
+		}
+
+		for ( int j=0; j<min(out_id.size(),out_path.size()); j++ ) {
+
+			if ( out_id[j] == "" ) continue
+
+			out 	:= out_id[j]
+			out 	= out.replace("_","\\n") //.substr( out_.lastIndexOf("/")+1 ).replace("_","\\n")
+			path 	:= "../" + get_rel_path( out_path[j] )
+
+			out_label 	:= _get_label( out )
+			out_id_wo_label	:= _rm_label( out )
+
+			nodes{out} = "\t\"$out\" [label=\"$out\",id=\"$out\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];"
+
+			if ( out_label == box_label && box_label != "" ) {
+				if ( links.hasKey(out_label) ) 	links{out_label} += "\t\"$box\" -> \"$out\";\n"
+				else 				links{out_label} = "\t\"$box\" -> \"$out\";\n"
+			}
+			else {
+				if ( links.hasKey("outside") ) 	links{"outside"} += "\t\"$box\" -> \"$out\";\n"
+				else 				links{"outside"} = "\t\"$box\" -> \"$out\";\n"
+			}
+		}
+	}
 }
 
 void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string[] out_path ) {
 
 	_add_to_graphviz( in_id, in_path, out_id, out_path, "", "" )
+}
+
+string _get_label( string id ) { // get (rep?), (ctl?) in id
+
+	a := id.lastIndexOf("(")
+	b := id.lastIndexOf(")")
+
+	if ( a > -1 && b > -1 && a < b ) {
+		id.substr(a+1,b)
+	}
+	else {
+		return ""
+	}
+}
+
+string _rm_label( string id ) {
+
+	a := id.lastIndexOf("(")
+	b := id.lastIndexOf(")")
+
+	if ( a > -1 && b > -1 && a < b ) {
+		return rm_str_at_end( rm_str_at_end( id.substr(0,a), "\\n" ), "_" )
+	}
+	else {
+		return id
+	}	
 }

@@ -190,6 +190,32 @@ string _html_filetable() { // graphviz diagram
 	return html
 }
 
+// returns rank of item
+void _add_to_filetable( string hrchy, string path ) {
+
+	if ( hrchy == "" ) return
+
+	if ( filetable_label.hasKey( hrchy ) ) return // filetable_rank{ hrchy }
+
+	curr 	:= _get_curr( hrchy )
+	parent 	:= _get_parent( hrchy )
+
+	filetable_label{hrchy} 	= map_label.hasKey(curr) ? map_label{curr} : curr
+	filetable_path{hrchy} 	= path
+
+	_add_to_filetable( parent, "" )
+}
+
+void _add_to_filetable( string[] out_hrchy, string[] out_path ) {
+
+	for ( int i=0; i<min(out_hrchy.size(),out_path.size()); i++ )  {
+
+		if ( out_hrchy[i] == "" ) continue
+
+		_add_to_filetable( out_hrchy[i], out_path[i] )
+	}
+}
+
 string[] _get_children( string hrchy ) { // not including grand ones
 
 	string[] children
@@ -235,47 +261,6 @@ string[] _find_children_and_sort( string hrchy ) {
 	}
 
 	return ret
-}
-
-// returns rank of item
-void _add_to_filetable( string hrchy, string path ) {
-
-	if ( hrchy == "" ) return
-
-	if ( filetable_label.hasKey( hrchy ) ) return // filetable_rank{ hrchy }
-
-	curr 	:= _get_curr( hrchy )
-	parent 	:= _get_parent( hrchy )
-
-	filetable_label{hrchy} 	= map_label.hasKey(curr) ? map_label{curr} : curr
-	filetable_path{hrchy} 	= path
-
-	_add_to_filetable( parent, "" )
-
-	// recursively adds up rank from parent
-	//filetable_rank{hrchy}	= (map_rank.hasKey(curr) ? map_rank{curr} : 0) + _add_to_filetable( parent, "" )
-/*
-	print("hrchy: $hrchy, curr: $curr, parent: $parent, " + filetable_rank{hrchy} + "\n" )
-
-	if ( hrchy == "L1_align/rep1/bam" || hrchy == "L1_align/rep2/bam" || \
-		hrchy == "L1_align/ctl1/bam" || hrchy == "L1_align/ctl2/bam" ) {
-		for ( string key : filetable_rank.keys() ) {
-			
-			print("\t$key, " + filetable_rank{key} + "\n")
-		}
-	}
-*/
-	//return filetable_rank{hrchy}	
-}
-
-void _add_to_filetable( string[] out_hrchy, string[] out_path ) {
-
-	for ( int i=0; i<min(out_hrchy.size(),out_path.size()); i++ )  {
-
-		if ( out_hrchy[i] == "" ) continue
-
-		_add_to_filetable( out_hrchy[i], out_path[i] )
-	}
 }
 
 string _get_parent( string hrchy ) { // "a/b/c" return a/b
