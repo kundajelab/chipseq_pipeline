@@ -457,6 +457,32 @@ string _pool_tag( string tag1, string tag2, string o_dir, string label ) {
 	return out
 }
 
+string _pool_tag( string[] tags, string o_dir, string label ) {
+
+// LINUX has limit on filename length (255), make it as shorter as possible
+//	prefix 		:= "$o_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )
+	prefix 		:= replace_dir( rm_ext( tags[0], ["bed","tagAlign"] ), o_dir )
+
+	tag_pooled 	:= "$prefix"+"_pooled.tagAlign.gz"
+
+	tags_str 	:= array_to_str( tags, " " ) // join
+
+	in 		:= tags
+	out 		:= tag_pooled
+
+	taskName:= "pool_tag " + label
+
+	task( out<-in ) {
+
+		sys $shcmd_init
+		sys zcat $tags_str | gzip -c > $tag_pooled
+	}
+
+	wait_par()
+
+	return out
+}
+
 string get_fraglen( string xcor_score ) {   // get FRAGLEN (3rd column of cc score file) for spp(-speak=$FRAGLEN)	
 
 	cols := xcor_score.read().split("\t")

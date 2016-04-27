@@ -33,16 +33,14 @@ void chk_idr() {
 string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string label, \
 		string graph_prefix, string[] graph_in, string hrchy ) {
 
-	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label
-	//npeaks_file 	:= prefix.dirName()+"/$idr_summary"
+	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
 	peak_idr	:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
-	idr_output 	:= "$prefix.overlapped-peaks.txt"
-	png 		:= "$prefix.overlapped-peaks.txt.png"
-	//create_idr_summary( npeaks_file ) // do nothing if it already exists
+	idr_out 	:= "$prefix.unthresholded-peaks.txt"
+	idr_out_gz	:= "$idr_out.gz"
+	png 		:= "$idr_out.png"
 
 	in 	:= [peak1, peak2, pooled]
-	//out 	:= [idr_output, peak, png]
-	out 	:= [peak_idr, png, idr_output]
+	out 	:= [peak_idr, png, idr_out_gz]
 
 	taskName:= "idr2 " + label
 
@@ -51,16 +49,16 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 		sys $shcmd_init_py3
 
 		sys idr --samples $peak1 $peak2 --peak-list $pooled --input-file-type narrowPeak \
-			--output-file $idr_output --rank signal.value --soft-idr-threshold $idr_thresh \
+			--output-file $idr_out --rank signal.value --soft-idr-threshold $idr_thresh \
 			--plot
 		
 		sys idr_thresh_transformed=$(awk -v p=$idr_thresh 'BEGIN{print -log(p)/log(10)}')
 
 		//# Get peaks passing global IDR threshold and convert file to narrowPeak format (Step 9)
-		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,"0"}' $idr_output \
+		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,"0"}' $idr_out \
 			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr
 
-		//sys echo -e "$label\t$(zcat $peak_idr | wc -l)" >> $npeaks_file
+		sys gzip -f $idr_out
 	}
 
 	for ( int i=0; i<graph_in.size(); i++) graph_in[i] = graph_prefix + "_(" + graph_in[i] + ")"
