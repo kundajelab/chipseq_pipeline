@@ -259,8 +259,8 @@ umap_hic= /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k20tok54 	// uniq. mapp
 bwa_idx = /mnt/data/annotations/indexes/bwa_indexes/encodeHg19Male/v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
 bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
-vplot_idx = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/hg19_RefSeq_stranded.bed.gz
 
+tss_enrich = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/hg19_RefSeq_stranded.bed.gz
 ref_fa  = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/encodeHg19Male.fa  // genome reference fasta
 blacklist = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/Anshul_Hg19UltraHighSignalArtifactRegions.bed.gz
 dnase = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_all_p10_ucsc.bed.gz
@@ -293,7 +293,7 @@ umap_hic            : Unique mappability tracks directory path (for HiC, DO NOT 
 bwa_idx             : BWA index (full path prefix of [].bwt file) .
 bwt_idx             : Bowtie index (full path prefix of [].1.ebwt file).
 bwt2_idx            : Bowtie2 index (full path prefix of [].1.bt2 file).
-vplot_idx           : V plot index (full path for bed file).
+tss_enrich           : V plot index (full path for bed file).
 
 // for ataqc
 ref_fa 		    : Reference genome sequence fasta.
@@ -373,25 +373,25 @@ If you just want to add something to your `$PATH`, use addpath instead of shcmd.
 addpath= ${HOME}/program1/bin:${HOME}/program1/bin:${HOME}/program2/bin:/usr/bin/test
 ```
 
-4) virt_env and virt_env_py3
+4) conda_env and conda_env_py3
 
-You can also use Anaconda virtual environment in the pipeline. BDS pipelines usually take two conda environments since there is a conflict between softwares based on python3 and python2. Make sure that the environment corresponding to `virt_env` has python2 installed and that corresponding to `virt_env_py3` has python3 installed.
+You can also use Anaconda virtual environment in the pipeline. BDS pipelines usually take two conda environments since there is a conflict between softwares based on python3 and python2. Make sure that the environment corresponding to `conda_env` has python2 installed and that corresponding to `conda_env_py3` has python3 installed.
 ```
-virt_env= [VIRT_ENV_NAME]		# python2 must be installed in this virt. env.
-virt_env_py3= [VIRT_ENV_NAME_FOR_PY3] 	# python3 must be installed in this virt. env.
+conda_env= [CONDA_ENV_NAME]		# python2 must be installed in this virt. env.
+conda_env_py3= [CONDA_ENV_NAME_FOR_PY3] 	# python3 must be installed in this virt. env.
 ```
 
 If you have a separate virtual environment for R-2.x.x. 
 ```
-virt_env_r2= [VIRT_ENV_NAME_FOR_R2]		# R-2.x.x must be installed in this virt. env.
+conda_env_r2= [CONDA_ENV_NAME_FOR_R2]		# R-2.x.x must be installed in this virt. env.
 ```
 
 
-### What are -mod, -shcmd, -addpath, -virt_env and -virt_env_py3?
+### What are -mod, -shcmd, -addpath, -conda_env and -conda_env_py3?
 
 They are command line argument versions of `mod`, `shcmd` and `addpath`. However NO SUFFIX is allowed. For example,
 ```
-$ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -virt_env my_env -virt_env_py3 my_env_py3
+$ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -conda_env my_env -conda_env_py3 my_env_py3
 ```
 
 
@@ -440,8 +440,8 @@ wt_spp  = 10:00:00
 
 nth_macs2 = 2 	// You can also have resource settings for other tasks
 
-virt_env = my_virt_env_py2
-virt_env_py3 = my_virt_env_py3
+conda_env = my_conda_env_py2
+conda_env_py3 = my_conda_env_py3
 ...
 ```
 

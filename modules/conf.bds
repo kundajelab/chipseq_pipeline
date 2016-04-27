@@ -299,3 +299,9 @@ bool conf_file_exists() {
 	if ( c!="" ) return c.exists()
 	return false
 }
+
+bool has_key_in_conf_or_cmd_line( string key ) {
+
+	return cmd_line_arg_has_key( key )// || has_conf_key( key )
+}
+

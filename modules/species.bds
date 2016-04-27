@@ -18,10 +18,10 @@ umap_hic	:= "" 		help Unique mappability tracks directory path (for HiC, DO NOT 
 bwa_idx 	:= ""		help BWA index (full path prefix of *.bwt file) .
 bwt_idx		:= ""		help Bowtie index (full path prefix of *.1.ebwt file).
 bwt2_idx	:= ""		help Bowtie2 index (full path prefix of *.1.bt2 file).
-vplot_idx 	:= "" 		help V plot index (TSS bed for vplot and ataqc).
 
 blacklist_idr 	:= "" 		help Blacklist bed for IDR.
 
+tss_enrich 	:= "" 		help TSS enrichment bed for ataqc.
 ref_fa 		:= ""		help Reference genome sequence fasta.
 blacklist 	:= "" 		help Blacklist bed for ataqc.
 dnase 		:= ""		help DNase bed for ataqc.
@@ -88,7 +88,7 @@ void read_species() { // check for species configruation files
 				bwt_idx 	= get_conf_val( bwt_idx, 	["bwt_idx"], _conf )
 				bwt2_idx 	= get_conf_val( bwt2_idx, 	["bwt2_idx"], _conf )
 
-				vplot_idx 	= get_conf_val( vplot_idx, 	["vplot_idx"], _conf )
+				tss_enrich 	= get_conf_val( tss_enrich, 	["tss_enrich"], _conf )
 				blacklist_idr 	= get_conf_val( blacklist_idr, 	["blacklist_idr"], _conf )
 
 				ref_fa 		= get_conf_val( ref_fa, 	["ref_fa"], _conf )
@@ -111,7 +111,7 @@ void read_species() { // check for species configruation files
 	print( "BWA index\t\t: $bwa_idx\n" )
 	print( "Bowtie index\t\t: $bwt_idx\n" )
 	print( "Bowtie2 index\t\t: $bwt2_idx\n" )
-	print( "V-Plot index\t\t: $vplot_idx\n" )
+	print( "TSS enrichment bed\t: $tss_enrich\n" )
 	print( "Black list for IDR\t: $blacklist_idr\n" )
 	print("\n")
 	print( "Ref. genome seq. fasta\t: $ref_fa\n" )

@@ -5,32 +5,14 @@ include "species.bds"
 include "report.bds"
 
 
-help == idr settings
-idr_thresh 	:= "0.02"	help IDR threshold : -log_10(score) (default: 0.02).
 
-
-//idr_summary 	:= "NPEAKS_IDR.txt"	// file basename for summary of number of peaks found
-
-
-init_idr()
-
-
-void init_idr() {
-
-	//use_idr1 	= get_conf_val_bool( use_idr1, 		["use_idr1"] )
-	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
-
-	print("\n\n== idr settings\n")
-	//print( "Use IDR-1\t\t: $use_idr1\n" )
-	print( "IDR threshold\t\t: $idr_thresh\n" )
-}
 
 void chk_idr() {
 
 	if ( !path_exists( blacklist_idr ) ) print("\nWarning: Blacklist bed (-blacklist_idr) for final IDR QC is missing! (file: $blacklist_idr)\n\n")
 }
 
-string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string label, \
+string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, string o_dir, string label, \
 		string graph_prefix, string[] graph_in, string hrchy ) {
 
 	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
@@ -67,7 +49,6 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 	hrchy_out := ["L1_peak/idr/$hrchy/idr_peak","","L1_peak/idr/$hrchy/unthsld_peak"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "idr_($label)", grp_color_idr )
-
 	_add_to_filetable( hrchy_out, out )
 
 	wait_par()
@@ -165,7 +146,7 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 
 	wait_par()
 
-	graph_in  := ["idr_peak_(true)","idr_peak_(rep1-pr)","idr_peak_(rep2-pr)","idr_peak_(ppr)"]
+	graph_in  := ["idr_peak_(rep1-rep2)","idr_peak_(rep1-pr)","idr_peak_(rep2-pr)","idr_peak_(ppr)"]
 	graph_out := ["idr_qc","idr_peak_(opt)","idr_peak_(consv)"]	
 	hrchy_out := ["L1_qc/idr_qc","L1_peak/idr/opt_set/idr_peak","L1_peak/idr/consv_set/idr_peak"]
 

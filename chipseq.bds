@@ -26,6 +26,8 @@ true_rep   	:= false	help Call peaks on true replicates only.
 ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
 sigtrk 		:= ""		help (BETA) Signal track generation method : bam2bw (bamCoverage in deepTools) or tag2bw (align2rawsignal).
 make_wig 	:= false	help Create wig (for '-sigtrk tag2bw' only).
+idr_thresh 	:= "0.02"	help IDR threshold : -log_10(score) (default: 0.02).
+nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
 
 
 help() // print help if no parameters are given
@@ -103,6 +105,9 @@ void init_chipseq() {
 		
 	sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
 
+	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
+	nreads 		= get_conf_val_int( nreads,		["nreads"] )
+
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
 	if ( get_tag(0,1) != "" ) 	input = "tag"
@@ -122,12 +127,14 @@ void print_chipseq() {
 	print( "\n\n== chipseq pipeline settings\n")
 	print( "Final stage for ChIP-Seq\t: $final_stage\n" )
 	print( "# replicates \t\t\t: "+get_num_rep()+"\n" )
+	print( "Subsample # read for cross-corr. analysis \t: $nreads\n")
 	print( "Input data type\t\t\t: $input\n")
 	print( "Peak calling method\t\t: $callpeak\n" )
 	print( "Peak calling for true reps only\t: $true_rep\n" )
 	print( "Control rep. depth ratio\t: $ctl_depth_ratio\n" )
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
+	print( "IDR threshold\t\t: $idr_thresh\n" )
 }
 
 void chk_input() {
@@ -236,7 +243,7 @@ void align() {
 
 			if ( !is_data_available( ctl, rep ) ) continue
 
-			wait_par_rep()
+			wait_par_rep() // wait if # replicate being processed exceeds limit (-reps_in_par) and then reset tids_rep
 
 			tid := par _align( ctl, rep )
 
@@ -305,7 +312,7 @@ void _align_SE( int ctl, int rep ) {
 
 		if ( ctl == 0 ) { // if replicate
 
-			subsampled_tag := _subsample_tag( tag{key}, aln_o_dir, info )
+			subsampled_tag := _subsample_tag( tag{key}, nreads, aln_o_dir, info )
 
 			( xcor_qc{key}, xcor_plot{key} ) = _xcor( subsampled_tag, qc_o_dir, info, info )
 			wait
@@ -343,7 +350,6 @@ void _align_SE( int ctl, int rep ) {
 		( xcor_qc_pr1{key}, tmp ) = _xcor( tag_pr1{key}, qc_pr1_o_dir, info+"-pr1", "pseudo_reps/$info/pr1" )// suppress graphviz and filetable
 
 		( xcor_qc_pr2{key}, tmp ) = _xcor( tag_pr2{key}, qc_pr2_o_dir, info+"-pr2", "pseudo_reps/$info/pr2" )
-		wait
 	}
 }
 
@@ -407,14 +413,14 @@ void _align_PE( int ctl, int rep ) {
 
 				tag{key} = get_tag( ctl, rep )
 
-				subsampled_tag = _subsample_tag_PE_xcor( tag{key}, aln_o_dir, info )
+				subsampled_tag = _subsample_tag_PE_xcor( tag{key}, nreads, aln_o_dir, info )
 				wait
 			}
 			else {
 				bedpe = _bam_to_bedpe( filt_bam{key}, aln_o_dir, info )
 				wait
 
-				subsampled_tag = _subsample_bedpe_to_tag_xcor( bedpe, aln_o_dir, info )
+				subsampled_tag = _subsample_bedpe_to_tag_xcor( bedpe, nreads, aln_o_dir, info )
 				wait
 			}
 
@@ -458,7 +464,6 @@ void _align_PE( int ctl, int rep ) {
 		( xcor_qc_pr1{key}, tmp ) = _xcor( tag_pr1{key}, qc_pr1_o_dir, info+"-pr1", "pseudo_reps/$info/pr1" ) // suppress graphviz
 
 		( xcor_qc_pr2{key}, tmp ) = _xcor( tag_pr2{key}, qc_pr2_o_dir, info+"-pr2", "pseudo_reps/$info/pr2" )
-		wait
 	}
 }
 
@@ -754,7 +759,7 @@ void do_idr() {
 	if ( get_num_rep() > 1 ) {
 
 		idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep1-rep2" )
-		(idr_tr, idr_tr_png) = _idr2( peak{"spp,1"}, peak{"spp,2"}, peak_pooled{"spp"}, idr_true_o_dir, "rep1-rep2", \
+		(idr_tr, idr_tr_png) = _idr2( peak{"spp,1"}, peak{"spp,2"}, peak_pooled{"spp"}, idr_thresh, idr_true_o_dir, "rep1-rep2", \
 						"peak_spp", ["rep1","rep2","pooled"], "true_reps/rep1-rep2" )
 	}
 
@@ -762,19 +767,19 @@ void do_idr() {
 
 		idr_rep1_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep1" )
 
-		(idr_pr_rep1, idr_pr_rep1_png) = _idr2( peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, peak{"spp,1"}, idr_rep1_pr_o_dir, "rep1-pr", \
+		(idr_pr_rep1, idr_pr_rep1_png) = _idr2( peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, peak{"spp,1"}, idr_thresh, idr_rep1_pr_o_dir, "rep1-pr", \
 							"peak_spp", ["rep1-pr1","rep1-pr2","rep1"], "pseudo_reps/rep1" )
 
 		if ( get_num_rep() > 1 ) {
 
 			idr_rep2_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep2" )
 
-			(idr_pr_rep2, idr_pr_rep2_png) = _idr2( peak_pr1{"spp,2"}, peak_pr2{"spp,2"}, peak{"spp,2"}, idr_rep2_pr_o_dir, "rep2-pr", \
+			(idr_pr_rep2, idr_pr_rep2_png) = _idr2( peak_pr1{"spp,2"}, peak_pr2{"spp,2"}, peak{"spp,2"}, idr_thresh, idr_rep2_pr_o_dir, "rep2-pr", \
 								"peak_spp", ["rep2-pr1","rep2-pr2","rep2"], "pseudo_reps/rep2" )
 
 			idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
 
-			(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_ppr_o_dir, "ppr", \
+			(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, idr_ppr_o_dir, "ppr", \
 								"peak_spp", ["ppr1","ppr2","pooled"], "pooled_pseudo_reps" )
 			wait
 

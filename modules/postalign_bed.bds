@@ -8,7 +8,6 @@ include "report.bds"
 // has functions related to tagalign, and helps getting tagalign from configruation file or command line argument
 
 help == postalign bed/tagalign settings
-nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
 fraglen0        := false        help Set predefined fragment length as zero for cross corr. analysis (add -speak=0 to run_spp.R).
 
 
@@ -17,42 +16,10 @@ init_postalign_bed()
 
 void init_postalign_bed() {
 
-	nreads 		= get_conf_val_int( nreads,	["nreads"] )
+	fraglen0 	= get_conf_val_bool( fraglen0,	["fraglen0"] )
+	print( "Set initial fraglen. to 0 for cross-corr. (-speak=0)\t: $fraglen0\n")
 
 	print("\n\n== postalign bed/tagalign settings\n")
-	print( "# read for xcor subsample\t: $nreads\n")
-}
-
-string _subsample_tag( string tag, string o_dir, string label ) {
-
-	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
-	nreads_per_mill := (nreads/1000000)
-	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
-
-	in 	:= [ tag ]
-	out 	:= subsampled_tag
-
-	taskName:= "_subsample_tag " + label
-
-	task( out<-in ) {
-
-		sys $shcmd_init
-	
-		//# Subsample tagAlign file
-		sys zcat $tag | \
-			grep -v "chrM" | shuf -n $nreads | gzip -c > $subsampled_tag
-	}
-
-	wait_par()
-/*
- 	graph_in 	:= ["tagalign_($label)"]
- 	graph_out 	:= ["subsampled_tagalign_($label)"]
-	hrchy_out 	:= ["L1_align/$label/subsampled_tagalign"]
-
-	_add_to_graphviz( graph_in, in, graph_out, [out] )
-	_add_to_filetable( hrchy_out, [out] )
-*/
-	return out
 }
 
 string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
@@ -81,10 +48,10 @@ string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
-string _subsample_tag_PE_xcor( string tag, string o_dir, string label ) {
+string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","bed"] ), o_dir )
-	nreads_per_mill := (nreads/1000000)
+	nreads_per_mill := (nlines/1000000)
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
 
 	in 	:= [ tag ]
@@ -98,28 +65,21 @@ string _subsample_tag_PE_xcor( string tag, string o_dir, string label ) {
 
 		// join two consecutive lines in tag, subsample it and then take one read per pair
 		sys zcat $tag | sed 'N;s/\n/\t/' | \
-			grep -v "chrM" | shuf -n $nreads | \
+			grep -v "chrM" | shuf -n $nlines | \
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$4,$5,$6}' | gzip -c > $subsampled_tag
 	}
 
 	wait_par()
-/*
-	graph_in  := ["tagalign_($label)"]
-	graph_out := ["subsampled_tagalign_($label)"]
-	hrchy_out := ["L1_align/$label/subsampled_tagalign"]
 
-	_add_to_graphviz( graph_in, in, graph_out, [out] )
-	_add_to_filetable( hrchy_out, [out] )
-*/
 	return out
 }
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
-string _subsample_bedpe_to_tag_xcor( string bedpe, string o_dir, string label ) {
+string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, string label ) {
 	
 	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
-	nreads_per_mill := (nreads/1000000)
+	nreads_per_mill := (nlines/1000000)
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
 
 	in 	:= [ bedpe ]
@@ -133,38 +93,8 @@ string _subsample_bedpe_to_tag_xcor( string bedpe, string o_dir, string label ) 
 		//# Subsample tagAlign file
 		//# Restrict to one read end per pair for CC analysis
 		sys zcat $bedpe | \
-			grep -v "chrM" | shuf -n $nreads | \
+			grep -v "chrM" | shuf -n $nlines | \
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$3,"N","1000",$9}' | gzip -c > $subsampled_tag
-	}
-
-	wait_par()
-/*
-	graph_in  := ["bedpe_($label)"]
-	graph_out := ["subsampled_tagalign_($label)"]
-	hrchy_out := ["L1_align/$label/subsampled_tagalign"]
-
-	_add_to_graphviz( graph_in, in, graph_out, [out] )
-	_add_to_filetable( hrchy_out, [out] )
-*/
-	return out
-}
-
-string _subsample_bedpe( string bedpe, string o_dir, string label ) {
-	
-	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
-	nreads_per_mill := (nreads/1000000)
-	subsampled_bedpe:= "$prefix.$nreads_per_mill.bedpe.gz"
-
-	in 	:= [ bedpe ]
-	out 	:= subsampled_bedpe
-
-	taskName:= "subsample_bedpe " + label
-
-	task( out<-in ) {
-
-		sys $shcmd_init
-
-		sys zcat $bedpe | grep -v "chrM" | shuf -n $nreads | gzip -c > $subsampled_bedpe
 	}
 
 	wait_par()
