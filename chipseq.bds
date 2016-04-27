@@ -236,7 +236,11 @@ void align() {
 
 			if ( !is_data_available( ctl, rep ) ) continue
 
-			par _align( ctl, rep )
+			wait_par_rep()
+
+			tid := par _align( ctl, rep )
+
+			tids_rep.add( tid )
 		}
 	}
 

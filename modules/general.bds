@@ -32,7 +32,7 @@ shcmd_init 	:= ""  // Shell command executed prior to all BigDataScript tasks (u
 shcmd_init_r2 	:= ""  // for softwares using R 2.x
 shcmd_init_py3	:= ""  // for softwares using python3
 
-_cnt_rep 	:= 0 	// # of rep/ctl processed
+string[] tids_rep
 string[] tids_callpeak	// array of task ids for peak calling jobs
 
 
@@ -254,17 +254,21 @@ void wait_par() {
 
 	if ( par_lvl <= 0 ) wait
 }
-
+/*
 void wait_par_rep() {  // put this function at the end of each replicate/control processing
 
-	return wait_par_rep( true )
+	if ( (par_lvl <= 0) || (_cnt_rep++ % reps_in_par == 0) ) wait
 }
+*/
 
-void wait_par_rep( bool out_in ) {
+void wait_par_rep() {
 
-	if ( out_in ) _cnt_rep++
+	if ( tids_rep.size() >= reps_in_par ) {
+		dummy := tids_rep // fails without dummy array, it's BDS bug
+		wait dummy
 
-	if ( (par_lvl <= 0) || (_cnt_rep % reps_in_par == 0) ) wait
+		if ( tids_rep.size() > 0 ) tids_rep = []
+	}
 }
 
 void wait_par_peak() {
