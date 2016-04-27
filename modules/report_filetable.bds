@@ -79,6 +79,9 @@ map_label{"gpeak_macs2_filt"} 	= "filtered gapped peak"
 map_label{"peak_overlap"} 	= "peak"
 map_label{"gpeak_overlap"} 	= "gapped peak"
 map_label{"ataqc"} 		= "ATAQC"
+map_label{"idr_plot"} 		= "IDR plot"
+map_label{"unthsld_peak"} 	= "Unthresholded IDR peak"
+
 
 map_rank{"L1_align"} 		= 1
 map_rank{"L1_signal"} 		= 2
@@ -149,7 +152,8 @@ map_rank{"gpeak_macs2_filt"} 	= ++_rank
 map_rank{"peak_overlap"} 	= ++_rank
 map_rank{"gpeak_overlap"} 	= ++_rank
 map_rank{"ataqc"} 		= ++_rank
-
+map_rank{"idr_plot"} 		= ++_rank
+map_rank{"unthsld_peak"} 	= ++_rank
 
 
 string{} filetable_label // key: hierarchy

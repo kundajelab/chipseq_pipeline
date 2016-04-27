@@ -64,7 +64,7 @@ string[] _idr2( string peak1, string peak2, string pooled, string o_dir, string 
 	for ( int i=0; i<graph_in.size(); i++) graph_in[i] = graph_prefix + "_(" + graph_in[i] + ")"
 
 	graph_out := ["idr_peak_($label)"]
-	hrchy_out := ["L1_peak/idr/$hrchy/idr_peak"]
+	hrchy_out := ["L1_peak/idr/$hrchy/idr_peak","","L1_peak/idr/$hrchy/unthsld_peak"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "idr_($label)", grp_color_idr )
 
