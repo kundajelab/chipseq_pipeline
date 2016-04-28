@@ -257,12 +257,12 @@ string[] _macs2_atac( string tag, string smooth_window, string pval_thresh, bool
 		      	"p-val_sig._$suffix($label)",\
 		      	"fc_sig._$suffix($label)" ]
 
-	suffix2	:= (pval_thresh=="0.01") ? "0.01" : ""
+	suffix2	:= (pval_thresh=="0.01") ? ",0.01" : ""
 
-	hrchy_out := [	"L1_peak/macs2/$hrchy/peak,$suffix2",\
-			"L1_peak/macs2/$hrchy/gpeak,$suffix2",\
-		   	"L1_signal/macs2/$hrchy/pval,$suffix2", \
-		   	"L1_signal/macs2/$hrchy/fc,$suffix2" ]
+	hrchy_out := [	"L1_peak/macs2/$hrchy/peak$suffix2",\
+			"L1_peak/macs2/$hrchy/gpeak$suffix2",\
+		   	"L1_signal/macs2/$hrchy/pval$suffix2", \
+		   	"L1_signal/macs2/$hrchy/fc$suffix2" ]
 
 	box 	:= "macs2_p-val-thld._$pval_thresh"+"_($label)"	
 

@@ -297,7 +297,7 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 
 		file := files[i]
 		type := types[i]
-		trackname := names[i]
+		trackname := names[i].trim()
 
 		// add url_base
 		url 	:= get_url( file )
@@ -335,7 +335,7 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 	json_file.write( json )
 
 	json_url := get_url( json_file )
-	viz_url	 := "http://epigenomegateway.wustl.edu/browser/?genome=" + species + "&tknamewidth=150&datahub=" + json_url
+	viz_url	 := "http://epigenomegateway.wustl.edu/browser/?genome=" + species + "&tknamewidth=275&datahub=" + json_url
 
 	json_rel_path := get_rel_path( json_file )
 

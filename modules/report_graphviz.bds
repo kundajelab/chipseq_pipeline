@@ -55,7 +55,7 @@ string _html_graphviz() { // graphviz diagram
 	dot 	:= "$rpt_aux_dir/$prefix"+"workflow.dot"
 	svg 	:= "$rpt_aux_dir/$prefix"+"workflow.svg"
 
-	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [nodesep=0.75,shape=$grp_shape_node,style=\"$grp_style_node\",fixedsize=shape,margin=0,fontsize=$grp_fontsize_node];\nedge [weight=1.2,color=$grp_color_edge,fontsize=$grp_fontsize_node];\n\n";
+	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,style=\"$grp_style_node\",margin=0,fontsize=$grp_fontsize_node];\nedge [color=$grp_color_edge,fontsize=$grp_fontsize_node];\n\n";
 
 	for ( string node : nodes ) dot_contents += (node + "\n")
 	for ( string box : boxes ) dot_contents += (box + "\n")

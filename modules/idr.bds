@@ -5,16 +5,27 @@ include "species.bds"
 include "report.bds"
 
 
+idr_suffix 	:= false 	help Append IDR threshold to IDR output directory.
 
 
 void chk_idr() {
 
+	idr_suffix 	= get_conf_val_bool( idr_suffix, 	["idr_suffix"] )
+
 	if ( !path_exists( blacklist_idr ) ) print("\nWarning: Blacklist bed (-blacklist_idr) for final IDR QC is missing! (file: $blacklist_idr)\n\n")
+}
+
+void print_idr() {
+
+	print( "\n\n== IDR settings\n")
+	print( "Append IDR threshold to IDR out_dir\t\t: $idr_suffix\n" )
 }
 
 // rank: 'signal.value' for SPP peaks, 'p.value' for MACS2 peaks
 string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, string rank, string o_dir, string label, \
 		string graph_prefix, string[] graph_in, string hrchy ) {
+
+	if ( idr_suffix ) o_dir = o_dir + "_$idr_thresh"
 
 	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
 	peak_idr	:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
