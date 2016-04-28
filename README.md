@@ -17,7 +17,7 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 ```
 
 
-### Installation instruction
+### Installation instruction (for SCG3 and all others)
 
 Install java (jdk >= 1.7 or jre >= 1.7) and the latest git on your system. 
 
@@ -32,7 +32,7 @@ Get the latest version of chipseq pipelines.
 $ git clone https://github.com/kundajelab/TF_chipseq_pipeline
 ```
 
-Install software dependencies automatically (DO NOT run this on kundaje clusters or SCG3). It will create two conda environments (aquas_chipseq and aquas_chipseq_py3) in Miniconda3.
+Install software dependencies automatically (DO NOT run this on kundaje clusters). It will create two conda environments (aquas_chipseq and aquas_chipseq_py3) in Miniconda3.
 ```
 $ ./install_dependencies.sh
 ```
@@ -43,9 +43,9 @@ $ cp bds.config $HOME/.bds
 ```
 
 
-### Installation instruction (for Kundaje lab clusters and SCG3)
+### Installation instruction (for Kundaje lab clusters)
 
-BDS and all dependencies have already been installed on lab servers (including SCG3). Do not run `install_dependencies.sh` on these servers. Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
+BDS and all dependencies have already been installed on lab servers. Do not run `install_dependencies.sh` on these servers. Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
 ```
 $ git clone https://github.com/kundajelab/TF_chipseq_pipeline
 $ cd TF_chipseq_pipeline
@@ -53,10 +53,15 @@ $ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds/
 ```
 
+
+
+### Genome data files for SCG3 and Kundaje lab servers
+
 For Kundaje lab servers (mitra, nandi, durga, kali, vayu, amold and wotan) and SCG3 (carmack*, crick*, scg3*), the pipeline automatically determines the type of servers and set shell environments and species database.
 ```
 $ bds chipseq.bds ... -species [SPECIES; hg19, mm9, ... ]
 ```
+
 
 
 ### Usage

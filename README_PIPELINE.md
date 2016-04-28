@@ -77,6 +77,23 @@ $ cp bds.config $HOME/.bds/
 ```
 
 
+### How to install dependencies and share with colleagues
+
+If you have a super-user privileges on your system, it is recommended to install Miniconda3 on `/opt/miniconda3/` and share conda environment with others.
+```
+$ sudo su
+$ ./install_dependencies.sh
+$ chmod 755 -R /opt/miniconda3/  # if you get some annoying permission issues.
+```
+
+In order to make Miniconda3 accessible for all users, create an intialization script `/etc/profile.d/conda_init.sh`.
+```
+$ echo '#!/bin/bash' > /etc/profile.d/conda_init.sh
+$ echo 'export PATH=$PATH:/opt/miniconda3/bin' >> /etc/profile.d/conda_init.sh
+```
+
+
+
 ### How to run pipelines?
 
 Create and move to your working directory. Run the following command:
@@ -293,9 +310,9 @@ umap_hic            : Unique mappability tracks directory path (for HiC, DO NOT 
 bwa_idx             : BWA index (full path prefix of [].bwt file) .
 bwt_idx             : Bowtie index (full path prefix of [].1.ebwt file).
 bwt2_idx            : Bowtie2 index (full path prefix of [].1.bt2 file).
-tss_enrich           : V plot index (full path for bed file).
 
 // for ataqc
+tss_enrich          : TSS enrichment bed.
 ref_fa 		    : Reference genome sequence fasta.
 blacklist 	    : Blacklist bed for ataqc.
 dnase 		    : DNase bed for ataqc.
@@ -304,6 +321,24 @@ enh 		    : Enhancer bed for ataqc.
 reg2map 	    : Reg2map for ataqc.
 roadmap_meta 	    : Roadmap metadata for ataqc.
 ```
+
+
+### How to share a species file on your server
+
+```
+$ bds [PIPELINE_BDS] -species [SPECIES; hg19, mm9, ...] -species_file [SPECIES_FILE]
+```
+
+If you want to skip `-species_file` parameter, define it in the default environment file `./conf/default.env`.
+```
+[your_hostname] # get it with 'hostname -f'
+
+conda_env     = [CONDA_ENV_NAME; bds_atac for atac, aquas_chipseq for chipseq]
+conda_env_py3 = [CONDA_ENV_PY3_NAME; bds_atac_py3 for atac, aquas_chipseq_py3 for chipseq]
+
+species_file = [SPECIES_FILE]
+```
+
 
 
 
