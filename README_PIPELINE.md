@@ -9,7 +9,7 @@ Make sure that you have java (jdk >= 1.7 or jre >= 1.7) and git on your system.
 
 For Debian/Ubuntu based Linux,
 ```
-$ sudo apt-get install git openjdk-7-jre
+$ sudo apt-get install git openjdk-8-jre
 ```
 
 For Fedora/Red-Hat based Linux,

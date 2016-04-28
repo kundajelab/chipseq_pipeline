@@ -12,7 +12,8 @@ void chk_idr() {
 	if ( !path_exists( blacklist_idr ) ) print("\nWarning: Blacklist bed (-blacklist_idr) for final IDR QC is missing! (file: $blacklist_idr)\n\n")
 }
 
-string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, string o_dir, string label, \
+// rank: 'signal.value' for SPP peaks, 'p.value' for MACS2 peaks
+string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, string rank, string o_dir, string label, \
 		string graph_prefix, string[] graph_in, string hrchy ) {
 
 	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
@@ -31,7 +32,7 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 		sys $shcmd_init_py3
 
 		sys idr --samples $peak1 $peak2 --peak-list $pooled --input-file-type narrowPeak \
-			--output-file $idr_out --rank signal.value --soft-idr-threshold $idr_thresh \
+			--output-file $idr_out --rank $rank --soft-idr-threshold $idr_thresh \
 			--plot
 		
 		sys idr_thresh_transformed=$(awk -v p=$idr_thresh 'BEGIN{print -log(p)/log(10)}')

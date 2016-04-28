@@ -759,7 +759,7 @@ void do_idr() {
 	if ( get_num_rep() > 1 ) {
 
 		idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep1-rep2" )
-		(idr_tr, idr_tr_png) = _idr2( peak{"spp,1"}, peak{"spp,2"}, peak_pooled{"spp"}, idr_thresh, idr_true_o_dir, "rep1-rep2", \
+		(idr_tr, idr_tr_png) = _idr2( peak{"spp,1"}, peak{"spp,2"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_true_o_dir, "rep1-rep2", \
 						"peak_spp", ["rep1","rep2","pooled"], "true_reps/rep1-rep2" )
 	}
 
@@ -767,19 +767,19 @@ void do_idr() {
 
 		idr_rep1_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep1" )
 
-		(idr_pr_rep1, idr_pr_rep1_png) = _idr2( peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, peak{"spp,1"}, idr_thresh, idr_rep1_pr_o_dir, "rep1-pr", \
+		(idr_pr_rep1, idr_pr_rep1_png) = _idr2( peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, peak{"spp,1"}, idr_thresh, "signal.value", idr_rep1_pr_o_dir, "rep1-pr", \
 							"peak_spp", ["rep1-pr1","rep1-pr2","rep1"], "pseudo_reps/rep1" )
 
 		if ( get_num_rep() > 1 ) {
 
 			idr_rep2_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep2" )
 
-			(idr_pr_rep2, idr_pr_rep2_png) = _idr2( peak_pr1{"spp,2"}, peak_pr2{"spp,2"}, peak{"spp,2"}, idr_thresh, idr_rep2_pr_o_dir, "rep2-pr", \
+			(idr_pr_rep2, idr_pr_rep2_png) = _idr2( peak_pr1{"spp,2"}, peak_pr2{"spp,2"}, peak{"spp,2"}, idr_thresh, "signal.value", idr_rep2_pr_o_dir, "rep2-pr", \
 								"peak_spp", ["rep2-pr1","rep2-pr2","rep2"], "pseudo_reps/rep2" )
 
 			idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
 
-			(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, idr_ppr_o_dir, "ppr", \
+			(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_ppr_o_dir, "ppr", \
 								"peak_spp", ["ppr1","ppr2","pooled"], "pooled_pseudo_reps" )
 			wait
 

@@ -53,9 +53,8 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 	prefix_basename	:= get_basename( prefix )
 	// macs2 params with or w/o control
  	ctl 	:= (ctl_tag != "") ? "-c $ctl_tag" : ""
- 	controlReads_line := (ctl_tag != "") ? "controlReads=$(zcat $ctl_tag | wc -l | awk '{printf \"%f\", $1/1000000}');" : ""
-	sval_line := (ctl_tag != "") ?	"sval=$(echo \"${chipReads} ${controlReads}\" | awk '$1>$2{printf \"%f\",$2} $1<=$2{printf \"%f\",$1}');" : \
-					"sval=$(echo \"${chipReads}\" | awk '{printf \"%f\",$1}');"
+	sval_line := (ctl_tag != "") ?	"controlReads=$(zcat $ctl_tag | wc -l | awk '{printf \"%f\", $1/1000000}'); sval=$(echo \"${chipReads} ${controlReads}\" | awk '$1>$2{printf \"%f\",$2} $1<=$2{printf \"%f\",$1}')" : \
+					"sval=$(echo \"${chipReads}\" | awk '{printf \"%f\",$1}')"
 
 	in 	:= (ctl_tag != "") ? [ tag, ctl_tag ] : [ tag ]
  	out 	:= make_sig ? [ npeakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile, gpeakfile ]
@@ -122,7 +121,6 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 			rm -f $fc_bedgraph $fc_bedgraph_srt; \
 			\
 			chipReads=$(zcat $tag | wc -l | awk '{printf "%f", $1/1000000}'); \
-			$controlReads_line; \
 			$sval_line; \
 			macs2 bdgcmp -t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg --outdir $peak_o_dir -o "$prefix_basename"_ppois.bdg -m ppois -S "${sval}"; \
 			slopBed -i "$prefix"_ppois.bdg -g $chrsz -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $chrsz $peak_o_dir/$prefix_basename.pval.signal.bedgraph; \
