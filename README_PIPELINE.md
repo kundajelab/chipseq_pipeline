@@ -20,6 +20,8 @@ $ sudo yum install git java-1.8.0-openjdk
 
 ### Installation instruction for Miniconda3
 
+If you already have Anaconda Python 3, skip this.
+
 Get the latest Miniconda3 installer at <a href="http://conda.pydata.org/miniconda.html" target=_blank>http://conda.pydata.org/miniconda.html</a> and install it. The following command is for Anaconda Python3 on 64bit Linux system.
 ```
 $ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -32,6 +34,8 @@ Do you wish the installer to prepend the Miniconda2 install location
 to PATH in your /your/home/.bashrc ? [yes|no]
 [no] >>> yes
 ```
+
+Remove any other Anaconda Python from your `$PATH`. Check your loaded modules with `module list` and unload any Anaconda Python modules.
 
 Open a new terminal after installation.
 
@@ -542,6 +546,8 @@ shell                 /bin/bash
 
 ### Troubleshooting
 
+1) unexpected end of file
+
 If see the following error when you submit jobs to Sun Grid Enginee,
 ```
 /bin/bash: module: line 1: syntax error: unexpected end of file
@@ -553,6 +559,8 @@ Remove the following line in you module initialization scripts (`$MODULESHOME/in
 ```
 export -f module
 ```
+
+
 
 
 

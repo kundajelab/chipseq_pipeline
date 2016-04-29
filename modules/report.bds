@@ -403,13 +403,11 @@ string _peak_to_hammock( string peak ) {
 	conv := "$script_dir/utils/"
 
 	if ( peak.toLower().indexOf( "regionpeak" ) > -1 || \
-	     peak.toLower().indexOf( "narrowpeak" ) > -1 ) {
-
-		if ( peak.indexOf( ".IDR" ) > -1 ) 		conv += "narrowpeak_idr.py"
-		else 						conv += "narrowpeak.py"
-	}
+	     peak.toLower().indexOf( "narrowpeak" ) > -1 ) 	conv += "narrowpeak.py"
 	else if ( peak.toLower().indexOf( "broadpeak" ) > -1 ) 	conv += "broadpeak.py"
 	else if ( peak.toLower().indexOf( "gappedpeak" ) > -1 ) conv += "gappedpeak.py"
+	else if ( peak.toLower().indexOf( "13-col.bed" ) > -1 ) conv += "narrowpeak_idr.py"
+	else 							conv += "narrowpeak.py"
 
 	in 	:= peak
 	out 	:= hammock+".gz"

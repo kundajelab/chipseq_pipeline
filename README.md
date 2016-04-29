@@ -21,7 +21,7 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 
 Install java (jdk >= 1.7 or jre >= 1.7) and the latest git on your system. 
 
-Install Anaconda Python3 (or Miniconda3) on your system. Open a new terminal after installation.
+Install Anaconda Python3 (or Miniconda3) on your system. If you already have Anaconda Python 3, skip it. Open a new terminal after installation.
 
 Install BigDataScript v0.9999 on your system.
 
@@ -710,6 +710,11 @@ export PICARDROOT=/path/to/your/picard-tool
 
 This error happens when picard tool's MarkDuplicate is running out of memory.
 Balance memory usage among parallel tasks, add `-no_par` or reduce level of parallelization (`-par_lvl [PARALLEL_LEVEL <= 2]`).
+
+
+9) Error: could not find environment: aquas_chipseq
+
+Unload any Anaconda Python modules. Remove locally installed Anaconda Python from your `$PATH`
 
 
 

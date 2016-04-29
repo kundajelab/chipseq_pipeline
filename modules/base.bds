@@ -407,6 +407,18 @@ bool is_in_array( string str, string[] arr ) { // case-insensitive
 	return false
 }
 
+string copy( string file, string o_dir ) {
+
+	file_new	:= replace_dir( file, o_dir )
+
+	task ( file_new <- file ) {
+
+		sys cp $file $file_new
+	}
+
+	return file_new
+}
+
 string replace_dir( string file, string o_dir ) {
 
 	return o_dir!="" ? ( o_dir + "/" + get_basename( file ) ) : file

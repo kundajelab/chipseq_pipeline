@@ -5,6 +5,7 @@ include "species.bds"
 include "report.bds"
 
 
+help == IDR settings
 idr_suffix 	:= false 	help Append IDR threshold to IDR output directory.
 
 
@@ -21,6 +22,9 @@ void print_idr() {
 	print( "Append IDR threshold to IDR out_dir\t\t: $idr_suffix\n" )
 }
 
+// 13-col.bed.gz will be generated for browser tracks
+// use function _get_idr_peak_trk( idr_peak ) to find 13-col.bed.gz for browser tracks
+
 // rank: 'signal.value' for SPP peaks, 'p.value' for MACS2 peaks
 string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, string rank, string o_dir, string label, \
 		string graph_prefix, string[] graph_in, string hrchy ) {
@@ -29,12 +33,13 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 
 	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
 	peak_idr	:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
+	peak_idr_trk	:= "$prefix.IDR"+"$idr_thresh.13-col.bed.gz"
 	idr_out 	:= "$prefix.unthresholded-peaks.txt"
 	idr_out_gz	:= "$idr_out.gz"
 	png 		:= "$idr_out.png"
 
 	in 	:= [peak1, peak2, pooled]
-	out 	:= [peak_idr, png, idr_out_gz]
+	out 	:= [peak_idr, png, idr_out_gz,peak_idr_trk]
 
 	taskName:= "idr2 " + label
 
@@ -49,8 +54,11 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 		sys idr_thresh_transformed=$(awk -v p=$idr_thresh 'BEGIN{print -log(p)/log(10)}')
 
 		//# Get peaks passing global IDR threshold and convert file to narrowPeak format (Step 9)
-		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,"0"}' $idr_out \
+		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' $idr_out \
 			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr
+
+		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,"0"}' $idr_out \
+			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr_trk
 
 		sys gzip -f $idr_out
 	}
@@ -68,33 +76,15 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 	return out
 }
 
-string _filter_idr_peak( string idr_peak, string o_dir, string label ) {
 
-	prefix 	:= replace_dir( rm_ext( idr_peak, ["narrowPeak"] ), o_dir )
-	filt 	:= "$prefix.filt.narrowPeak.gz"
-
-	in 	:= [idr_peak]
-	out 	:= filt
-
-	taskName:= "filter_idr_peak " + label
-
-	task( out<-in ) {
-
-		sys $shcmd_init
-
-		sys bedtools intersect -v -a $idr_peak -b $blacklist_idr | gzip -c > $filt
-	}
-
-	wait_par()
-
-	return out
-}
-
-string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, string idr_ppr, string o_dir, string label ) {
+string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, string idr_ppr, \
+			string idr_o_dir, string qc_o_dir, string label ) {
 
 	string idr_tr_filt, idr_ppr_filt
 
 	string remarks
+
+	// filter IDR peaks with blacklist
 
 	if ( path_exists( blacklist_idr ) ) {
 		
@@ -111,18 +101,39 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 		remarks		= "no blacklist"
 	}
 
-	// compute IDR scores
+	// find optimal set and conservative set
 
 	Nt :=  get_no_lines( idr_tr_filt )
 	N1 :=  get_no_lines( idr_pr_rep1 ) 
 	N2 :=  get_no_lines( idr_pr_rep2 )
 	Np :=  get_no_lines( idr_ppr_filt )
 
-	optimal_set := (Nt > Np) ? "true_rep" : "pooled_pseudo_rep"
-	idr_opt_set := (Nt > Np) ? idr_tr_filt : idr_ppr_filt
+	// optimal set
+	optimal_set 		:= (Nt > Np) ? "true_rep" : "pooled_pseudo_rep"
+	idr_opt_set 		:= (Nt > Np) ? idr_tr_filt : idr_ppr_filt
 
-	conservative_set := "true_rep"
-	idr_consv_set  	 := idr_tr_filt
+	// conservative set
+	conservative_set 	:= "true_rep"
+	idr_consv_set  	 	:= idr_tr_filt
+
+	// make a copy of them
+
+	idr_opt_o_dir 		:= mkdir( "$idr_o_dir/optimal_set" )
+	idr_consv_o_dir 	:= mkdir( "$idr_o_dir/conservative_set" )
+
+	idr_opt_set_new		:= copy( idr_opt_set, idr_opt_o_dir )	
+	idr_consv_set_new 	:= copy( idr_consv_set, idr_consv_o_dir )
+	
+	// for browser tracks
+	idr_opt_set_trk 	:= _get_idr_peak_trk( idr_opt_set ) // for browser tracks
+	idr_consv_set_trk	:= _get_idr_peak_trk( idr_consv_set ) // for browser tracks
+
+	copy( idr_opt_set_trk, idr_opt_o_dir )
+	copy( idr_consv_set_trk, idr_consv_o_dir )
+
+	wait
+
+	// compute IDR scores
 
 	real max_Np_Nt = max( Np, Nt )
 	real min_Np_Nt = min( Np, Nt )
@@ -140,7 +151,7 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 	// 4f. Fraction of Reads in Peaks (FRiP) will be added later
 
 	// filenames
-	prefix 	:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label
+	prefix 	:= "$qc_o_dir/" + (title=="" ? "" : (title+"_") ) + label
 	qc 	:= prefix+"IDR_final.qc"
 
 	in 	:= [idr_tr, idr_pr_rep1, idr_pr_rep2, idr_ppr]
@@ -162,15 +173,41 @@ string[] _idr_final_qc( string idr_tr, string idr_pr_rep1, string idr_pr_rep2, s
 	graph_out := ["idr_qc","idr_peak_(opt)","idr_peak_(consv)"]	
 	hrchy_out := ["L1_qc/idr_qc","L1_peak/idr/opt_set/idr_peak","L1_peak/idr/consv_set/idr_peak"]
 
-	_add_to_graphviz( graph_in, in, graph_out, [qc, idr_opt_set, idr_consv_set], "idr\\nfinal\\nqc", grp_color_idr_final )
-	_add_to_filetable( hrchy_out, [qc, idr_opt_set, idr_consv_set] )
+	_add_to_graphviz( graph_in, in, graph_out, [qc, idr_opt_set_new, idr_consv_set_new], "idr\\nfinal\\nqc", grp_color_idr_final )
+	_add_to_filetable( hrchy_out, [qc, idr_opt_set_new, idr_consv_set_new] )
 
-	//return out
-	return [qc, idr_opt_set, idr_consv_set]
+	return [qc, idr_opt_set_new, idr_consv_set_new]
 }
-/*
-void create_idr_summary( string file ) { // create it if not exists	
 
-	if ( !file.exists() ) file.write( "Sample type\tNumber of peaks\n" )
+string _get_idr_peak_trk( string idr_peak ) {
+
+	return rm_ext( idr_peak, ["narrowPeak","regionPeak"] ) + ".13-col.bed.gz"	
 }
-*/
+
+string _filter_idr_peak( string idr_peak, string o_dir, string label ) {
+
+	// check if IDR peak for track exists
+	idr_peak_trk	:= _get_idr_peak_trk( idr_peak )
+
+	prefix 		:= replace_dir( rm_ext( idr_peak, ["narrowPeak","regionPeak"] ), o_dir )
+	filt 		:= "$prefix.filt.narrowPeak.gz"
+	filt_trk	:= "$prefix.filt.13-col.bed.gz"
+
+	in 	:= [idr_peak]
+	out 	:= filt
+
+	taskName:= "filter_idr_peak " + label
+
+	task( out<-in ) {
+
+		sys $shcmd_init
+
+		sys bedtools intersect -v -a $idr_peak -b $blacklist_idr | gzip -c > $filt
+
+		sys if [ -f $idr_peak_trk ]; then bedtools intersect -v -a $idr_peak_trk -b $blacklist_idr | gzip -c > $filt_trk; fi
+	}
+
+	wait_par()
+
+	return out
+}
