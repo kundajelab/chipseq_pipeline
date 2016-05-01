@@ -184,7 +184,7 @@ string[] _macs2_atac( string tag, string smooth_window, string pval_thresh, bool
 	in 	:= [ tag ]
 	out 	:= make_sig ? [ peakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ peakfile, gpeakfile ]
 
-	taskName:= "macs2_atac " + label
+	taskName:= "macs2_atac " + label + pval_str
 	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
 
 	wait_par_peak()

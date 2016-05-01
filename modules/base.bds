@@ -593,3 +593,25 @@ string[] _bubble_sort( int[] a, string[] s ) {
 
 	return s
 }
+
+int max( int[] arr ) {
+
+	tmp := arr[0]
+	for( int i=1; i<arr.size();i++ ) tmp = max( tmp, arr[i] )
+	return tmp
+}
+
+
+int min( int[] arr ) {
+
+	tmp := arr[0]
+	for( int i=1; i<arr.size();i++ ) tmp = min( tmp, arr[i] )
+	return tmp
+}
+
+string[] map_to_array( string{} map ) {
+
+	string[] array
+	for ( string str : map ) array.add( str )
+	return array
+}

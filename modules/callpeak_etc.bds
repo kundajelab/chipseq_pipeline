@@ -29,14 +29,12 @@ string _filt_top_peaks( string peakfile, string o_dir, string label, \
 		// sort by 8th (-log10(pval) ) column and take top $npeak_filt lines
 		sys zcat $peakfile | sort -grk8 | head -n $npeak_filt | gzip -c > $peakfile_filt
 	}
-
 			
 	graph_in  := ["$label_peak"+"_($label)"]
 	graph_out := ["$label_peak"+"_filt_($label)"]
 	hrchy_out := ["L1_peak/$hrchy/$label_peak"+"_filt"]
 
 	_add_to_graphviz( graph_in, in, graph_out, [out] )
-
 	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
@@ -50,38 +48,12 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 	prefix 	:= replace_dir( rm_ext( peak_pooled, \
 				["regionPeak","regionpeak","narrowPeak","narrowpeak",\
 				 "broadPeak","broadpeak","gappedPeak","gappedpeak",filetype] ), o_dir )
+
 	peak_PooledInRep1AndRep2 	:= "$prefix.PooledInRep1AndRep2.$filetype.gz"
 	peak_final 			:= "$prefix.naive_overlap.$filetype.gz"
 
-	string awk_param, peakcaller, cut_param
-
-	if ( filetype.toLower() == "narrowpeak" ) {
-
-		awk_param = "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
-		cut_param = "1-10"
-		peakcaller = "macs2"
-	}
-	else if ( filetype.toLower() == "regionpeak" ) {
-
-		awk_param = "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
-		cut_param = "1-10"
-		peakcaller = "spp"
-	}
-	else if ( filetype.toLower() == "broadpeak") { 
-
-		awk_param = "{s1=$3-$2; s2=$12-$11; if (($19/s1 >= 0.5) || ($19/s2 >= 0.5)) {print $0}}"
-		cut_param = "1-9"
-		peakcaller = "macs2"
-	}
-	else if ( filetype.toLower() == "gappedpeak") { 
-
-		awk_param = "{s1=$3-$2; s2=$18-$17; if (($31/s1 >= 0.5) || ($31/s2 >= 0.5)) {print $0}}"
-		cut_param = "1-15"
-		peakcaller = "macs2"
-	}
-	else {
-		error("Unsupport peak file type! ($filetype)\n")
-	}
+	awk_param := _get_awk_param( filetype ) 
+	cut_param := _get_cut_param( filetype )
 
 	in 	:= [ peak_pooled, peak_rep1, peak_rep2 ]
 	out 	:= peak_final
@@ -106,62 +78,46 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 
 	graph_in  := ["$label_peak"+"_(rep1)","$label_peak"+"_(rep1-pr1)","$label_peak"+"_(rep1-pr2)"]
 	graph_out := ["$label_peak"+"_(overlap)"]
+
+	peakcaller := filetype=="regionpeak" ? "spp" : "macs2"
 	hrchy_out := ["L1_peak/$peakcaller/overlap/$label"+"_overlap"]
 
 	_add_to_graphviz( graph_in, in, graph_out, [out], "naive_overlap_($label)", grp_color_naive_overlap )
-
 	_add_to_filetable( hrchy_out, [out] )
-			    
-
-
+		    
 	wait_par()
 
 	return peak_final
 }
 
-string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep1, string peak_rep2, \
+// peaks = [peak_rep1, peak_rep2, ...]
+string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks, \
 			    string peak_ppr1, string peak_ppr2, \
 			    string o_dir, string label, string label_peak, string hrchy ) {
 
 	prefix 	:= replace_dir( rm_ext( peak_pooled, \
 				["regionPeak","regionpeak","narrowPeak","narrowpeak",\
 				 "broadPeak","broadpeak","gappedPeak","gappedpeak",filetype] ), o_dir )
-	peak_PooledInRep1AndRep2 	:= "$prefix.PooledInRep1AndRep2.$filetype.gz"
+
+	peak_PooledInReps 		:= "$prefix.PooledInReps.$filetype.gz"
 	peak_PooledInPsRep1AndPsRep2 	:= "$prefix.PooledInPsRep1AndPsRep2.$filetype.gz"
 	peak_final 			:= "$prefix.naive_overlap.$filetype.gz"
 
-	string awk_param, peakcaller, cut_param
+	awk_param := _get_awk_param( filetype ) 
+	cut_param := _get_cut_param( filetype )
 
-	if ( filetype.toLower() == "narrowpeak" ) {
-
-		awk_param = "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
-		cut_param = "1-10"
-		peakcaller = "macs2"
+	string command
+	for (int i=0;i<peaks.size();i++) {
+		if ( i == 0 ) {
+			command += "intersectBed -wo -a $peak_pooled -b " + peaks[i] + " | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | "
+		}
+		else {
+			command += "intersectBed -wo -a stdin -b " + peaks[i] + " | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | "
+		}		
 	}
-	else if ( filetype.toLower() == "regionpeak" ) {
+	command += "gzip -c > $peak_PooledInReps"
 
-		awk_param = "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
-		cut_param = "1-10"
-		peakcaller = "spp"
-	}
-	else if ( filetype.toLower() == "broadpeak") { 
-
-		awk_param = "{s1=$3-$2; s2=$12-$11; if (($19/s1 >= 0.5) || ($19/s2 >= 0.5)) {print $0}}"
-		cut_param = "1-9"
-		peakcaller = "macs2"
-	}
-	else if ( filetype.toLower() == "gappedpeak") { 
-
-		awk_param = "{s1=$3-$2; s2=$18-$17; if (($31/s1 >= 0.5) || ($31/s2 >= 0.5)) {print $0}}"
-		cut_param = "1-15"
-		peakcaller = "macs2"
-	}
-	else {
-		error("Unsupport peak file type! ($filetype)\n")
-	}
-
-
-	in 	:= [ peak_pooled, peak_rep1, peak_rep2, peak_ppr1, peak_ppr2 ]
+	in 	:= [ peak_pooled ] + peaks + [peak_ppr1, peak_ppr2]
 	out 	:= peak_final
 	
 	taskName:= "naive_overlap_thresh " + label
@@ -171,30 +127,28 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 		sys $shcmd_init
 
 		//# Find pooled peaks that overlap Rep1 and Rep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  >= 0.5
-		sys intersectBed -wo -a $peak_pooled -b $peak_rep1 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
-			intersectBed -wo -a stdin -b $peak_rep2 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | gzip -c > $peak_PooledInRep1AndRep2
+		sys $command
 
 		//# Find pooled peaks that overlap PseudoRep1 and PseudoRep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  >= 0.5
-		sys intersectBed -wo -a $peak_pooled -b $peak_ppr1 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
-			intersectBed -wo -a stdin -b $peak_ppr2 | \
-			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | gzip -c > $peak_PooledInPsRep1AndPsRep2
+		sys intersectBed -wo -a $peak_pooled -b $peak_ppr1 | awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
+		    intersectBed -wo -a stdin -b $peak_ppr2 |    awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
+		    gzip -c > $peak_PooledInPsRep1AndPsRep2
 
 		//# Combine peak lists
-		sys zcat $peak_PooledInRep1AndRep2 $peak_PooledInPsRep1AndPsRep2 | sort | uniq | gzip -c > $peak_final
+		sys zcat $peak_PooledInReps $peak_PooledInPsRep1AndPsRep2 | sort | uniq | gzip -c > $peak_final
 
-		sys rm -f $peak_PooledInRep1AndRep2 $peak_PooledInPsRep1AndPsRep2
+		sys rm -f $peak_PooledInReps $peak_PooledInPsRep1AndPsRep2
 	}
 
-	graph_in  := ["$label_peak"+"_(pooled)","$label_peak"+"_(rep1)","$label_peak"+"_(rep2)",\
-			"$label_peak"+"_(ppr1)","$label_peak"+"_(ppr2)"]
+	graph_in  := ["$label_peak"+"_(pooled)"]
+	for (int rep=1;rep<=peaks.size();rep++) graph_in += ["$label_peak"+"_(rep$rep)"]
+	graph_in += ["$label_peak"+"_(ppr1)","$label_peak"+"_(ppr2)"]
 	graph_out := ["$label_peak"+"_(overlap)"]
+
+	peakcaller := filetype=="regionpeak" ? "spp" : "macs2"
 	hrchy_out := ["L1_peak/$peakcaller/overlap/$label"+"_overlap"]
 
 	_add_to_graphviz( graph_in, in, graph_out, [out], "naive_overlap_($label)", grp_color_naive_overlap )
-
 	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
@@ -202,3 +156,48 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 	return peak_final
 }
 
+string _get_awk_param( string filetype ) {
+
+	if ( filetype.toLower() == "narrowpeak" ) {
+
+		return "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
+	}
+	else if ( filetype.toLower() == "regionpeak" ) {
+
+		return "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
+	}
+	else if ( filetype.toLower() == "broadpeak") { 
+
+		return "{s1=$3-$2; s2=$12-$11; if (($19/s1 >= 0.5) || ($19/s2 >= 0.5)) {print $0}}"
+	}
+	else if ( filetype.toLower() == "gappedpeak") { 
+
+		return "{s1=$3-$2; s2=$18-$17; if (($31/s1 >= 0.5) || ($31/s2 >= 0.5)) {print $0}}"
+	}
+	else {
+		error("Unsupport peak file type! ($filetype)\n")
+	}
+}
+
+string _get_cut_param( string filetype ) {
+
+	if ( filetype.toLower() == "narrowpeak" ) {
+
+		return "1-10"
+	}
+	else if ( filetype.toLower() == "regionpeak" ) {
+
+		return "1-10"
+	}
+	else if ( filetype.toLower() == "broadpeak") { 
+
+		return "1-9"
+	}
+	else if ( filetype.toLower() == "gappedpeak") { 
+
+		return "1-15"
+	}
+	else {
+		error("Unsupport peak file type! ($filetype)\n")
+	}
+}

@@ -64,12 +64,20 @@ peakcallers 	:= ["spp","macs2"]
 
 // filepath of outputs
 string{} fastq, bam, filt_bam, tag, tag_pr1, tag_pr2 // replicate data: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
+string tag_ppr1, tag_ppr2
 string{} peak, peak_pr1, peak_pr2, peak_pooled, peak_ppr1, peak_ppr2 // peaks: map with key ("$rep")
 string peak_overlap
-string tag_pooled, tag_ctl_pooled, tag_ppr1, tag_ppr2
-string idr_tr, idr_pr_rep1, idr_pr_rep2, idr_ppr, idr_opt, idr_consv, idr_tr_png, idr_pr_rep1_png, idr_pr_rep2_png, idr_ppr_png
-string{} signal_trk, signal_trk_pval, signal_trk_fc	 // signal tracks from deepTools or bamCoverage: map with key ("$ctl,$rep")
+
+string{} tag_ctl, tag_ctl_label // key: replicate id, value: actual control used for each replicate (according to control depth ratio)
+
+string{} idr_tr, idr_pr, idr_tr_png, idr_pr_png
+string idr_ppr, idr_opt, idr_consv, idr_ppr_png
+
+string{} signal_trk 	 // signal tracks from deepTools or bamCoverage: map with key ("$ctl,$rep")
+string{} signal_trk_pval, signal_trk_fc // signal track from macs2
+
 string{} flagstat_qc, dup_qc, flagstat_nodup_qc, pbc_qc, xcor_qc, xcor_plot // QC logs: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
+
 string{} xcor_qc_pr1, xcor_qc_pr2
 string xcor_qc_ppr1, xcor_qc_ppr2
 string idr_qc
@@ -82,6 +90,8 @@ init_chipseq() // read command line parameters or configruation file
 chk_input() // check input files are valid
 
 align() // align and postalign
+
+pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
 
 call_peaks() // call peaks
 
@@ -467,14 +477,159 @@ void _align_PE( int ctl, int rep ) {
 	}
 }
 
+void pool_tags() {
+
+	if ( !(is_final_stage_peak() || is_final_stage_idr()) ) return
+
+	if ( is_input_peak() ) return
+
+	////////////// pool replicates and controls, then create ppr (pooled pseudoreplicates) before peak calling
+
+	string[] tags, tags_pr1, tags_pr2, tags_ctl
+	int[] ids_ctl
+
+	for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+
+		tags.add( tag{"0,$rep"} )
+
+	 	if ( !true_rep ) {
+			tags_pr1.add( tag_pr1{"0,$rep"} )
+			tags_pr2.add( tag_pr2{"0,$rep"} )
+		}
+
+		if ( is_data_available( 1, rep ) ) { // if control exists
+			tags_ctl.add( tag{"1,$rep"} )
+			ids_ctl.add( rep )
+		}
+	}
+
+	if ( tags.size() > 1 ) {
+
+	 	aln_pooled_o_dir := mkdir( "$out_dir/align/pooled_rep" )
+		tag{"0,pooled"} = _pool_tag( tags, aln_pooled_o_dir, "reps" )
+
+	 	if ( !true_rep ) {
+		 	aln_ppr1_o_dir   := mkdir( "$out_dir/align/pooled_pseudo_reps/ppr1" )
+		 	aln_ppr2_o_dir   := mkdir( "$out_dir/align/pooled_pseudo_reps/ppr2" )
+
+			qc_ppr1_o_dir    := mkdir( "$out_dir/qc/pooled_pseudo_reps/ppr1" ) // create qc output dir.
+			qc_ppr2_o_dir    := mkdir( "$out_dir/qc/pooled_pseudo_reps/ppr2" ) // create qc output dir.
+
+			tag_ppr1 = _pool_tag( tags_pr1, aln_ppr1_o_dir, "reps-pr1" )
+			tag_ppr2 = _pool_tag( tags_pr2, aln_ppr2_o_dir, "reps-pr2" )
+			wait
+
+			string tmp
+			(xcor_qc_ppr1, tmp) = _xcor( tag_ppr1, qc_ppr1_o_dir, "ppr1", "pooled_pseudo_reps/ppr1" )
+			(xcor_qc_ppr2, tmp) = _xcor( tag_ppr2, qc_ppr2_o_dir, "ppr2", "pooled_pseudo_reps/ppr2" )
+		}
+	}
+
+	if ( tags_ctl.size() > 1 ) {
+
+		aln_pooled_ctl_o_dir := mkdir( "$out_dir/align/pooled_ctl" )
+		tag{"1,pooled"} = _pool_tag( tags_ctl, aln_pooled_ctl_o_dir, "ctls" )
+	}
+
+	wait
+
+	/////////// choose appropriate control for each replicate
+
+	if ( tags_ctl.size() == 0 ) { // if no control at all
+
+		tag_ctl{"pooled"} 	= ""
+		tag_ctl_label{"pooled"} = ""
+
+		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+
+			tag_ctl{rep} 		= ""
+			tag_ctl_label{rep} 	= ""
+		}		
+	}
+	else if ( tags_ctl.size() == 1 ) { // if only one control, use it for all replicates
+
+		tag_ctl{"pooled"} 	= tags_ctl[0]
+		tag_ctl_label{"pooled"} = "ctl" + ids_ctl[0]
+
+		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+
+			tag_ctl{rep} 		= tags_ctl[0]
+			tag_ctl_label{rep} 	= "ctl" + ids_ctl[0]
+		}
+	}
+	else { // if multiple controls, check # of lines in replicate/control tagaligns and apply ctl_depth_ratio
+
+		tag_ctl{"pooled"} 		= tag{"1,pooled"}
+		tag_ctl_label{"pooled"} 	= "ctl, pooled"		
+
+		real{} nlines 		// # of lines in tagaligns, key: 0,rep for replicate, 1,rep for control
+		real[] nlines_ctl 	// # of lines in control tagaligns
+
+		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+
+			nlines{"0,$rep"} = get_no_lines( tag{"0,$rep"} )
+
+			//print("DEBUG: # lines rep $rep tag.: " + nlines{"0,$rep"} + ", " + tag{"0,$rep"} + "\n")
+
+			if ( is_data_available( 1, rep ) ) { // if control exists
+
+				nlines{"1,$rep"} = get_no_lines( tag{"1,$rep"} )
+				nlines_ctl.add( nlines{"1,$rep"} )
+
+				//print("DEBUG: # lines ctl $rep tag.: " + nlines{"1,$rep"} + ", " + tag{"1,$rep"} + "\n")
+			}
+		}
+
+		use_pooled_ctl := false
+
+		for ( int i=0; i<nlines_ctl.size(); i++ ) { // check every # lines in every pair of control tagaligns
+			for ( int j=i+1; j<nlines_ctl.size(); j++ ) {
+
+				if ( 	nlines_ctl[i] / nlines_ctl[j] > ctl_depth_ratio || \
+					nlines_ctl[j] / nlines_ctl[i] > ctl_depth_ratio ) {
+
+					use_pooled_ctl = true
+
+					print("\nNumber of reads in controls differ by a factor of $ctl_depth_ratio. Using pooled controls.\n" )
+
+					break
+				}
+			}
+		}
+
+		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+
+			if ( !use_pooled_ctl && is_data_available( 1, rep ) ) {
+			
+				if ( nlines{"1,$rep"} < nlines{"0,$rep"} ) {
+
+					print("\nFewer reads in control $rep than experiment replicate $rep. Using pooled controls for replicate $rep.\n")
+
+					tag_ctl{rep} 		= tag{"1,pooled"}
+					tag_ctl_label{rep} 	= "ctl, pooled"
+				}
+				else {
+					tag_ctl{rep} 		= tag{"1,$rep"}
+					tag_ctl_label{rep} 	= "ctl$rep"
+				}
+			}
+			else {
+
+				tag_ctl{rep} 		= tag{"1,pooled"}
+				tag_ctl_label{rep} 	= "ctl, pooled"
+			}
+		}
+	}
+
+	wait
+}
+
 void call_peaks() {
 
 	if ( !(is_final_stage_peak() || is_final_stage_idr()) ) return
 
 	if ( is_input_peak() ) return
 
-	if ( get_num_rep() > 1 ) _pool_tags()
-	
 	for ( int i=0; i<num_callpeak; i++ ) {
 
 		par _call_peaks( peakcallers[i]  )
@@ -483,191 +638,86 @@ void call_peaks() {
 	wait
 }
 
-void _pool_tags() {
+void _call_peaks( string pc ) { // pc: pc
 
-	// pool replicates and controls, then create ppr (pooled pseudoreplicates) before peak calling
+	if ( pc == "spp" && !(is_callpeak_spp()) ) return
+	if ( pc == "macs2" && !(is_callpeak_macs2()) ) return
 
-	if ( is_data_available( 0, 2 ) ) { // if replicate 2 exists, pool replicate 1 and replicate 2
+	// calculate fragment length (required for SPP and MACS2)
+	if ( pc == "spp" && !control_exists() ) return
 
-	 	aln_pooled_o_dir := mkdir( "$out_dir/align/pooled_rep" )
-	 	aln_ppr1_o_dir   := mkdir( "$out_dir/align/pooled_pseudo_reps/ppr1" )
-	 	aln_ppr2_o_dir   := mkdir( "$out_dir/align/pooled_pseudo_reps/ppr2" )
-
-		qc_ppr1_o_dir    := mkdir( "$out_dir/qc/pooled_pseudo_reps/ppr1" ) // create qc output dir.
-		qc_ppr2_o_dir    := mkdir( "$out_dir/qc/pooled_pseudo_reps/ppr2" ) // create qc output dir.
-
-		(tag_pooled, tag_ppr1, tag_ppr2 ) = _ppr( tag{"0,1"}, tag_pr1{"0,1"}, tag_pr2{"0,1"}, \
-							  tag{"0,2"}, tag_pr1{"0,2"}, tag_pr2{"0,2"}, \
-							  aln_pooled_o_dir, aln_ppr1_o_dir, aln_ppr2_o_dir, "" ) // make pooled psudo replicate
-		wait
-
-		// cross correlation analysis to get fragment of ppr's
-		string tmp
-
-		(xcor_qc_ppr1, tmp) = _xcor( tag_ppr1, qc_ppr1_o_dir, "ppr1", "pooled_pseudo_reps/ppr1" )
-		(xcor_qc_ppr2, tmp) = _xcor( tag_ppr2, qc_ppr2_o_dir, "ppr2", "pooled_pseudo_reps/ppr2" )
-		wait
-	}
-
-	if ( is_data_available( 1, 2 ) ) { // if control 2 exists, pool control 1 and control 2
-
-	 	aln_pooled_o_dir := mkdir( "$out_dir/align/pooled_ctl" )
-
-		tag_ctl_pooled 	= _pool_tag( tag{"1,1"}, tag{"1,2"}, aln_pooled_o_dir, "ctl" )
-		wait
-
-		_add_to_graphviz( ["tagalign_(ctl1)","tagalign_(ctl2)"], [tag{"1,1"},tag{"1,2"}], \
-				  ["tagalign_(ctl, pooled)"], [tag_ctl_pooled] )
-
-		_add_to_filetable(["L1_align/pooled_ctl/tagalign"], [tag_ctl_pooled] )
-	}
-}
-
-void _call_peaks( string peakcaller ) {
-
-	if ( peakcaller == "spp" && !(is_callpeak_spp()) ) return
-	if ( peakcaller == "macs2" && !(is_callpeak_macs2()) ) return
-	if ( peakcaller == "gem" && !(is_callpeak_gem()) ) return
-
-	// get fragment length from cross corr. qc log
 	string fraglen_ppr1, fraglen_ppr2, fraglen_mean
 	string{} fraglen, fraglen_pr1, fraglen_pr2 // key = replicate id
+	real fraglen_sum = 0.0
 
-	fraglen{1} = get_fraglen( xcor_qc{"0,1"} ) // get fragment length of replicate 1
-	fraglen_pr1{1} = get_fraglen( xcor_qc_pr1{"0,1"} )
-	fraglen_pr2{1} = get_fraglen( xcor_qc_pr2{"0,1"} )
+	for (int rep=1; rep<=get_num_rep(); rep++) {
 
-	if ( is_data_available( 0, 2 ) ) { // if replicate 2 exists, get mean fraglen and fraglen for ppr
+		fraglen{rep} = get_fraglen( xcor_qc{"0,$rep"} ) // get fragment length of replicate 1
 
-		fraglen{2} = get_fraglen( xcor_qc{"0,2"} ) // get fragment length of replicate 2
-		fraglen_pr1{2} = get_fraglen( xcor_qc_pr1{"0,2"} )
-		fraglen_pr2{2} = get_fraglen( xcor_qc_pr2{"0,2"} )
-		fraglen_mean 	= round( (fraglen{1}.parseReal()+fraglen{2}.parseReal())*0.5 ) // compute fraglen mean for pooled
+		if ( !true_rep ) {
 
+			fraglen_pr1{rep} = get_fraglen( xcor_qc_pr1{"0,$rep"} )
+			fraglen_pr2{rep} = get_fraglen( xcor_qc_pr2{"0,$rep"} )
+		}
+
+		fraglen_sum += fraglen{rep}.parseReal()
+	}
+
+	if ( !true_rep && get_num_rep() > 1 ) {
 		fraglen_ppr1 = get_fraglen( xcor_qc_ppr1 )
 		fraglen_ppr2 = get_fraglen( xcor_qc_ppr2 )
 	}
 
-	// choose appropriate control
+	real num_rep_real = get_num_rep()
+	fraglen_mean = round( fraglen_sum / num_rep_real ) // compute fraglen mean for pooled
 
-	string tag_ctl1_label, tag_ctl2_label, tag_ctl_pooled_label, tag_ctl1_, tag_ctl2_, tag_ctl_pooled_
-
-	if ( !control_exists() ) {
-
-		if ( peakcaller != "macs2" ) return
-
-		tag_ctl1_ = ""; 		tag_ctl2_ = ""; 		tag_ctl_pooled_ = ""
-		tag_ctl1_label = ""; 		tag_ctl2_label = ""; 		tag_ctl_pooled_label = ""
-	}
-	else if ( is_data_available( 1, 2 ) ) { // if control 2 exists
-
-		tag_ctl1_ = tag{"1,1"}; 	tag_ctl2_ = tag{"1,2"}; 	tag_ctl_pooled_ = tag_ctl_pooled
-		tag_ctl_pooled_label = "ctl, pooled"
-
-		real ntags_rep1 = get_no_lines( tag{"0,1"} )
-		real ntags_rep2 = get_no_lines( tag{"0,2"} )		
-		real ntags_ctl1 = get_no_lines( tag{"1,1"} )
-		real ntags_ctl2 = get_no_lines( tag{"1,2"} )
-
-		ratio_ctl_reads := ntags_ctl1/ntags_ctl2
-
-		if ( ratio_ctl_reads < 1.0 ) ratio_ctl_reads = 1.0/ratio_ctl_reads		
-		
-		if ( ratio_ctl_reads > ctl_depth_ratio ) {
-
-			print("\n\nNumber of reads in controls differ by a factor of $ctl_depth_ratio. Using pooled controls.\n" )
-
-			tag_ctl1_ = tag_ctl_pooled; 		tag_ctl2_ = tag_ctl_pooled
-			tag_ctl1_label = "ctl, pooled"; 	tag_ctl2_label = "ctl, pooled"
-		}
-		else {
-			if ( ntags_ctl1 < ntags_rep1 ) {
-
-				print("\n\nFewer reads in control replicate 1 than experiment replicate 1. Using pooled controls for replicate 1.\n")
-
-				tag_ctl1_ = tag_ctl_pooled
-				tag_ctl1_label = "ctl, pooled";	tag_ctl2_label = "ctl2"
-			}
-			if ( ntags_ctl2 < ntags_rep2 ) {
-
-				print("\n\nFewer reads in control replicate 2 than experiment replicate 2. Using pooled controls for replicate 2.\n")
-
-				tag_ctl2_ = tag_ctl_pooled
-				tag_ctl1_label = "ctl1";	tag_ctl2_label = "ctl, pooled"
-			}
-		}
-	}
-	else { // otherwise, no pooling. use control 1 for all replicates
-
-		tag_ctl1_ 	= tag{"1,1"};	tag_ctl2_ 	= tag{"1,1"};	tag_ctl_pooled_		= tag{"1,1"}
-		tag_ctl1_label 	= "ctl1";	tag_ctl2_label 	= "ctl1";	tag_ctl_pooled_label 	= "ctl1"
-	}
-
-	//////////////// call peaks /////////////////
-	/// Note that two additional lines  for each peak calling are for visualization and file table.
+	/////////// call peaks
 
 	// create directories
-	peak_o_dir 	:= mkdir( "$out_dir/peak/$peakcaller") // peak directory structure
-	sig_o_dir 	:= mkdir( "$out_dir/signal/$peakcaller") // signal directory structure
+	peak_o_dir 	:= mkdir( "$out_dir/peak/$pc") // peak directory structure
+	sig_o_dir 	:= mkdir( "$out_dir/signal/$pc") // signal directory structure
 
-	rep1_o_dir	:= mkdir( "$peak_o_dir/rep1" )
-	rep1_sig_dir 	:= mkdir( "$sig_o_dir/rep1" )
+	// call peaks for each replicate and pseudo replicates for it
+	for (int rep=1; rep<=get_num_rep(); rep++) {
 
-	rep1_hrchy 	:= "rep1"
+		o_dir	:= mkdir( "$peak_o_dir/rep$rep" )
+		sig_dir := mkdir( "$sig_o_dir/rep$rep" )
 
-	peak{"$peakcaller,1"} = _call_peaks( peakcaller, tag{"0,1"}, tag_ctl1_, fraglen{1}, true, rep1_o_dir, rep1_sig_dir, "rep1", \
-						tag_ctl1_label, rep1_hrchy )
+		hrchy 	:= "rep$rep"
 
-	if ( !true_rep ) {
+		peak{"$pc,$rep"} = _call_peaks( pc, tag{"0,$rep"}, tag_ctl{rep}, fraglen{rep}, true, o_dir, sig_dir, "rep$rep", \
+							tag_ctl_label{rep}, hrchy )
 
-		rep1_pr1_o_dir 		:= mkdir( "$peak_o_dir/pseudo_reps/rep1/pr1" )
-		rep1_pr1_sig_o_dir 	:= mkdir( "$sig_o_dir/pseudo_reps/rep1/pr1" )
-		rep1_pr2_o_dir 		:= mkdir( "$peak_o_dir/pseudo_reps/rep1/pr2" )
-		rep1_pr2_sig_o_dir 	:= mkdir( "$sig_o_dir/pseudo_reps/rep1/pr2" )
+		if ( !true_rep ) {
 
-		rep1_pr1_hrchy := "pseudo_reps/rep1/pr1"
-		rep1_pr2_hrchy := "pseudo_reps/rep1/pr2"
+			pr1_o_dir 	:= mkdir( "$peak_o_dir/pseudo_reps/rep$rep/pr1" )
+			pr1_sig_o_dir 	:= mkdir( "$sig_o_dir/pseudo_reps/rep$rep/pr1" )
+			pr2_o_dir 	:= mkdir( "$peak_o_dir/pseudo_reps/rep$rep/pr2" )
+			pr2_sig_o_dir 	:= mkdir( "$sig_o_dir/pseudo_reps/rep$rep/pr2" )
 
-		peak_pr1{"$peakcaller,1"} = _call_peaks( peakcaller, tag_pr1{"0,1"}, tag_ctl1_, fraglen_pr1{1}, false, rep1_pr1_o_dir, rep1_pr1_sig_o_dir, "rep1-pr1", \
-							tag_ctl1_label, rep1_pr1_hrchy )
+			pr1_hrchy 	:= "pseudo_reps/rep$rep/pr1"
+			pr2_hrchy 	:= "pseudo_reps/rep$rep/pr2"
 
-		peak_pr2{"$peakcaller,1"} = _call_peaks( peakcaller, tag_pr2{"0,1"}, tag_ctl1_, fraglen_pr2{1}, false, rep1_pr2_o_dir, rep1_pr2_sig_o_dir, "rep1-pr2", \
-							tag_ctl1_label, rep1_pr2_hrchy )
+			peak_pr1{"$pc,$rep"} = _call_peaks( pc, tag_pr1{"0,$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, pr1_o_dir, pr1_sig_o_dir, "rep$rep-pr1", \
+								tag_ctl_label{rep}, pr1_hrchy )
+
+			peak_pr2{"$pc,$rep"} = _call_peaks( pc, tag_pr2{"0,$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, pr2_o_dir, pr2_sig_o_dir, "rep$rep-pr2", \
+								tag_ctl_label{rep}, pr2_hrchy )
+		}
 	}
 
-	if ( is_data_available( 0, 2 ) ) { // if replicate 2 exists
-
-		rep2_o_dir	:= mkdir( "$peak_o_dir/rep2" )
-		rep2_sig_o_dir	:= mkdir( "$sig_o_dir/rep2" )
-
-		rep2_hrchy 	:= "rep2"
-
-		peak{"$peakcaller,2"} 	= _call_peaks( peakcaller, tag{"0,2"}, tag_ctl2_, fraglen{2}, true, rep2_o_dir, rep2_sig_o_dir, "rep2", \
-						tag_ctl2_label, rep2_hrchy )
+	// call peaks on pooled replicates and pooled pseudo replicates
+	if ( get_num_rep() > 1 ) {
 
 		pooled_o_dir	:= mkdir( "$peak_o_dir/pooled_rep" )
 		pooled_sig_o_dir:= mkdir( "$sig_o_dir/pooled_rep" )
 
 		pooled_hrchy 	:= "pooled_rep"
 
-		peak_pooled{"$peakcaller"}= _call_peaks( peakcaller, tag_pooled, tag_ctl_pooled_, fraglen_mean, true, pooled_o_dir, pooled_sig_o_dir, "pooled", \
-							tag_ctl_pooled_label, pooled_hrchy )
+		peak_pooled{"$pc"}= _call_peaks( pc, tag{"0,pooled"}, tag_ctl{"pooled"}, fraglen_mean, true, pooled_o_dir, pooled_sig_o_dir, "pooled", \
+							tag_ctl_label{"pooled"}, pooled_hrchy )
 
 		if ( !true_rep ) {
-
-			rep2_pr1_o_dir 		:= mkdir( "$peak_o_dir/pseudo_reps/rep2/pr1" )
-			rep2_pr1_sig_o_dir 	:= mkdir( "$sig_o_dir/pseudo_reps/rep2/pr1" )
-			rep2_pr2_o_dir 		:= mkdir( "$peak_o_dir/pseudo_reps/rep2/pr2" )
-			rep2_pr2_sig_o_dir 	:= mkdir( "$sig_o_dir/pseudo_reps/rep2/pr2" )
-
-			rep2_pr1_hrchy 		:= "pseudo_reps/rep2/pr1"
-			rep2_pr2_hrchy 		:= "pseudo_reps/rep2/pr2"
-
-			peak_pr1{"$peakcaller,2"} = _call_peaks( peakcaller, tag_pr1{"0,2"}, tag_ctl2_, fraglen_pr1{2}, false, rep2_pr1_o_dir, rep2_pr1_sig_o_dir, "rep2-pr1", \
-								tag_ctl2_label, rep2_pr1_hrchy )
-
-			peak_pr2{"$peakcaller,2"} = _call_peaks( peakcaller, tag_pr2{"0,2"}, tag_ctl2_, fraglen_pr2{2}, false, rep2_pr2_o_dir, rep2_pr2_sig_o_dir, "rep2-pr2", \
-								tag_ctl2_label, rep2_pr2_hrchy )
 
 			ppr1_o_dir 	:= mkdir( "$peak_o_dir/pooled_pseudo_reps/ppr1" )
 			ppr1_sig_o_dir 	:= mkdir( "$sig_o_dir/pooled_pseudo_reps/ppr1" )
@@ -677,34 +727,30 @@ void _call_peaks( string peakcaller ) {
 			ppr1_hrchy 	:= "pooled_pseudo_reps/ppr1"
 			ppr2_hrchy 	:= "pooled_pseudo_reps/ppr2"
 
-			peak_ppr1{"$peakcaller"} = _call_peaks( peakcaller, tag_ppr1, tag_ctl_pooled_, fraglen_ppr1, false, ppr1_o_dir, ppr1_sig_o_dir, "ppr1", \
-								tag_ctl_pooled_label, ppr1_hrchy )
+			peak_ppr1{"$pc"} = _call_peaks( pc, tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, false, ppr1_o_dir, ppr1_sig_o_dir, "ppr1", \
+								tag_ctl_label{"pooled"}, ppr1_hrchy )
 
-			peak_ppr2{"$peakcaller"} = _call_peaks( peakcaller, tag_ppr2, tag_ctl_pooled_, fraglen_ppr2, false, ppr2_o_dir, ppr2_sig_o_dir, "ppr2", \
-								tag_ctl_pooled_label, ppr2_hrchy )
-
-							/*\
-							"tagalign_(ppr2)",tag_ctl_pooled_label, "peak_$peakcaller"+"_(ppr2)", "pval_signal_(ppr2)", "fc_signal_(ppr2)", \
-							"L1_peak/$ppr2_hrchy/peak", "L1_signal/$ppr2_hrchy/pval", "L1_signal/$ppr2_hrchy/fc" )
-							*/
+			peak_ppr2{"$pc"} = _call_peaks( pc, tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, false, ppr2_o_dir, ppr2_sig_o_dir, "ppr2", \
+								tag_ctl_label{"pooled"}, ppr2_hrchy )
 		}
 	}
 }
 
-string _call_peaks( string peakcaller, string tag1, string tag_ctl, string fraglen, bool make_sig, \
+string _call_peaks( string peakcaller, string tag1, string tag1_ctl, string fraglen, bool make_sig, \
 			string peak_o_dir, string sig_o_dir, string label, string label_ctl, string hrchy ) {
 	
 	if ( peakcaller == "spp" ) {
-		
+
 		string narrowpeak, regionpeak, score, pdf 
-		( narrowpeak, regionpeak, score, pdf ) = _spp( tag1, tag_ctl, fraglen, peak_o_dir, label, label_ctl, hrchy )
+		( narrowpeak, regionpeak, score, pdf ) = _spp( tag1, tag1_ctl, fraglen, peak_o_dir, label, label_ctl, hrchy )
 
 		return regionpeak // use regionpeak instead of narrowpeak
 	}
 	else if ( peakcaller == "macs2" ) {
 		
 		string narrowpeak, gpeak, fc_bw, pval_bw
-		( narrowpeak, gpeak, fc_bw, pval_bw ) = _macs2( tag1, tag_ctl, fraglen, make_sig, peak_o_dir, sig_o_dir, label, label_ctl, hrchy )
+		( narrowpeak, gpeak, fc_bw, pval_bw ) = _macs2( tag1, tag1_ctl, fraglen, make_sig, peak_o_dir, sig_o_dir, label, label_ctl, hrchy )
+
 		// macs2 generates signal tracks
 		if ( make_sig ) {
  			signal_trk_pval{label} 		= pval_bw
@@ -721,6 +767,8 @@ void naive_overlap() {
 
 	if ( !is_callpeak_spp() ) return
 
+	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
+
 	// naive overlap peak
 
 	if ( !true_rep ) {
@@ -733,7 +781,10 @@ void naive_overlap() {
 									"peak_spp", "spp/overlap")
 		}
 		else {
-			peak_overlap = _naive_overlap_peak( "regionPeak", peak_pooled{"spp"}, peak{"spp,1"}, peak{"spp,2"}, \
+			string[] peaks // make array of peaks from true replicates
+			for ( int rep=1; rep<=get_num_rep(); rep++ ) peaks.add( peak{"spp,$rep"} )
+
+			peak_overlap = _naive_overlap_peak( "regionPeak", peak_pooled{"spp"}, peaks, \
 									  peak_ppr1{"spp"}, peak_ppr2{"spp"}, overlap_o_dir, "peak",\
 									"peak_spp", "spp/overlap")
 		}
@@ -754,41 +805,43 @@ void do_idr() {
 		peak_ppr1{"spp"} = get_peak(0,1); 	peak_ppr2{"spp"} = get_peak(0,2)
 	}
 
+	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
+
 	idr_o_dir 	:= mkdir( "$out_dir/peak/idr" )
 
-	if ( get_num_rep() > 1 ) {
+	// IDR on true replicates (on every pair of peaks from replicates)
 
-		idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep1-rep2" )
-		(idr_tr, idr_tr_png) = _idr2( peak{"spp,1"}, peak{"spp,2"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_true_o_dir, "rep1-rep2", \
-						"peak_spp", ["rep1","rep2","pooled"], "true_reps/rep1-rep2" )
-	}
+	for ( int i=1; i<=get_num_rep(); i++ ) {
 
-	if ( !true_rep ) {
+		for ( int j=i+1; j<=get_num_rep(); j++ ) {
 
-		idr_rep1_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep1" )
+			idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep$i-rep$j" )
 
-		(idr_pr_rep1, idr_pr_rep1_png) = _idr2( peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, peak{"spp,1"}, idr_thresh, "signal.value", idr_rep1_pr_o_dir, "rep1-pr", \
-							"peak_spp", ["rep1-pr1","rep1-pr2","rep1"], "pseudo_reps/rep1" )
-
-		if ( get_num_rep() > 1 ) {
-
-			idr_rep2_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep2" )
-
-			(idr_pr_rep2, idr_pr_rep2_png) = _idr2( peak_pr1{"spp,2"}, peak_pr2{"spp,2"}, peak{"spp,2"}, idr_thresh, "signal.value", idr_rep2_pr_o_dir, "rep2-pr", \
-								"peak_spp", ["rep2-pr1","rep2-pr2","rep2"], "pseudo_reps/rep2" )
-
-			idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
-
-			(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_ppr_o_dir, "ppr", \
-								"peak_spp", ["ppr1","ppr2","pooled"], "pooled_pseudo_reps" )
-			wait
-
-			qc_o_dir    := mkdir( "$out_dir/qc" ) // create qc output dir.
-
-			// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
-			(idr_qc, idr_opt, idr_consv) = _idr_final_qc( idr_tr, idr_pr_rep1, idr_pr_rep2, idr_ppr, idr_o_dir, qc_o_dir, "" )
+			(idr_tr{"$i,$j"}, idr_tr_png{"$i,$j"} ) = _idr2( peak{"spp,$i"}, peak{"spp,$j"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_true_o_dir, "rep$i-rep$j", \
+									"peak_spp", ["rep$i","rep$j","pooled"], "true_reps/rep$i-rep$j" )
 		}
 
+		if ( !true_rep ) {
+
+			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$i" )
+
+			(idr_pr{i}, idr_pr_png{i}) = _idr2( peak_pr1{"spp,$i"}, peak_pr2{"spp,$i"}, peak{"spp,$i"}, idr_thresh, "signal.value", idr_pr_o_dir, "rep$i-pr", \
+								"peak_spp", ["rep$i-pr1","rep$i-pr2","rep$i"], "pseudo_reps/rep$i" )
+		}
+	}
+
+	if ( !true_rep && get_num_rep() > 1 ) {
+
+		idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
+
+		(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_ppr_o_dir, "ppr", \
+							"peak_spp", ["ppr1","ppr2","pooled"], "pooled_pseudo_reps" )
+		wait
+
+		qc_o_dir    := mkdir( "$out_dir/qc" ) // create qc output dir.
+
+		// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
+		(idr_qc, idr_opt, idr_consv) = _idr_final_qc( idr_tr, idr_pr, idr_ppr, idr_o_dir, qc_o_dir, "" )
 	}
 
 	wait
@@ -852,37 +905,36 @@ string _html_chipseq_QC() {
 
 	// if idr qc's exists, add them to html
 	if ( idr_qc != "" ) 		html += _parse_idr_to_html( "idr", idr_qc )
-
+/*
 	if ( idr_tr_png != "" ) 	html += _html_img( idr_tr_png, 800, "true reps" ) + "&nbsp"
 	if ( idr_pr_rep1_png != "" ) 	html += _html_img( idr_pr_rep1_png, 800, "rep1 pseudo-reps" ) + "&nbsp"
 	if ( idr_pr_rep2_png != "" ) 	html += _html_img( idr_pr_rep2_png, 800, "rep2 pseudo-reps" ) + "&nbsp"
 	if ( idr_ppr_png != "" ) 	html += _html_img( idr_ppr_png, 800, "pooled pseudo-reps" ) + "&nbsp"
-
+*/
 	html += "</div><br>"
 	return html
 }
 
 string _html_chipseq_tracks() {
 
-	string[] track_files, track_types, track_names
+	string[] trk_files, trk_types, trk_names
 
-	if ( signal_trk_pval.hasKey( "pooled" ) ) { track_types += "bigwig"; track_names += "$title pval (pooled)"; track_files += signal_trk_pval{"pooled"} }
-	if ( signal_trk_fc.hasKey( "pooled" ) )   { track_types += "bigwig"; track_names += "$title fc (pooled)";   track_files += signal_trk_fc{"pooled"}   }
+	if ( signal_trk_pval.hasKey( "pooled" ) ) { trk_types += "bigwig"; trk_names += "$title pval (pooled)"; trk_files += signal_trk_pval{"pooled"} }
+	if ( signal_trk_fc.hasKey( "pooled" ) )   { trk_types += "bigwig"; trk_names += "$title fc (pooled)";   trk_files += signal_trk_fc{"pooled"}   }
 
-	if ( peak_overlap != "" ) { track_types += "hammock"; track_names += "$title peak overlap"; track_files += _peak_to_hammock( peak_overlap ) }
+	if ( peak_overlap != "" ) { trk_types += "hammock"; trk_names += "$title peak overlap"; trk_files += _peak_to_hammock( peak_overlap ) }
 
-	if ( idr_opt != "" ) {	track_types += "hammock"; track_names += "$title peak idr (opt. set)"; track_files += _peak_to_hammock( _get_idr_peak_trk( idr_opt ) ) }
-	if ( idr_consv != "" ) {track_types += "hammock"; track_names += "$title peak idr (cons. set)"; track_files += _peak_to_hammock( _get_idr_peak_trk( idr_consv ) ) }
+	if ( idr_opt != "" ) {	trk_types += "hammock"; trk_names += "$title peak idr (opt. set)"; trk_files += _peak_to_hammock( _get_idr_peak_trk( idr_opt ) ) }
+	if ( idr_consv != "" ) {trk_types += "hammock"; trk_names += "$title peak idr (cons. set)"; trk_files += _peak_to_hammock( _get_idr_peak_trk( idr_consv ) ) }
 
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 
-		if ( signal_trk_pval.hasKey( "rep$rep" ) ) { track_types += "bigwig"; track_names += "$title pval (rep$rep)"; track_files += signal_trk_pval{"rep$rep"} }
-		if ( signal_trk_fc.hasKey( "rep$rep" ) )   { track_types += "bigwig"; track_names += "$title fc (rep$rep)";   track_files += signal_trk_fc{"rep$rep"}   }
-		if ( rep==1 && idr_pr_rep1 != "" ) {	track_types += "hammock"; track_names += "$title peak idr (rep1_pr)"; track_files += _peak_to_hammock( _get_idr_peak_trk( idr_pr_rep1 ) ) }
-		if ( rep==2 && idr_pr_rep2 != "" ) {	track_types += "hammock"; track_names += "$title peak idr (rep2_pr)"; track_files += _peak_to_hammock( _get_idr_peak_trk( idr_pr_rep2 ) ) }
+		if ( signal_trk_pval.hasKey( "rep$rep" ) ) { trk_types += "bigwig"; trk_names += "$title pval (rep$rep)"; trk_files += signal_trk_pval{"rep$rep"} }
+		if ( signal_trk_fc.hasKey( "rep$rep" ) )   { trk_types += "bigwig"; trk_names += "$title fc (rep$rep)";   trk_files += signal_trk_fc{"rep$rep"}   }
+		if ( idr_pr.hasKey(rep) ) {trk_types += "hammock"; trk_names += "$title peak idr (rep1_pr)"; trk_files += _peak_to_hammock( _get_idr_peak_trk( idr_pr{rep} ) ) }
 	}
 
-	html := _html_epg_browser_viz( track_files, track_types, track_names )
+	html := _html_epg_browser_viz( trk_files, trk_types, trk_names )
 
 	return html
 }
@@ -907,11 +959,6 @@ bool is_callpeak_macs2() {
 	return callpeak.toLower().indexOf("macs")>=0
 }
 
-bool is_callpeak_gem() {
-
-	return callpeak.toLower().indexOf("gem")>=0
-}
-
 bool is_sigtrk_aln2rawsig() {
 
 	return sigtrk.toLower().startsWith( "aln" ) || sigtrk.toLower().startsWith( "align" ) || sigtrk.toLower().startsWith( "tag" )
@@ -921,13 +968,6 @@ bool is_sigtrk_deeptools() {
 
 	return sigtrk.toLower().startsWith( "deep" ) || sigtrk.toLower().startsWith( "bam" )
 }
-
-/*
-bool is_align_only_mode() {
-
-	return !is_input_peak() && !control_exists() && !is_callpeak_macs2()
-}
-*/
 
 bool is_input_fastq() {
 
@@ -1033,8 +1073,20 @@ bool is_data_available( int ctl, int rep ) {
 	}
 }
 
-bool control_exists() {
+/*
+bool control_exists() {	
+
 	return is_data_available( 1, 1 )
+}
+*/
+bool control_exists() {
+
+	for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+
+		if ( is_data_available( 1, rep ) ) return true
+	}
+
+	return false
 }
 
 string get_info( int ctl, int rep ) {

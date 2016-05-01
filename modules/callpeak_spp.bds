@@ -33,6 +33,9 @@ void init_callpeak_spp() {
 string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label, \
 		string label_ctl, string hrchy ) {
 
+	if ( fraglen == "" ) error("fraglen is missing!")
+	if ( ctl_tag == "" ) error("Control tagalign is missing!")
+
 	prefix_vs	:= "$o_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
 	prefix_x	:= "$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
 	npeakfile_vs 	:= "$prefix_vs.narrowPeak.gz"

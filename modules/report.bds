@@ -270,7 +270,7 @@ string _parse_idr_to_html( string id, string log ) {
 
 	html += _html_link( log, get_basename( log ) )
 
-	html += _html_table_header( ["Nt","N1","N2","Np","conservative_set","optimal_set","rescue_ratio","self_consistency_ratio","reproducibility","remarks"] )
+	html += _html_table_header( ["Nt","N_min","N_max","Np","conservative_set","optimal_set","rescue_ratio","self_consistency_ratio","reproducibility","remarks"] )
 
 	lines := log.readLines()
 

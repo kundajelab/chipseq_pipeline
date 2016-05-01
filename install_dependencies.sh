@@ -4,6 +4,7 @@
 conda config --add channels r
 conda config --add channels bioconda
 conda config --add channels astro
+conda config --add channels kalefranz # bug free readline
 
 conda create -n aquas_chipseq --file requirements.txt -y
 conda install -n aquas_chipseq --file requirements_r2.txt -y --force # force install R-2.15.3
