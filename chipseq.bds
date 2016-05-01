@@ -905,12 +905,20 @@ string _html_chipseq_QC() {
 
 	// if idr qc's exists, add them to html
 	if ( idr_qc != "" ) 		html += _parse_idr_to_html( "idr", idr_qc )
-/*
-	if ( idr_tr_png != "" ) 	html += _html_img( idr_tr_png, 800, "true reps" ) + "&nbsp"
-	if ( idr_pr_rep1_png != "" ) 	html += _html_img( idr_pr_rep1_png, 800, "rep1 pseudo-reps" ) + "&nbsp"
-	if ( idr_pr_rep2_png != "" ) 	html += _html_img( idr_pr_rep2_png, 800, "rep2 pseudo-reps" ) + "&nbsp"
+
+	for ( int i=1; i<=get_num_rep(); i++ ) {
+		
+		for ( int j=i+1; j<=get_num_rep(); j++ ) {
+			if ( idr_tr_png.hasKey("$i,$j") ) html += _html_img( idr_tr_png{"$i,$j"}, 800, "true reps (rep$i-rep$j)" ) + "&nbsp"
+		}
+
+		if ( !true_rep ) {
+			if ( idr_pr_png.hasKey(i) ) html += _html_img( idr_pr_png{i}, 800, "rep$i pseudo-reps" ) + "&nbsp"
+		}
+	}		
+
 	if ( idr_ppr_png != "" ) 	html += _html_img( idr_ppr_png, 800, "pooled pseudo-reps" ) + "&nbsp"
-*/
+
 	html += "</div><br>"
 	return html
 }
@@ -931,7 +939,7 @@ string _html_chipseq_tracks() {
 
 		if ( signal_trk_pval.hasKey( "rep$rep" ) ) { trk_types += "bigwig"; trk_names += "$title pval (rep$rep)"; trk_files += signal_trk_pval{"rep$rep"} }
 		if ( signal_trk_fc.hasKey( "rep$rep" ) )   { trk_types += "bigwig"; trk_names += "$title fc (rep$rep)";   trk_files += signal_trk_fc{"rep$rep"}   }
-		if ( idr_pr.hasKey(rep) ) {trk_types += "hammock"; trk_names += "$title peak idr (rep1_pr)"; trk_files += _peak_to_hammock( _get_idr_peak_trk( idr_pr{rep} ) ) }
+		if ( idr_pr.hasKey(rep) ) {trk_types += "hammock"; trk_names += "$title peak idr (rep$rep-pr)"; trk_files += _peak_to_hammock( _get_idr_peak_trk( idr_pr{rep} ) ) }
 	}
 
 	html := _html_epg_browser_viz( trk_files, trk_types, trk_names )
@@ -1073,12 +1081,6 @@ bool is_data_available( int ctl, int rep ) {
 	}
 }
 
-/*
-bool control_exists() {	
-
-	return is_data_available( 1, 1 )
-}
-*/
 bool control_exists() {
 
 	for ( int rep=1; rep<=get_num_rep(); rep++ ) {
