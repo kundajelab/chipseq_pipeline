@@ -36,7 +36,7 @@ void chk_idr() {
 string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, string rank, string o_dir, string label, \
 		string graph_prefix, string[] graph_in, string hrchy ) {
 
-	if ( idr_suffix ) o_dir = o_dir + "_$idr_thresh"
+	if ( idr_suffix ) o_dir = mkdir( o_dir + "_$idr_thresh" )
 
 	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
 	peak_idr	:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
