@@ -81,6 +81,10 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 
 		sys samtools sort $filt_bam.tmp $filt_bam_prefix
 		sys rm -f $filt_bam.tmp
+		
+		//# Set Java environment variable with Xmx, because JVM will ignore our
+		//# runtime flag and use this if it has been set.
+		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
 
 		//# Mark duplicates
 		sys if [ -f ${PICARDROOT}/MarkDuplicates.jar ]; then \
