@@ -311,9 +311,9 @@ If you don't want to get peaks and signal tracks from macs2:
 
 ### IDR
 
-IDR analysis is based on <a href="https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>. No additional parameter required but specify a blacklist (for hg19, <a href="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeMapability/wgEncodeDacMapabilityConsensusExcludable.bed.gz">here</a>) for full IDR QC.
+IDR analysis is based on <a href="https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>. No additional parameter required but specify a blacklist (for hg19, <a href="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeMapability/wgEncodeDacMapabilityConsensusExcludable.bed.gz">here</a>) for full IDR QC. For other genomes, <a href="https://sites.google.com/site/anshulkundaje/projects/blacklists">https://sites.google.com/site/anshulkundaje/projects/blacklists</a>.
 ```
--blacklist_idr [BLACKLIST_IDR]
+-blacklist [BLACKLIST_BED]
 ```
 
 
@@ -500,9 +500,9 @@ For python3, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mas
 
 For R-2.x, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements_r2.txt" target=_blank>here</a>
 
-IMPORTANT! Install dependencies with `install_dependencies.sh`. It will install them on Anaconda virtual environment (`aquas_chipseq` for python2, `aquas_chipseq_py3` for python3 and `aquas_chipseq_r2` for R-2.x) and you don't need super-user privileges.
+IMPORTANT! Install dependencies with `install_dependencies.sh`. It will install them on Anaconda virtual environment (`aquas_chipseq` for python2 and R-2.x, `aquas_chipseq_py3` for python3) and you don't need super-user privileges.
 
-However, if you are a super-user, it's recommended to install the following softwares on the system and share it with your colleagues.
+However, if you are a super-user, it's recommended to install the following softwares on the system and share it with your colleagues. See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
 
 Recommended softwares and versions:
 ```

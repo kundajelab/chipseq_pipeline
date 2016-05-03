@@ -254,7 +254,6 @@ $ bds [PIPELINE_BDS] [CONF_FILE] [PARAMS_TO_BE_OVERRIDEN]
 ```
 
 
-
 ### Using species file
 
 There are many species specific parameters like indices (bwa, bowtie, ...), chromosome sizes and sequence files (chr*.fa). If you have multiple pipelines, it's inconvenient to individually define all parameters in a command line argument for each pipeline run. However, if you have a species file with all species specific parameters defined, then you define less parameters in the command line and share the species file with all other pipelines.
@@ -280,10 +279,10 @@ umap_hic= /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k20tok54 	// uniq. mapp
 bwa_idx = /mnt/data/annotations/indexes/bwa_indexes/encodeHg19Male/v0.7.10/encodeHg19Male_bwa-0.7.10.fa
 bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
 bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
+blacklist = /mnt/data/ENCODE/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz
 
 tss_enrich = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/hg19_RefSeq_stranded.bed.gz
 ref_fa  = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/encodeHg19Male.fa  // genome reference fasta
-blacklist = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/Anshul_Hg19UltraHighSignalArtifactRegions.bed.gz
 dnase = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_all_p10_ucsc.bed.gz
 prom = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_prom_p2.bed.gz
 enh = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_enh_p2.bed.gz
@@ -326,6 +325,7 @@ reg2map 	    : Reg2map for ataqc.
 roadmap_meta 	    : Roadmap metadata for ataqc.
 ```
 
+Blacklist is available <a href="https://sites.google.com/site/anshulkundaje/projects/blacklists">here</a>
 
 ### How to share a species file on your server
 
