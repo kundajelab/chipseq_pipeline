@@ -216,7 +216,7 @@ void _add_to_filetable( string[] out_hrchy, string[] out_path ) {
 
 	for ( int i=0; i<min(out_hrchy.size(),out_path.size()); i++ )  {
 
-		if ( out_hrchy[i] == "" ) continue
+		if ( out_hrchy[i] == "" || out_path[i] == "" ) continue
 
 		_add_to_filetable( out_hrchy[i], out_path[i] )
 	}

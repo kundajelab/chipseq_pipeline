@@ -55,7 +55,8 @@ string _html_graphviz() { // graphviz diagram
 	dot 	:= "$rpt_aux_dir/$prefix"+"workflow.dot"
 	svg 	:= "$rpt_aux_dir/$prefix"+"workflow.svg"
 
-	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,style=\"$grp_style_node\",margin=0,fontsize=$grp_fontsize_node];\nedge [color=$grp_color_edge,fontsize=$grp_fontsize_node];\n\n";
+	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,style=\"$grp_style_node\",margin=0,fontsize=$grp_fontsize_node];" + \
+			"\nedge [color=$grp_color_edge,fontsize=$grp_fontsize_node];\n\n";
 
 	for ( string node : nodes ) dot_contents += (node + "\n")
 	for ( string box : boxes ) dot_contents += (box + "\n")
@@ -105,7 +106,7 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 		for ( int i=0; i< min(in_id.size(),in_path.size()); i++ )  {
 
-			if ( in_id[i] == "" ) continue
+			if ( in_id[i] == "" || in_path[i] == "" ) continue
 
 			in 	:= in_id[i]
 			in 	= in.replace("_","\\n")
@@ -118,7 +119,7 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 			for ( int j=0; j<min(out_id.size(),out_path.size()); j++ ) {
 
-				if ( out_id[j] == "" ) continue
+				if ( out_id[j] == "" || out_path[j] == "" ) continue
 
 				out 	:= out_id[j]
 				out 	= out.replace("_","\\n") //.substr( out_.lastIndexOf("/")+1 ).replace("_","\\n")
@@ -150,7 +151,7 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 		for ( int i=0; i< min(in_id.size(),in_path.size()); i++ )  {
 
-			if ( in_id[i] == "" ) continue
+			if ( in_id[i] == "" || in_path[i] == "" ) continue
 
 			in 	:= in_id[i]
 			in 	= in.replace("_","\\n")
@@ -173,7 +174,7 @@ void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string
 
 		for ( int j=0; j<min(out_id.size(),out_path.size()); j++ ) {
 
-			if ( out_id[j] == "" ) continue
+			if ( out_id[j] == "" || out_path[j] == "" ) continue
 
 			out 	:= out_id[j]
 			out 	= out.replace("_","\\n") //.substr( out_.lastIndexOf("/")+1 ).replace("_","\\n")

@@ -233,7 +233,8 @@ string _parse_xcor_to_html( string id, string[] names, string[] logs, string[] p
 		log := logs[i]
 		name := names[i]
 
-		items := log.read().split("\t")
+		lines := log.readLines();
+		items := lines[0].split("\t")
 		items.removeIdx(0) // remove file name
 		
 		html += "<tr><td>"+_html_link( log, name )+"</td><td>" + items.join("\t").replace("\t","</td><td>") + "</td></tr>"
