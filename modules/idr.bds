@@ -25,7 +25,7 @@ void print_idr() {
 }
 
 void chk_idr() {
-	if ( !path_exists( blacklist_idr ) ) print("\nWarning: Blacklist bed (-blacklist_idr) for final IDR QC is missing! (file: $blacklist_idr)\n\n")
+	if ( !path_exists( blacklist ) ) print("\nWarning: Blacklist bed (-blacklist) for final IDR QC is missing! (file: $blacklist)\n\n")
 }
 
 
@@ -38,15 +38,23 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 
 	if ( idr_suffix ) o_dir = mkdir( o_dir + "_$idr_thresh" )
 
-	prefix 		:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
-	peak_idr	:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
-	peak_idr_trk	:= "$prefix.IDR"+"$idr_thresh.13-col.bed.gz"
+	prefix 			:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
+	peak_idr		:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
+	peak_idr_trk		:= "$prefix.IDR"+"$idr_thresh.13-col.bed.gz"
+	filt_peak_idr		:= "$prefix.IDR"+"$idr_thresh.filt.narrowPeak.gz"
+	filt_peak_idr_trk	:= "$prefix.IDR"+"$idr_thresh.filt.13-col.bed.gz"
+
 	idr_out 	:= "$prefix.unthresholded-peaks.txt"
 	idr_out_gz	:= "$idr_out.gz"
 	png 		:= "$idr_out.png"
 
 	in 	:= [peak1, peak2, pooled]
-	out 	:= [peak_idr, png, idr_out_gz,peak_idr_trk]
+	out 	:= path_exists( blacklist ) ? [filt_peak_idr, png, idr_out_gz, filt_peak_idr_trk ] \
+						: [peak_idr, png, idr_out_gz, peak_idr_trk]
+
+	command := path_exists( blacklist ) ?       "bedtools intersect -v -a $peak_idr -b $blacklist | gzip -c > $filt_peak_idr; " \
+					          + "bedtools intersect -v -a $peak_idr_trk -b $blacklist | gzip -c > $filt_peak_idr_trk" \
+						: "echo"
 
 	taskName:= "idr2 " + label
 
@@ -66,6 +74,8 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 
 		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,"0"}' $idr_out \
 			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr_trk
+
+		sys $command
 
 		sys gzip -f $idr_out
 	}
@@ -88,89 +98,79 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 			string idr_o_dir, string qc_o_dir, string label ) {
 
-	string{} idr_tr_filt
-	string idr_ppr_filt
-	string remarks
-	
-	// filter IDR peaks with blacklist
+	//// get # of lines in each IDR peak files
 
-	if ( path_exists( blacklist_idr ) ) { 
+	// pseudo replicates
+	int[] N
+	for ( string peak : idr_pr ) N.add( get_no_lines( peak ) )
 
-		for ( string key : idr_tr.keys() ) { // key = rep id 1, rep id 2
-			idr_tr_filt{key} = _filter_idr_peak( idr_tr{key}, "", key )
-		}
-		
-		idr_ppr_filt 	= _filter_idr_peak( idr_ppr, "", "ppr" )
-		wait
+	// true replicates
+	Nt := 0
+	string idr_tr_best, key_tr_best
 
-		remarks		= "filtered tr and ppr"
-	}
-	else {
-		idr_tr_filt 	= idr_tr
-		idr_ppr_filt 	= idr_ppr
+	for ( string key : idr_tr.keys() ) { // key = rep id 1, rep id 2
 
-		remarks		= "no blacklist"
-	}
-
-
-	// get # of lines in each IRD peak files
-	int Nt
-	string idr_tr_filt_best
-	string key_tr_best
-
-	for ( string key : idr_tr_filt.keys() ) { // key = rep id 1, rep id 2
-
-		peak := idr_tr_filt{ key }
+		peak := idr_tr{ key }
 		nlines := get_no_lines( peak )
 
 		if ( nlines >= Nt ) {
 			Nt = nlines
-			idr_tr_filt_best = peak
+			idr_tr_best = peak
 			key_tr_best = key
 		}
 	}
 
-	int[] N
-	for ( string peak : idr_pr ) N.add( get_no_lines( peak ) )
+	// pooled pseudo replicates
+	Np := ( idr_ppr != "" ) ? get_no_lines( idr_ppr ) : 0
 
-	Np :=  get_no_lines( idr_ppr_filt )
+	//// find optimal set and conservative set
+	string optimal_set, conservative_set
+	string idr_opt_set, idr_consv_set
+	string idr_opt_set_new, idr_consv_set_new // copy of above two
 
-	// find optimal set and conservative set
+	if ( Nt > 0 ) {
 
-	// optimal set
-	optimal_set 		:= (Nt > Np) ? _get_label_from_key(key_tr_best) : "pooled_pseudo_rep"
-	idr_opt_set 		:= (Nt > Np) ? idr_tr_filt_best : idr_ppr_filt
+		// optimal set
+		optimal_set 		= (Nt > Np) ? _get_label_from_key(key_tr_best) : "pooled_pseudo_rep"
+		idr_opt_set 		= (Nt > Np) ? idr_tr_best : idr_ppr
 
-	// conservative set
-	conservative_set 	:= _get_label_from_key(key_tr_best)
-	idr_consv_set  	 	:= idr_tr_filt_best
+		// conservative set
+		conservative_set 	= _get_label_from_key(key_tr_best)
+		idr_consv_set  	 	= idr_tr_best
 
-	// make a copy of them
+		// make copies of them
+		idr_opt_o_dir 		:= mkdir( "$idr_o_dir/optimal_set" )
+		idr_consv_o_dir 	:= mkdir( "$idr_o_dir/conservative_set" )
 
-	idr_opt_o_dir 		:= mkdir( "$idr_o_dir/optimal_set" )
-	idr_consv_o_dir 	:= mkdir( "$idr_o_dir/conservative_set" )
+		idr_opt_set_new		= copy( idr_opt_set, idr_opt_o_dir )	
+		idr_consv_set_new 	= copy( idr_consv_set, idr_consv_o_dir )
+		
+		// for browser tracks
+		idr_opt_set_trk 	:= _get_idr_peak_trk( idr_opt_set ) // for browser tracks
+		idr_consv_set_trk	:= _get_idr_peak_trk( idr_consv_set ) // for browser tracks
 
-	idr_opt_set_new		:= copy( idr_opt_set, idr_opt_o_dir )	
-	idr_consv_set_new 	:= copy( idr_consv_set, idr_consv_o_dir )
-	
-	// for browser tracks
-	idr_opt_set_trk 	:= _get_idr_peak_trk( idr_opt_set ) // for browser tracks
-	idr_consv_set_trk	:= _get_idr_peak_trk( idr_consv_set ) // for browser tracks
+		copy( idr_opt_set_trk, idr_opt_o_dir )
+		copy( idr_consv_set_trk, idr_consv_o_dir )
 
-	copy( idr_opt_set_trk, idr_opt_o_dir )
-	copy( idr_consv_set_trk, idr_consv_o_dir )
+		wait
+	}
+	else {
+		optimal_set 		= "N/A"
+		idr_opt_set 		= ""
+		idr_opt_set_new		= ""
 
-	wait
+		conservative_set 	= "N/A"
+		idr_consv_set  	 	= ""
+		idr_consv_set_new 	= ""
+	}
 
-	// compute IDR scores
+	//// compute IDR scores
 
 	real max_Np_Nt = max( Np, Nt )
 	real min_Np_Nt = min( Np, Nt )
 
-	max_N_int := max( N )
-	min_N_int := min( N )
-	real max_N = max_N_int
-	real min_N = min_N_int
+	real max_N = max( N )
+	real min_N = min( N )
 
 	rescue_ratio 		:= max_Np_Nt / min_Np_Nt
 	self_consistency_ratio 	:= max_N / min_N
@@ -179,7 +179,7 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 	if ( rescue_ratio > 2.0 || self_consistency_ratio > 2.0 ) reproducibility = 0 // BORDERLINE
 	if ( rescue_ratio > 2.0 && self_consistency_ratio > 2.0 ) reproducibility = -1 // FAIL
 	
-	// 4f. Fraction of Reads in Peaks (FRiP) will be added later
+	// Fraction of Reads in Peaks (FRiP) will be added later
 
 	// write on IDR FINAL QC file
 	prefix 	:= "$qc_o_dir/" + (title=="" ? "" : (title+"_") ) + label
@@ -188,14 +188,17 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 	in 	:= map_to_array( idr_tr ) + map_to_array( idr_pr ) + [idr_ppr]
 	out 	:= qc
 
+	col_lbl := ""; for ( int rep=1; rep<=N.size(); rep++) col_lbl += "N$rep\t"
+	col_val := N.size() == 0 ? "" : (N.join("\t") + "\t")
+
 	taskName:= "idr final qc" + label
 
 	task( out<-in ) {
 
 		sys $shcmd_init
 
-		sys echo -e "Nt\tN_min\tN_max\tNp\tconservative_set\toptimal_set\trescue_ratio\tself_consistency_ratio\treproducibility\tremarks" > $qc
-		sys echo -e "$Nt\t$min_N_int\t$max_N_int\t$Np\t$conservative_set\t$optimal_set\t$rescue_ratio\t$self_consistency_ratio\t$reproducibility\t$remarks" >> $qc
+		sys echo -e "Nt\t$col_lbl""Np\tconservative_set\toptimal_set\trescue_ratio\tself_consistency_ratio\treproducibility" > $qc
+		sys echo -e "$Nt\t$col_val""$Np\t$conservative_set\t$optimal_set\t$rescue_ratio\t$self_consistency_ratio\t$reproducibility" >> $qc
 	}
 
 	wait_par()
@@ -203,7 +206,7 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 	string[] graph_in
 
 	for ( string key : idr_tr.keys() ) graph_in.add( "idr_peak_("+_get_label_from_key(key)+")" )	
-	for ( string key : idr_pr.keys() ) graph_in.add( "idr_peak_(rep$key-pr)" )	
+	for ( string key : idr_pr.keys() ) graph_in.add( "idr_peak_(rep$key-pr)" )
 
 	graph_in  += ["idr_peak_(ppr)"]
 	graph_out := ["idr_qc","idr_peak_(opt)","idr_peak_(consv)"]
@@ -217,6 +220,7 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 }
 
 string _get_label_from_key( string key ) { //parse "i,j" to "repi-repj"
+
 	tmp := key.split(",")
 	i := tmp[0]
 	j := tmp[1]
@@ -226,33 +230,4 @@ string _get_label_from_key( string key ) { //parse "i,j" to "repi-repj"
 string _get_idr_peak_trk( string idr_peak ) {
 
 	return rm_ext( idr_peak, ["narrowPeak","regionPeak"] ) + ".13-col.bed.gz"	
-}
-
-string _filter_idr_peak( string idr_peak, string o_dir, string label ) {
-
-	// check if IDR peak for track exists
-	idr_peak_trk	:= _get_idr_peak_trk( idr_peak )
-
-	prefix 		:= replace_dir( rm_ext( idr_peak, ["narrowPeak","regionPeak"] ), o_dir )
-	filt 		:= "$prefix.filt.narrowPeak.gz"
-	filt_trk	:= "$prefix.filt.13-col.bed.gz"
-
-	in 	:= [idr_peak]
-	out 	:= filt
-
-	taskName:= "filter_idr_peak " + label
-
-	task( out<-in ) {
-
-		sys $shcmd_init
-
-		sys bedtools intersect -v -a $idr_peak -b $blacklist_idr | gzip -c > $filt
-
-		// filter 13-col bed too for browser tracks
-		sys if [ -f $idr_peak_trk ]; then bedtools intersect -v -a $idr_peak_trk -b $blacklist_idr | gzip -c > $filt_trk; fi
-	}
-
-	wait_par()
-
-	return out
 }

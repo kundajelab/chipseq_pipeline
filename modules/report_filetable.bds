@@ -116,7 +116,7 @@ map_rank{"ppr1"} 		= ++_rank
 map_rank{"ppr2"} 		= ++_rank
 for (int i=1; i<=20; i++) \
  for (int j=i+1; j<=20; j++) \
-  map_label{"rep$i-rep$j"}	= ++_rank
+  map_rank{"rep$i-rep$j"}	= ++_rank
 
 map_rank{"idr_qc"} 		= ++_rank
 map_rank{"fastq"} 		= ++_rank

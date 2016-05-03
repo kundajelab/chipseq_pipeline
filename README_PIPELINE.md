@@ -43,7 +43,7 @@ Open a new terminal after installation.
 
 ### Installation instruction for BigDataScript
 
-Get BigDataScript v0.9999:
+Get BigDataScript v0.999l:
 ```
 $ git clone https://github.com/pcingola/BigDataScript
 $ cd BigDataScript

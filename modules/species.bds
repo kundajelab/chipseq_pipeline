@@ -19,11 +19,10 @@ bwa_idx 	:= ""		help BWA index (full path prefix of *.bwt file) .
 bwt_idx		:= ""		help Bowtie index (full path prefix of *.1.ebwt file).
 bwt2_idx	:= ""		help Bowtie2 index (full path prefix of *.1.bt2 file).
 
-blacklist_idr 	:= "" 		help Blacklist bed for IDR.
+blacklist 	:= "" 		help Blacklist bed.
 
 tss_enrich 	:= "" 		help TSS enrichment bed for ataqc.
 ref_fa 		:= ""		help Reference genome sequence fasta.
-blacklist 	:= "" 		help Blacklist bed for ataqc.
 dnase 		:= ""		help DNase bed for ataqc.
 prom 		:= ""		help Promoter bed for ataqc.
 enh 		:= ""		help Enhancer bed for ataqc.
@@ -89,10 +88,9 @@ void read_species() { // check for species configruation files
 				bwt2_idx 	= get_conf_val( bwt2_idx, 	["bwt2_idx"], _conf )
 
 				tss_enrich 	= get_conf_val( tss_enrich, 	["tss_enrich"], _conf )
-				blacklist_idr 	= get_conf_val( blacklist_idr, 	["blacklist_idr"], _conf )
+				blacklist 	= get_conf_val( blacklist, 	["blacklist"], _conf )
 
 				ref_fa 		= get_conf_val( ref_fa, 	["ref_fa"], _conf )
-				blacklist 	= get_conf_val( blacklist, 	["blacklist"], _conf )
 				dnase 		= get_conf_val( dnase, 		["dnase"], _conf )
 				prom 		= get_conf_val( prom, 		["prom"], _conf )
 				enh 		= get_conf_val( enh, 		["enh"], _conf )
@@ -112,10 +110,9 @@ void read_species() { // check for species configruation files
 	print( "Bowtie index\t\t: $bwt_idx\n" )
 	print( "Bowtie2 index\t\t: $bwt2_idx\n" )
 	print( "TSS enrichment bed\t: $tss_enrich\n" )
-	print( "Black list for IDR\t: $blacklist_idr\n" )
+	print( "Black list bed\t\t: $blacklist\n" )
 	print("\n")
 	print( "Ref. genome seq. fasta\t: $ref_fa\n" )
-	print( "Black list for ataqc\t: $blacklist\n" )
 	print( "DNase bed for ataqc\t: $dnase\n" )
 	print( "Promoter bed for ataqc\t: $prom\n" )
 	print( "Enhancer bed for ataqc\t: $enh\n" )

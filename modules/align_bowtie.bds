@@ -51,7 +51,9 @@ string[] _bowtie( string fastq, string o_dir, string info ) {
 		sys $shcmd_init
 
 		sys bowtie -q -v 2 -a -m 99 -p $nth_bwt -S $bwt_idx <(zcat -f $fastq) 2> $log | \
-			samtools view -bS - > $bam
+			samtools view -bS - | samtools sort - $prefix
+
+		sys samtools index $bam			
 	}
 
 	wait_par()
@@ -66,9 +68,10 @@ string[] _bowtie_csem( string fastq, string o_dir, string info ) {
 	log 		:= "$prefix.align.log"
 	srt_bam		:= "$prefix.csem.sorted.bam"
 	srt_bam_prefix 	:= "$prefix.csem"
+	bam 		:= "$prefix.csem.bam"
 
 	in 	:= [ fastq ]
-	out 	:= [ srt_bam, log ]
+	out 	:= [ bam, log ]
 
 	taskName:= "bowtie_csem "+info
 	cpus 	:= nth_bwt; 	mem := get_res_mem(mem_bwt); 	timeout := get_res_wt(wt_bwt)
@@ -81,7 +84,10 @@ string[] _bowtie_csem( string fastq, string o_dir, string info ) {
 
 		sys run-csem --sam -p $nth_bwt $sam 200 $srt_bam_prefix
 
-		//sys rm -f $sam
+		sys mv $srt_bam $bam
+		sys samtools index $bam
+
+		sys rm -f $sam
 	}
 
 	wait_par()

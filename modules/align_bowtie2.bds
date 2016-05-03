@@ -49,10 +49,11 @@ string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, b
 
 		sys $shcmd_init
 
-		//sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) -S /dev/stdout 2> $log | \
-		//	samtools view -o $bam -b /dev/stdin
+		//sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) 2> $log | \
+		//	samtools view -bS - > $bam
 		sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) 2> $log | \
-			samtools view -bS - > $bam
+			samtools view -bS - | samtools sort - $prefix
+		sys samtools index $bam
 	}
 
 	graph_in := trimmed ? 	["trimmed_fastq_($label)"] : ["fastq_($label)"]
@@ -76,9 +77,10 @@ string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string lab
 	log 		:= "$prefix2.align.log"
 	srt_bam		:= "$prefix.csem.sorted.bam"
 	srt_bam_prefix 	:= "$prefix.csem"
+	bam 		:= "$prefix.csem.bam"
 
 	in 	:= [ fastq ]
-	out 	:= [ srt_bam, log ]
+	out 	:= [ bam, log ]
 
 	taskName:= "bowtie2_csem "+label
 	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
@@ -88,8 +90,10 @@ string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string lab
 		sys $shcmd_init
 
 		sys bowtie2 -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) 2> $log > $sam
-
 		sys run-csem --sam -p $nth_bwt2 $sam 100 $srt_bam_prefix
+
+		sys mv $srt_bam $bam
+		sys samtools index $bam
 
 		sys rm -f $sam
 	}
@@ -98,7 +102,7 @@ string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string lab
 	graph_out := ["bam_($label)"]//,"align_qc_($label)"]
 	hrchy_out := ["L1_align/$label/bam","L1_qc/$label/bwt2_qc"]
 
-	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_($label)", grp_color_bwt2 )
+	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_csem_($label)", grp_color_bwt2 )
 
 	_add_to_filetable( hrchy_out, out )	
 
@@ -125,10 +129,12 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_d
 
 		sys $shcmd_init
 
+		//sys bowtie2 -X2000 --mm --threads $nth_bwt2 -x $bwt2_idx \
+		//	-1 $fastq1 -2 $fastq2 2>$log | samtools view -bS - > $bam
 		sys bowtie2 -X2000 --mm --threads $nth_bwt2 -x $bwt2_idx \
-			-1 $fastq1 -2 $fastq2 \
-			2>$log | \
-			samtools view -bS - > $bam
+			-1 $fastq1 -2 $fastq2 2>$log | samtools view -bS - | samtools sort - $prefix
+			
+		sys samtools index $bam
 	}
 
 	graph_in := trimmed ? 	["trimmed_fastq1_($label)","trimmed_fastq2_($label)"] : \
@@ -137,7 +143,6 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_d
 	hrchy_out := ["L1_align/$label/bam","L1_qc/$label/bwt2_qc"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_($label)", grp_color_bwt2 )
-
 	_add_to_filetable( hrchy_out, out )	
 
 	wait_par()

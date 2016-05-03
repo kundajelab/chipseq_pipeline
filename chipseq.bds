@@ -144,7 +144,7 @@ void print_chipseq() {
 	print( "Control rep. depth ratio\t: $ctl_depth_ratio\n" )
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
-	print( "IDR threshold\t\t: $idr_thresh\n" )
+	print( "IDR threshold\t\t\t: $idr_thresh\n" )
 }
 
 void chk_input() {
@@ -836,15 +836,13 @@ void do_idr() {
 
 		(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_ppr_o_dir, "ppr", \
 							"peak_spp", ["ppr1","ppr2","pooled"], "pooled_pseudo_reps" )
-		wait
-
-		qc_o_dir    := mkdir( "$out_dir/qc" ) // create qc output dir.
-
-		// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
-		(idr_qc, idr_opt, idr_consv) = _idr_final_qc( idr_tr, idr_pr, idr_ppr, idr_o_dir, qc_o_dir, "" )
 	}
-
 	wait
+
+	qc_o_dir    := mkdir( "$out_dir/qc" ) // create qc output dir.
+
+	// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
+	(idr_qc, idr_opt, idr_consv) = _idr_final_qc( idr_tr, idr_pr, idr_ppr, idr_o_dir, qc_o_dir, "" )
 }
 
 void report() {

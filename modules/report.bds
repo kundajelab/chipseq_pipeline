@@ -261,7 +261,7 @@ string _parse_xcor_to_html( string id, string[] names, string[] logs, string[] p
 	return html
 }
 
-// IDR logs : 1 table + 4 imgs
+// IDR logs : 1 table
 string _parse_idr_to_html( string id, string log ) {
 
 	if ( log == "" ) return ""
@@ -270,10 +270,11 @@ string _parse_idr_to_html( string id, string log ) {
 
 	html += _html_link( log, get_basename( log ) )
 
-	html += _html_table_header( ["Nt","N_min","N_max","Np","conservative_set","optimal_set","rescue_ratio","self_consistency_ratio","reproducibility","remarks"] )
+	html += "<table border='1'><tr>"
 
 	lines := log.readLines()
 
+	html += "<tr><th>" + lines[0].replace("\t","</th><th>") + "</th></tr>" // read 2nd line of idr qc file
 	html += "<tr><td>" + lines[1].replace("\t","</td><td>") + "</td></tr>" // read 2nd line of idr qc file
 
 	html += "</table>"

@@ -43,13 +43,6 @@ void chk_align_bwa() {
 
 string[] _bwa( string fastq, string o_dir, string log_o_dir, string label ) {
 
-	return _bwa( fastq, o_dir, log_o_dir, label, \
-			"fastq_($label)", "bam_($label)", "L1_align/$label/bam")
-}
-
-string[] _bwa( string fastq, string o_dir, string log_o_dir, string label, \
-		string graph_in, string graph_out, string hrchy_out ) {
-
 	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	prefix2 := replace_dir( prefix, log_o_dir )
 	bam 	:= "$prefix.bam"
@@ -69,9 +62,8 @@ string[] _bwa( string fastq, string o_dir, string log_o_dir, string label, \
 		sai.rm() // delete intermediate file sai		
 	}
 
-	_add_to_graphviz( [graph_in], [fastq], [graph_out], [bam], "bwa_($label)", grp_color_bwa )
-
-	_add_to_filetable( [hrchy_out], [bam] )
+	_add_to_graphviz( ["fastq_($label)"], [fastq], ["bam_($label)"], [bam], "bwa_($label)", grp_color_bwa )
+	_add_to_filetable( ["L1_align/$label/bam"], [bam] )
 
 	wait_par()
 
@@ -79,13 +71,6 @@ string[] _bwa( string fastq, string o_dir, string log_o_dir, string label, \
 }
 
 string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, string label ) {
-
-	return _bwa_PE( fastq1, fastq2, o_dir, log_o_dir, label, \
-			"fastq1_($label)", "fastq2_($label)", "bam_($label)", "L1_align/$label/bam" )
-}
-
-string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, string label, \
-		string graph_in1, string graph_in2, string graph_out, string hrchy_out ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
 	prefix2 := replace_dir( prefix, log_o_dir )
@@ -112,9 +97,8 @@ string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, 
 
 	wait_par()
 
-	_add_to_graphviz( [graph_in1,graph_in2], [fastq1,fastq2], [graph_out], [bam], "bwa_($label)", grp_color_bwa )
-
-	_add_to_filetable( [hrchy_out], [bam] )
+	_add_to_graphviz( ["fastq1_($label)", "fastq2_($label)"], [fastq1,fastq2], ["bam_($label)"], [bam], "bwa_($label)", grp_color_bwa )
+	_add_to_filetable( ["L1_align/$label/bam"], [bam] )
 
 	return out
 }
@@ -161,6 +145,7 @@ string[] _bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, str
 		sys $shcmd_init
 
 		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su - | samtools sort - $prefix
+		sys samtools index $bam
 		sys samtools flagstat $bam > $qc
 	}
 
@@ -205,6 +190,7 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 			fi
 
 		sys samtools flagstat $bam > $qc
+		sys samtools index $bam
 		sys rm -f $badcigar $sam
 	}
 
