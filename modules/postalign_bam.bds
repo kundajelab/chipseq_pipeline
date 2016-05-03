@@ -465,6 +465,10 @@ string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label )
 		sys bamToBed -i "$non_mito_bam" | \
 			awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' | \
 			gzip -c > "$bed"
+			
+		//# Set Java environment variable with Xmx, because JVM will ignore our
+		//# runtime flag and use this if it has been set.
+		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
 
 		sys if [ -f ${PICARDROOT}/CollectInsertSizeMetrics.jar ]; then \
 				java -Xmx4G -Xms256M -jar ${PICARDROOT}/CollectInsertSizeMetrics.jar \
@@ -517,6 +521,10 @@ string _bam_to_bed_atac( string filt_bam, string o_dir, string label ) {
 
 		//# Process only non chrM reads
 		sys bamToBed -i "$non_mito_bam" | gzip -c > "$bed"
+		
+		//# Set Java environment variable with Xmx, because JVM will ignore our
+		//# runtime flag and use this if it has been set.
+		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
 
 		sys if [ -f ${PICARDROOT}/CollectInsertSizeMetrics.jar ]; then \
 				java -Xmx4G -Xms256M -jar ${PICARDROOT}/CollectInsertSizeMetrics.jar \
