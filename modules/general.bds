@@ -104,15 +104,15 @@ void init_par() {
 void print_general() {
 
 	print("\n\n== general pipeline settings\n")
-	print( "Output dir.\t\t: $out_dir\n" )
-	print( "No parallel jobs\t: $no_par\n" )
+	print( "Output dir.\t\t\t: $out_dir\n" )
+	print( "No parallel jobs\t\t: $no_par\n" )
 	print( "Level of parallelization\t: $par_lvl\n" )
 	print( "Max # rep/ctl in parallel\t: $reps_in_par\n" )
 	print( "Max # peakcalling in parallel\t: $peaks_in_par\n" )
-	print( "Walltime (general)\t: $wt\n" )
-	print( "Max. memory (general)\t: $memory\n" )
+	print( "Walltime (general)\t\t: $wt\n" )
+	print( "Max. memory (general)\t\t: $memory\n" )
 	print( "Env. for Anaconda python2\t: $conda_env\n" )
-	print( "Env. for R 2.x\t\t: $conda_env_r2\n" )
+	print( "Env. for R 2.x\t\t\t: $conda_env_r2\n" )
 	print( "Env. for Anaconda python3\t: $conda_env_py3\n" )
 
 	if ( use_sys_default ) {
