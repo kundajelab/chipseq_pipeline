@@ -5,11 +5,13 @@ conda config --add channels r
 conda config --add channels bioconda
 conda config --add channels astro
 conda config --add channels kalefranz # bug free readline
+conda config --add channels asmeurer # libtool
 
 conda create -n aquas_chipseq --file requirements.txt -y
 conda install -n aquas_chipseq --file requirements_r2.txt -y --force # force install R-2.15.3
 
 conda create -n aquas_chipseq_py3 --file requirements_py3.txt -y
+
 
 function add_to_activate {
   if [ ! -f $CONDA_INIT ]; then
@@ -35,6 +37,11 @@ CONDA_EXTRA="$CONDA_BIN/../extra"
 CONDA_ACTIVATE_D="$CONDA_BIN/../etc/conda/activate.d"
 CONDA_INIT="$CONDA_ACTIVATE_D/init.sh"
 mkdir -p $CONDA_EXTRA $CONDA_ACTIVATE_D
+
+## GRAPHVIZ
+# graphviz on bioconda is buggy (GLIBC 2.14 error)
+conda uninstall graphviz -y
+conda install graphviz -c defaults --override-channels -y
 
 ### BDS
 mkdir -p $HOME/.bds

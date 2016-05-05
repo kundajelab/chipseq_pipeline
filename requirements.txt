@@ -15,7 +15,8 @@ matplotlib ==1.5.1
 macs2 ==2.1.0
 boost ==1.57.0
 openssl ==1.0.2g-0
-graphviz
+graphviz # graphviz on bioconda channel is buggy, see/use install_dependencies.sh for solution
+libtool # graphviz needs it
 ghostscript
 
 #r ==2.15.3 (conflict), this will be later installed (with --force; ignoring dependencies)
