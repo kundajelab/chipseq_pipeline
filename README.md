@@ -17,11 +17,11 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 ```
 
 
-### Installation instruction (for SCG3 and all others)
+### Installation instruction (for SCG3/4 and all others)
 
 Install java (jdk >= 1.7 or jre >= 1.7) and the latest git on your system. 
 
-Install Anaconda Python3 (or Miniconda3) on your system. If you already have Anaconda Python 3, skip it. Open a new terminal after installation.
+Install Anaconda Python3 (or Miniconda3) on your system. If you already have it, skip this. Open a new terminal after installation.
 
 Install BigDataScript v0.999l on your system.
 
@@ -37,7 +37,7 @@ Install software dependencies automatically (DO NOT run this on kundaje clusters
 $ ./install_dependencies.sh
 ```
 
-Replace BDS's default `bds.config` with a correct one:
+If you don't use `install_dependencies.sh`, manually replace BDS's default `bds.config` with a correct one:
 ```
 $ cp bds.config $HOME/.bds
 ```
@@ -45,19 +45,23 @@ $ cp bds.config $HOME/.bds
 
 ### Installation instruction (for Kundaje lab clusters)
 
-BDS and all dependencies have already been installed on lab servers. Do not run `install_dependencies.sh` on these servers. Get the latest version of chipseq pipelines. Don't forget to move bds.config to BigDataScript (BDS) directory
+BDS and all dependencies have already been installed on lab servers. Do not run `install_dependencies.sh` on these servers. Get the latest version of chipseq pipelines.
 ```
 $ git clone https://github.com/kundajelab/TF_chipseq_pipeline
 $ cd TF_chipseq_pipeline
+```
+
+Replace BDS's default `bds.config` with a correct one:
+```
 $ mkdir -p $HOME/.bds
 $ cp bds.config $HOME/.bds/
 ```
 
 
 
-### Genome data files for SCG3 and Kundaje lab servers
+### Genome data files for SCG3/4 and Kundaje lab servers
 
-For Kundaje lab servers (mitra, nandi, durga, kali, vayu, amold and wotan) and SCG3 (carmack*, crick*, scg3*), the pipeline automatically determines the type of servers and set shell environments and species database.
+For Kundaje lab servers (mitra, nandi, durga, kali, vayu, amold, wotan and kadru) and SCG3/4 (carmack*, crick*, scg3*, scg4*), the pipeline automatically determines the type of servers and set shell environments and species database. Skip all genome-specific parameters (e.g. bwa index) and just specify species.
 ```
 $ bds chipseq.bds ... -species [SPECIES; hg19, mm9, ... ]
 ```
@@ -76,9 +80,9 @@ $ bds chipseq.bds [OPTIONS]
 Example (for single ended fastqs):
 ```
 $ bds chipseq.bds \
--fastq1 /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz \
--fastq2 /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz \
--fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz \
+-fastq1 /DATA/ENCFF000YLW.fastq.gz \
+-fastq2 /DATA/ENCFF000YLY.fastq.gz \
+-fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz \
 -bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa \
 ```
 
@@ -95,13 +99,13 @@ Example configuriation file:
 ```
 $ cat [CONF_FILE]
 
-fastq1= /DATA/ENCSR000EGM/ENCFF000YLW.fastq.gz
-fastq2= /DATA/ENCSR000EGM/ENCFF000YLY.fastq.gz
-ctl_fastq1= /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.fastq.gz
+fastq1= /DATA/ENCFF000YLW.fastq.gz
+fastq2= /DATA/ENCFF000YLY.fastq.gz
+ctl_fastq1= /DATA/Ctl/ENCFF000YRB.fastq.gz
 bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ```
 
-The pipeline automatically determines if each task has finished or not (comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
+The pipeline automatically determines if each task has finished or not (by comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
 
 
 
@@ -549,6 +553,9 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 ### Troubleshooting
 
+See more troubleshootings <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
+
+
 1) "[gzclose] buffer error" during bwa aln
 
 Example:
@@ -622,42 +629,7 @@ failed:
 0.7.4 0.7.5 0.7.7 0.7.8 0.7.11 0.7.12
 ```
 
-
-2) Unsupported major.minor version (java)
-
-When running bds (BigDataScript), you get the following error if you have lower version of java or high version of java is not selected as default.
-
-Solution:
-```
-# install latest version of java
-
-# for Fedora based linux (Red Hat, ...)
-$ sudo apt-get install openjdk-8-jre
-
-# fr Debian based linux (Ubuntu, ...)
-$ sudo yum install java-1.8.0-openjdk
-
-# choose the latest java as default
-$ sudo update-alternatives --config java
-```
-
-
-3) /bin/bash: module: line 1: syntax error: unexpected end of file
-
-If see the following error when you submit jobs to Sun Grid Enginee,
-```
-/bin/bash: module: line 1: syntax error: unexpected end of file
-```
-
-Check if your $HOME/.bashrc has any errorneous lines.
-
-Remove the following line in you module initialization scripts ($MODULESHOME/init/bash or /etc/profile.d/modules.sh).
-```
-export -f module
-```
-
-
-4) Cannot allocate memory (bwa fails due to lack of memory)
+2) Cannot allocate memory (bwa fails due to lack of memory)
 
 An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):
 
@@ -678,8 +650,7 @@ $ bds chipseq.bds -no_par ...
 ```
 
 
-
-5) [samopen] no @SQ lines in the header. ( bwa sam failure )
+3) [samopen] no @SQ lines in the header. ( bwa sam failure )
 
 For computers with limited memory, bwa samse/sampe fails without non-zero exit value. This leads to a failure of a pipeline or corruption of outputs.
 
@@ -690,29 +661,7 @@ $ bds chipseq.bds -no_par ...
 ```
 
 
-
-6) Unable to run job: unknown resource "'mem"
-
-Replace `$HOME/.bds/bds.config` with the one in the repo.
-```
-$ cp /path/to/repo/bds.config $HOME/.bds/
-```
-
-
-7) Unable to access jarfile /picard.jar
-
-Define a shell variable `PICARDROOT` for your environment. Add the following to your `~/.bashrc` or conda `activate`:
-```
-export PICARDROOT=/path/to/your/picard-tool
-```
-
-8) awk: cmd. line:1: fatal: division by zero attempted
-
-This error happens when picard tool's MarkDuplicate is running out of memory.
-Balance memory usage among parallel tasks, add `-no_par` or reduce level of parallelization (`-par_lvl [PARALLEL_LEVEL <= 2]`).
-
-
-9) Error: could not find environment: aquas_chipseq
+4) Error: could not find environment: aquas_chipseq
 
 Unload any Anaconda Python modules. Remove locally installed Anaconda Python from your `$PATH`
 

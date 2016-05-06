@@ -64,7 +64,7 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 
 		sys idr --samples $peak1 $peak2 --peak-list $pooled --input-file-type narrowPeak \
 			--output-file $idr_out --rank $rank --soft-idr-threshold $idr_thresh \
-			--plot
+			--plot --use-best-multisummit-IDR
 		
 		sys idr_thresh_transformed=$(awk -v p=$idr_thresh 'BEGIN{print -log(p)/log(10)}')
 

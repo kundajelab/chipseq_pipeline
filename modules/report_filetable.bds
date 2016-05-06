@@ -199,9 +199,11 @@ string _html_filetable() { // graphviz diagram
 // returns rank of item
 void _add_to_filetable( string hrchy, string path ) {
 
+	dummy := filetable_label // dummy to prevent BDS global var. lock bug
+
 	if ( hrchy == "" ) return
 
-	if ( filetable_label.hasKey( hrchy ) ) return // filetable_rank{ hrchy }
+	if ( dummy.hasKey( hrchy ) ) return // filetable_rank{ hrchy }
 
 	curr 	:= _get_curr( hrchy )
 	parent 	:= _get_parent( hrchy )
@@ -209,7 +211,7 @@ void _add_to_filetable( string hrchy, string path ) {
 	filetable_label{hrchy} 	= map_label.hasKey(curr) ? map_label{curr} : curr
 	filetable_path{hrchy} 	= path
 
-	_add_to_filetable( parent, "" )
+	if ( parent != "" ) _add_to_filetable( parent, "" )
 }
 
 void _add_to_filetable( string[] out_hrchy, string[] out_path ) {

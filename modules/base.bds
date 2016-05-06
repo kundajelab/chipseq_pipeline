@@ -509,20 +509,20 @@ string get_stdout( string cmd ) {
 	rnd  := randInt()
 	cmd_ := "cmd_$rnd"
 	sys $cmd 1> $cmd_
-	wait
+	//wait
 	ret := cmd_.read()
-	wait
-	cmd_.rm()
+	//wait
+	sys rm -f $cmd_
 	return ret
 }
 
 string get_shell_var( string var ) {
 	var_ := "var_$var"
 	sys echo "${$var}" > $var_
-	wait
+	//wait
 	ret := var_.read()
-	wait
-	var_.rm()
+	//wait
+	sys rm -f $var_
 	return ret
 }
 

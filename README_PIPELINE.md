@@ -546,21 +546,63 @@ shell                 /bin/bash
 
 ### Troubleshooting
 
-1) unexpected end of file
+1) /bin/bash: module: line 1: syntax error: unexpected end of file
 
 If see the following error when you submit jobs to Sun Grid Enginee,
 ```
 /bin/bash: module: line 1: syntax error: unexpected end of file
 ```
 
-Check your `$HOME/.bashrc` if it has any errorneous lines.
+Check if your $HOME/.bashrc has any errorneous lines.
 
-Remove the following line in you module initialization scripts (`$MODULESHOME/init/bash` or `/etc/profile.d/modules.sh`).
+Remove the following line in you module initialization scripts ($MODULESHOME/init/bash or /etc/profile.d/modules.sh).
 ```
 export -f module
 ```
 
+2) Unable to run job: unknown resource "'mem"
 
+Replace `$HOME/.bds/bds.config` with the one in the repo.
+```
+$ cp /path/to/repo/bds.config $HOME/.bds/
+```
+
+3) Unable to access jarfile /picard.jar
+
+Define a shell variable `PICARDROOT` for your environment. Add the following to your `~/.bashrc` or conda `activate`:
+```
+export PICARDROOT=/path/to/your/picard-tool
+```
+
+4) awk: cmd. line:1: fatal: division by zero attempted
+
+This error happens when 1) picard tool's MarkDuplicate is running out of memory or 2) fastq inputs have wrong endedness (SE or PE).
+For 1) balance memory usage among parallel tasks, add `-no_par` or reduce level of parallelization (`-par_lvl [PARALLEL_LEVEL <= 2]`).
+For 2) check your fastq inputs are correct (`-fastqN_1`, `-fastqN_2`, ...) and also check their endedness (SE or PE) parameters like (`-se` or `-pe`).
+
+
+5) Unsupported major.minor version (java)
+
+When running bds (BigDataScript), you get the following error if you have lower version of java or high version of java is not selected as default.
+
+Solution:
+```
+# install latest version of java
+
+# for Fedora based linux (Red Hat, ...)
+$ sudo apt-get install openjdk-8-jre
+
+# fr Debian based linux (Ubuntu, ...)
+$ sudo yum install java-1.8.0-openjdk
+
+# choose the latest java as default
+$ sudo update-alternatives --config java
+```
+
+
+6) [main_samview] random alignment retrieval only works for indexed BAM or CRAM files.
+
+If your pipeline starts from BAM files, make sure that bam index (.bam.bai) exists together with BAM file. If not, build index with `samtools index [YOUR_BAM_FILE]`. BAM and BAI should be in the same directory.
 
 
 
