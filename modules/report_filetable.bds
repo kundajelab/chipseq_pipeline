@@ -199,11 +199,9 @@ string _html_filetable() { // graphviz diagram
 // returns rank of item
 void _add_to_filetable( string hrchy, string path ) {
 
-	dummy := filetable_label // dummy to prevent BDS global var. lock bug
-
 	if ( hrchy == "" ) return
 
-	if ( dummy.hasKey( hrchy ) ) return // filetable_rank{ hrchy }
+	if ( filetable_label.hasKey( hrchy ) ) return
 
 	curr 	:= _get_curr( hrchy )
 	parent 	:= _get_parent( hrchy )

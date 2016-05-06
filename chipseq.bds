@@ -102,8 +102,6 @@ do_idr() // IDR
 report()
 
 
-
-
 void init_chipseq() {
 
 	pe		= get_conf_val_bool( pe, 		["pe"] )
@@ -262,6 +260,8 @@ void align() {
 	}
 
 	wait
+
+	print( "\n== Done align()\n" )
 }
 
 void _align( int ctl, int rep ) {
@@ -622,6 +622,8 @@ void pool_tags() {
 	}
 
 	wait
+
+	print( "\n== Done pool_tags()\n" )
 }
 
 void call_peaks() {
@@ -636,6 +638,8 @@ void call_peaks() {
 	}
 
 	wait
+
+	print( "\n== Done call_peaks()\n" )	
 }
 
 void _call_peaks( string pc ) { // pc: pc
@@ -789,6 +793,8 @@ void naive_overlap() {
 									"peak_spp", "spp/overlap")
 		}
 	}
+
+	print( "\n== Done naive_overlap()\n" )
 }
 
 void do_idr() {
@@ -843,6 +849,9 @@ void do_idr() {
 
 	// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
 	(idr_qc, idr_opt, idr_consv) = _idr_final_qc( idr_tr, idr_pr, idr_ppr, idr_o_dir, qc_o_dir, "" )
+
+	wait
+	print( "\n== Done do_idr()\n" )	
 }
 
 void report() {
@@ -853,6 +862,8 @@ void report() {
 	html += _html_chipseq_QC()	// show QC tables and images
 
 	report( html )
+
+	print( "\n== Done report()\n" )		
 }
 
 string _html_chipseq_QC() {
