@@ -182,7 +182,7 @@ string _html_filetable() { // graphviz diagram
 
 		parent 	:= _get_parent( hrchy )
 		label 	:= filetable_label{ hrchy }
-		path 	:= filetable_path{ hrchy }
+		path 	:= filetable_path.hasKey( hrchy ) ? filetable_path{ hrchy } : ""
 
 		if ( parent == "" ) \
 			html += "<tr data-tt-id='$hrchy'><td> $label </td><td>"+ _html_link_url( path ) +"</td></tr>"
