@@ -42,6 +42,10 @@ string get_peak( int rep, int pse ) { // rep==0 : pooled peak, pse==0 : true rep
 }
 
 int get_num_rep_peak() {
-	
-	return 2
+
+	rep := 1
+
+	while( get_peak( rep, 0 ) != "" ) rep++
+
+	return rep-1
 }

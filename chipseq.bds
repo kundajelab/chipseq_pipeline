@@ -156,21 +156,37 @@ void chk_input() {
 
 	print("\n")
 
-	if ( is_input_peak() ) {
+	if ( is_input_peak() ) { // read peaks here
 
-		for ( int rep=0; rep<3; rep++) {
+		if ( true_rep && get_num_rep() == 1 ) error("Cannot do IDR for true replicates with only one replicate!")
 
-			for (int pse=0; pse<3; pse++) {
+		for ( int rep=0; rep<=get_num_rep(); rep++) { // rep==0 : pooled
 
-				peak := get_peak(rep,pse)
-				prefix := (rep==0 ? "pooled " : "") + (pse==0 ? "replicate $rep" : "pseudo-replicate $pse for replicate $rep")
+			if ( get_num_rep() == 1 && rep==0 ) continue // if only one replicate, skip reading pooled rep
+
+			for (int pse=0; pse<=2; pse++) { // pse==0 : true rep
+
+				if ( true_rep && pse > 0 ) continue
+
+				peak_ := get_peak(rep,pse)
+				suffix1 := rep==0 ? "replicate" : "replicate $rep"
+				suffix2 := rep==0 ? "pseudo-replicate $pse" : "pseudo-replicate $pse for replicate $rep"
+				prefix := (rep==0 ? "pooled " : "") + (pse==0 ? suffix1 : suffix2)
 				
-				print( "$prefix: \n\t$peak\n")
-			}
-		}
+				print( "$prefix: \n\t$peak_"+"\n")
+				if ( !path_exists( peak_ ) ) error("\t\tFile not found!\n")
 
-		if ( get_peak(0,0)=="" || get_peak(1,0)=="" || get_peak(2,0)=="" ) { // if (!can_idr_for_true_rep() ) {
-			error("Cannot do IDR for true replicates. Check your peak inputs.\n")
+				if ( rep == 0 ) {
+					if ( pse == 0 )		peak_pooled{"spp"} 	= peak_
+					else if ( pse == 1 )	peak_ppr1{"spp"} 	= peak_
+					else if ( pse == 2 )	peak_ppr2{"spp"} 	= peak_
+				}
+				else {
+					if ( pse == 0 )		peak{"spp,$rep"} 	= peak_
+					else if ( pse == 1 )	peak_pr1{"spp,$rep"} 	= peak_
+					else if ( pse == 2 )	peak_pr2{"spp,$rep"} 	= peak_
+				}
+			}
 		}
 
 		return
@@ -802,14 +818,6 @@ void do_idr() {
 	if ( !is_final_stage_idr() ) return
 
 	if ( !is_callpeak_spp() ) return
-
-	if ( is_input_peak() ) {
-
-		peak{"spp,1"} = get_peak(1,0);		peak{"spp,2"} = get_peak(2,0);		peak_pooled{"spp"} = get_peak(0,0)
-		peak_pr1{"spp,1"} = get_peak(1,1);	peak_pr2{"spp,1"} = get_peak(1,2)
-		peak_pr1{"spp,2"} = get_peak(2,1); 	peak_pr2{"spp,2"} = get_peak(2,2)
-		peak_ppr1{"spp"} = get_peak(0,1); 	peak_ppr2{"spp"} = get_peak(0,2)
-	}
 
 	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
 

@@ -169,8 +169,8 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 	real max_Np_Nt = max( Np, Nt )
 	real min_Np_Nt = min( Np, Nt )
 
-	real max_N = max( N )
-	real min_N = min( N )
+	real max_N = N.size() > 0 ? max( N ) : 0
+	real min_N = N.size() > 0 ? min( N ) : 0
 
 	rescue_ratio 		:= max_Np_Nt / min_Np_Nt
 	self_consistency_ratio 	:= max_N / min_N
