@@ -153,6 +153,7 @@ void chk_input() {
 	if ( is_callpeak_macs2() ) 	chk_callpeak_macs2()
 	if ( is_sigtrk_aln2rawsig() ) 	chk_signal_aln2rawsig()
 	if ( is_final_stage_idr() ) 	chk_idr()
+	if ( multimapping > 0 ) 	error("Multimapping is not available for chipseq pipeline!\n")
 
 	print("\n")
 

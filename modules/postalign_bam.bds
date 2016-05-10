@@ -2,6 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
+include "align_multimapping.bds"
 include "report.bds"
 
 // has functions related to bam, and helps getting bam from configruation file or command line argument
@@ -62,6 +63,27 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 	filt_bam 	:= "$prefix.filt.bam"
 	tmp_filt_bam 	:= "$prefix.dupmark.bam"
 
+	// for multimapping
+	string cmd1, cmd2, cmd3, cmd4
+
+	if ( multimapping > 0 ) {
+
+		qname_sort_bam_prefix		:= "$prefix.qnmsrt"
+		qname_sort_bam 			:= "$prefix.qnmsrt.bam"
+		qname_sort_bam_filt		:= "$prefix.qnmsrt.filt.bam"
+
+		cmd1 	= "samtools sort $bam $qname_sort_bam_prefix"
+		cmd2 	= "samtools view -h $qname_sort_bam | $(which assign_multimappers.py) -k $multimapping | samtools view -bS - > $qname_sort_bam_filt"
+		cmd3 	= "samtools view -F 1804 -b $qname_sort_bam_filt > $filt_bam.tmp"
+		cmd4 	= "rm -f $qname_sort_bam $qname_sort_bam_filt"
+	}
+	else {		
+		cmd1 	= "echo"
+		cmd2 	= "echo"
+		cmd3 	= "samtools view -F 1804 -q $mapq_thresh -b $bam > $filt_bam.tmp"
+		cmd4 	= "echo"
+	}
+
 	in	:= [ bam ]
 	out	:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
@@ -77,14 +99,19 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 		//# not primary alignment, reads failing platform
 		//# Remove low MAPQ reads
 		//# ==================  
-		sys samtools view -F 1804 -q $mapq_thresh -b $bam > $filt_bam.tmp
+		
+		sys $cmd1
+		sys $cmd2
+		sys $cmd3
+		sys $cmd4
 
 		sys samtools sort $filt_bam.tmp $filt_bam_prefix
 		sys rm -f $filt_bam.tmp
-		
+
 		//# Set Java environment variable with Xmx, because JVM will ignore our
 		//# runtime flag and use this if it has been set.
 		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
+		sys export MAX_JAVA_MEM="12G"
 
 		//# Mark duplicates
 		sys if [ -f ${PICARDROOT}/MarkDuplicates.jar ]; then \
@@ -161,6 +188,24 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 	tmp_filt_bam 	:= "$prefix.dupmark.bam"
 	tmp_filt_bam_prefix := "$prefix.dupmark"
 
+	// for multimapping
+	string cmd1, cmd2, cmd3
+
+	if ( multimapping > 0 ) {
+
+		tmp_filt_bam_multimap_prefix 	:= "$tmp_filt_bam_prefix.multi"
+		tmp_filt_bam_multimap 		:= "$tmp_filt_bam_prefix.multi.bam"
+
+		cmd1 	= "samtools view -F 1804 -f 2 -u $bam | samtools sort -n - $tmp_filt_bam_multimap_prefix"
+		cmd2 	= "samtools view -h $tmp_filt_bam_multimap | $(which assign_multimappers.py) -k $multimapping | samtools view -bS - > $tmp_filt_bam"
+		cmd3 	= "echo"//"rm -f $tmp_filt_bam_multimap"
+	}
+	else {
+		cmd1 	= "echo"
+		cmd2 	= "samtools view -F 1804 -f 2 -q $mapq_thresh -u $bam | samtools sort -n - $tmp_filt_bam_prefix"
+		cmd3 	= "echo"
+	}
+
 	in 		:= [ bam ]
 	out 		:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
@@ -180,7 +225,9 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		//# ==================
 
 		//# Will produce name sorted BAM
-		sys samtools view -F 1804 -f 2 -q $mapq_thresh -u $bam | samtools sort -n - $tmp_filt_bam_prefix
+		sys $cmd1
+		sys $cmd2
+		sys $cmd3
 
 		//# Remove orphan reads (pair was removed)
 		//# and read pairs mapping to different chromosomes
@@ -189,11 +236,12 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		//# Will produce coordinate sorted BAM
 		sys samtools fixmate -r $tmp_filt_bam $tmp_filt_bam.fixmate.bam
 		sys samtools view -F 1804 -f 2 -u $tmp_filt_bam.fixmate.bam | samtools sort - $filt_bam_prefix
-		sys rm $tmp_filt_bam.fixmate.bam
+		sys rm -f $tmp_filt_bam.fixmate.bam
 
 		//# Set Java environment variable with Xmx, because JVM will ignore our
 		//# runtime flag and use this if it has been set.
 		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
+		sys export MAX_JAVA_MEM="12G"
 
 		//# Mark duplicates
 		sys if [ -f ${PICARDROOT}/MarkDuplicates.jar ]; then \
