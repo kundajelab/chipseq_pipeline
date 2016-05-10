@@ -13,10 +13,12 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser(description='Saves reads below a alignment threshold and discards all others')
     parser.add_argument('-k', help='Alignment number cutoff')
+    parser.add_argument('--paired-end', dest='paired_ended', action='store_true', help='Data is paired-end')
     args = parser.parse_args()
-    alignment_cutoff = args.k
+    alignment_cutoff = int(args.k)
+    paired_ended = args.paired_ended
 
-    return alignment_cutoff
+    return alignment_cutoff, paired_ended
 
 
 if __name__ == "__main__":
@@ -24,7 +26,10 @@ if __name__ == "__main__":
     Runs the filtering step of choosing multimapped reads
     '''
 
-    alignment_cutoff = parse_args()
+    [alignment_cutoff, paired_ended] = parse_args()
+
+    if paired_ended:
+        alignment_cutoff = int(alignment_cutoff) * 2
 
     # Store each line in sam file as a list of reads, 
     # where each read is a list of elements to easily 
@@ -51,9 +56,10 @@ if __name__ == "__main__":
                 current_reads = [line]
                 current_qname = read_elems[0]
             elif len(current_reads) > 0:
-                # Choose first read, which is the primary alignment
-                chosen_read = current_reads[0] 
-                sys.stdout.write(str(chosen_read))
+                # Just output all reads, which are then filtered with
+                # samtools
+                for read in current_reads:
+                    sys.stdout.write(str(read))
 
                 # And then discard
                 current_reads = [line]

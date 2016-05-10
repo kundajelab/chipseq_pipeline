@@ -196,9 +196,8 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		tmp_filt_bam_multimap_prefix 	:= "$tmp_filt_bam_prefix.multi"
 		tmp_filt_bam_multimap 		:= "$tmp_filt_bam_prefix.multi.bam"
 
-		cmd1 	= "samtools view -F 1804 -f 2 -u $bam | samtools sort -n - $tmp_filt_bam_multimap_prefix"
-		cmd2 	= "samtools view -h $tmp_filt_bam_multimap | $(which assign_multimappers.py) -k $multimapping | samtools view -bS - > $tmp_filt_bam"
-		//cmd3 	= "echo"
+		cmd1 	= "samtools view -F 524 -f 2 -u $bam | samtools sort -n - $tmp_filt_bam_multimap_prefix"
+		cmd2 	= "samtools view -h $tmp_filt_bam_multimap | $(which assign_multimappers.py) -k $multimapping --paired-end | samtools view -bS - > $tmp_filt_bam"
 		cmd3 	= "rm -f $tmp_filt_bam_multimap"
 	}
 	else {
