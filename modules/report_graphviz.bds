@@ -61,9 +61,13 @@ string _html_graphviz() { // graphviz diagram
 	for ( string node : nodes ) dot_contents += (node + "\n")
 	for ( string box : boxes ) dot_contents += (box + "\n")
 
-	for ( string key : links.keys() ) {
+	dummy := links
 
-		link := links{key}
+	for ( string key : dummy.keys() ) {
+
+		if ( !dummy.hasKey(key) ) continue
+			
+		link := dummy{key}
 
 		if ( key == "outside" ) {
 

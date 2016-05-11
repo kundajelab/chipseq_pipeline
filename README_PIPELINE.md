@@ -105,7 +105,20 @@ Create and move to your working directory. Run the following command:
 $ bds [PIPELINE_BDS] [PARAMETERS]
 ```
 
-DO NOT CLOSE A TERMINAL WHILE PIPELINE IS RUNNING! All tasks will be canceled and intermediate files will be deleted. Make a screen or make sure that the terminal doesn't close. Do not run multiple BDS pipelines on the same working directory. BDS creates an HTML report and temporary files on the working directory. Debugging will be messed up.
+DO NOT CLOSE A TERMINAL WHILE PIPELINE IS RUNNING! All tasks will be canceled and intermediate files will be deleted.
+
+Make a screen or make sure that the terminal doesn't close while the pipeline is running. You can make multiple detached screens using the following commands:
+```
+$ cd $WORK_DIR1
+$ screen -Sdm $SCR_NAME1 bds [PIPELINE_BDS] [PARAMETERS1]
+
+$ cd $WORK_DIR2
+$ screen -Sdm $SCR_NAME2 bds [PIPELINE_BDS] [PARAMETERS2]
+
+...
+```
+
+It is not recommended to run multiple BDS pipelines on the same working directory. BDS creates an HTML report and temporary files on the working directory. Debugging them will be very hard.
 
 
 
@@ -145,7 +158,6 @@ $ bds [PIPELINE_BDS]
 
 
 
-
 ### Resource settings (walltime and max. memory)
 
 Most clusters have resource limitation so that jobs submitted without it will be declined. By default, walltime is 11 hours and max memory is 8GB. To change them, add the following parameters to the command line. `-mem` does not apply to jobs with their own max. memory parameters (eg. spp with `-mem_spp`, bwa align with `-mem_bwa_aln`, ...)
@@ -167,7 +179,7 @@ If your system (either local or cluster engine) doesn't limit walltime and max. 
 
 
 
-### Resource settings On SCG3
+### Resource settings On SCG3/4
 
 You always need to submit pipeline jobs to Sun Grid Engine. Carefully define resources settings on SCG3. If walltime is over 6 hours on SCG3, jobs will be submitted to a longer queue, which makes you wait long to get jobs executed. By default, walltime is 11 hours. If your job is small enough to be done in 6 hours, then make the walltime shorter than 6h.
 ```
@@ -346,14 +358,14 @@ species_file = [SPECIES_FILE]
 
 
 
-### Using species file on SCG3 and Kundaje lab clusters
+### Using species file on SCG3/4 and Kundaje lab clusters
 
 Add the following to the command line and that's it.
 ```
 -species [SPECIES; hg19, mm9, ...]
 ```
 
-hg19 and mm9 are available for SCG3 and Kundaje lab clusters. If you are interested in other species, add species to `species/*.conf` and share with lab members or create your own species file.
+Currently hg19 and mm9 are available for SCG3/4 and Kundaje lab clusters. If you are interested in other species, add species to `species/*.conf` and share with lab members or create your own species file.
 
 
 
@@ -576,9 +588,10 @@ export PICARDROOT=/path/to/your/picard-tool
 
 4) awk: cmd. line:1: fatal: division by zero attempted
 
-This error happens when 1) picard tool's MarkDuplicate is running out of memory or 2) fastq inputs have wrong endedness (SE or PE).
+This error happens when 1) picard tool's MarkDuplicate is running out of memory, 2) fastq inputs have wrong endedness (SE or PE) or 3) input raw bam is incorrect.
 For 1) balance memory usage among parallel tasks, add `-no_par` or reduce level of parallelization (`-par_lvl [PARALLEL_LEVEL <= 2]`).
 For 2) check your fastq inputs are correct (`-fastqN_1`, `-fastqN_2`, ...) and also check their endedness (SE or PE) parameters like (`-se` or `-pe`).
+For 3) check if there is an error in aligning stage (in an HTML report).
 
 
 5) Unsupported major.minor version (java)
@@ -604,6 +617,10 @@ $ sudo update-alternatives --config java
 
 If your pipeline starts from BAM files, make sure that bam index (.bam.bai) exists together with BAM file. If not, build index with `samtools index [YOUR_BAM_FILE]`. BAM and BAI should be in the same directory.
 
+
+7) Fatal error: /home/leepc12/bds_atac/modules/report_*.bds
+
+Simply re-run the pipeline with the same command. Possible bug in BDS for locking/unlocking global variables.
 
 
 
