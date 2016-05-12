@@ -762,8 +762,8 @@ string _call_peaks( string peakcaller, string tag1, string tag1_ctl, string frag
 	
 	if ( peakcaller == "spp" ) {
 
-		string narrowpeak, regionpeak, score, pdf 
-		( narrowpeak, regionpeak, score, pdf ) = _spp( tag1, tag1_ctl, fraglen, peak_o_dir, label, label_ctl, hrchy )
+		string regionpeak, score, pdf 
+		( regionpeak, score, pdf ) = _spp( tag1, tag1_ctl, fraglen, peak_o_dir, label, label_ctl, hrchy )
 
 		return regionpeak // use regionpeak instead of narrowpeak
 	}
