@@ -26,7 +26,7 @@ true_rep   	:= false	help Call peaks on true replicates only.
 ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
 sigtrk 		:= ""		help (BETA) Signal track generation method : bam2bw (bamCoverage in deepTools) or tag2bw (align2rawsignal).
 make_wig 	:= false	help Create wig (for '-sigtrk tag2bw' only).
-idr_thresh 	:= "0.02"	help IDR threshold : -log_10(score) (default: 0.02).
+idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
 nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
 
 
