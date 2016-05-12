@@ -29,7 +29,9 @@ void init_align_bwt2() {
 
 void chk_align_bwt2() {
 
-	if ( !path_exists("$bwt2_idx.1.bt2") ) error("Bowtie2 index (-bwt2_idx) doesn't exists! (file: $bwt2_idx.1.bt2)\n")
+	if ( !path_exists("$bwt2_idx.1.bt2") && !path_exists("$bwt2_idx.1.bt2l") ) {
+		error("Bowtie2 index (-bwt2_idx) doesn't exists! (file: $bwt2_idx.1.bt2 or $bwt2_idx.1.bt2l)\n")
+	}
 }
 
 string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, bool trimmed ) { 
