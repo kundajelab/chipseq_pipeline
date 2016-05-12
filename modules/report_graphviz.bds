@@ -58,16 +58,16 @@ string _html_graphviz() { // graphviz diagram
 	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,style=\"$grp_style_node\",margin=0,fontsize=$grp_fontsize_node];" + \
 			"\nedge [color=$grp_color_edge,fontsize=$grp_fontsize_node];\n\n";
 
+	wait
+
 	for ( string node : nodes ) dot_contents += (node + "\n")
 	for ( string box : boxes ) dot_contents += (box + "\n")
 
-	dummy := links
+	for ( string key : links.keys() ) {
 
-	for ( string key : dummy.keys() ) {
-
-		if ( !dummy.hasKey(key) ) continue
+		if ( key == "" ) continue
 			
-		link := dummy{key}
+		link := links{key}
 
 		if ( key == "outside" ) {
 

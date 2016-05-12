@@ -176,6 +176,8 @@ string _html_filetable() { // graphviz diagram
 		"<a href='#' onclick=\"jQuery('#filetable').treetable('collapseAll'); return false;\">Collapse all</a>" + \
 		"</caption> <thead><tr><th>Files</th><th>Path</th></tr></thead> <tbody>"
 
+	wait
+
 	sorted_hrchy := _find_children_and_sort( "" )
 
 	for ( string hrchy : sorted_hrchy ) {
