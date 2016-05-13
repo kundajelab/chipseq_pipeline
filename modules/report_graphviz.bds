@@ -4,9 +4,6 @@
 include "general.bds"
 
 
-rpt_aux_dir 	:= ""
-
-
 grp_shape_subgraph	:= "box"
 grp_shape_box 		:= "box"
 grp_shape_node 		:= "ellipse"
@@ -17,7 +14,6 @@ grp_color_node 		:= "whitesmoke"
 grp_color_edge		:= "gray"
 grp_style_subgraph 	:= "filled,rounded"
 grp_style_node 		:= "filled,rounded"
-
 
 grp_color_trim_adapter 	:= "darkorange"
 grp_color_bwa 		:= "salmon"
@@ -32,10 +28,12 @@ grp_color_ataqc 	:= "pink"
 grp_color_naive_overlap := "skyblue"
 grp_color_idr_final	:= "pink" 
 
-
 string{} nodes // key: file type, contents: 1 line node definition
 string{} boxes // key: box name, contents: 1 line node definition
 string{} links // key: replicate/control id (rep1, ctl1, ...), contents: multiple links for replicate
+
+rpt_aux_dir 	:= ""
+
 
 
 init_report_graphviz()
@@ -48,6 +46,8 @@ void init_report_graphviz() {
 
 string _html_graphviz() { // graphviz diagram
 
+	wait // for thread safety
+
 	html := "<div id='graphviz'><b>Workflow diagram</b>&nbsp<small>(rep : Replicate, ctl : Control, pr : Pseudo-replicate, ppr : Pooled pseudo-replicate)</small><br>"
 
 	prefix := title=="" ? "" : (title+"_")
@@ -57,8 +57,6 @@ string _html_graphviz() { // graphviz diagram
 
 	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,style=\"$grp_style_node\",margin=0,fontsize=$grp_fontsize_node];" + \
 			"\nedge [color=$grp_color_edge,fontsize=$grp_fontsize_node];\n\n";
-
-	wait
 
 	for ( string node : nodes ) dot_contents += (node + "\n")
 	for ( string box : boxes ) dot_contents += (box + "\n")

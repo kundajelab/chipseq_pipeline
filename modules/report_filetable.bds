@@ -3,12 +3,8 @@
 
 include "general.bds"
 
-// key: filepath
-string{} map_hrchy
 
-
-// L1_ is to distinguish the grandest parent
-string{} map_label 	// for label of filetable entry
+string{} map_label 	// for label of filetable entry (L1_ is to distinguish the grandest parent)
 int{} map_rank 		// for sorting filetable
 
 // level1
@@ -85,7 +81,6 @@ map_label{"ataqc"} 		= "ATAQC"
 map_label{"idr_plot"} 		= "IDR plot"
 map_label{"unthsld_peak"} 	= "Unthresholded IDR peak"
 
-
 map_rank{"L1_align"} 		= 1
 map_rank{"L1_signal"} 		= 2
 map_rank{"L1_peak"} 		= 3
@@ -161,13 +156,17 @@ map_rank{"ataqc"} 		= ++_rank
 map_rank{"idr_plot"} 		= ++_rank
 map_rank{"unthsld_peak"} 	= ++_rank
 
+string{} filetable_input
 
 string{} filetable_label // key: hierarchy
 string{} filetable_path
 int{} filetable_rank
 
 
+
 string _html_filetable() { // graphviz diagram
+
+	wait // for thread safety
 
 	html := "<div id='dirs_and_files'><b>Directories and files</b>"
 
@@ -176,7 +175,7 @@ string _html_filetable() { // graphviz diagram
 		"<a href='#' onclick=\"jQuery('#filetable').treetable('collapseAll'); return false;\">Collapse all</a>" + \
 		"</caption> <thead><tr><th>Files</th><th>Path</th></tr></thead> <tbody>"
 
-	wait
+	_construct_filetable()
 
 	sorted_hrchy := _find_children_and_sort( "" )
 
@@ -198,8 +197,29 @@ string _html_filetable() { // graphviz diagram
 	return html
 }
 
+void _add_to_filetable( string[] out_hrchy, string[] out_path ) {
+
+	for ( int i=0; i<min(out_hrchy.size(),out_path.size()); i++ )  {
+
+		hrchy 	:= out_hrchy[i]
+		path 	:= out_path[i]
+
+		if ( hrchy == "" || path == "" ) continue
+
+		filetable_input{ hrchy } = path
+	}
+}
+
+void _construct_filetable() {
+
+	for( string hrchy : filetable_input.keys() ) {
+
+		_construct_filetable( hrchy, filetable_input{ hrchy } )
+	}
+}
+
 // returns rank of item
-void _add_to_filetable( string hrchy, string path ) {
+void _construct_filetable( string hrchy, string path ) {
 
 	if ( hrchy == "" ) return
 
@@ -211,17 +231,7 @@ void _add_to_filetable( string hrchy, string path ) {
 	filetable_label{hrchy} 	= map_label.hasKey(curr) ? map_label{curr} : curr
 	filetable_path{hrchy} 	= path
 
-	if ( parent != "" ) _add_to_filetable( parent, "" )
-}
-
-void _add_to_filetable( string[] out_hrchy, string[] out_path ) {
-
-	for ( int i=0; i<min(out_hrchy.size(),out_path.size()); i++ )  {
-
-		if ( out_hrchy[i] == "" || out_path[i] == "" ) continue
-
-		_add_to_filetable( out_hrchy[i], out_path[i] )
-	}
+	if ( parent != "" ) _construct_filetable( parent, "" )
 }
 
 string[] _get_children( string hrchy ) { // not including grand ones

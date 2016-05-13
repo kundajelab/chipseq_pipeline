@@ -63,7 +63,7 @@ num_callpeak 	:= 2 	// spp (1), macs2 (2)
 peakcallers 	:= ["spp","macs2"]
 
 // filepath of outputs
-string{} fastq, bam, filt_bam, tag, tag_pr1, tag_pr2 // replicate data: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
+string{} tag, tag_pr1, tag_pr2 // replicate data: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
 string tag_ppr1, tag_ppr2
 string{} peak, peak_pr1, peak_pr2, peak_pooled, peak_ppr1, peak_ppr2 // peaks: map with key ("$rep")
 string peak_overlap
@@ -295,29 +295,31 @@ void _align_SE( int ctl, int rep ) {
 	aln_o_dir := mkdir( "$out_dir/align/$info" ) // create align output directory
 	qc_o_dir  := mkdir( "$out_dir/qc/$info" ) // create qc output dir.
 
+	string bam
 	if ( is_input_fastq() ) {
 
 		fastqs := get_fastqs( ctl, rep )
 
-		fastq{key} = fastqs[0]
+		fastq := fastqs[0]
 
-		( bam{key}, flagstat_qc{key} ) = _bwa( fastq{key}, aln_o_dir, qc_o_dir, info )
+		( bam, flagstat_qc{key} ) = _bwa( fastq, aln_o_dir, qc_o_dir, info )
 		wait
 
 		if ( is_final_stage_bam() ) return
 	}
 
+	string filt_bam
 	if ( is_input_bam() || is_input_fastq() ) {
 	
-		if ( is_input_bam() ) bam{key} = get_bam( ctl, rep )
+		if ( is_input_bam() ) bam = get_bam( ctl, rep )
 
-		( filt_bam{key}, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
-			= _dedup_bam( bam{key}, aln_o_dir, qc_o_dir, info )
+		( filt_bam, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
+			= _dedup_bam( bam, aln_o_dir, qc_o_dir, info )
 		wait
 
 		if ( is_sigtrk_deeptools() ) {
 
-			signal_trk{key} = _bam_to_bw( filt_bam{key}, aln_o_dir, info )
+			signal_trk{key} = _bam_to_bw( filt_bam, aln_o_dir, info )
 		}
 
 		if ( is_final_stage_filt_bam() ) return
@@ -325,9 +327,9 @@ void _align_SE( int ctl, int rep ) {
 
 	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_filt_bam() ) filt_bam{key} = get_filt_bam( ctl, rep )
+		if ( is_input_filt_bam() ) filt_bam = get_filt_bam( ctl, rep )
 
-		tag{key} = _bam_to_tag( filt_bam{key}, aln_o_dir, info )
+		tag{key} = _bam_to_tag( filt_bam, aln_o_dir, info )
 		wait
 
 		if ( is_final_stage_tag() ) return
@@ -388,6 +390,7 @@ void _align_PE( int ctl, int rep ) {
 	aln_o_dir := mkdir( "$out_dir/align/$info" ) // create align output directory
 	qc_o_dir    := mkdir( "$out_dir/qc/$info" ) // create qc output dir.
 
+	string bam
 	if ( is_input_fastq() ) {
 
 		fastqs := get_fastqs( ctl, rep )
@@ -395,26 +398,24 @@ void _align_PE( int ctl, int rep ) {
 		fastq1 := fastqs[0]
 		fastq2 := fastqs[1]
 
-		fastq{key+",1"} = fastq1
-		fastq{key+",2"} = fastq2
-
-		( bam{key}, flagstat_qc{key} ) = _bwa_PE( fastq1, fastq2, aln_o_dir, qc_o_dir, info )
+		( bam, flagstat_qc{key} ) = _bwa_PE( fastq1, fastq2, aln_o_dir, qc_o_dir, info )
 		wait
 
 		if ( is_final_stage_bam() ) return
 	}
 
+	string filt_bam
 	if ( is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_bam() ) bam{key} = get_bam( ctl, rep )
+		if ( is_input_bam() ) bam = get_bam( ctl, rep )
 
-		( filt_bam{key}, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
-			= _dedup_bam_PE( bam{key}, aln_o_dir, qc_o_dir, info )
+		( filt_bam, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
+			= _dedup_bam_PE( bam, aln_o_dir, qc_o_dir, info )
 		wait
 
 		if ( is_sigtrk_deeptools() ) { // signal track generation (deeptools)
 
-			signal_trk{key} = _bam_to_bw( filt_bam{key}, aln_o_dir, info )
+			signal_trk{key} = _bam_to_bw( filt_bam, aln_o_dir, info )
 		}
 
 		if ( is_final_stage_filt_bam() ) return
@@ -422,9 +423,9 @@ void _align_PE( int ctl, int rep ) {
 	
 	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_filt_bam() ) filt_bam{key} = get_filt_bam( ctl, rep )
+		if ( is_input_filt_bam() ) filt_bam = get_filt_bam( ctl, rep )
 
-		tag{key} = _bam_to_tag( filt_bam{key}, aln_o_dir, info )
+		tag{key} = _bam_to_tag( filt_bam, aln_o_dir, info )
 		wait
 
 		if ( is_final_stage_tag() ) return
@@ -444,7 +445,7 @@ void _align_PE( int ctl, int rep ) {
 				wait
 			}
 			else {
-				bedpe = _bam_to_bedpe( filt_bam{key}, aln_o_dir, info )
+				bedpe = _bam_to_bedpe( filt_bam, aln_o_dir, info )
 				wait
 
 				subsampled_tag = _subsample_bedpe_to_tag_xcor( bedpe, nreads, aln_o_dir, info )
@@ -663,9 +664,9 @@ void _call_peaks( string pc ) { // pc: pc
 
 	if ( pc == "spp" && !(is_callpeak_spp()) ) return
 	if ( pc == "macs2" && !(is_callpeak_macs2()) ) return
+	if ( pc == "spp" && !control_exists() ) return
 
 	// calculate fragment length (required for SPP and MACS2)
-	if ( pc == "spp" && !control_exists() ) return
 
 	string fraglen_ppr1, fraglen_ppr2, fraglen_mean
 	string{} fraglen, fraglen_pr1, fraglen_pr2 // key = replicate id
@@ -817,7 +818,6 @@ void naive_overlap() {
 void do_idr() {
 
 	if ( !is_final_stage_idr() ) return
-
 	if ( !is_callpeak_spp() ) return
 
 	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
