@@ -29,9 +29,9 @@ void chk_idr() {
 }
 
 
-// 13-col.bed.gz (10 col for narrowPeak + local IDR, global IDR, 0 ) will be generated for browser tracks
-// there is a 13th column due to bedtools intersect compatibility issue
-// use function _get_idr_peak_trk( idr_peak ) to find 13-col.bed.gz for browser tracks
+// 12-col.bed.gz (10 col for narrowPeak + local IDR, global IDR) will be generated for browser tracks
+// A temporary 13th column bed should be generated due to bedtools intersect compatibility issue
+// use function _get_idr_peak_trk( idr_peak ) to find 12-col.bed.gz for browser tracks
 // rank: 'signal.value' for SPP peaks, 'p.value' for MACS2 peaks
 string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, string rank, string o_dir, string label, \
 		string graph_prefix, string[] graph_in, string hrchy ) {
@@ -40,21 +40,32 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 
 	prefix 			:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
 	peak_idr		:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
-	peak_idr_trk		:= "$prefix.IDR"+"$idr_thresh.13-col.bed.gz"
+	peak_idr_trk		:= "$prefix.IDR"+"$idr_thresh.12-col.bed.gz"
+	peak_idr_trk_tmp	:= "$prefix.IDR"+"$idr_thresh.13-col.bed.gz"
 	filt_peak_idr		:= "$prefix.IDR"+"$idr_thresh.filt.narrowPeak.gz"
-	filt_peak_idr_trk	:= "$prefix.IDR"+"$idr_thresh.filt.13-col.bed.gz"
+	filt_peak_idr_trk	:= "$prefix.IDR"+"$idr_thresh.filt.12-col.bed.gz"
+	filt_peak_idr_trk_tmp	:= "$prefix.IDR"+"$idr_thresh.filt.13-col.bed.gz"
 
 	idr_out 	:= "$prefix.unthresholded-peaks.txt"
 	idr_out_gz	:= "$idr_out.gz"
 	png 		:= "$idr_out.png"
 
 	in 	:= [peak1, peak2, pooled]
-	out 	:= path_exists( blacklist ) ? [filt_peak_idr, png, idr_out_gz, filt_peak_idr_trk ] \
-						: [peak_idr, png, idr_out_gz, peak_idr_trk]
+	out 	:= path_exists( blacklist ) ?  	[filt_peak_idr, png, idr_out_gz, filt_peak_idr_trk ] : \
+						[peak_idr, png, idr_out_gz, peak_idr_trk]
 
-	command := path_exists( blacklist ) ?       "bedtools intersect -v -a $peak_idr -b $blacklist | gzip -c > $filt_peak_idr; " \
-					          + "bedtools intersect -v -a $peak_idr_trk -b $blacklist | gzip -c > $filt_peak_idr_trk" \
-						: "echo"
+	string cmd1, cmd2, cmd3
+
+	if ( path_exists( blacklist ) ) {
+		cmd1 = "bedtools intersect -v -a $peak_idr_trk_tmp -b $blacklist | gzip -c > $filt_peak_idr_trk_tmp"
+		cmd2 = "zcat $filt_peak_idr_trk_tmp | awk 'BEGIN{OFS=\"\t\"} {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' | gzip -c > $filt_peak_idr"
+		cmd3 = "zcat $filt_peak_idr_trk_tmp | awk 'BEGIN{OFS=\"\t\"} {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}' | gzip -c > $filt_peak_idr_trk"
+	}
+	else {
+		cmd1 = "echo"
+		cmd2 = "echo"
+		cmd3 = "echo"
+	}
 
 	taskName:= "idr2 " + label
 
@@ -69,15 +80,18 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 		sys idr_thresh_transformed=$(awk -v p=$idr_thresh 'BEGIN{print -log(p)/log(10)}')
 
 		//# Get peaks passing global IDR threshold and convert file to narrowPeak format (Step 9)
-		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' $idr_out \
-			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr
-
 		sys awk 'BEGIN{OFS="\t"} $12>='"${idr_thresh_transformed}"' {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,"0"}' $idr_out \
-			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr_trk
+			| sort | uniq | sort -k7n,7n | gzip -c > $peak_idr_trk_tmp
 
-		sys $command
+		sys zcat $peak_idr_trk_tmp | awk 'BEGIN{OFS="\t"} {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' | gzip -c > $peak_idr
+		sys zcat $peak_idr_trk_tmp | awk 'BEGIN{OFS="\t"} {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}' | gzip -c > $peak_idr_trk
+
+		sys $cmd1
+		sys $cmd2
+		sys $cmd3
 
 		sys gzip -f $idr_out
+		sys rm -f $peak_idr_trk_tmp $filt_peak_idr_trk_tmp
 	}
 
 	for ( int i=0; i<graph_in.size(); i++) graph_in[i] = graph_prefix + "_(" + graph_in[i] + ")"
@@ -229,5 +243,5 @@ string _get_label_from_key( string key ) { //parse "i,j" to "repi-repj"
 
 string _get_idr_peak_trk( string idr_peak ) {
 
-	return rm_ext( idr_peak, ["narrowPeak","regionPeak"] ) + ".13-col.bed.gz"	
+	return rm_ext( idr_peak, ["narrowPeak","regionPeak"] ) + ".12-col.bed.gz"	
 }
