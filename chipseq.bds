@@ -16,6 +16,10 @@
 // Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
 // e.g. filt_bam{"rep1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
 
+// IMPORTANT (BDS bug in `par` function)
+// BDS global variables are not thread-safe if they are both WRITTEN and READ in the same `par` function before next `wait`. After `wait` they become safe to be READ.
+// Therefore, just WRITE on global variables don't READ them in the same `par` function before next `wait`.
+
 
 help == chipseq pipeline settings
 
@@ -296,19 +300,19 @@ void _align_SE( int ctl, int rep ) {
 	qc_o_dir  := mkdir( "$out_dir/qc/$info" ) // create qc output dir.
 
 	string bam
+
 	if ( is_input_fastq() ) {
 
 		fastqs := get_fastqs( ctl, rep )
 
-		fastq := fastqs[0]
-
-		( bam, flagstat_qc{key} ) = _bwa( fastq, aln_o_dir, qc_o_dir, info )
+		( bam, flagstat_qc{key} ) = _bwa( fastqs[0], aln_o_dir, qc_o_dir, info )
 		wait
 
 		if ( is_final_stage_bam() ) return
 	}
 
 	string filt_bam
+
 	if ( is_input_bam() || is_input_fastq() ) {
 	
 		if ( is_input_bam() ) bam = get_bam( ctl, rep )
@@ -325,38 +329,46 @@ void _align_SE( int ctl, int rep ) {
 		if ( is_final_stage_filt_bam() ) return
 	}
 
+	string tag_
+
 	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
 		if ( is_input_filt_bam() ) filt_bam = get_filt_bam( ctl, rep )
 
-		tag{key} = _bam_to_tag( filt_bam, aln_o_dir, info )
+		tag_ = _bam_to_tag( filt_bam, aln_o_dir, info )
 		wait
+
+		tag{key} = tag_
 
 		if ( is_final_stage_tag() ) return
 	}
 
 	if ( is_input_tag() || is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_tag() ) tag{key} = get_tag( ctl, rep )
+		if ( is_input_tag() ) { 
+			tag_ = get_tag( ctl, rep )
+			tag{key} = tag_
+		}
+
+		string xcor_qc_
 
 		if ( ctl == 0 ) { // if replicate
 
-			subsampled_tag := _subsample_tag( tag{key}, nreads, aln_o_dir, info )
+			subsampled_tag := _subsample_tag( tag_, nreads, aln_o_dir, info )
 
-			( xcor_qc{key}, xcor_plot{key} ) = _xcor( subsampled_tag, qc_o_dir, info, info )
+			( xcor_qc_, xcor_plot{key} ) = _xcor( subsampled_tag, qc_o_dir, info, info )
 			wait
+			xcor_qc{key} = xcor_qc_
 
 			if ( is_sigtrk_aln2rawsig() ) {
 
 				sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$info" )
 
-				fraglen := get_fraglen( xcor_qc{key} )
+				fraglen := get_fraglen( xcor_qc_ )
 				
-				signal_trk{key} = _tag_to_bw( tag{key}, fraglen, sig_o_dir, info )
+				signal_trk{key} = _tag_to_bw( tag_, fraglen, sig_o_dir, info )
 
-				if ( make_wig ) _tag_to_wig( tag{key}, fraglen, sig_o_dir, info )
-
-				//wait
+				if ( make_wig ) _tag_to_wig( tag_, fraglen, sig_o_dir, info )
 			}
 		}
 
@@ -371,14 +383,18 @@ void _align_SE( int ctl, int rep ) {
 		qc_pr1_o_dir    := mkdir( "$out_dir/qc/pseudo_reps/$info/pr1" ) // create qc output dir.
 		qc_pr2_o_dir    := mkdir( "$out_dir/qc/pseudo_reps/$info/pr2" ) // create qc output dir.
 
-		(tag_pr1{key}, tag_pr2{key} ) = _spr( tag{key}, aln_pr1_o_dir, aln_pr2_o_dir, info ) // make self pseudo replicate
+		string tag_pr1_, tag_pr2_
+		(tag_pr1_, tag_pr2_ ) = _spr( tag_, aln_pr1_o_dir, aln_pr2_o_dir, info ) // make self pseudo replicate
 		wait
+
+		tag_pr1{key} = tag_pr1_
+		tag_pr2{key} = tag_pr2_
 
 		// xcor for pseudo replicates
 		string tmp	
-		( xcor_qc_pr1{key}, tmp ) = _xcor( tag_pr1{key}, qc_pr1_o_dir, info+"-pr1", "pseudo_reps/$info/pr1" )// suppress graphviz and filetable
+		( xcor_qc_pr1{key}, tmp ) = _xcor( tag_pr1_, qc_pr1_o_dir, info+"-pr1", "pseudo_reps/$info/pr1" )// suppress graphviz and filetable
 
-		( xcor_qc_pr2{key}, tmp ) = _xcor( tag_pr2{key}, qc_pr2_o_dir, info+"-pr2", "pseudo_reps/$info/pr2" )
+		( xcor_qc_pr2{key}, tmp ) = _xcor( tag_pr2_, qc_pr2_o_dir, info+"-pr2", "pseudo_reps/$info/pr2" )
 	}
 }
 
@@ -391,6 +407,7 @@ void _align_PE( int ctl, int rep ) {
 	qc_o_dir    := mkdir( "$out_dir/qc/$info" ) // create qc output dir.
 
 	string bam
+
 	if ( is_input_fastq() ) {
 
 		fastqs := get_fastqs( ctl, rep )
@@ -405,6 +422,7 @@ void _align_PE( int ctl, int rep ) {
 	}
 
 	string filt_bam
+
 	if ( is_input_bam() || is_input_fastq() ) {
 
 		if ( is_input_bam() ) bam = get_bam( ctl, rep )
@@ -421,12 +439,15 @@ void _align_PE( int ctl, int rep ) {
 		if ( is_final_stage_filt_bam() ) return
 	}
 	
+	string tag_
+
 	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
 		if ( is_input_filt_bam() ) filt_bam = get_filt_bam( ctl, rep )
 
-		tag{key} = _bam_to_tag( filt_bam, aln_o_dir, info )
+		tag_ = _bam_to_tag( filt_bam, aln_o_dir, info )
 		wait
+		tag{key} = tag_
 
 		if ( is_final_stage_tag() ) return
 	}
@@ -439,9 +460,10 @@ void _align_PE( int ctl, int rep ) {
 
 			if ( is_input_tag() ) {
 
-				tag{key} = get_tag( ctl, rep )
+				tag_ = get_tag( ctl, rep )
+				tag{key} = tag_
 
-				subsampled_tag = _subsample_tag_PE_xcor( tag{key}, nreads, aln_o_dir, info )
+				subsampled_tag = _subsample_tag_PE_xcor( tag_, nreads, aln_o_dir, info )
 				wait
 			}
 			else {
@@ -452,7 +474,10 @@ void _align_PE( int ctl, int rep ) {
 				wait
 			}
 
-			( xcor_qc{key}, xcor_plot{key} ) = _xcor( subsampled_tag, qc_o_dir, info, info )
+			string xcor_qc_
+
+			( xcor_qc_, xcor_plot{key} ) = _xcor( subsampled_tag, qc_o_dir, info, info )
+			xcor_qc{key} = xcor_qc_
 								
 			wait
 
@@ -460,11 +485,11 @@ void _align_PE( int ctl, int rep ) {
 
 				sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$info" )
 
-				fraglen := get_fraglen( xcor_qc{key} )
+				fraglen := get_fraglen( xcor_qc_ )
 
-				signal_trk{key} = _tag_to_bw( tag{key}, fraglen, sig_o_dir, info )
+				signal_trk{key} = _tag_to_bw( tag_, fraglen, sig_o_dir, info )
 				
-				if ( make_wig ) _tag_to_wig( tag{key}, fraglen, sig_o_dir, info )
+				if ( make_wig ) _tag_to_wig( tag_, fraglen, sig_o_dir, info )
 			}
 		}
 
@@ -479,19 +504,25 @@ void _align_PE( int ctl, int rep ) {
 		qc_pr1_o_dir    := mkdir( "$out_dir/qc/pseudo_reps/$info/pr1" ) // create qc output dir.
 		qc_pr2_o_dir    := mkdir( "$out_dir/qc/pseudo_reps/$info/pr2" ) // create qc output dir.
 
+		string tag_pr1_, tag_pr2_
+
 		if ( is_input_tag() ) { // if starting from tag, we don't have bedpe file			
-			( tag_pr1{key}, tag_pr2{key} ) = _spr_tag_PE( tag{key}, aln_pr1_o_dir, aln_pr2_o_dir, info )
+			( tag_pr1_, tag_pr2_ ) = _spr_tag_PE( tag_, aln_pr1_o_dir, aln_pr2_o_dir, info )
+			tag_pr1{key} = tag_pr1_
+			tag_pr2{key} = tag_pr2_
+
 		}
 		else {
-			( tag_pr1{key}, tag_pr2{key} ) = _spr_PE( bedpe, aln_pr1_o_dir, aln_pr2_o_dir, info )
+			( tag_pr1_, tag_pr2_ ) = _spr_PE( bedpe, aln_pr1_o_dir, aln_pr2_o_dir, info )
+			tag_pr1{key} = tag_pr1_
+			tag_pr2{key} = tag_pr2_
 		}
 		wait
 
 		// xcor for pseudo replicates
 		string tmp
-		( xcor_qc_pr1{key}, tmp ) = _xcor( tag_pr1{key}, qc_pr1_o_dir, info+"-pr1", "pseudo_reps/$info/pr1" ) // suppress graphviz
-
-		( xcor_qc_pr2{key}, tmp ) = _xcor( tag_pr2{key}, qc_pr2_o_dir, info+"-pr2", "pseudo_reps/$info/pr2" )
+		( xcor_qc_pr1{key}, tmp ) = _xcor( tag_pr1_, qc_pr1_o_dir, info+"-pr1", "pseudo_reps/$info/pr1" ) // suppress graphviz
+		( xcor_qc_pr2{key}, tmp ) = _xcor( tag_pr2_, qc_pr2_o_dir, info+"-pr2", "pseudo_reps/$info/pr2" )
 	}
 }
 
@@ -533,13 +564,15 @@ void pool_tags() {
 			qc_ppr1_o_dir    := mkdir( "$out_dir/qc/pooled_pseudo_reps/ppr1" ) // create qc output dir.
 			qc_ppr2_o_dir    := mkdir( "$out_dir/qc/pooled_pseudo_reps/ppr2" ) // create qc output dir.
 
-			tag_ppr1 = _pool_tag( tags_pr1, aln_ppr1_o_dir, "reps-pr1" )
-			tag_ppr2 = _pool_tag( tags_pr2, aln_ppr2_o_dir, "reps-pr2" )
+			tag_ppr1_ := _pool_tag( tags_pr1, aln_ppr1_o_dir, "reps-pr1" )
+			tag_ppr2_ := _pool_tag( tags_pr2, aln_ppr2_o_dir, "reps-pr2" )
+			tag_ppr1 = tag_ppr1_ // for thread safety
+			tag_ppr2 = tag_ppr2_
 			wait
 
 			string tmp
-			(xcor_qc_ppr1, tmp) = _xcor( tag_ppr1, qc_ppr1_o_dir, "ppr1", "pooled_pseudo_reps/ppr1" )
-			(xcor_qc_ppr2, tmp) = _xcor( tag_ppr2, qc_ppr2_o_dir, "ppr2", "pooled_pseudo_reps/ppr2" )
+			(xcor_qc_ppr1, tmp) = _xcor( tag_ppr1_, qc_ppr1_o_dir, "ppr1", "pooled_pseudo_reps/ppr1" )
+			(xcor_qc_ppr2, tmp) = _xcor( tag_ppr2_, qc_ppr2_o_dir, "ppr2", "pooled_pseudo_reps/ppr2" )
 		}
 	}
 
