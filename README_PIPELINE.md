@@ -534,7 +534,7 @@ execd_params                 ENABLE_ADDGRP_KILL=true
 ...
 ```
 
-Add a parallel environment shm to grid engine configuration.
+Add a parallel environment `shm` to grid engine configuration. If you already have your own parallel environment, skip this.
 ```
 $ sudo qconf -ap
 
@@ -551,14 +551,24 @@ urgency_slots      min
 accounting_summary FALSE
 ```
 
-Add shm to your queue and set your shell as bash.
+Add your parallel environment (`shm` by default) to your queue and set your shell as bash.
 ```
 $ sudo qconf -mq [YOUR_MAIN_QUEUE]
 ...
-pe_list               make shm
+pe_list               make [YOUR_PE_NAME]
 shell                 /bin/bash
 ...
 ```
+
+Correctly configure `./bds.config` and copy it to `$HOME/.bds/`:
+```
+sge.pe = [YOUR_PE_NAME] # shm by default
+sge.mem = [MAX_MEMORY_TYPE] # h_vmem by default
+sge.timeout = [WALLTIME_TYPE] # h_rt by default
+```
+
+More information is at <a href="http://pcingola.github.io/BigDataScript/bigDataScript_manual.html">http://pcingola.github.io/BigDataScript/bigDataScript_manual.html</a>
+
 
 
 ### Troubleshooting
