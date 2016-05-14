@@ -378,15 +378,14 @@ string _pdf_to_png( string pdf ) {
 
 	png 	:= rm_ext( pdf, "pdf" ) + ".png"
 
-	//XXXXXXXXXXX Requirements: poppler-utils (sudo apt-get install poppler-utils)
 	// needs ghostscript installed
-	task {
+	task ( png <- pdf ) {
 		sys $shcmd_init
 		sys gs -dFirstPage=1 -dLastPage=1 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r110x110 \
 			-dUseCropBox -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m \
 			-sOutputFile=$png \
 			-r144 $pdf
-		//sys pdftoppm -png $pdf > $png
+		//sys pdftoppm -png $pdf > $png # Requirements: poppler-utils (sudo apt-get install poppler-utils)
 	}
 
 	return png

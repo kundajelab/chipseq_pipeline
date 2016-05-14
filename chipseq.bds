@@ -412,10 +412,7 @@ void _align_PE( int ctl, int rep ) {
 
 		fastqs := get_fastqs( ctl, rep )
 
-		fastq1 := fastqs[0]
-		fastq2 := fastqs[1]
-
-		( bam, flagstat_qc{key} ) = _bwa_PE( fastq1, fastq2, aln_o_dir, qc_o_dir, info )
+		( bam, flagstat_qc{key} ) = _bwa_PE( fastqs[0], fastqs[1], aln_o_dir, qc_o_dir, info )
 		wait
 
 		if ( is_final_stage_bam() ) return

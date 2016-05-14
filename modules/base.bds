@@ -414,6 +414,7 @@ string copy( string file, string o_dir ) {
 	task ( file_new <- file ) {
 
 		sys cp $file $file_new
+		sys while [ ! -f $file_new ]; do echo FOUND DELAYED WRITE, WAITING...; sleep 0.1; done
 	}
 
 	return file_new
