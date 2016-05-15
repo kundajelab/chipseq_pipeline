@@ -77,7 +77,7 @@ Install BigDataScript v0.9999 on your system.
 Find bds.config and move it to `$HOME/.bds/`.
 ```
 $ mkdir -p $HOME/.bds
-$ cp bds.config $HOME/.bds/
+$ cp bds.config bds_scr $HOME/.bds
 ```
 
 
@@ -99,6 +99,8 @@ $ echo 'export PATH=$PATH:/opt/miniconda3/bin' >> /etc/profile.d/conda_init.sh
 
 
 ### How to run pipelines?
+
+We recommend using BASH to run pipelines.
 
 Create and move to your working directory. Run the following command:
 ```
@@ -145,6 +147,31 @@ system = sge
 
 You need additional modification on bds.config to correctly configure your cluster engine. Read more on <a href="http://pcingola.github.io/BigDataScript/bigDataScript_manual.html" target="_blank">http://pcingola.github.io/BigDataScript/bigDataScript_manual.html</a>. For Kundaje lab clusters and SCG3, it's already set up for Sun Grid Engine.
 
+
+
+### How to efficiently manage multiple pipeline runs? (using UNIX screen)
+
+`bds_scr` is a BASH script to create a detached screen for a BDS script and redirect stdout/stderr to a log file `[LOG_FILE_NAME]`. If a log file already exists, stdout/stderr will be appended to it. Monitor a pipeline with `tail -f [LOG_FILE_NAME]`.
+
+The only difference between `bds_scr` and `bds` is that you have `[SCR_NAME] [LOG_FILE_NAME]` between `bds` command and its parameters (or a BDS script name).
+```
+bds_scr [SCR_NAME] [LOG_FILE_NAME] [PIPELINE.BDS] ...
+```
+
+You can skip `[LOG_FILE_NAME]` then a log file `[SCR_NAME].log` will be generated on the working directory.
+```
+bds_scr [SCR_NAME] [PIPELINE.BDS] ...
+```
+
+You can also add any BDS parameters (like `-dryRun`, `-d` and `-s`). The following example is for running a pipeline on Sun Grid Engine.
+```
+bds_scr [SCR_NAME] [LOG_FILE_NAME] -s sge [PIPELINE.BDS] ...
+```
+
+Once the pipeline run is done, the screen will be automatically closed. To kill a pipeline manually while it's running:
+```
+screen -X -S [SCR_NAME] quit
+```
 
 
 
@@ -636,6 +663,11 @@ If your pipeline starts from BAM files, make sure that bam index (.bam.bai) exis
 7) Fatal error: /home/leepc12/bds_atac/modules/report_*.bds
 
 Simply re-run the pipeline with the same command. Possible bug in BDS for locking/unlocking global variables.
+
+
+8) ImportError: libopenblasp-r0-39a31c03.2.18.so: cannot open shared object file: No such file or directory
+
+Dependencies are not installed correctly. Check your Anaconda Python is correctly configured for conda environments. Run `./uninstall_dependencies.sh` and then `./install_dependencies.sh` again.
 
 
 

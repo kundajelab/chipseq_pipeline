@@ -54,7 +54,7 @@ $ cd TF_chipseq_pipeline
 Replace BDS's default `bds.config` with a correct one:
 ```
 $ mkdir -p $HOME/.bds
-$ cp bds.config $HOME/.bds/
+$ cp bds.config bds_scr $HOME/.bds
 ```
 
 
@@ -69,6 +69,8 @@ $ bds chipseq.bds ... -species [SPECIES; hg19, mm9, ... ]
 
 
 ### Usage
+
+We recommend using BASH to run pipelines.
 
 There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names.
 
@@ -379,6 +381,30 @@ For customized parallelization:
 -par_lvl 6 -reps_in_par [NO_REP_IN_PAR] -peaks_in_par [NO_PEAKCALLING_IN_PAR]
 ```
 
+
+### How to efficiently manage multiple pipeline runs? (using UNIX screen)
+
+`bds_scr` is a BASH script to create a detached screen for a BDS script and redirect stdout/stderr to a log file `[LOG_FILE_NAME]`. If a log file already exists, stdout/stderr will be appended to it. Monitor a pipeline with `tail -f [LOG_FILE_NAME]`.
+
+The only difference between `bds_scr` and `bds` is that you have `[SCR_NAME] [LOG_FILE_NAME]` between `bds` command and its parameters (or a BDS script name).
+```
+bds_scr [SCR_NAME] [LOG_FILE_NAME] chipseq.bds ...
+```
+
+You can skip `[LOG_FILE_NAME]` then a log file `[SCR_NAME].log` will be generated on the working directory.
+```
+bds_scr [SCR_NAME] chipseq.bds ...
+```
+
+You can also add any BDS parameters (like `-dryRun`, `-d` and `-s`). The following example is for running a pipeline on Sun Grid Engine.
+```
+bds_scr [SCR_NAME] [LOG_FILE_NAME] -s sge chipseq.bds ...
+```
+
+Once the pipeline run is done, the screen will be automatically closed. To kill a pipeline manually while it's running:
+```
+screen -X -S [SCR_NAME] quit
+```
 
 
 ### Useful HTML reports
