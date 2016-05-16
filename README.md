@@ -17,55 +17,11 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 ```
 
 
-### Installation instruction (for SCG3/4 and all others)
+### Installation instruction
 
-Install java (jdk >= 1.7 or jre >= 1.7) and the latest git on your system. 
-
-Install Anaconda Python3 (or Miniconda3) on your system. If you already have it, skip this. Open a new terminal after installation.
-
-Install BigDataScript v0.999l on your system.
-
-See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
-
-Get the latest version of chipseq pipelines.
-```
-$ git clone https://github.com/kundajelab/TF_chipseq_pipeline
-```
-
-Install software dependencies automatically (DO NOT run this on kundaje clusters). It will create two conda environments (aquas_chipseq and aquas_chipseq_py3) in Miniconda3.
-```
-$ ./install_dependencies.sh
-```
-
-If you don't use `install_dependencies.sh`, manually replace BDS's default `bds.config` with a correct one:
-```
-$ cp bds.config $HOME/.bds
-```
-
-
-### Installation instruction (for Kundaje lab clusters)
-
-BDS and all dependencies have already been installed on lab servers. Do not run `install_dependencies.sh` on these servers. Get the latest version of chipseq pipelines.
-```
-$ git clone https://github.com/kundajelab/TF_chipseq_pipeline
-$ cd TF_chipseq_pipeline
-```
-
-Replace BDS's default `bds.config` with a correct one:
-```
-$ mkdir -p $HOME/.bds
-$ cp bds.config bds_scr $HOME/.bds
-```
-
-
-
-### Genome data files for SCG3/4 and Kundaje lab servers
-
-For Kundaje lab servers (mitra, nandi, durga, kali, vayu, amold, wotan and kadru) and SCG3/4 (carmack*, crick*, scg3*, scg4*), the pipeline automatically determines the type of servers and set shell environments and species database. Skip all genome-specific parameters (e.g. bwa index) and just specify species.
-```
-$ bds chipseq.bds ... -species [SPECIES; hg19, mm9, ... ]
-```
-
+<a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL.md">General</a>
+<a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL_Kundaje.md">Kundaje lab</a>
+<a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL_SCG.md">SCG3/4</a>
 
 
 ### Usage
@@ -92,11 +48,6 @@ $ bds chipseq.bds \
 ```
 $ bds chipseq.bds [CONF_FILE]
 ```
-or
-```
-$ bds chipseq.bds -c [CONF_FILE]
-```
-
 Example configuriation file:
 ```
 $ cat [CONF_FILE]
@@ -113,10 +64,11 @@ The pipeline automatically determines if each task has finished or not (by compa
 
 ### Using Species file
 
-There are many species specific parameters like indices (bwa, bowtie, ...), chrome sizes, sequence file and genome size. If you have multiple pipelines, it's a hard job to individually define all parameters for each pipeline. However, if you have a species file with all species specific parameters defined, then you define less parameters and share the species file with all other pipelines.
+There are many species specific parameters like indices (bwa, bowtie, ...), chromosome sizes, sequence file and genome size. If you have multiple pipelines, it's a hard job to individually define all parameters for each pipeline. However, if you have a species file with all species specific parameters defined, then you define less parameters and share the species file with all other pipelines.
 ```
 $ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE]
 ```
+<b>IMPORTANT</b> for Kundaje lab cluster and SCG3/4, skip `-species_file` and all genome specific parameters (like bwa_idx, chrsz, ... ) and then just specify species.
 
 See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
 

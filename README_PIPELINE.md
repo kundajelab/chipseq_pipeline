@@ -2,151 +2,19 @@ BigDataScript (BDS) Pipelines
 ===============================================
 
 
-
-### Installation instruction for java and git
-
-Make sure that you have java (jdk >= 1.7 or jre >= 1.7) and git on your system.
-
-For Debian/Ubuntu based Linux,
-```
-$ sudo apt-get install git openjdk-8-jre
-```
-
-For Fedora/Red-Hat based Linux,
-```
-$ sudo yum install git java-1.8.0-openjdk
-```
-
-
-### Installation instruction for Miniconda3
-
-If you already have Anaconda Python 3, skip this.
-
-Get the latest Miniconda3 installer at <a href="http://conda.pydata.org/miniconda.html" target=_blank>http://conda.pydata.org/miniconda.html</a> and install it. The following command is for Anaconda Python3 on 64bit Linux system.
-```
-$ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-$ bash Miniconda3-latest-Linux-x86_64.sh
-```
-
-Choose `yes` for the final question. If you choose `no`, you need to manually add Miniconda3 to your `.bashrc`.
-```
-Do you wish the installer to prepend the Miniconda2 install location
-to PATH in your /your/home/.bashrc ? [yes|no]
-[no] >>> yes
-```
-
-Remove any other Anaconda Python from your `$PATH`. Check your loaded modules with `module list` and unload any Anaconda Python modules.
-
-Open a new terminal after installation.
-
-
-
-### Installation instruction for BigDataScript
-
-Get BigDataScript v0.999l:
-```
-$ git clone https://github.com/pcingola/BigDataScript
-$ cd BigDataScript
-$ git checkout tags/v0.9999
-$ cp distro/bds_Linux.tgz $HOME
-$ cd $HOME
-$ tar zxvf bds_Linux.tgz
-```
-
-Add the following lines to your bash initialization script (`$HOME/.bashrc` or `$HOME/.bash_profile`):
-```
-export PATH=$PATH:$HOME/.bds
-```
-
-If java memory occurs, add the following lines to your bash initialization script (`$HOME/.bashrc` or `$HOME/.bash_profile`):
-```
-export _JAVA_OPTIONS="-Xms256M -Xmx512M -XX:ParallelGCThreads=1"
-export MAX_JAVA_MEM="8G"
-export MALLOC_ARENA_MAX=4
-```
-
-
-### Installation instruction for BigDataScript pipelines
-
-Install java (jdk >= 1.7 or jre >= 1.7) and the latest git on your system. 
-
-Install Anaconda Python (or Miniconda) on your system. Open a new terminal after installation.
-
-Install BigDataScript v0.9999 on your system.
-
-Find bds.config and move it to `$HOME/.bds/`.
-```
-$ mkdir -p $HOME/.bds
-$ cp bds.config bds_scr $HOME/.bds
-```
-
-
-### How to install dependencies and share with colleagues
-
-If you have a super-user privileges on your system, it is recommended to install Miniconda3 on `/opt/miniconda3/` and share conda environment with others.
-```
-$ sudo su
-$ ./install_dependencies.sh
-$ chmod 755 -R /opt/miniconda3/  # if you get some annoying permission issues.
-```
-
-In order to make Miniconda3 accessible for all users, create an intialization script `/etc/profile.d/conda_init.sh`.
-```
-$ echo '#!/bin/bash' > /etc/profile.d/conda_init.sh
-$ echo 'export PATH=$PATH:/opt/miniconda3/bin' >> /etc/profile.d/conda_init.sh
-```
-
-
-
 ### How to run pipelines?
 
-We recommend using BASH to run pipelines.
-
-Create and move to your working directory. Run the following command:
+We recommend using BASH to run pipelines. Create and move to your working directory. Run the following command. DO NOT CLOSE A TERMINAL WHILE PIPELINE IS RUNNING! All tasks will be canceled and intermediate files will be deleted.
 ```
 $ bds [PIPELINE_BDS] [PARAMETERS]
 ```
-
-DO NOT CLOSE A TERMINAL WHILE PIPELINE IS RUNNING! All tasks will be canceled and intermediate files will be deleted.
-
-Make a screen or make sure that the terminal doesn't close while the pipeline is running. You can make multiple detached screens using the following commands:
-```
-$ cd $WORK_DIR1
-$ screen -Sdm $SCR_NAME1 bds [PIPELINE_BDS] [PARAMETERS1]
-
-$ cd $WORK_DIR2
-$ screen -Sdm $SCR_NAME2 bds [PIPELINE_BDS] [PARAMETERS2]
-
-...
-```
-
 It is not recommended to run multiple BDS pipelines on the same working directory. BDS creates an HTML report and temporary files on the working directory. Debugging them will be very hard.
 
 
 
 ### How to stop pipelines?
 
-Press Ctrl + C on a terminal or just close it. Please note that this will delete all intermediate files and incomplete outputs for the running tasks. Outputs from finished tasks will not be deleted.
-
-You can resume the pipeline by using the same command line you used for starting it. For each stage, BDS automatically check if output files exist or they are newer than input files, and then determine whether stages need to be re-run or not. 
-
-
-
-### Running pipelines with a cluster engine
-
-You can run BDS pipeline with a specified cluster engine. Choose your cluster system (`local`: UNIX threads, `sge`: Sun Grid Engine, ...).
-```
-$ bds -s [SYSTEM] [PIPELINE.BDS] ...
-```
-
-Modify `$HOME./.bds/bds.config` to change your default system. The following example is to use Sun Grid Engine (sge) as your default system. Then you no longer need to add `-s sge` to the command line.
-```
-#system = local
-system = sge
-```
-
-You need additional modification on bds.config to correctly configure your cluster engine. Read more on <a href="http://pcingola.github.io/BigDataScript/bigDataScript_manual.html" target="_blank">http://pcingola.github.io/BigDataScript/bigDataScript_manual.html</a>. For Kundaje lab clusters and SCG3, it's already set up for Sun Grid Engine.
-
+Press Ctrl + C on a terminal or just close it. Please note that this will delete all intermediate files and incomplete outputs for the running tasks. Outputs from finished tasks will not be deleted. You can resume the pipeline by using the same command line you used for starting it. For each stage, BDS automatically check if output files exist or they are newer than input files, and then determine whether stages need to be re-run or not. 
 
 
 ### How to efficiently manage multiple pipeline runs? (using UNIX screen)
@@ -157,21 +25,32 @@ The only difference between `bds_scr` and `bds` is that you have `[SCR_NAME] [LO
 ```
 bds_scr [SCR_NAME] [LOG_FILE_NAME] [PIPELINE.BDS] ...
 ```
-
 You can skip `[LOG_FILE_NAME]` then a log file `[SCR_NAME].log` will be generated on the working directory.
 ```
 bds_scr [SCR_NAME] [PIPELINE.BDS] ...
 ```
-
 You can also add any BDS parameters (like `-dryRun`, `-d` and `-s`). The following example is for running a pipeline on Sun Grid Engine.
 ```
 bds_scr [SCR_NAME] [LOG_FILE_NAME] -s sge [PIPELINE.BDS] ...
 ```
-
 Once the pipeline run is done, the screen will be automatically closed. To kill a pipeline manually while it's running:
 ```
 screen -X -S [SCR_NAME] quit
 ```
+
+
+### Running pipelines with a cluster engine
+
+You can run BDS pipeline with a specified cluster engine. Choose your cluster system (`local`: UNIX threads, `sge`: Sun Grid Engine, ...).
+```
+$ bds -s [SYSTEM] [PIPELINE.BDS] ...
+```
+Modify `$HOME./.bds/bds.config` to change your default system. The following example is to use Sun Grid Engine (sge) as your default system. Then you no longer need to add `-s sge` to the command line.
+```
+#system = local
+system = sge
+```
+You need additional modification on bds.config to correctly configure your cluster engine. Read more on <a href="http://pcingola.github.io/BigDataScript/bigDataScript_manual.html" target="_blank">http://pcingola.github.io/BigDataScript/bigDataScript_manual.html</a>. For Kundaje lab clusters and SCG3, it's already set up for Sun Grid Engine.
 
 
 
@@ -184,26 +63,21 @@ $ bds [PIPELINE_BDS]
 
 
 
-
 ### Resource settings (walltime and max. memory)
 
 Most clusters have resource limitation so that jobs submitted without it will be declined. By default, walltime is 11 hours and max memory is 8GB. To change them, add the following parameters to the command line. `-mem` does not apply to jobs with their own max. memory parameters (eg. spp with `-mem_spp`, bwa align with `-mem_bwa_aln`, ...)
 ```
 -wt [WALLTIME; examples: 13:20:20, 10h, 7200] -memory [MAX_MEMORY; examples: 5G, 2000K]
 ```
-
 You can specify walltime and max. memory for a specific job (with `-mem_[TASK_NAME] [MAX_MEM]`). To see which job has specific resource settings, run the pipeline without parameters `$ bds [PIPELINE_BDS]` then it will display all parameters including resource settings and help. The following line is an example parameter to increase walltime and max. memory for MACS2 peak calling.
 ```
 -wt_macs2 40h -mem_macs2 20G -nth_macs2 2
 ```
 
-Note that max. memory defined with `-mem_XXX` is PER CPU! `-mem_macs2 20G -nth_macs2 2` in the above example will have max. memory limit of 40G. Also note that without a cluster engine (like Grid Engine) pipeline jobs can possible have no limit for max. memory according to your UNIX system. In such a case, reduce # of cpus with `-nth_TASKNAME`.
-
-If your system (either local or cluster engine) doesn't limit walltime and max. memory for jobs, add the following to the command line. Pipeline jobs will run without resource restriction.
+Note that max. memory defined with `-mem_XXX` is PER CPU! `-mem_macs2 20G -nth_macs2 2` in the above example will have max. memory limit of 40G. Also note that without a cluster engine (like Grid Engine) pipeline jobs can possible have no limit for max. memory according to your UNIX system. In such a case, reduce # of cpus with `-nth_TASKNAME`. If your system (either local or cluster engine) doesn't limit walltime and max. memory for jobs, add the following to the command line. Pipeline jobs will run without resource restriction.
 ```
 -use_sys_default
 ```
-
 
 
 ### Resource settings On SCG3/4
@@ -218,7 +92,6 @@ You always need to submit pipeline jobs to Sun Grid Engine. Carefully define res
 ### Resource settings on Kundaje lab clusters
 
 There is no limit for walltime and max. memory on Kundaje lab clusters.
-
 
 
 
@@ -301,16 +174,14 @@ Add the following to the command line to specify species and species file.
 ```
 -species [SPECIES; hg19, mm9, ...] -species_file [SPECIES_FILE]
 ```
-
 You can override any parameters defined in the species file by adding them to command line argument or configuration file. For example, if you want to override parameters for BWA index and umap:
 ```
 -species hg19 -species_file my_species.conf -bwa_idx [YOUR_OWN_BWA_IDX] -chrsz [YOUR_OWN_CHR_SIZES_FILE]
 ```
-
 Example species file looks like the following. You can define your own species.
 ```
 [hg19]
-chrsz   = /mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes // chrome sizes
+chrsz   = /mnt/data/annotations/by_release/hg19.GRCh37/hg19.chrom.sizes // chromosome sizes
 seq     = /mnt/data/ENCODE/sequence/encodeHg19Male 			// genome reference sequence
 gensz   = hs // genome size: hs for humna, mm for mouse
 umap    = /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k1tok1000 	// uniq. mappability tracks
@@ -328,7 +199,6 @@ enh = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeyba
 reg2map = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/dnase_avgs_reg2map_p10_merged_named.pvals.gz
 roadmap_meta = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/eid_to_mnemonic.txt
 
-
 # your own definition for species
 [hg19_custom]
 chrsz   = ...
@@ -344,7 +214,7 @@ seq     = ...
 
 Description for parameters in a species file.
 ```
-chrsz               : Chrome sizes file path (use fetchChromSizes from UCSC tools).
+chrsz               : Chromosome sizes file path (use fetchChromSizes from UCSC tools).
 seq                 : Reference genome sequence directory path (where chr*.fa exist).
 gensz               : Genome size; hs for human, mm for mouse (default: hs).
 umap                : Unique mappability tracks directory path (https://sites.google.com/site/anshulkundaje/projects/mappability).
@@ -363,15 +233,13 @@ enh 		    : Enhancer bed for ataqc.
 reg2map 	    : Reg2map for ataqc.
 roadmap_meta 	    : Roadmap metadata for ataqc.
 ```
-
 Blacklist is available <a href="https://sites.google.com/site/anshulkundaje/projects/blacklists">here</a>
 
-### How to share a species file on your server
 
+### How to share a species file on your server
 ```
 $ bds [PIPELINE_BDS] -species [SPECIES; hg19, mm9, ...] -species_file [SPECIES_FILE]
 ```
-
 If you want to skip `-species_file` parameter, define it in the default environment file `./conf/default.env`.
 ```
 [your_hostname] # get it with 'hostname -f'
@@ -383,27 +251,12 @@ species_file = [SPECIES_FILE]
 ```
 
 
-
-
-### Using species file on SCG3/4 and Kundaje lab clusters
-
-Add the following to the command line and that's it.
-```
--species [SPECIES; hg19, mm9, ...]
-```
-
-Currently hg19 and mm9 are available for SCG3/4 and Kundaje lab clusters. If you are interested in other species, add species to `species/*.conf` and share with lab members or create your own species file.
-
-
-
-
 ### Dry run
 
 Dry run (this actually does nothing) to check next stages and input/output file names for it.
 ```
 $ bds -dryRun [PIPELINE_BDS] ...
 ```
-
 
 
 ### Temporary files on `$TMP` or `/tmp`

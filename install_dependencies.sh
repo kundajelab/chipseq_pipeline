@@ -1,4 +1,6 @@
 #!/bin/bash
+# Stop on error
+set -e
 
 ############ install in conda env.
 conda config --add channels r

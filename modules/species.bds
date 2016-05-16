@@ -9,7 +9,7 @@ help == species settings
 species		:= "" 		help Species. If not on kundaje lab servers, specify '-species_file' too.
 species_file	:= ""		help Species file path.
 
-chrsz 		:= "" 		help Chrome sizes file path (use fetchChromSizes from UCSC tools).
+chrsz 		:= "" 		help Chromosome sizes file path (use fetchChromSizes from UCSC tools).
 seq 		:= ""		help Reference genome sequence directory path (where chr*.fa exist).
 gensz 		:= ""		help Genome size; hs for human, mm for mouse.
 umap 		:= "" 		help Unique mappability tracks directory path (https://sites.google.com/site/anshulkundaje/projects/mappability).

@@ -18,6 +18,8 @@ openssl ==1.0.2g-0
 graphviz # graphviz on bioconda channel is buggy, see/use install_dependencies.sh for solution
 libtool # graphviz needs it
 ghostscript
+pigz
+zlib
 
 #r ==2.15.3 (conflict), this will be later installed (with --force; ignoring dependencies)
 
