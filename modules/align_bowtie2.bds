@@ -10,7 +10,7 @@ help == align bowtie2 settings (requirements: -bwt2_idx)
 //help *resources :
 nth_bwt2	:= 2 			help # threads for bowtie2 (default: 2).
 wt_bwt2		:= "23h"		help Walltime for bowtie2 (default: 23h, 23:00:00).
-mem_bwt2	:= "12G"	 	help Max. memory for bowtie2 (default: 8G).
+mem_bwt2	:= "12G"	 	help Max. memory for bowtie2 (default: 12G).
 
 init_align_bwt2()
 

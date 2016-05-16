@@ -5,6 +5,28 @@ include "species.bds"
 include "report.bds"
 
 
+help == adapter trimmer settings
+//help *resources :
+nth_trim	:= 2 			help # threads for adapter trimming (default: 2).
+wt_trim		:= "23h"		help Walltime for adapter trimming (default: 23h, 23:00:00).
+mem_trim	:= "12G"	 	help Max. memory for adapter trimming (default: 12G).
+
+init_align_etc()
+
+
+void init_align_etc() {
+
+	nth_trim 	= get_conf_val_int( nth_trim,		["nth_trim"] )
+	wt_trim 	= get_conf_val( wt_trim, 		["wt_trim"] )
+	mem_trim 	= get_conf_val( mem_trim, 		["mem_trim"] )
+
+	print("\n\n== adapter trimmer settings\n")
+	print( "# threads (adapter trimming)\t: $nth_trim\n")
+	print( "Walltime (adapter trimming)\t: $wt_trim\n")
+	print( "Max. memory (adapter trimming)\t: $mem_trim\n")
+}
+
+
 string _trim_adapters( string fastq, string o_dir, string label ) {
 
 	prefix	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
@@ -16,13 +38,14 @@ string _trim_adapters( string fastq, string o_dir, string label ) {
 	out 	:= p2_gz
 
 	taskName:= "trim_adapters " + label
+	cpus 	:= nth_trim; 	mem := get_res_mem(mem_trim); 	timeout := get_res_wt(wt_trim)
 
 	task( out<-in ) {
 
 		sys $shcmd_init
 
-		sys trim_galore $fastq -o $o_dir
-		sys if [ ! -f $p_gz ]; then gzip $p; fi
+		sys trim_galore $fastq -o $o_dir --dont_gzip
+		sys pigz -p $nth_trim -f $p
 		sys mv $p_gz $p2_gz
 		sys rm -f $p_gz $p
 	}
@@ -32,7 +55,6 @@ string _trim_adapters( string fastq, string o_dir, string label ) {
 	hrchy_out := ["L1_align/$label/trimmed_fastq"]
 
 	_add_to_graphviz( graph_in, in, graph_out, [out], "trim_galore\\n($label)", grp_color_trim_adapter )
-
 	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
@@ -53,6 +75,7 @@ string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string l
 	out 	:= [ p1_gz, p2_gz ]
 
 	taskName:= "trim_adapters_PE " + label
+	cpus 	:= nth_trim; 	mem := get_res_mem(mem_trim); 	timeout := get_res_wt(wt_trim)
 
 	task( out<-in ) {
 
@@ -60,8 +83,8 @@ string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string l
 
 		sys cd $o_dir
 		sys $(which trimAdapters.py) -a $fastq1 -b $fastq2
-		sys gzip $p1
-		sys gzip $p2
+		sys pigz -p $nth_trim -f $p1
+		sys pigz -p $nth_trim -f $p2
 	}
 
 	graph_in  := ["fastq1_($label)","fastq2_($label)"]
@@ -69,7 +92,6 @@ string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string l
 	hrchy_out := ["L1_align/$label/trimmed_fastq1","L1_align/$label/trimmed_fastq2"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "trim_galore\\n($label)", grp_color_trim_adapter )
-
 	_add_to_filetable( hrchy_out, out )
 
 	wait_par()

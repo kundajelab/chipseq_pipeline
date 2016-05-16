@@ -20,6 +20,7 @@ libtool # graphviz needs it
 ghostscript
 pigz
 zlib
+sambamba ==0.6.1
 
 #r ==2.15.3 (conflict), this will be later installed (with --force; ignoring dependencies)
 
