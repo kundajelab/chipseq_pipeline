@@ -20,7 +20,9 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 ### Installation instruction
 
 <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL.md">General</a>
+
 <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL_Kundaje.md">Kundaje lab</a>
+
 <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL_SCG.md">SCG3/4</a>
 
 
