@@ -139,3 +139,5 @@ source deactivate
 #
 #source deactivate
 
+
+echo === Installing dependencies successfully done. ===
