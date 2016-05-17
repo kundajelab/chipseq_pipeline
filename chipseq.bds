@@ -823,23 +823,26 @@ void naive_overlap() {
 
 	// naive overlap peak
 
-	if ( !true_rep ) {
+	overlap_o_dir := mkdir( "$out_dir/peak/spp/overlap" )
 
-		overlap_o_dir := mkdir( "$out_dir/peak/spp/overlap" )
+	if ( get_num_rep() == 1 ) {
 
-		if ( get_num_rep() == 1 ) {
+		if ( !true_rep ) {
 
 			peak_overlap = _naive_overlap_peak( "regionPeak", peak{"spp,1"}, peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, overlap_o_dir, "peak", \
 									"peak_spp", "spp/overlap")
 		}
-		else {
-			string[] peaks // make array of peaks from true replicates
-			for ( int rep=1; rep<=get_num_rep(); rep++ ) peaks.add( peak{"spp,$rep"} )
+	}
+	else {
+		string[] peaks // make array of peaks from true replicates
+		for ( int rep=1; rep<=get_num_rep(); rep++ ) peaks.add( peak{"spp,$rep"} )
 
-			peak_overlap = _naive_overlap_peak( "regionPeak", peak_pooled{"spp"}, peaks, \
-									  peak_ppr1{"spp"}, peak_ppr2{"spp"}, overlap_o_dir, "peak",\
-									"peak_spp", "spp/overlap")
-		}
+		peak_ppr1_ := true_rep ? "" : peak_ppr1{"spp"}
+		peak_ppr2_ := true_rep ? "" : peak_ppr2{"spp"}
+
+		peak_overlap = _naive_overlap_peak( "regionPeak", peak_pooled{"spp"}, peaks, \
+								  peak_ppr1_, peak_ppr2_, overlap_o_dir, "peak",\
+								"peak_spp", "spp/overlap")
 	}
 
 	print( "\n== Done naive_overlap()\n" )

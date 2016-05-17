@@ -117,6 +117,17 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks,
 	}
 	command += "gzip -c > $peak_PooledInReps"
 
+	string command2
+	if ( peak_ppr1 != "" )  {
+		command2 = "intersectBed -wo -a $peak_pooled -b $peak_ppr1 | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | " + \
+		 	   "intersectBed -wo -a stdin -b $peak_ppr2 |    awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | " + \
+			   "gzip -c > $peak_PooledInPsRep1AndPsRep2"
+	}
+	else {
+		command2 = "echo"
+		peak_PooledInPsRep1AndPsRep2 = ""
+	}
+
 	in 	:= [ peak_pooled ] + peaks + [peak_ppr1, peak_ppr2]
 	out 	:= peak_final
 	
@@ -130,9 +141,7 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks,
 		sys $command
 
 		//# Find pooled peaks that overlap PseudoRep1 and PseudoRep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  >= 0.5
-		sys intersectBed -wo -a $peak_pooled -b $peak_ppr1 | awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
-		    intersectBed -wo -a stdin -b $peak_ppr2 |    awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
-		    gzip -c > $peak_PooledInPsRep1AndPsRep2
+		sys $command2
 
 		//# Combine peak lists
 		sys zcat $peak_PooledInReps $peak_PooledInPsRep1AndPsRep2 | sort | uniq | gzip -c > $peak_final
