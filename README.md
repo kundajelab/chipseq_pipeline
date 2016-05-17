@@ -91,7 +91,7 @@ If you define `-final_stage [STAGE]`, the pipeline stops right after the stage.
 
 This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL. Set `-final_stage [FINAL STAGE]`. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
 
-Mapping for each replicate will go IN PARALLEL! Consider your computating resources before running the pipeline. If you start the pipeline with fastqs, lots of processors will be taken due to bwa_aln. Lower -nth_bwa_aln if you have limited computing resources. It's 2 by default.
+Mapping for each replicate will go IN PARALLEL! Consider your computating resources before running the pipeline. If you start the pipeline with fastqs, lots of processors will be taken due to bwa. Lower -nth_bwa if you have limited computing resources. It's 2 by default.
 
 Example1: You have 5 unfiltered raw bam and want to filter them (removing dupes).
 ```
@@ -102,7 +102,7 @@ $ bds chipseq.bds \
 ...
 -fastq10 /DATA/ENCFF000???.fastq.gz \
 -bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
--nth_bwa_aln 3   # No. of threads for bwa_aln for each replicate, 3 x 10 logical processors will be taken in total.
+-nth_bwa 3   # No. of threads for bwa for each replicate, 3 x 10 logical processors will be taken in total.
 ```
 
 Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes).
@@ -393,14 +393,14 @@ The minimum memory requirement for the pipeline is 8GB, but we recommend to run 
 
 Example: for desktop with 4 cores
 ```
-$ bds chipseq.bds -no_par -nth_bwa_aln 4 -nth_spp 4 ...
+$ bds chipseq.bds -no_par -nth_bwa 4 -nth_spp 4 ...
 ```
 
 2) (FAST BUT UNSTABLE) Do not turn off paralleization but just increase the number of threads for BIG-MEMORY bottleneck jobs (bwa and spp) to your computer's maximum so that no BIG-MEMORY jobs will be parallelized.
 
 Example: for desktop with 4 cores
 ```
-$ bds chipseq.bds -nth_bwa_aln 4 -nth_spp 4 ...
+$ bds chipseq.bds -nth_bwa 4 -nth_spp 4 ...
 ```
 
 An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):
