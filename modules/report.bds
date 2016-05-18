@@ -379,6 +379,8 @@ string _pdf_to_png( string pdf ) {
 	png 	:= rm_ext( pdf, "pdf" ) + ".png"
 
 	// needs ghostscript installed
+	taskName := "pdf2png"
+	
 	task ( png <- pdf ) {
 		sys $shcmd_init
 		sys gs -dFirstPage=1 -dLastPage=1 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r110x110 \
@@ -412,7 +414,7 @@ string _peak_to_hammock( string peak ) {
 
 	in 	:= peak
 	out 	:= hammock+".gz"
-	//taskName:= "peak2hammock "
+	taskName:= "peak2hammock"
 
 	task ( out<-in ) { // needs bgzip and tabix
 

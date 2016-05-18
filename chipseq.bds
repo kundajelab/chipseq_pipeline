@@ -552,7 +552,17 @@ void pool_tags() {
 	if ( tags.size() > 1 ) {
 
 	 	aln_pooled_o_dir := mkdir( "$out_dir/align/pooled_rep" )
-		tag{"0,pooled"} = _pool_tag( tags, aln_pooled_o_dir, "reps" )
+
+		tag_pooled := _pool_tag( tags, aln_pooled_o_dir, "reps" )
+		tag{"0,pooled"} = tag_pooled
+
+			// graphviz, filetable for pooled tagalign
+			string[] graph_in
+			for ( int rep=1; rep<=get_num_rep(); rep++ ) graph_in.add("tagalign_(rep$rep)")
+
+			_add_to_graphviz( graph_in, tags, ["tagalign_(pooled)"], [tag_pooled] )
+			_add_to_filetable(["L1_align/pooled_rep/tagalign"], [tag_pooled] )
+			//
 
 	 	if ( !true_rep ) {
 		 	aln_ppr1_o_dir   := mkdir( "$out_dir/align/pooled_pseudo_reps/ppr1" )
@@ -567,6 +577,19 @@ void pool_tags() {
 			tag_ppr2 = tag_ppr2_
 			wait
 
+				// graphviz, filetable for ppr
+				string[] graph_in_pr1, graph_in_pr2
+				for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+					graph_in_pr1.add("tagalign_(rep$rep-pr1)")
+					graph_in_pr2.add("tagalign_(rep$rep-pr2)")
+				}
+
+				_add_to_graphviz( graph_in_pr1, tags_pr1, ["tagalign_(ppr1)"], [tag_ppr1] )
+				_add_to_graphviz( graph_in_pr2, tags_pr2, ["tagalign_(ppr2)"], [tag_ppr2] )
+				_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr1/tagalign"], [tag_ppr1] )
+				_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr2/tagalign"], [tag_ppr2] )
+				//
+
 			string tmp
 			(xcor_qc_ppr1, tmp) = _xcor( tag_ppr1_, qc_ppr1_o_dir, "ppr1", "pooled_pseudo_reps/ppr1" )
 			(xcor_qc_ppr2, tmp) = _xcor( tag_ppr2_, qc_ppr2_o_dir, "ppr2", "pooled_pseudo_reps/ppr2" )
@@ -576,7 +599,17 @@ void pool_tags() {
 	if ( tags_ctl.size() > 1 ) {
 
 		aln_pooled_ctl_o_dir := mkdir( "$out_dir/align/pooled_ctl" )
-		tag{"1,pooled"} = _pool_tag( tags_ctl, aln_pooled_ctl_o_dir, "ctls" )
+
+		tag_ctl_pooled := _pool_tag( tags_ctl, aln_pooled_ctl_o_dir, "ctls" )
+		tag{"1,pooled"} = tag_ctl_pooled
+
+			// graphviz, filetable for pooled control tagalign
+			string[] graph_in
+			for ( int ctl : ids_ctl ) graph_in.add("tagalign_(ctl$ctl)")
+
+			_add_to_graphviz( graph_in, tags_ctl, ["tagalign_(ctl, pooled)"], [tag_ctl_pooled] )
+			_add_to_filetable(["L1_align/pooled_ctl/tagalign"], [tag_ctl_pooled] )
+			//		
 	}
 
 	wait
