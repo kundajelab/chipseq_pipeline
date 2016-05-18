@@ -15,12 +15,13 @@ init_align_etc()
 
 
 void init_align_etc() {
-
+	adapter 	= get_conf_val_int( adapter,		["adapter"] )
 	nth_trim 	= get_conf_val_int( nth_trim,		["nth_trim"] )
 	wt_trim 	= get_conf_val( wt_trim, 		["wt_trim"] )
 	mem_trim 	= get_conf_val( mem_trim, 		["mem_trim"] )
 
 	print("\n\n== adapter trimmer settings\n")
+	print( "adapter sequence\t: $adapter\n")
 	print( "# threads (adapter trimming)\t: $nth_trim\n")
 	print( "Walltime (adapter trimming)\t: $wt_trim\n")
 	print( "Max. memory (adapter trimming)\t: $mem_trim\n")
@@ -32,29 +33,23 @@ string _trim_adapters( string fastq, string o_dir, string label ) {
 	prefix	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	p 	:= "$prefix"+"_trimmed.fq"
 	p_gz	:= "$p.gz"
-	p2 	:= "$prefix"+"_trimmed.fastq"
-	p2_gz 	:= "$p2.gz"
 	in 	:= [ fastq ]
-	out 	:= p2_gz
+	out 	:= p_gz
 
 	taskName:= "trim_adapters " + label
 	cpus 	:= nth_trim; 	mem := get_res_mem(mem_trim); 	timeout := get_res_wt(wt_trim)
 
 	task( out<-in ) {
-
 		sys $shcmd_init
-
-		sys trim_galore $fastq -o $o_dir --dont_gzip
-		sys pigz -p $nth_trim -f $p
-		sys mv $p_gz $p2_gz
-		sys rm -f $p_gz $p
+		sys cd $o_dir
+		sys cutadapt -e 0.20 -a $adapter $fastq | pigz -p $nth_trim > p_gz                
 	}
 	
 	graph_in  := ["fastq_($label)"]
 	graph_out := ["trimmed_fastq_($label)"] 
 	hrchy_out := ["L1_align/$label/trimmed_fastq"]
 
-	_add_to_graphviz( graph_in, in, graph_out, [out], "trim_galore\\n($label)", grp_color_trim_adapter )
+	_add_to_graphviz( graph_in, in, graph_out, [out], "cutadapt\\n($label)", grp_color_trim_adapter )
 	_add_to_filetable( hrchy_out, [out] )
 
 	wait_par()
@@ -63,38 +58,9 @@ string _trim_adapters( string fastq, string o_dir, string label ) {
 }
 
 string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string label ) {
-
-	prefix1	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir )
-	prefix2	:= replace_dir( rm_ext( fastq2, ["fastq","fq"] ), o_dir )
-	p1 	:= "$prefix1.trim.fastq"
-	p2 	:= "$prefix2.trim.fastq"
-	p1_gz	:= "$p1.gz"
-	p2_gz 	:= "$p2.gz"
-
-	in 	:= [ fastq1, fastq2 ]
-	out 	:= [ p1_gz, p2_gz ]
-
-	taskName:= "trim_adapters_PE " + label
-	cpus 	:= nth_trim; 	mem := get_res_mem(mem_trim); 	timeout := get_res_wt(wt_trim)
-
-	task( out<-in ) {
-
-		sys $shcmd_init
-
-		sys cd $o_dir
-		sys $(which trimAdapters.py) -a $fastq1 -b $fastq2
-		sys pigz -p $nth_trim -f $p1
-		sys pigz -p $nth_trim -f $p2
-	}
-
-	graph_in  := ["fastq1_($label)","fastq2_($label)"]
-	graph_out := ["trimmed_fastq1_($label)","trimmed_fastq2_($label)"] 
-	hrchy_out := ["L1_align/$label/trimmed_fastq1","L1_align/$label/trimmed_fastq2"]
-
-	_add_to_graphviz( graph_in, in, graph_out, out, "trim_galore\\n($label)", grp_color_trim_adapter )
-	_add_to_filetable( hrchy_out, out )
-
+	# Jin, how can I make these run in parallel?
+	out1 = _trim_adapters(fastq1, o_dir, label)
+	out2 = _trim_adapters(fastq2, o_dir, label)
 	wait_par()
-
-	return out
+	return [out1, out2]
 }
