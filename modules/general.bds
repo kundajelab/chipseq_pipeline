@@ -24,12 +24,10 @@ mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; pic
 shcmd 		:= ""		help Shell commands separated by ;. Shell var. must be written as ${VAR} not as $VAR (example: "export PATH=${PATH}:/usr/test; VAR=test"). 
 addpath 	:= "" 		help Path separated by ; or : to be PREPENDED to \$PATH (example: "/bin/test:${HOME}/utils").
 conda_env 	:= ""		help Anaconda Python environment name for all softwares including Python2.
-conda_env_r2 	:= ""		help Anaconda Python environment name for R-2.x. Skip it if R-2.x is already installed on your Python2 conda env. ('-conda_env').
 conda_env_py3 	:= ""		help Anaconda Python environment name for Python3.
 
 
 shcmd_init 	:= ""  // Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
-shcmd_init_r2 	:= ""  // for softwares using R 2.x
 shcmd_init_py3	:= ""  // for softwares using python3
 
 string[] tids_rep
@@ -51,7 +49,6 @@ void init_general() {
 	memory 		= get_conf_val( memory, 		["memory","mem"] )
 	use_sys_default	= get_conf_val_bool( use_sys_default, 	["use_sys_default"] )
 	conda_env	= get_conf_val( conda_env, 		["conda_env"] )
-	conda_env_r2	= get_conf_val( conda_env_r2, 		["conda_env_r2"] )
 	conda_env_py3	= get_conf_val( conda_env_py3, 		["conda_env_py3"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
@@ -112,7 +109,6 @@ void print_general() {
 	print( "Walltime (general)\t\t: $wt\n" )
 	print( "Max. memory (general)\t\t: $memory\n" )
 	print( "Env. for Anaconda python2\t: $conda_env\n" )
-	print( "Env. for R 2.x\t\t\t: $conda_env_r2\n" )
 	print( "Env. for Anaconda python3\t: $conda_env_py3\n" )
 
 	if ( use_sys_default ) {
@@ -129,7 +125,7 @@ void init_shell_env() {
 	moduleshome := get_shell_var("MODULESHOME").replace("\n","")
 	if (moduleshome!="") init_mods.add("$moduleshome/init/bash")
 
-	string shellcmd, module, path, conda_py2, conda_r2, conda_py3
+	string shellcmd, module, path, conda_py2, conda_py3
 
 	// find env. modules init script
 	for ( string file : init_mods ) {
@@ -208,13 +204,6 @@ void init_shell_env() {
 		conda_py2 = "if [[ -f $(which activate) ]]; then source activate $conda_env; fi; "
 	}
 
-	if ( conda_env_r2 != "" ) {
-		conda_r2  = "if [[ -f $(which activate) ]]; then source activate $conda_env_r2; fi; "
-	}
-	else if ( conda_env != "" ) {
-		conda_r2 = "if [[ -f $(which activate) ]]; then source activate $conda_env; fi; "
-	}
-
 	if ( conda_env_py3 != "" ) {
 		conda_py3 = "if [[ -f $(which activate) ]]; then source activate $conda_env_py3; fi; "
 	}
@@ -224,11 +213,9 @@ void init_shell_env() {
 	shcmd_init_ = shcmd_init_.replace( ": :", ":" ).replace( "::", ":" ).replace( "; ;", ";" ).replace( ";;", ";" )
 
 	shcmd_init 	= conda_py2 + shcmd_init_
-	shcmd_init_r2 	= conda_r2  + shcmd_init_
 	shcmd_init_py3 	= conda_py3 + shcmd_init_
 
 	print( "\nShell command for initialization\t: $shcmd_init\n" )
-	print( "\nShell command for initialization (R2)\t: $shcmd_init_r2\n" )
 	print( "\nShell command for initialization (py3)\t: $shcmd_init_py3\n" )
 }
 

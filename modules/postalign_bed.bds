@@ -164,7 +164,7 @@ string[] _xcor( string tag, string o_dir, string label, string hrchy ) {
 
 	task( out<-in ) {
 
-		sys $shcmd_init_r2
+		sys $shcmd_init
 
 		//# CCSCORE FILE format
 		//# Filename <tab> numReads <tab> estFragLen <tab> correstFragLen <tab> PhantomPeak <tab> corrphantomPeak <tab> argmincorr <tab> mincorr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag

@@ -433,7 +433,7 @@ See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/mast
 
 They are command line argument versions of mod, shcmd and addpath. For example,
 ```
-$ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -conda_env my_conda_env_py2 -conda_env_py3 my_conda_env_py3
+$ bds chipseq.bds -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-3.2.2' -addpath '${HOME}/program1/bin' -conda_env my_conda_env_py2 -conda_env_py3 my_conda_env_py3
 ```
 
 See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
@@ -452,7 +452,7 @@ $ cat [ENV_FILE]
 
 mod_any_suffix = bwa/0.7.3 samtools/1.2
 addpath_any_suffix = ${HOME}/program1/bin
-shcmd_any_suffix = export R_PATH=/home/userid/R-2.15.1
+shcmd_any_suffix = export R_PATH=/home/userid/R-3.2.2
 
 species_file = /path/to/your/species.conf
 
@@ -488,9 +488,7 @@ For python2 (python 2.x >= 2.7), <a href="https://github.com/kundajelab/TF_chips
 
 For python3, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements_py3.txt" target=_blank>here</a>
 
-For R-2.x, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements_r2.txt" target=_blank>here</a>
-
-IMPORTANT! Install dependencies with `install_dependencies.sh`. It will install them on Anaconda virtual environment (`aquas_chipseq` for python2 and R-2.x, `aquas_chipseq_py3` for python3) and you don't need super-user privileges.
+IMPORTANT! Install dependencies with `install_dependencies.sh`. It will install them on Anaconda virtual environment (`aquas_chipseq` for python2, `aquas_chipseq_py3` for python3) and you don't need super-user privileges.
 
 However, if you are a super-user, it's recommended to install the following softwares on the system and share it with your colleagues. See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
 
@@ -504,7 +502,7 @@ picard-tools/1.92
 MACS2/2.1.0
 java/7
 gem/2.6
-r/2.15.1
+r/3.2.2
 deepTools/2.2.3
 align2rawsignal/2.0
 phantompeakqualtools/2.0

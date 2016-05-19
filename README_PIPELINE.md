@@ -281,7 +281,7 @@ mod= bwa/0.7.3;
 You can have multiple lines for mod since any suffix is allowed. Use ` ` as a delimiter.
 ```
 mod_bio= bwa/0.7.3 bedtools/2.x.x samtools/1.2
-mod_lang= r/2.15.1 java/latest
+mod_lang= r/3.2.2 java/latest
 ```
 
 2) shcmd
@@ -293,8 +293,8 @@ shcmd= export PATH=${PATH}:path_to_your_program
 
 You can have multiple lines for shcmd since any suffix is allowed. Use ; as a delimiter. 
 ```
-shcmd_R= export PATH=${PATH}:/home/userid/R-2.15.1;
-shcmd_lib= export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/R-2.15.1/lib
+shcmd_R= export PATH=${PATH}:/home/userid/R-3.2.2;
+shcmd_lib= export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/R-3.2.2/lib
 ```
 
 shcmd is not just for adding environemt variables. It can execute any bash shell commands prior to any jobs on the pipeline. For example, to give all jobs peaceful 10 seconds before running.
@@ -317,17 +317,13 @@ conda_env= [CONDA_ENV_NAME]		# python2 must be installed in this virt. env.
 conda_env_py3= [CONDA_ENV_NAME_FOR_PY3] 	# python3 must be installed in this virt. env.
 ```
 
-If you have a separate virtual environment for R-2.x.x. 
-```
-conda_env_r2= [CONDA_ENV_NAME_FOR_R2]		# R-2.x.x must be installed in this virt. env.
-```
 
 
 ### What are -mod, -shcmd, -addpath, -conda_env and -conda_env_py3?
 
 They are command line argument versions of `mod`, `shcmd` and `addpath`. However NO SUFFIX is allowed. For example,
 ```
-$ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-2.15.1' -addpath '${HOME}/program1/bin' -conda_env my_env -conda_env_py3 my_env_py3
+$ bds [PIPELINE_BDS] -mod 'bwa/0.7.3; samtools/1.2' -shcmd 'export PATH=${PATH}:/home/userid/R-3.2.2' -addpath '${HOME}/program1/bin' -conda_env my_env -conda_env_py3 my_env_py3
 ```
 
 
@@ -366,7 +362,7 @@ Example environment file is like the following:
 [carmack.stanford.edu] 	# your hostname
 mod_any_suffix = bwa/0.7.3 samtools/1.2
 addpath_any_suffix = ${HOME}/program1/bin
-shcmd_any_suffix = export R_PATH=/home/userid/R-2.15.1
+shcmd_any_suffix = export R_PATH=/home/userid/R-3.2.2
 
 species_file = /path/to/your/species.conf
 
@@ -388,11 +384,8 @@ Example environment file on scg3 (Stanford cluster).
 [scg3-ln01.stanford.edu, scg3-ln01.stanford.edu, carmack.stanford.edu, crick.stanford.edu : scg3] 	# four hostnames for SCG3
 [scg3] 	# alias
 
-mod_chipseq = bwa/0.7.7 samtools/0.1.19 bedtools/2.19.1 ucsc_tools/3.0.9 picard-tools/1.92 MACS2/2.1.0 java/latest
-
-addpath_chipseq = /srv/gsfs0/scratch/leepc12/software/idrCode:/srv/gsfs0/scratch/leepc12/software/phantompeakqualtools:/srv/gsfs0/scratch/leepc12/software/idr/bin:/srv/gsfs0/scratch/leepc12/software/align2rawsignal/bin:/srv/gsfs0/scratch/leepc12/software/gem:/srv/gsfs0/scratch/leepc12/software/deepTools/bin:/srv/gsfs0/scratch/leepc12/software/R-2.15.1/bin:/srv/gsfs0/scratch/leepc12/software/python3.4/bin:/srv/gsfs0/scratch/leepc12/software/python2.7/bin
-
-shcmd_chipseq = export GEMROOT=/srv/gsfs0/scratch/leepc12/software/gem; export GEM=/srv/gsfs0/scratch/leepc12/software/gem/gem.jar; export LAPACK=/srv/gsfs0/scratch/leepc12/software/blas/lapack-*/liblapack.a; export _JAVA_OPTIONS='-Xms256M -Xmx512M -XX:ParallelGCThreads=1'; export MAX_JAVA_MEM='8G'; export MALLOC_ARENA_MAX=4; MCRROOT=/srv/gsfs0/scratch/leepc12/software/MATLAB_Compiler_Runtime/v714; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/runtime/glnxa64; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/bin/glnxa64; MCRJRE=${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRJRE}/native_threads; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRJRE}/server; LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRJRE}; XAPPLRESDIR=${MCRROOT}/X11/app-defaults; export LD_LIBRARY_PATH; export XAPPLRESDIR;
+conda_env     = bds_atac
+conda_env_py3 = bds_atac_py3
 
 species_file = $script_dir/species/scg3.conf
 ```
