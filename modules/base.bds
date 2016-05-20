@@ -410,6 +410,7 @@ bool is_in_array( string str, string[] arr ) { // case-insensitive
 string copy( string file, string o_dir ) {
 
 	file_new	:= replace_dir( file, o_dir )
+	system := "local" // do not use cluster engine for this task
 
 	task ( file_new <- file ) {
 

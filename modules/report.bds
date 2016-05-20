@@ -380,6 +380,7 @@ string _pdf_to_png( string pdf ) {
 
 	// needs ghostscript installed
 	taskName := "pdf2png"
+	system := "local" // do not use cluster engine for this task
 	
 	task ( png <- pdf ) {
 		sys $shcmd_init
@@ -414,7 +415,9 @@ string _peak_to_hammock( string peak ) {
 
 	in 	:= peak
 	out 	:= hammock+".gz"
+	
 	taskName:= "peak2hammock"
+	system := "local" // do not use cluster engine for this task
 
 	task ( out<-in ) { // needs bgzip and tabix
 
