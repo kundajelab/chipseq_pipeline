@@ -11,8 +11,9 @@ help == postalign bam settings
 mapq_thresh	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
 rm_chr_from_tag := "" 		help If specified, exclude lines with specified string from tagaligns. (example: 'other|ribo|mito|_', '_', default: blank)
 //help *resources :
-wt_markdup 	:= "24h" 	help Walltime for Picardtools MarkDuplicate (default: 24h, 24:00:00).
-mem_markdup	:= "16G" 	help Max. memory for Picardtools MarkDuplicate (default: 16G).
+nth_dedup	:= 2 		help # threads for post-alignment filtering (default: 2).
+wt_dedup 	:= "24h" 	help Walltime for post-alignment filtering (default: 24h, 24:00:00).
+mem_dedup	:= "16G" 	help Max. memory for post-alignment filtering (default: 16G).
 
 
 /*
@@ -39,14 +40,16 @@ void init_postalign_bam() {
 	mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
 	rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )		
 
-	wt_markdup 	= get_conf_val( wt_markdup, 		["wt_markdup"] )
-	mem_markdup 	= get_conf_val( mem_markdup, 		["mem_markdup"] )
+	nth_dedup 	= get_conf_val_int( nth_dedup,		["nth_dedup"] )
+	wt_dedup 	= get_conf_val( wt_dedup, 		["wt_dedup"] )
+	mem_dedup 	= get_conf_val( mem_dedup, 		["mem_dedup"] )
 
 	print("\n\n== postalign bam settings\n")
 	print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")
 	print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
-	print( "Walltime (picard markdup)\t: $wt_markdup\n")
-	print( "Max. memory (picard markdup)\t: $mem_markdup\n")
+	print( "# threads (post-aln filter)\t: $nth_dedup\n")
+	print( "Walltime (post-aln filter)\t: $wt_dedup\n")
+	print( "Max. memory (post-aln filter)\t: $mem_dedup\n")
 }
 
 string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) {
@@ -63,32 +66,14 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 	filt_bam 	:= "$prefix.filt.bam"
 	tmp_filt_bam 	:= "$prefix.dupmark.bam"
 
-	// for multimapping
-	string cmd1, cmd2, cmd3, cmd4
-
-	if ( multimapping > 0 ) {
-
-		qname_sort_bam_prefix		:= "$prefix.qnmsrt"
-		qname_sort_bam 			:= "$prefix.qnmsrt.bam"
-		qname_sort_bam_filt		:= "$prefix.qnmsrt.filt.bam"
-
-		cmd1 	= "samtools sort $bam $qname_sort_bam_prefix"
-		cmd2 	= "samtools view -h $qname_sort_bam | $(which assign_multimappers.py) -k $multimapping | samtools view -bS - > $qname_sort_bam_filt"
-		cmd3 	= "samtools view -F 1804 -b $qname_sort_bam_filt > $filt_bam.tmp"
-		cmd4 	= "rm -f $qname_sort_bam $qname_sort_bam_filt"
-	}
-	else {		
-		cmd1 	= "echo"
-		cmd2 	= "echo"
-		cmd3 	= "samtools view -F 1804 -q $mapq_thresh -b $bam > $filt_bam.tmp"
-		cmd4 	= "echo"
-	}
+	// multimapping
+	qname_sort_bam 	:= "$prefix.qnmsrt.bam"
 
 	in	:= [ bam ]
 	out	:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	taskName:= "dedup_bam " + label
-	mem 	:= get_res_mem(mem_markdup);	timeout := get_res_wt(wt_markdup)
+	cpus 	:= nth_dedup; 	mem 	:= get_res_mem(mem_dedup);	timeout := get_res_wt(wt_dedup)
 
 	task( out<-in ) {
 
@@ -99,14 +84,17 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 		//# not primary alignment, reads failing platform
 		//# Remove low MAPQ reads
 		//# ==================  
-		
-		sys $cmd1
-		sys $cmd2
-		sys $cmd3
-		sys $cmd4
 
-		sys samtools sort $filt_bam.tmp $filt_bam_prefix
-		sys rm -f $filt_bam.tmp
+		sys if [[ $multimapping > 0 ]]; then \
+			sambamba sort -t $nth_dedup $bam -n -o $qname_sort_bam; \
+			samtools view -h $qname_sort_bam | $(which assign_multimappers.py) -k $multimapping | \
+			samtools view -F 1804 -Su /dev/stdin | \
+			sambamba sort -t $nth_dedup /dev/stdin -o $filt_bam; \
+			rm -f $qname_sort_bam; \
+		    else \
+		    	samtools view -F 1804 -q $mapq_thresh -u $bam | \
+		    	sambamba sort -t $nth_dedup /dev/stdin -o $filt_bam; \
+		    fi
 
 		//# Set Java environment variable with Xmx, because JVM will ignore our
 		//# runtime flag and use this if it has been set.
@@ -132,13 +120,9 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 		sys samtools view -F 1804 -b $filt_bam > $nodup_bam
 		
 		//# Index Final BAM file
-		sys samtools index $nodup_bam
-		
-		sys if [ "$nodup_bam.bai" != "$nodup_bam_idx" ]; then \
-			cp $nodup_bam.bai $nodup_bam_idx; \
-			fi
-
-		sys samtools flagstat $nodup_bam > $map_qc
+		sys sambamba index -t $nth_dedup $nodup_bam
+	
+		sys sambamba flagstat -t $nth_dedup $nodup_bam > $map_qc
 
 		//# =============================
 		//# Compute library complexity
@@ -162,7 +146,6 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 	hrchy_out := ["L1_align/$label/filt_bam","L1_qc/$label/dup_qc","L1_qc/$label/map_qc","L1_qc/$label/pbc_qc"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
-
 	_add_to_filetable( hrchy_out, out )
 
 	wait_par()
@@ -188,29 +171,11 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 	tmp_filt_bam 	:= "$prefix.dupmark.bam"
 	tmp_filt_bam_prefix := "$prefix.dupmark"
 
-	// for multimapping
-	string cmd1, cmd2, cmd3
-
-	if ( multimapping > 0 ) {
-
-		tmp_filt_bam_multimap_prefix 	:= "$tmp_filt_bam_prefix.multi"
-		tmp_filt_bam_multimap 		:= "$tmp_filt_bam_prefix.multi.bam"
-
-		cmd1 	= "samtools view -F 524 -f 2 -u $bam | samtools sort -n - $tmp_filt_bam_multimap_prefix"
-		cmd2 	= "samtools view -h $tmp_filt_bam_multimap | $(which assign_multimappers.py) -k $multimapping --paired-end | samtools view -bS - > $tmp_filt_bam"
-		cmd3 	= "rm -f $tmp_filt_bam_multimap"
-	}
-	else {
-		cmd1 	= "echo"
-		cmd2 	= "samtools view -F 1804 -f 2 -q $mapq_thresh -u $bam | samtools sort -n - $tmp_filt_bam_prefix"
-		cmd3 	= "echo"
-	}
-
 	in 		:= [ bam ]
 	out 		:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	taskName:= "dedup_bam_PE " + label
-	mem 	:= get_res_mem(mem_markdup);	timeout := get_res_wt(wt_markdup)
+	cpus 	:= nth_dedup; 	mem 	:= get_res_mem(mem_dedup);	timeout := get_res_wt(wt_dedup)
 
 	task( out<-in ) {
 
@@ -225,17 +190,25 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		//# ==================
 
 		//# Will produce name sorted BAM
-		sys $cmd1
-		sys $cmd2
-		sys $cmd3
-
 		//# Remove orphan reads (pair was removed)
 		//# and read pairs mapping to different chromosomes
 		//# Obtain position sorted BAM			
-
 		//# Will produce coordinate sorted BAM
-		sys samtools fixmate -r $tmp_filt_bam $tmp_filt_bam.fixmate.bam
-		sys samtools view -F 1804 -f 2 -u $tmp_filt_bam.fixmate.bam | samtools sort - $filt_bam_prefix
+
+		sys if [[ $multimapping > 0 ]]; then \
+			samtools view -F 524 -f 2 -u $bam | \
+			sambamba sort -t $nth_dedup -n /dev/stdin -o $tmp_filt_bam; \
+			samtools view -h $tmp_filt_bam | \
+			$(which assign_multimappers.py) -k $multimapping --paired-end | \
+			samtools fixmate -r /dev/stdin $tmp_filt_bam.fixmate.bam; \
+		    else \
+		    	samtools view -F 1804 -f 2 -q $mapq_thresh -u $bam | \
+		    	sambamba sort -t $nth_dedup -n /dev/stdin -o $tmp_filt_bam; \
+		        samtools fixmate -r $tmp_filt_bam $tmp_filt_bam.fixmate.bam; \
+		    fi
+		
+		sys samtools view -F 1804 -f 2 -u $tmp_filt_bam.fixmate.bam | sambamba sort -t $nth_dedup /dev/stdin -o $filt_bam
+
 		sys rm -f $tmp_filt_bam.fixmate.bam
 
 		//# Set Java environment variable with Xmx, because JVM will ignore our
@@ -266,13 +239,9 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		
 		sys samtools view -F 1804 -f 2 -b $filt_bam > $nodup_bam
 						
-		sys samtools index $nodup_bam
+		sys sambamba index -t $nth_dedup $nodup_bam
 
-		sys if [ "$nodup_bam.bai" != "$nodup_bam_idx" ]; then \
-			cp $nodup_bam.bai $nodup_bam_idx; \
-			fi
-
-		sys samtools flagstat $nodup_bam > $map_qc
+		sys sambamba flagstat -t $nth_dedup $nodup_bam > $map_qc
 
 		//# =============================
 		//# Compute library complexity
@@ -283,13 +252,15 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		//# Obtain unique count statistics
 	
 		//# TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
-		sys samtools sort -n $filt_bam $filt_bam.tmp
+		sys sambamba sort -t $nth_dedup -n $filt_bam -o $filt_bam.tmp.bam
+		
 		sys bedtools bamtobed -bedpe -i $filt_bam.tmp.bam | \
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}' | \
 			grep -v 'chrM' | sort | uniq -c | \
 			awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}' > $pbc_qc
-		sys rm $filt_bam.tmp.bam
-		
+
+		sys rm -f $filt_bam.tmp.bam
+
 		sys rm -f $filt_bam
 		sys rm -f $tmp_filt_bam
 	}
@@ -299,7 +270,6 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 	hrchy_out := ["L1_align/$label/filt_bam","L1_qc/$label/dup_qc","L1_qc/$label/map_qc","L1_qc/$label/pbc_qc"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
-
 	_add_to_filetable( hrchy_out, out )
 
 	wait_par()
