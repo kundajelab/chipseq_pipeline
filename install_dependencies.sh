@@ -2,8 +2,8 @@
 # Stop on error
 set -e
 
-conda create -n aquas_chipseq --file requirements.txt -y -c bioconda -c r
-conda create -n aquas_chipseq_py3 --file requirements_py3.txt -y -c bioconda -c r
+conda create -n aquas_chipseq --file requirements.txt -y -c defaults -c bioconda -c r
+conda create -n aquas_chipseq_py3 --file requirements_py3.txt -y -c defaults -c bioconda -c r
 
 
 ############ install additional packages
