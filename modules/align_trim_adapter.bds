@@ -1,0 +1,77 @@
+#!/usr/bin/env bds
+#vim: syntax=java
+
+include "species.bds"
+include "report.bds"
+
+
+help == adapter trimmer settings
+//help *resources :
+adapter 		:= "" 			help Adapter sequence (MUST be defined).
+adapter_err_rate	:= "0.02" 		help Maximum allowed adapter error rate (# errors divided by the length of the matching adapter region, default: 0.02).
+nth_trim		:= 2 			help # threads for adapter trimming (default: 2).
+wt_trim			:= "23h"		help Walltime for adapter trimming (default: 23h, 23:00:00).
+mem_trim		:= "12G"	 	help Max. memory for adapter trimming (default: 12G).
+
+init_align_trim_adapter()
+
+
+void init_align_trim_adapter() {
+	adapter 		= get_conf_val( adapter,		["adapter"] )
+	adapter_err_rate 	= get_conf_val( adapter_err_rate, 	["adapter_err_rate"] )
+	nth_trim 		= get_conf_val_int( nth_trim,		["nth_trim"] )
+	wt_trim 		= get_conf_val( wt_trim, 		["wt_trim"] )
+	mem_trim 		= get_conf_val( mem_trim, 		["mem_trim"] )
+
+	print("\n\n== adapter trimmer settings\n")
+	print( "Adapter sequence\t\t: $adapter\n")
+	print( "Maximum allowed error rate for cutadapt\t: $adapter_err_rate\n")
+	print( "# threads (adapter trimming)\t\t: $nth_trim\n")
+	print( "Walltime (adapter trimming)\t\t: $wt_trim\n")
+	print( "Max. memory (adapter trimming)\t\t: $mem_trim\n")
+}
+
+void chk_align_trim_adapter() {
+
+	if ( adapter == "" ) error("Adapter (-adapter) must be explicitly defined for adapter trimmer (cutadapt)!\n")
+}
+
+string _trim_adapters( string fastq, string o_dir, string label, string graph_id ) {
+
+	prefix	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
+	p_gz	:= "$prefix"+".trim.fastq.gz"
+
+	in 	:= [ fastq ]
+	out 	:= p_gz
+
+	taskName:= "trim_adapters $label $graph_id"
+	cpus 	:= nth_trim; 	mem := get_res_mem(mem_trim); 	timeout := get_res_wt(wt_trim)
+
+	task( out<-in ) {
+
+		sys $shcmd_init
+
+		sys cutadapt -e $adapter_err_rate -a $adapter $fastq | pigz -p $nth_trim > $p_gz
+	}
+
+	graph_in  := ["fastq$graph_id"+"_($label)"]
+	graph_out := ["trimmed_fastq$graph_id"+"_($label)"] 
+	hrchy_out := ["L1_align/$label/trimmed_fastq$graph_id"]
+
+	_add_to_graphviz( graph_in, in, graph_out, [out], "cutadapt\\n($label)", grp_color_trim_adapter )
+	_add_to_filetable( hrchy_out, [out] )
+
+	wait_par()
+
+	return out
+}
+
+string[] _trim_adapters_PE( string fastq1, string fastq2, string o_dir, string label ) {
+
+	out1 := _trim_adapters(fastq1, o_dir, label, 1 )
+	out2 := _trim_adapters(fastq2, o_dir, label, 2 )
+
+	wait_par()
+
+	return [out1, out2]
+}
