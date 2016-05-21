@@ -22,23 +22,21 @@ string _filt_top_peaks( string peakfile, string o_dir, string label, \
 	out 	:= peakfile_filt
 	taskName:= "filt_top_peaks " + label
 
-	task ( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
 		// sort by 8th (-log10(pval) ) column and take top $npeak_filt lines
 		sys zcat $peakfile | sort -grk8 | head -n $npeak_filt | gzip -c > $peakfile_filt
 	}
-			
-	graph_in  := ["$label_peak"+"_($label)"]
-	graph_out := ["$label_peak"+"_filt_($label)"]
-	hrchy_out := ["L1_peak/$hrchy/$label_peak"+"_filt"]
-
-	_add_to_graphviz( graph_in, in, graph_out, [out] )
-	_add_to_filetable( hrchy_out, [out] )
-
-	wait_par()
-
+	
+	register_par( tid, cpus )
+		
+	_add_to_graphviz( ["$label_peak"+"_($label)"], in, ["$label_peak"+"_filt_($label)"], [out] )
+	_add_to_filetable( ["L1_peak/$hrchy/$label_peak"+"_filt"], [out] )
+	
 	return out	
 }
 
@@ -60,7 +58,9 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 	
 	taskName:= "naive_overlap_thresh " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -76,17 +76,16 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 		sys rm -f $peak_PooledInRep1AndRep2
 	}
 
+	register_par( tid, cpus )
+
 	graph_in  := ["$label_peak"+"_(rep1)","$label_peak"+"_(rep1-pr1)","$label_peak"+"_(rep1-pr2)"]
 	graph_out := ["$label_peak"+"_(overlap)"]
-
 	peakcaller := filetype=="regionpeak" ? "spp" : "macs2"
 	hrchy_out := ["L1_peak/$peakcaller/overlap/$label"+"_overlap"]
 
 	_add_to_graphviz( graph_in, in, graph_out, [out], "naive_overlap_($label)", grp_color_naive_overlap )
 	_add_to_filetable( hrchy_out, [out] )
-		    
-	wait_par()
-
+		   
 	return peak_final
 }
 
@@ -133,7 +132,9 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks,
 	
 	taskName:= "naive_overlap_thresh " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -149,6 +150,8 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks,
 		sys rm -f $peak_PooledInReps $peak_PooledInPsRep1AndPsRep2
 	}
 
+	register_par( tid, cpus )
+
 	graph_in  := ["$label_peak"+"_(pooled)"]
 	for (int rep=1;rep<=peaks.size();rep++) graph_in += ["$label_peak"+"_(rep$rep)"]
 	graph_in += ["$label_peak"+"_(ppr1)","$label_peak"+"_(ppr2)"]
@@ -159,8 +162,6 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks,
 
 	_add_to_graphviz( graph_in, in, graph_out, [out], "naive_overlap_($label)", grp_color_naive_overlap )
 	_add_to_filetable( hrchy_out, [out] )
-
-	wait_par()
 
 	return peak_final
 }

@@ -7,7 +7,7 @@ include "report.bds"
 
 help == align bwa settings (requirements: -bwa_idx)
 param_bwa_aln	:= "-q 5 -l 32 -k 2" 	help Parameters for bwa aln (default: "-q 5 -l 32 -k 2").
-//help *resources
+
 nth_bwa		:= 2 			help # threads for bwa (default: 2).
 wt_bwa		:= "23h"		help Walltime for bwa (default: 23, 23:00:00).
 mem_bwa		:= "12G"	 	help Max. memory for bwa (default: 12G).
@@ -59,8 +59,6 @@ string[] _bwa( string fastq, string o_dir, string log_o_dir, string label ) {
 	_add_to_graphviz( ["fastq_($label)"], [fastq], ["bam_($label)"], [bam], "bwa_($label)", grp_color_bwa )
 	_add_to_filetable( ["L1_align/$label/bam"], [bam] )
 
-	wait_par()
-
 	return out
 }
 
@@ -89,8 +87,6 @@ string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, 
 		sai2.rm()
 	}
 
-	wait_par()
-
 	_add_to_graphviz( ["fastq1_($label)", "fastq2_($label)"], [fastq1,fastq2], ["bam_($label)"], [bam], "bwa_($label)", grp_color_bwa )
 	_add_to_filetable( ["L1_align/$label/bam"], [bam] )
 
@@ -108,7 +104,9 @@ string _bwa_aln( string fastq, string o_dir, string label ) {
 	taskName:= "bwa_aln " + label
 	cpus 	:= nth_bwa;	mem := get_res_mem(mem_bwa); timeout := get_res_wt(wt_bwa)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -116,7 +114,7 @@ string _bwa_aln( string fastq, string o_dir, string label ) {
 		sys bwa aln $param_bwa_aln -t $nth_bwa $bwa_idx $fastq > $sai
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
@@ -134,19 +132,21 @@ string[] _bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, str
 	taskName:= "bwa_sam " + label
 	cpus 	:= nth_bwa; 	mem 	:= get_res_mem(mem_bwa);	timeout:= get_res_wt(wt_bwa)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
 		//sys bwa samse $bwa_idx $sai $fastq | samtools view -Su - | samtools sort - $prefix
 		//sys samtools index $bam
 		//sys samtools flagstat $bam > $qc
-		sys bwa samse $bwa_idx $sai $fastq | sambamba view -t $nth_bwa -S --format=bam --compression-level=0 /dev/stdin \
+		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su /dev/stdin \
 			| sambamba sort -t $nth_bwa /dev/stdin -o $bam
 		sys sambamba flagstat $bam > $qc
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
@@ -166,7 +166,9 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 	taskName:= "bwa_sam_PE " + label
 	cpus 	:= nth_bwa; 	mem 	:= get_res_mem(mem_bwa);	timeout := get_res_wt(wt_bwa)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 		
@@ -190,10 +192,10 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 		//		samtools view -Su $sam | samtools sort - $prefix; \
 		//	fi
 		sys if [ $(cat $badcigar | wc -l) -gt 0 ]; then \
-				pigz -p $nth_bwa -cd $sam | grep -v -F -f $badcigar | sambamba view -t $nth_bwa -S --format=bam --compression-level=0 /dev/stdin \
+				pigz -p $nth_bwa -cd $sam | grep -v -F -f $badcigar | samtools view -Su /dev/stdin \
 				| sambamba sort -t $nth_bwa /dev/stdin -o $bam; \
 			else \
-				pigz -p $nth_bwa -cd $sam | sambamba view -t $nth_bwa -S --format=bam --compression-level=0 /dev/stdin | sambamba sort -t $nth_bwa /dev/stdin -o $bam; \
+				pigz -p $nth_bwa -cd $sam | samtools view -Su /dev/stdin | sambamba sort -t $nth_bwa /dev/stdin -o $bam; \
 			fi
 
 		//sys samtools flagstat $bam > $qc
@@ -204,7 +206,7 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 		sys rm -f $badcigar $sam
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }

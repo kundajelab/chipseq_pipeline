@@ -103,6 +103,8 @@ string _html_graphviz() { // graphviz diagram
 
 	// run graphviz
 	taskName := "report"
+	system := "local" // do not use cluster engine for this task
+	
 	task {
 		sys $shcmd_init
 		sys dot -Tsvg $dot > $svg

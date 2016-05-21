@@ -9,14 +9,12 @@ out_dir 	:= "out"	help Output directory (default: out).
 title		:= ""		help Prefix for HTML report and outputs without given prefix.
 
 help == parallelization settings
-no_par		:= false	help Serialize all jobs (equivalent to '-par_lvl 0', individual job can still use multiple threads).
-par_lvl		:= 3		help Level of parallelization (Max # of replicates / Max # of peak-calling jobs; 0: no par., 1: 1/1, 2: 2/1, 3: 2/2, 4: 4/2, 5: 4/4, 6: custom, 7: unlimited, default: 3).
-reps_in_par 	:= 2 		help Max # of replicates/controls to be processed in parallel (works with '-par_lvl 6' only, default: 2).
-peaks_in_par 	:= 2 		help Max # of peak-calling jobs in parallel ((works with '-par_lvl 6' only, default: 2).
+no_par		:= false	help Serialize all tasks (equivalent to '-nth 1', individual tasks can still use multiple threads).
 
 help == general resource settings
-wt 		:= "11h"	help Default Walltime for cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
-memory 		:= "12G"	help Default Maximum memory for cluster jobs (equivalent to '-mem', example: 4.5G, 1024M, default: 8G).
+nth 		:= 8 		help Maximum # threads for the pipeline. Use a big number for unlimited parallelization (default: 8).
+wt 		:= "11h"	help Walltime for cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
+memory 		:= "12G"	help Maximum memory for cluster jobs (equivalent to '-mem', example: 4.5G, 1024M, default: 8G).
 use_sys_default	:= false 	help Use system default resource settings (unlimited in most cases).
 
 help == shell environment settings
@@ -27,11 +25,11 @@ conda_env 	:= ""		help Anaconda Python environment name for all softwares includ
 conda_env_py3 	:= ""		help Anaconda Python environment name for Python3.
 
 
-shcmd_init 	:= ""  // Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
-shcmd_init_py3	:= ""  // for softwares using python3
+shcmd_init 	:= "" 	// Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
+shcmd_init_py3	:= "" 	// for softwares using python3
 
-string[] tids_rep
-string[] tids_callpeak	// array of task ids for peak calling jobs
+string[] tids_current 	// array of task ids currently running
+int{} nth_tasks 	// key: task id, value: # of threads for the task
 
 
 init_general()
@@ -42,9 +40,7 @@ void init_general() {
 
 	out_dir 	= get_conf_val( out_dir, 		["out_dir"] )		
 	no_par 		= get_conf_val_bool( no_par, 		["no_par"] )
-	par_lvl 	= get_conf_val_int( par_lvl, 		["par_lvl"] )
-	reps_in_par 	= get_conf_val_int( reps_in_par, 	["reps_in_par"] )
-	peaks_in_par 	= get_conf_val_int( peaks_in_par, 	["peaks_in_par"] )
+	nth 		= get_conf_val_int( nth, 		["nth"] )
 	wt 		= get_conf_val( wt, 			["wt"] )
 	memory 		= get_conf_val( memory, 		["memory","mem"] )
 	use_sys_default	= get_conf_val_bool( use_sys_default, 	["use_sys_default"] )
@@ -53,7 +49,6 @@ void init_general() {
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
-	init_par()
 	print_general()
 
 	// cpus, mem and timeout are BDS variables for default resource settings
@@ -63,49 +58,12 @@ void init_general() {
 	walltimeout 	= 3600*24*100 	// timeout var. in BigDataScript (100 days, jobs will never be stopped by BDS due to BDS timeout)
 }
 
-void init_par() {
-
-	if ( no_par ) 	par_lvl = 0
-
-	// set max. # of reps and peaks to be processed in parallel
-
-	if ( par_lvl >= 7 ) { // unlimited
-		reps_in_par 	= 100
-		peaks_in_par 	= 100
-	}	
-	else if ( par_lvl >= 6 ) { // custom
-		// vars are already read
-	}
-	else if ( par_lvl >= 5 ) {
-		reps_in_par	= 4
-		peaks_in_par 	= 4
-	}
-	else if ( par_lvl >= 4 ) {
-		reps_in_par	= 4
-		peaks_in_par 	= 2
-	}
-	else if ( par_lvl >= 3 ) {
-		reps_in_par	= 2
-		peaks_in_par 	= 2
-	}
-	else if ( par_lvl >= 2 ) {
-		reps_in_par	= 2
-		peaks_in_par 	= 1
-	}
-	else {
-		reps_in_par	= 1
-		peaks_in_par 	= 1		
-	}
-}
-
 void print_general() {
 
 	print("\n\n== general pipeline settings\n")
 	print( "Output dir.\t\t\t: $out_dir\n" )
 	print( "No parallel jobs\t\t: $no_par\n" )
-	print( "Level of parallelization\t: $par_lvl\n" )
-	print( "Max # rep/ctl in parallel\t: $reps_in_par\n" )
-	print( "Max # peakcalling in parallel\t: $peaks_in_par\n" )
+	print( "Maximum # threads \t\t: $nth\n" )
 	print( "Walltime (general)\t\t: $wt\n" )
 	print( "Max. memory (general)\t\t: $memory\n" )
 	print( "Env. for Anaconda python2\t: $conda_env\n" )
@@ -237,27 +195,43 @@ int get_res_mem( string str ) {
 	return (use_sys_default || is_system_local() ) ? -1 : parse_mem( str )
 }
 
-void wait_par() {
+void wait_par( int nth_task ) {
 
-	if ( par_lvl <= 0 ) wait
+	sleep( rand() + 0.5 )
+
+	while ( true ) {
+		
+		tids_current_ := tids_current // make dummy for thread safety
+		
+		if ( tids_current_.size() == 0 ) break
+
+		int nth_current // count # threads for currently going tasks
+		for ( string tid : tids_current_ ) {
+			if ( !tid.isDone() ) nth_current += nth_tasks{tid}
+		}
+
+		if ( no_par || (nth_current+nth_task) > nth ) {
+
+			//print("\nWait... ( $nth_current+$nth_task > $nth ) ( size "+tids_current_.size()+", nth_curr $nth_current )\n")
+			wait tids_current_
+
+			tids_current = []
+
+			sleep( rand()*5.0 + 0.5 )
+		}
+		else {
+			break
+		}
+	}
+
+	//print("\nStarting a new task : $nth_task \n")
 }
 
-void wait_par_rep() {
+void register_par( string tid, int nth_task ) {
 
-	if ( tids_rep.size() >= reps_in_par ) {
-		dummy := tids_rep // fails without dummy array, it's BDS bug
-		wait dummy
+	if ( tid == "" ) return
+	//print("\nRegistering a task : "+ tid.isDone()+ " $tid, $nth_task \n")
 
-		if ( tids_rep.size() > 0 ) tids_rep = []
-	}
-}
-
-void wait_par_peak() {
-
-	if ( tids_callpeak.size() >= peaks_in_par ) {
-		dummy := tids_callpeak // fails without dummy array, it's BDS bug
-		wait dummy
-
-		if ( tids_callpeak.size() > 0 ) tids_callpeak = []
-	}
+	tids_current.add(tid)
+	nth_tasks{tid} = nth_task
 }

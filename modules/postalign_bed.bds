@@ -33,7 +33,9 @@ string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 
 	taskName:= "_subsample_tag " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 	
@@ -42,7 +44,8 @@ string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 			grep -v "chrM" | shuf -n $nlines | gzip -c > $subsampled_tag
 	}
 
-	wait_par()
+	register_par( tid, cpus )
+
 	return out
 }
 
@@ -59,7 +62,9 @@ string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string labe
 
 	taskName:= "_subsample_tag_PE " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -69,7 +74,7 @@ string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string labe
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$4,$5,$6}' | gzip -c > $subsampled_tag
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
@@ -86,7 +91,9 @@ string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, str
 	out 	:= subsampled_tag
 	taskName:= "subsample_bedpe2tag" + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -97,7 +104,7 @@ string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, str
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$3,"N","1000",$9}' | gzip -c > $subsampled_tag
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
@@ -113,14 +120,16 @@ string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) 
 
 	taskName:= "subsample_bedpe " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
 		sys zcat $bedpe | grep -v "chrM" | shuf -n $nlines | gzip -c > $subsampled_bedpe
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
@@ -137,14 +146,16 @@ string _tn5_shift_tag( string tag, string o_dir, string label ) {
 
 	taskName:= "shift_tag " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
 		sys zcat $tag | awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' | gzip -c > $shifted_tag
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
@@ -162,7 +173,9 @@ string[] _xcor( string tag, string o_dir, string label, string hrchy ) {
 
 	taskName:= "xcor " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -175,14 +188,10 @@ string[] _xcor( string tag, string o_dir, string label, string hrchy ) {
 		sys mv $xcor_score.tmp $xcor_score
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
-	graph_in  := ["subsampled_tagalign_($label)"]
-	graph_out := ["xcor_qc_($label)"]	
-	hrchy_out := ["L1_qc/$hrchy/xcor_qc"]
-
-	//_add_to_graphviz( graph_in, in, graph_out, out, "cross-corr.\\n($label)", grp_color_xcor )
-	_add_to_filetable( hrchy_out, out )
+	//_add_to_graphviz( ["subsampled_tagalign_($label)"], in, ["xcor_qc_($label)"], out, "cross-corr.\\n($label)", grp_color_xcor )
+	_add_to_filetable( ["L1_qc/$hrchy/xcor_qc"], out )
 
 	return out
 }
@@ -200,7 +209,9 @@ string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
 
 	taskName:= "spr " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -219,15 +230,10 @@ string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
 		sys rm -f $prefix_pr1.01
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
-	graph_in  := ["tagalign_($label)"]
-	graph_out := ["tagalign_($label-pr1)", "tagalign_($label-pr2)"]
-	hrchy_out := ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"]
-
-	_add_to_graphviz( graph_in, in, graph_out, out )
-
-	_add_to_filetable( hrchy_out, out )
+	_add_to_graphviz( ["tagalign_($label)"], in, ["tagalign_($label-pr1)", "tagalign_($label-pr2)"], out )
+	_add_to_filetable( ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"], out )
 
 	return out
 }
@@ -245,7 +251,9 @@ string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label
 
 	taskName:= "spr_PE " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -266,15 +274,10 @@ string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label
 		sys rm -f $prefix_pr1.01
 	}
 	
-	wait_par()
+	register_par( tid, cpus )
 
-	graph_in  := ["bedpe_($label)"]
-	graph_out := ["tagalign_($label-pr1)", "tagalign_($label-pr2)"]
-	hrchy_out := ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"]
-
-	_add_to_graphviz( graph_in, in, graph_out, out )
-
-	_add_to_filetable( hrchy_out, out )
+	_add_to_graphviz( ["bedpe_($label)"], in, ["tagalign_($label-pr1)", "tagalign_($label-pr2)"], out )
+	_add_to_filetable( ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"], out )
 
 	return out
 }
@@ -294,7 +297,9 @@ string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string lab
 
 	taskName:= "spr_tag_PE " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -320,15 +325,10 @@ string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string lab
 		sys rm -f $joined
 	}
 	
-	wait_par()
+	register_par( tid, cpus )
 
-	graph_in  := ["tagalign_($label)"]
-	graph_out := ["tagalign_($label-pr1)", "tagalign_($label-pr2)"]
-	hrchy_out := ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"]
-
-	_add_to_graphviz( graph_in, in, graph_out, out )
-
-	_add_to_filetable( hrchy_out, out )
+	_add_to_graphviz( ["tagalign_($label)"], in, ["tagalign_($label-pr1)", "tagalign_($label-pr2)"], out )
+	_add_to_filetable( ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"], out )
 
 	return out
 }
@@ -343,21 +343,15 @@ string[] _ppr( string tag1, string tag1_pr1, string tag1_pr2, string tag2, strin
 
 	out 	:= [ tag_pooled, tag_ppr1, tag_ppr2 ]
 
-	wait_par()
-
 	_add_to_graphviz( ["tagalign_(rep1)","tagalign_(rep2)"], [tag1,tag2], \
 			  ["tagalign_(pooled)"], [tag_pooled] )
-
 	_add_to_graphviz( ["tagalign_(rep1-pr1)","tagalign_(rep2-pr1)"], [tag1_pr1,tag2_pr1], \
 			  ["tagalign_(ppr1)"], [tag_ppr1] )
-
 	_add_to_graphviz( ["tagalign_(rep1-pr2)","tagalign_(rep2-pr2)"], [tag1_pr2,tag2_pr2], \
 			  ["tagalign_(ppr2)"], [tag_ppr2] )
 
 	_add_to_filetable(["L1_align/pooled_rep/tagalign"], [tag_pooled] )
-
 	_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr1/tagalign"], [tag_ppr1] )
-
 	_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr2/tagalign"], [tag_ppr2] )
 
 	return out
@@ -376,25 +370,26 @@ string _pool_tag( string tag1, string tag2, string o_dir, string label ) {
 
 	taskName:= "pool_tag " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled		
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
 
 string _pool_tag( string[] tags, string o_dir, string label ) {
 
-// LINUX has limit on filename length (255), make it as shorter as possible
+// LINUX has limit on filename length (255), make it as short as possible
 //	prefix 		:= "$o_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )
 	prefix 		:= replace_dir( rm_ext( tags[0], ["bed","tagAlign"] ), o_dir )
 
 	tag_pooled 	:= "$prefix"+"_pooled.tagAlign.gz"
-
 	tags_str 	:= array_to_str( tags, " " ) // join
 
 	in 		:= tags
@@ -402,13 +397,15 @@ string _pool_tag( string[] tags, string o_dir, string label ) {
 
 	taskName:= "pool_tag " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 		sys zcat $tags_str | gzip -c > $tag_pooled
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }

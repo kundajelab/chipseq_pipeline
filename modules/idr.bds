@@ -50,10 +50,6 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 	idr_out_gz	:= "$idr_out.gz"
 	png 		:= "$idr_out.png"
 
-	in 	:= [peak1, peak2, pooled]
-	out 	:= path_exists( blacklist ) ?  	[filt_peak_idr, png, idr_out_gz, filt_peak_idr_trk ] : \
-						[peak_idr, png, idr_out_gz, peak_idr_trk]
-
 	string cmd1, cmd2, cmd3
 
 	if ( path_exists( blacklist ) ) {
@@ -67,9 +63,14 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 		cmd3 = "echo"
 	}
 
+	in 	:= [peak1, peak2, pooled]
+	out 	:= path_exists( blacklist ) ?  	[filt_peak_idr, png, idr_out_gz, filt_peak_idr_trk ] : \
+						[peak_idr, png, idr_out_gz, peak_idr_trk]
 	taskName:= "idr2 " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 		
 		sys $shcmd_init_py3
 
@@ -94,15 +95,14 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 		sys rm -f $peak_idr_trk_tmp $filt_peak_idr_trk_tmp
 	}
 
-	for ( int i=0; i<graph_in.size(); i++) graph_in[i] = graph_prefix + "_(" + graph_in[i] + ")"
+	register_par( tid, cpus )
 
+	for ( int i=0; i<graph_in.size(); i++) graph_in[i] = graph_prefix + "_(" + graph_in[i] + ")"
 	graph_out := ["idr_peak_($label)"]
 	hrchy_out := ["L1_peak/idr/$hrchy/idr_peak","","L1_peak/idr/$hrchy/unthsld_peak"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "idr_($label)", grp_color_idr )
 	_add_to_filetable( hrchy_out, out )
-
-	wait_par()
 
 	return out
 }
@@ -207,7 +207,9 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 
 	taskName:= "idr final qc" + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -215,16 +217,13 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 		sys echo -e "$Nt\t$col_val""$Np\t$conservative_set\t$optimal_set\t$rescue_ratio\t$self_consistency_ratio\t$reproducibility" >> $qc
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	string[] graph_in
-
 	for ( string key : idr_tr.keys() ) graph_in.add( "idr_peak_("+_get_label_from_key(key)+")" )	
 	for ( string key : idr_pr.keys() ) graph_in.add( "idr_peak_(rep$key-pr)" )
-
 	graph_in  += ["idr_peak_(ppr)"]
 	graph_out := ["idr_qc","idr_peak_(opt)","idr_peak_(consv)"]
-
 	hrchy_out := ["L1_qc/idr_qc","L1_peak/idr/opt_set/idr_peak","L1_peak/idr/consv_set/idr_peak"]
 
 	_add_to_graphviz( graph_in, in, graph_out, [qc, idr_opt_set_new, idr_consv_set_new], "idr\\nfinal\\nqc", grp_color_idr_final )
