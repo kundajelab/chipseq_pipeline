@@ -209,15 +209,28 @@ void wait_par( int nth_task ) {
 		
 		if ( tids_current_.size() == 0 ) break
 
-		int nth_current // count # threads for currently going tasks
+		int nth_current 
+
+		//print("\nIn wait_par loop\n")
+
+		string tid_oldest
+
+		// sum total # threads for currently running tasks, and find the oldest task
 		for ( string tid : tids_current_ ) {
-			if ( !tid.isDone() ) nth_current += nth_tasks{tid}
+			if ( !tid.isDone() ) {
+				if ( tid_oldest == "" ) tid_oldest = tid
+				n := nth_tasks{tid}
+				nth_current += n
+				//print("\n\t$tid : $n, $nth_current\n")
+			}
 		}
 
 		if ( no_par || (nth_current+nth_task) > nth ) {
 
 			//print("\nWait... ( $nth_current+$nth_task > $nth ) ( size "+tids_current_.size()+", nth_curr $nth_current )\n")
-			wait tids_current_
+
+			//wait tids_current_
+			if ( tid_oldest != "" ) wait tid_oldest // wait for the oldest task found
 
 			tids_current = []
 
