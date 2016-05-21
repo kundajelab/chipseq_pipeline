@@ -269,27 +269,27 @@ int parse_mem( string str ) {
 
 	if ( trimmed.indexOf("gb")>=0 ) {
 		delimiter = "gb"
-		multiplier = 1000*1000*1000
+		multiplier = 1024*1024*1024
 	}
 	else if ( trimmed.indexOf("g")>=0 ) {
 		delimiter = "g"
-		multiplier = 1000*1000*1000
+		multiplier = 1024*1024*1024
 	}
 	else if ( trimmed.indexOf("mb")>=0 ) {
 		delimiter = "mb"
-		multiplier = 1000*1000
+		multiplier = 1024*1024
 	}
 	else if ( trimmed.indexOf("m")>=0 ) {
 		delimiter = "m"
-		multiplier = 1000*1000
+		multiplier = 1024*1024
 	}
 	else if ( trimmed.indexOf("kb")>=0 ) {
 		delimiter = "kb"
-		multiplier = 1000
+		multiplier = 1024
 	}
 	else if ( trimmed.indexOf("k")>=0 ) {
 		delimiter = "k"
-		multiplier = 1000
+		multiplier = 1024
 	}
 	else if ( trimmed.indexOf("b")>=0 ) {
 		delimiter = "b"
