@@ -29,7 +29,7 @@ conda_env_py3 	:= ""		help Anaconda Python environment name for Python3.
 shcmd_init 	:= "" 	// Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
 shcmd_init_py3	:= "" 	// for softwares using python3
 
-string[] tids_current 	// array of task ids currently running
+string[] tids_all 	// array of task ids currently running
 int{} nth_tasks 	// key: task id, value: # of threads for the task
 
 
@@ -205,35 +205,31 @@ void wait_par( int nth_task ) {
 	sleep( rand() + 0.5 )
 
 	while ( true ) {
-		
-		tids_current_ := tids_current // make dummy for thread safety
-		
-		if ( tids_current_.size() == 0 ) break
-
-		int nth_current 
 
 		//print("\nIn wait_par loop\n")
-
+		
+		tids_all_ := tids_all // make dummy for thread safety
+		
 		string tid_oldest
+		int nth_running 
+		//int num_task
 
 		// sum total # threads for currently running tasks, and find the oldest task
-		for ( string tid : tids_current_ ) {
+		for ( string tid : tids_all_ ) {
 			if ( !tid.isDone() ) {
 				if ( tid_oldest == "" ) tid_oldest = tid
 				n := nth_tasks{tid}
-				nth_current += n
-				//print("\n\t$tid : $n, $nth_current\n")
+				nth_running += n
+				//num_task++
+				//print("\n\t$tid : $n, $nth_running\n")
 			}
 		}
 
-		if ( no_par || (nth_current+nth_task) > nth ) {
+		if ( no_par || (nth_running+nth_task) > nth ) {
 
-			//print("\nWait... ( $nth_current+$nth_task > $nth ) ( size "+tids_current_.size()+", nth_curr $nth_current )\n")
+			//print("\nWait... ( $nth_running+$nth_task > $nth ) ( size "+num_task+", nth_curr $nth_running )\n")
 
-			//wait tids_current_
 			if ( tid_oldest != "" ) wait tid_oldest // wait for the oldest task found
-
-			tids_current = []
 
 			sleep( rand()*5.0 + 0.5 )
 		}
@@ -241,15 +237,14 @@ void wait_par( int nth_task ) {
 			break
 		}
 	}
-
-	//print("\nStarting a new task : $nth_task \n")
 }
 
 void register_par( string tid, int nth_task ) {
 
 	if ( tid == "" ) return
+
 	//print("\nRegistering a task : "+ tid.isDone()+ " $tid, $nth_task \n")
 
-	tids_current.add(tid)
+	tids_all.add(tid)
 	nth_tasks{tid} = nth_task
 }
