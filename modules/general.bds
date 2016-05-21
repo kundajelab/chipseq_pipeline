@@ -15,7 +15,8 @@ help == general resource settings
 nth 		:= 8 		help Maximum # threads for the pipeline. Use a big number for unlimited parallelization (default: 8).
 wt 		:= "11h"	help Walltime for cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
 memory 		:= "12G"	help Maximum memory for cluster jobs (equivalent to '-mem', example: 4.5G, 1024M, default: 8G).
-use_sys_default	:= false 	help Use system default resource settings (unlimited in most cases).
+unlimited_mem_wt:= false 	help Use unlimited max. memory and walltime for a cluster engine.
+use_system 	:= "" 		help Force to use a system (equivalent to 'bds -s [SYSTEM_NAME] ...', any system defined in bds.config can be used).
 
 help == shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
@@ -43,9 +44,10 @@ void init_general() {
 	nth 		= get_conf_val_int( nth, 		["nth"] )
 	wt 		= get_conf_val( wt, 			["wt"] )
 	memory 		= get_conf_val( memory, 		["memory","mem"] )
-	use_sys_default	= get_conf_val_bool( use_sys_default, 	["use_sys_default"] )
+	unlimited_mem_wt= get_conf_val_bool( unlimited_mem_wt, 	["unlimited_mem_wt"] )
 	conda_env	= get_conf_val( conda_env, 		["conda_env"] )
 	conda_env_py3	= get_conf_val( conda_env_py3, 		["conda_env_py3"] )
+	use_system 	= get_conf_val( use_system, 		["use_system"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
@@ -56,6 +58,7 @@ void init_general() {
 	mem 		= get_res_mem(memory)
 	timeout 	= get_res_wt(wt)
 	walltimeout 	= 3600*24*100 	// timeout var. in BigDataScript (100 days, jobs will never be stopped by BDS due to BDS timeout)
+	if ( use_system != "" ) system 	= use_system
 }
 
 void print_general() {
@@ -68,9 +71,10 @@ void print_general() {
 	print( "Max. memory (general)\t\t: $memory\n" )
 	print( "Env. for Anaconda python2\t: $conda_env\n" )
 	print( "Env. for Anaconda python3\t: $conda_env_py3\n" )
+	print( "Force to use a system\t: $use_system\n" )
 
-	if ( use_sys_default ) {
-		print( "System default resource settings (unlimited in most cases) will be used for walltime and max. memory!\n")
+	if ( unlimited_mem_wt ) {
+		print( "Use limited max. memory and walltime (jobs will be submitted to a cluster engine without memory and walltime settings)\n")
 	}
 }
 
@@ -187,12 +191,12 @@ string get_rel_path( string path ) {
 
 int get_res_wt( string str ) {
 
-	return (use_sys_default || is_system_local() ) ? -1 : parse_time( str )
+	return (unlimited_mem_wt || is_system_local() ) ? -1 : parse_time( str )
 }
 
 int get_res_mem( string str ) {
 
-	return (use_sys_default || is_system_local() ) ? -1 : parse_mem( str )
+	return (unlimited_mem_wt || is_system_local() ) ? -1 : parse_mem( str )
 }
 
 void wait_par( int nth_task ) {
