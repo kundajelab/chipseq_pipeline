@@ -444,6 +444,15 @@ More information is at <a href="http://pcingola.github.io/BigDataScript/bigDataS
 
 
 
+### BASH completion for a UNIX screen
+
+For automatic BASH completion for screens (http://www.commandlinefu.com/commands/view/12160/bash-auto-complete-your-screen-sessions), add the following to your `$HOME/.bashrc`:
+```
+complete -C "perl -e '@w=split(/ /,\$ENV{COMP_LINE},-1);\$w=pop(@w);for(qx(screen -ls)){print qq/\$1\n/ if (/^\s*\$w/&&/(\d+\.\w+)/||/\d+\.(\$w\w*)/)}'" screen
+```
+
+
+
 ### Troubleshooting
 
 1) /bin/bash: module: line 1: syntax error: unexpected end of file
@@ -477,7 +486,7 @@ export PICARDROOT=/path/to/your/picard-tool
 4) awk: cmd. line:1: fatal: division by zero attempted
 
 This error happens when 1) picard tool's MarkDuplicate is running out of memory, 2) fastq inputs have wrong endedness (SE or PE) or 3) input raw bam is incorrect.
-For 1) balance memory usage among parallel tasks, add `-no_par` or reduce level of parallelization (`-par_lvl [PARALLEL_LEVEL <= 2]`).
+For 1) balance memory usage among parallel tasks, add `-no_par` or reduce max. # threads (`-nth [SMALL_NUMBER]`).
 For 2) check your fastq inputs are correct (`-fastqN_1`, `-fastqN_2`, ...) and also check their endedness (SE or PE) parameters like (`-se` or `-pe`).
 For 3) check if there is an error in aligning stage (in an HTML report).
 

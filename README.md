@@ -316,23 +316,9 @@ For completely serialized jobs:
 ```
 -no_par
 ```
-
-You can also set up the level of parallelization for the pipeline.
+You can also set up a limit for total # threads. Total # threads used by the pipeline will not exceed this limit.
 ```
--par_lvl [PAR_LEVEL; 0-7]
-```
-0: no parallel jobs (equivalent to `-no_par`, all subtasks for each replicate will also be serialized)
-1: no replicates/controls in parallel (subtasks for each replicate can be parallelized)
-2: 2 replicates/controls in parallel
-3: 2 replicates/controls and 2 peak-callings in parallel (default)
-4: 4 replicates/controls and 2 peak-callings in parallel
-5: 4 replicates/controls and 4 peak-callings in parallel
-6: customized
-7: unlimited
-
-For customized parallelization:
-```
--par_lvl 6 -reps_in_par [NO_REP_IN_PAR] -peaks_in_par [NO_PEAKCALLING_IN_PAR]
+-nth [MAX_TOTAL_NO_THREADS]
 ```
 
 
