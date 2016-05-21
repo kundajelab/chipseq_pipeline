@@ -7,7 +7,7 @@ include "report.bds"
 
 help == callpeak spp settings
 npeak 		:= 300000 	help Threshold on # peaks (-npeak in spp) (default: 300000).
-//help *resources :
+
 nth_spp 	:= 2		help # threads for spp (run_spp.R) (default: 2).
 wt_spp		:= "15h"	help Walltime for spp (default: 10h, 10:00:00).
 mem_spp		:= "8G" 	help Max. memory for spp (default: 8G).
@@ -50,7 +50,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 	taskName:= "spp " + label
 	cpus 	:= nth_spp;	mem := get_res_mem(mem_spp);	timeout := get_res_wt(wt_spp)
 
-	wait_par_peak()
+	wait_par( cpus )
 
 	tid := task( out<-in ) {
 
@@ -66,16 +66,13 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 
 		sys mv $pdf_tmp $pdf
 	}
-	tids_callpeak.add(tid)
 
-	graph_in  := [ "tagalign_($label)","tagalign_($label_ctl)"]
-	graph_out := [ "peak_spp_($label)" ]
-	hrchy_out := [ "L1_peak/spp/$hrchy/peak" ]
+	register_par( tid, cpus )
 
-	_add_to_graphviz( graph_in, in, graph_out, out, "spp_($label)", grp_color_spp )
-	_add_to_filetable( hrchy_out, out )
-
-	wait_par()
+	_add_to_graphviz( [ "tagalign_($label)","tagalign_($label_ctl)"], in, \
+			[ "peak_spp_($label)" ], out, \
+			"spp_($label)", grp_color_spp )
+	_add_to_filetable( [ "L1_peak/spp/$hrchy/peak" ], out )
 
 	return out
 }

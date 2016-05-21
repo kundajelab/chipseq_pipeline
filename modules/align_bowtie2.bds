@@ -7,7 +7,7 @@ include "report.bds"
 
 
 help == align bowtie2 settings (requirements: -bwt2_idx)
-//help *resources :
+
 nth_bwt2	:= 2 			help # threads for bowtie2 (default: 2).
 wt_bwt2		:= "23h"		help Walltime for bowtie2 (default: 23h, 23:00:00).
 mem_bwt2	:= "12G"	 	help Max. memory for bowtie2 (default: 12G).
@@ -48,13 +48,17 @@ string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, b
 	taskName:= "bowtie2 "+label
 	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
 		sys bowtie2 $param -x $bwt2_idx --threads $nth_bwt2 -U <(zcat -f $fastq) 2> $log | \
 			samtools view -Su /dev/stdin | sambamba sort /dev/stdin -t $nth_bwt2 -o $bam
 	}
+
+	register_par( tid, cpus )
 
 	graph_in := trimmed ? 	["trimmed_fastq_($label)"] : ["fastq_($label)"]
 	graph_out := ["bam_($label)"]//,"align_qc_($label)"]
@@ -63,7 +67,6 @@ string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, b
 	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_($label)", grp_color_bwt2 )
 	_add_to_filetable( hrchy_out, out )	
 
-	wait_par()
 
 	return out
 }
@@ -85,7 +88,9 @@ string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string lab
 	taskName:= "bowtie2_csem "+label
 	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -99,14 +104,14 @@ string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string lab
 		sys rm -f $sam
 	}
 
+	register_par( tid, cpus )
+
 	graph_in  := trimmed ? 	["trimmed_fastq1_($label)"] : ["fastq_($label)"]
 	graph_out := ["bam_($label)"]//,"align_qc_($label)"]
 	hrchy_out := ["L1_align/$label/bam","L1_qc/$label/bwt2_qc"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_csem_($label)", grp_color_bwt2 )
 	_add_to_filetable( hrchy_out, out )	
-
-	wait_par()
 
 	return out
 }
@@ -126,7 +131,9 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_d
 	taskName:= "bowtie2_PE "+label
 	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -135,6 +142,8 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_d
 			samtools view -Su /dev/stdin | sambamba sort /dev/stdin -t $nth_bwt2 -o $bam
 	}
 
+	register_par( tid, cpus )
+
 	graph_in := trimmed ? 	["trimmed_fastq1_($label)","trimmed_fastq2_($label)"] : \
 				["fastq1_($label)","fastq2_($label)"]
 	graph_out := ["bam_($label)"]//,"align_qc_($label)"]
@@ -142,8 +151,6 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_d
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "bowtie2_($label)", grp_color_bwt2 )
 	_add_to_filetable( hrchy_out, out )	
-
-	wait_par()
 
 	return out
 }

@@ -6,7 +6,7 @@ include "report.bds"
 
 
 help == callpeak macs2 settings (requirements: -chrsz -gensz)
-//help *resources: 
+
 nth_macs2		:= 2 		help # threads for MACS2 (default: 2)
 wt_macs2		:= "10h"	help Walltime for MACS2 (default: 10h, 10:00:00).
 mem_macs2		:= "8G" 	help Max. memory for MACS2 (default: 8G).
@@ -62,7 +62,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
  	taskName:= "macs2 " + label
 	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
 
-	wait_par_peak()
+	wait_par( cpus )
 
 	tid := task( out<-in ) {
 
@@ -134,25 +134,21 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 
 		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
 	}
-	tids_callpeak.add(tid)
+
+	register_par( tid, cpus )
 
 	graph_in  := [ "tagalign_($label)","tagalign_($label_ctl)"]
-
 	graph_out := [	"peak_macs2_($label)",\
 			"gpeak_macs2_($label)",\
 		      	"p-val_sig._($label)",\
 		      	"fc_sig._($label)" ]
-
 	hrchy_out := [	"L1_peak/macs2/$hrchy/peak",\
 			"L1_peak/macs2/$hrchy/gpeak",\
 		   	"L1_signal/macs2/$hrchy/pval", \
 		   	"L1_signal/macs2/$hrchy/fc" ]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "macs2_($label)", grp_color_macs2 )
-
 	_add_to_filetable( hrchy_out, out )
-
-	wait_par()
 
 	return out
 }
@@ -187,7 +183,7 @@ string[] _macs2_atac( string tag, string smooth_window, string pval_thresh, bool
 	taskName:= "macs2_atac " + label + pval_str
 	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
 
-	wait_par_peak()
+	wait_par( cpus )
 
 	tid := task( out<-in ) {
 	
@@ -242,32 +238,25 @@ string[] _macs2_atac( string tag, string smooth_window, string pval_thresh, bool
 
 		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
 	}
-	tids_callpeak.add(tid)
 
-	wait_par()
+	register_par( tid, cpus )
 
 	// graphviz diagram and filetable
 
 	suffix	:= (pval_thresh=="0.01") ? "0.01_" : ""
-
 	graph_in  := ["tagalign_($label)"]
-
 	graph_out := [	"peak_macs2_$suffix($label)",\
 			"gpeak_macs2_$suffix($label)",\
 		      	"p-val_sig._$suffix($label)",\
 		      	"fc_sig._$suffix($label)" ]
-
 	suffix2	:= (pval_thresh=="0.01") ? ",0.01" : ""
-
 	hrchy_out := [	"L1_peak/macs2/$hrchy/peak$suffix2",\
 			"L1_peak/macs2/$hrchy/gpeak$suffix2",\
 		   	"L1_signal/macs2/$hrchy/pval$suffix2", \
 		   	"L1_signal/macs2/$hrchy/fc$suffix2" ]
-
 	box 	:= "macs2_p-val-thld._$pval_thresh"+"_($label)"	
 
 	_add_to_graphviz( graph_in, in, graph_out, out, box, grp_color_macs2 )
-
 	_add_to_filetable( hrchy_out, out )
 
 	return out

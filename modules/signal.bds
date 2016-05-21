@@ -7,7 +7,7 @@ include "report.bds"
 
 help == signal track generation settings (requirements: -umap -chrsz -seq)
 param_bam_cvrg 	:= "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10"	help Parameters for deepTools bigwig generation from filt_bam (default: "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10").
-//help *resources :
+
 nth_bam_cvrg	:= 3 		help # threads for bamCoverage (deepTools) (default: 3).
 wt_bam_cvrg	:= "5h"		help Walltime for bamCoverage (deepTools) (default: 5h, 5:00:00).
 mem_bam_cvrg	:= "8G" 	help Max. memory for bamCoverage (deepTools) (default: 8G).
@@ -38,14 +38,6 @@ void chk_signal_aln2rawsig() {
 }
 
 string _tag_to_bw( string tag, string fraglen, string o_dir, string label ) {
-
-	return _tag_to_bw( tag, fraglen, o_dir, label, \
-			"tagalign_($label)", "signal_tag2bw_($label)", \
-			"L1_signal/tag2bw/$label/signal_tag2bw" )
-}
-
-string _tag_to_bw( string tag, string fraglen, string o_dir, string label, \
-		string graph_in, string graph_out, string hrchy_out ) {
 	
 	prefix 	:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	bigwig 	:= "$prefix.bigwig"
@@ -64,10 +56,9 @@ string _tag_to_bw( string tag, string fraglen, string o_dir, string label, \
 		bedgraph.rm()
 	}
 
-	_add_to_graphviz( [graph_in], [tag], [graph_out], [bigwig], \
+	_add_to_graphviz( ["tagalign_($label)"], [tag], ["signal_tag2bw_($label)"], [out], \
 			"align2rawsignal\\n($label)", grp_color_sigtrk )
-
-	_add_to_filetable( [hrchy_out], [bigwig] )
+	_add_to_filetable( ["L1_signal/tag2bw/$label/signal_tag2bw"], [bigwig] )
 
 	return out
 }
@@ -82,14 +73,16 @@ string _tag_to_bdg( string tag, string fraglen, string o_dir, string label ) {
 
 	taskName:= "tag to bdg a2rs "+label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
 		sys align2rawsignal -i=$tag -o=$bedgraph -s=$seq -u=$umap -of=bg -l=$fraglen -mm=4
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
@@ -106,7 +99,9 @@ string _bdg_to_bw( string bedgraph, string o_dir, string label ) {
 
 	taskName:= "bdg to bw "+label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 		
@@ -116,7 +111,7 @@ string _bdg_to_bw( string bedgraph, string o_dir, string label ) {
 		sys rm -f $sorted_bg
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
@@ -131,27 +126,21 @@ string _tag_to_wig( string tag, string fraglen, string o_dir, string label ) {
 
 	taskName:= "tag to wig a2rs "+label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
 		sys align2rawsignal -i=$tag -o=$wig -s=$seq -u=$umap -of=wig -l=$fraglen -mm=4
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out
 }
 
 string _bam_to_bw( string filt_bam, string o_dir, string label ) { // deeptools
-
-	return _bam_to_bw( filt_bam, o_dir, label, \
-			"filt_bam_($label)", "signal_bam2bw_($label)", \
-			"L1_signal/bam2bw/$label/signal_bam2bw" )
-}
-
-string _bam_to_bw( string filt_bam, string o_dir, string label, \
-		string graph_in, string graph_out, string hrchy_out ) { // deeptools
 
 	prefix 	:= replace_dir( rm_ext( filt_bam, ["bam"] ), o_dir )
 	bigwig 	:= "$prefix.bam2bw.bigwig"
@@ -162,19 +151,20 @@ string _bam_to_bw( string filt_bam, string o_dir, string label, \
 	taskName:= "bam cvrg " + label
 	cpus 	:= nth_bam_cvrg;	mem := get_res_mem(mem_bam_cvrg);	timeout := get_res_wt(wt_bam_cvrg)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
 		sys bamCoverage -v -b $filt_bam -o $bigwig -of bigwig -p $nth_bam_cvrg $param_bam_cvrg
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
-	_add_to_graphviz( [graph_in], [filt_bam], [graph_out], [bigwig], \
+	_add_to_graphviz( ["filt_bam_($label)"], [filt_bam], ["signal_bam2bw_($label)"], [bigwig], \
 			"deepTools\\n bamCoverage\\n($label)", grp_color_sigtrk )
-
-	_add_to_filetable( [hrchy_out], [bigwig] );
+	_add_to_filetable( ["L1_signal/bam2bw/$label/signal_bam2bw"], [bigwig] );
 
 	return out
 }

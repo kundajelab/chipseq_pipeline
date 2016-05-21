@@ -415,7 +415,7 @@ string _peak_to_hammock( string peak ) {
 
 	in 	:= peak
 	out 	:= hammock+".gz"
-	
+
 	taskName:= "peak2hammock"
 	system := "local" // do not use cluster engine for this task
 
@@ -429,7 +429,6 @@ string _peak_to_hammock( string peak ) {
 	}
 
 	wait
-	//wait_par()
 
 	return out
 }

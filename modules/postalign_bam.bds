@@ -10,7 +10,7 @@ include "report.bds"
 help == postalign bam settings
 mapq_thresh	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
 rm_chr_from_tag := "" 		help If specified, exclude lines with specified string from tagaligns. (example: 'other|ribo|mito|_', '_', default: blank)
-//help *resources :
+
 nth_dedup	:= 2 		help # threads for post-alignment filtering (default: 2).
 wt_dedup 	:= "24h" 	help Walltime for post-alignment filtering (default: 24h, 24:00:00).
 mem_dedup	:= "16G" 	help Max. memory for post-alignment filtering (default: 16G).
@@ -75,7 +75,9 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 	taskName:= "dedup_bam " + label
 	cpus 	:= nth_dedup; 	mem 	:= get_res_mem(mem_dedup);	timeout := get_res_wt(wt_dedup)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -141,14 +143,14 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 		sys rm -f $tmp_filt_bam
 	}
 
+	register_par( tid, cpus )
+
 	graph_in  := ["bam_($label)"]
 	graph_out := ["filt_bam_($label)"]
 	hrchy_out := ["L1_align/$label/filt_bam","L1_qc/$label/dup_qc","L1_qc/$label/map_qc","L1_qc/$label/pbc_qc"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
 	_add_to_filetable( hrchy_out, out )
-
-	wait_par()
 
 	return out
 }
@@ -177,7 +179,9 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 	taskName:= "dedup_bam_PE " + label
 	cpus 	:= nth_dedup; 	mem 	:= get_res_mem(mem_dedup);	timeout := get_res_wt(wt_dedup)
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -265,14 +269,14 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		sys rm -f $tmp_filt_bam
 	}
 
+	register_par( tid, cpus )
+
 	graph_in  := ["bam_($label)"]
 	graph_out := ["filt_bam_($label)"]
 	hrchy_out := ["L1_align/$label/filt_bam","L1_qc/$label/dup_qc","L1_qc/$label/map_qc","L1_qc/$label/pbc_qc"]
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
 	_add_to_filetable( hrchy_out, out )
-
-	wait_par()
 
 	return out
 }
@@ -281,21 +285,25 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	nmsrt_bam 	:= "$prefix.nmsrt.bam"
-	nmsrt_bam_prefix:= "$prefix.nmsrt"
+	//nmsrt_bam_prefix:= "$prefix.nmsrt"
 
 	in 	:= [ bam ]
 	out 	:= nmsrt_bam
 
 	taskName:= "nmsrt_bam " + label
+	cpus 	:= nth_dedup;
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
-		sys samtools sort -n $bam $nmsrt_bam_prefix
+		//sys samtools sort -n $bam $nmsrt_bam_prefix
+		sys sambamba sort -n $bam -o $nmsrt_bam
 	}
 
-	wait_par()
+	register_par( tid, cpus )
 
 	return out	
 }
@@ -304,15 +312,17 @@ string _srt_bam( string bam, string o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	srt_bam 	:= "$prefix.srt.bam"
-	srt_bam_prefix 	:= "$prefix.srt"
-	srt_bam_idx 	:= "$prefix.srt.bai"
+	//srt_bam_prefix 	:= "$prefix.srt"
+	//srt_bam_idx 	:= "$prefix.srt.bai"
 
 	in 	:= [ bam ]
 	out 	:= srt_bam
 
 	taskName:= "srt_bam " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -320,23 +330,20 @@ string _srt_bam( string bam, string o_dir, string label ) {
 		//sys samtools index $srt_bam $srt_bam.bai
 		//sys mv $srt_bam.bai $srt_bam_idx
 
-		sys samtools sort $bam $srt_bam_prefix
-		sys samtools index $srt_bam
+		//sys samtools sort $bam $srt_bam_prefix
+		//sys samtools index $srt_bam
 
-		sys if [ "$srt_bam.bai" != "$srt_bam_idx" ]; then \
-			cp $srt_bam.bai $srt_bam_idx; \
-			fi
+		//sys if [ "$srt_bam.bai" != "$srt_bam_idx" ]; then \
+		//	cp $srt_bam.bai $srt_bam_idx; \
+		//	fi
+
+		sys sambamba sort $bam -o $srt_bam
 	}
 
-	graph_in  := ["bam_($label)"]
-	graph_out := ["srt_bam_($label)"]
-	hrchy_out := ["L1_align/$label/srt_bam"]
+	register_par( tid, cpus )
 
-	_add_to_graphviz( graph_in, in, graph_out, [out] )
-
-	_add_to_filetable( hrchy_out, [out] )
-
-	wait_par()
+	_add_to_graphviz(  ["bam_($label)"], in, ["srt_bam_($label)"], [out] )
+	_add_to_filetable( ["L1_align/$label/srt_bam"], [out] )
 
 	return out	
 }
@@ -346,16 +353,16 @@ string _bam_to_tag( string bam, string o_dir, string label ) {
 	prefix 	:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	tag 	:= "$prefix.tagAlign.gz"
 	RM_CHR_ := "echo"
-	if ( rm_chr_from_tag != "" ) {
-		RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
-	}
+	if ( rm_chr_from_tag != "" ) RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
 
 	in 	:= [ bam ]
 	out 	:= tag
 
 	taskName:= "bam_to_tag " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 	
@@ -365,14 +372,10 @@ string _bam_to_tag( string bam, string o_dir, string label ) {
 		sys $RM_CHR_
 	}
 
-	graph_in  := ["filt_bam_($label)"]
-	graph_out := ["tagalign_($label)"]
-	hrchy_out := ["L1_align/$label/tagalign"]
+	register_par( tid, cpus )
 
-	_add_to_graphviz( graph_in, in, graph_out, [out], "align\\n($label)", "orange" )
-	_add_to_filetable( hrchy_out, [out] )
-
-	wait_par()
+	_add_to_graphviz( ["filt_bam_($label)"], in, ["tagalign_($label)"], [out], "align\\n($label)", "orange" )
+	_add_to_filetable( ["L1_align/$label/tagalign"], [out] )
 
 	return out
 }
@@ -389,10 +392,13 @@ string _bam_to_bedpe( string bam, string o_dir, string label ) {
 	if ( out <- in ) {
 
 		nmsrt_bam = _nmsrt_bam( bam, o_dir, label )
+		wait
 
 		taskName:= "bam_to_bedpe " + label
 
-		task( out <- nmsrt_bam ) {
+		wait_par( cpus )
+
+		tid := task( out <- nmsrt_bam ) {
 
 			sys $shcmd_init
 
@@ -400,20 +406,15 @@ string _bam_to_bedpe( string bam, string o_dir, string label ) {
 			sys bedtools bamtobed -bedpe -mate1 -i $nmsrt_bam | gzip -c > $bedpe
 		}
 
+		register_par( tid, cpus )
+
 		wait
 
 		nmsrt_bam.rm()
 	}
 
-	graph_in  := ["filt_bam_($label)"]
-	graph_out := ["bedpe_($label)"]
-	hrchy_out := ["L1_align/$label/bedpe"]
-
-	_add_to_graphviz( graph_in, in, graph_out, [out] )
-
-	_add_to_filetable( hrchy_out, [out] )
-
-	wait_par()
+	_add_to_graphviz(  ["filt_bam_($label)"], in, ["bedpe_($label)"], [out] )
+	_add_to_filetable( ["L1_align/$label/bedpe"], [out] )
 
 	return out
 }
@@ -432,7 +433,9 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 
 	taskName:= "bedpe_to_tag " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -442,14 +445,10 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 		sys $RM_CHR_			
 	}
 
-	graph_in  := ["bedpe_($label)"]
-	graph_out := ["tagalign_($label)"]
-	hrchy_out := ["L1_align/$label/tagalign"]
+	register_par( tid, cpus )
 
-	_add_to_graphviz( graph_in, in, graph_out, [out], "align\\n($label)", "orange" )
-	_add_to_filetable( hrchy_out, [out] )
-
-	wait_par()
+	_add_to_graphviz( ["bedpe_($label)"], in, ["tagalign_($label)"], [out], "align\\n($label)", "orange" )
+	_add_to_filetable( ["L1_align/$label/tagalign"], [out] )
 
 	return out
 }
@@ -468,7 +467,9 @@ string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label )
 
 	taskName:= "bam_to_bed_atac " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -500,15 +501,10 @@ string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label )
 		sys rm -f $non_mito_bam $mito_bam
 	}
 
-	graph_in  := ["filt_bam_($label)"]
-	graph_out := ["tagalign_($label)"]
-	hrchy_out := ["L1_align/$label/tagalign"]
+	register_par( tid, cpus )
 
-	_add_to_graphviz( graph_in, in, graph_out, [out] )
-
-	_add_to_filetable( hrchy_out, [out] )
-
-	wait_par()
+	_add_to_graphviz(  ["filt_bam_($label)"], in, ["tagalign_($label)"], [out] )
+	_add_to_filetable( ["L1_align/$label/tagalign"], [out] )
 
 	return out
 }
@@ -527,7 +523,9 @@ string _bam_to_bed_atac( string filt_bam, string o_dir, string label ) {
 
 	taskName:= "bam_to_bed_atac " + label
 
-	task( out<-in ) {
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -556,15 +554,10 @@ string _bam_to_bed_atac( string filt_bam, string o_dir, string label ) {
 		sys rm -f $non_mito_bam $mito_bam
 	}
 
-	graph_in  := ["filt_bam_($label)"]
-	graph_out := ["tagalign_($label)"]
-	hrchy_out := ["L1_align/$label/tagalign"]
+	register_par( tid, cpus )
 
-	_add_to_graphviz( graph_in, in, graph_out, [out] )
-
-	_add_to_filetable( hrchy_out, [out] )
-
-	wait_par()
+	_add_to_graphviz( ["filt_bam_($label)"], in, ["tagalign_($label)"], [out] )
+	_add_to_filetable( ["L1_align/$label/tagalign"], [out] )
 
 	return out
 }
