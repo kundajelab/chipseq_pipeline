@@ -54,11 +54,12 @@ void init_general() {
 	print_general()
 
 	// cpus, mem and timeout are BDS variables for default resource settings
+	if ( use_system != "" ) system 	= use_system
+
 	cpus 		= 1
 	mem 		= get_res_mem(memory)
 	timeout 	= get_res_wt(wt)
 	walltimeout 	= 3600*24*100 	// timeout var. in BigDataScript (100 days, jobs will never be stopped by BDS due to BDS timeout)
-	if ( use_system != "" ) system 	= use_system
 }
 
 void print_general() {
