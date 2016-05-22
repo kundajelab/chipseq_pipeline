@@ -202,7 +202,7 @@ int get_res_mem( string str ) {
 
 void wait_par( int nth_task ) {
 
-	sleep( rand() + 0.5 )
+	sleep( rand()*0.5 + 0.25 )
 
 	while ( true ) {
 		//print("\nIn wait_par loop\n")

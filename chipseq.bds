@@ -712,6 +712,9 @@ void call_peaks() {
 	for ( int i=0; i<num_callpeak; i++ ) {
 
 		par _call_peaks( peakcallers[i]  )
+
+		// wait 10 seconds to make all spp jobs get queued first (gives priority for spp against macs2)
+		if ( i==0 ) sleep( 10 )
 	}
 
 	wait
