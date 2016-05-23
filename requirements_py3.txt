@@ -1,3 +1,4 @@
 idr ==2.0.3
+bedtools ==2.19.1
 python ==3.5
 pigz
