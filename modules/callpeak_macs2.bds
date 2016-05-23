@@ -7,9 +7,8 @@ include "report.bds"
 
 help == callpeak macs2 settings (requirements: -chrsz -gensz)
 
-nth_macs2		:= 2 		help # threads for MACS2 (default: 2)
-wt_macs2		:= "10h"	help Walltime for MACS2 (default: 10h, 10:00:00).
-mem_macs2		:= "8G" 	help Max. memory for MACS2 (default: 8G).
+wt_macs2		:= "23h"	help Walltime for MACS2 (default: 23h, 23:00:00).
+mem_macs2		:= "16G" 	help Max. memory for MACS2 (default: 16G).
 
 
 init_callpeak_macs2()
@@ -17,12 +16,10 @@ init_callpeak_macs2()
 
 void init_callpeak_macs2() {
 
-	nth_macs2 		= get_conf_val_int( nth_macs2,		["nth_macs2"] )
 	wt_macs2 		= get_conf_val( wt_macs2, 		["wt_macs2"] )
 	mem_macs2 		= get_conf_val( mem_macs2, 		["mem_macs2"] )
 
 	print("\n\n== callpeak macs2 settings\n")
-	print( "# threads (macs2)\t\t: $nth_macs2\n")
 	print( "Walltime (macs2)\t\t: $wt_macs2\n")
 	print( "Max. memory (macs2)\t\t: $mem_macs2\n")
 }
@@ -35,7 +32,8 @@ void chk_callpeak_macs2() {
 
 
 string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
-		string peak_o_dir, string sig_o_dir, string label, string label_ctl, string hrchy ) {
+		string peak_o_dir, string sig_o_dir, string label, string label_ctl, \
+		int nth_macs2, string hrchy ) {
 
 	prefix 		:= (ctl_tag != "") ? 	("$peak_o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
 						: replace_dir( rm_ext( tag, "tagAlign" ), peak_o_dir )
@@ -60,7 +58,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
  	out 	:= make_sig ? [ npeakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile, gpeakfile ]
 
  	taskName:= "macs2 " + label
-	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
+	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2,nth_macs2);	timeout := get_res_wt(wt_macs2)
 
 	wait_par( cpus )
 
@@ -154,8 +152,8 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 }
 
 string[] _macs2_atac( string tag, string smooth_window, string pval_thresh, bool make_sig, \
-			string peak_o_dir, string sig_o_dir, \
-			string label, string hrchy ) {
+			string peak_o_dir, string sig_o_dir, string label, \
+			int nth_macs2, string hrchy ) {
 
 	pval_str 	:= (pval_thresh=="0.01") ? "" : ".pval$pval_thresh"	
 	prefix 		:= replace_dir( rm_ext( tag, ["bed","tagAlign"] ), peak_o_dir ) + ".pf$pval_str"
@@ -181,7 +179,7 @@ string[] _macs2_atac( string tag, string smooth_window, string pval_thresh, bool
 	out 	:= make_sig ? [ peakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ peakfile, gpeakfile ]
 
 	taskName:= "macs2_atac " + label + pval_str
-	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2);	timeout := get_res_wt(wt_macs2)
+	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2,nth_macs2);	timeout := get_res_wt(wt_macs2)
 
 	wait_par( cpus )
 

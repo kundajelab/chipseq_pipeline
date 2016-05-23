@@ -11,10 +11,8 @@ help == postalign bam settings
 mapq_thresh	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
 rm_chr_from_tag := "" 		help If specified, exclude lines with specified string from tagaligns. (example: 'other|ribo|mito|_', '_', default: blank)
 
-nth_dedup	:= 2 		help # threads for post-alignment filtering (default: 2).
-wt_dedup 	:= "24h" 	help Walltime for post-alignment filtering (default: 24h, 24:00:00).
-mem_dedup	:= "16G" 	help Max. memory for post-alignment filtering (default: 16G).
-
+wt_dedup 	:= "23h" 	help Walltime for post-alignment filtering (default: 23h, 24:00:00).
+mem_dedup	:= "20G" 	help Max. memory for post-alignment filtering (default: 20G).
 
 /*
 IMPORTANT!: legacy softwares compatibility (make the code work with legacy samtools, picard-tools)
@@ -40,19 +38,17 @@ void init_postalign_bam() {
 	mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
 	rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )		
 
-	nth_dedup 	= get_conf_val_int( nth_dedup,		["nth_dedup"] )
 	wt_dedup 	= get_conf_val( wt_dedup, 		["wt_dedup"] )
 	mem_dedup 	= get_conf_val( mem_dedup, 		["mem_dedup"] )
 
 	print("\n\n== postalign bam settings\n")
 	print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")
 	print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
-	print( "# threads (post-aln filter)\t: $nth_dedup\n")
-	print( "Walltime (post-aln filter)\t: $wt_dedup\n")
-	print( "Max. memory (post-aln filter)\t: $mem_dedup\n")
+	print( "Walltime (bam filter)\t: $wt_dedup\n")
+	print( "Max. memory (bam filter)\t: $mem_dedup\n")
 }
 
-string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) {
+string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, int nth_dedup ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
@@ -73,7 +69,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 	out	:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	taskName:= "dedup_bam " + label
-	cpus 	:= nth_dedup; 	mem 	:= get_res_mem(mem_dedup);	timeout := get_res_wt(wt_dedup)
+	cpus 	:= nth_dedup; 	mem := get_res_mem(mem_dedup,nth_dedup);	timeout := get_res_wt(wt_dedup)
 
 	wait_par( cpus )
 
@@ -155,7 +151,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label ) 
 	return out
 }
 
-string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label ) {
+string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label, int nth_dedup ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
@@ -177,7 +173,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 	out 		:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	taskName:= "dedup_bam_PE " + label
-	cpus 	:= nth_dedup; 	mem 	:= get_res_mem(mem_dedup);	timeout := get_res_wt(wt_dedup)
+	cpus 	:= nth_dedup;	mem := get_res_mem(mem_dedup,nth_dedup);	timeout := get_res_wt(wt_dedup)
 
 	wait_par( cpus )
 
@@ -291,7 +287,6 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 	out 	:= nmsrt_bam
 
 	taskName:= "nmsrt_bam " + label
-	cpus 	:= nth_dedup;
 
 	wait_par( cpus )
 

@@ -8,21 +8,18 @@ include "report.bds"
 
 help == align bowtie2 settings (requirements: -bwt2_idx)
 
-nth_bwt2	:= 2 			help # threads for bowtie2 (default: 2).
 wt_bwt2		:= "23h"		help Walltime for bowtie2 (default: 23h, 23:00:00).
-mem_bwt2	:= "12G"	 	help Max. memory for bowtie2 (default: 12G).
+mem_bwt2	:= "24G"	 	help Max. memory for bowtie2 (default: 24G).
 
 init_align_bwt2()
 
 
 void init_align_bwt2() {
 
-	nth_bwt2 	= get_conf_val_int( nth_bwt2,		["nth_bwt2"] )
 	wt_bwt2 	= get_conf_val( wt_bwt2, 		["wt_bwt2"] )
 	mem_bwt2 	= get_conf_val( mem_bwt2, 		["mem_bwt2"] )
 
 	print("\n\n== align bowtie2 settings\n")
-	print( "# threads (bowtie2)\t: $nth_bwt2\n")
 	print( "Walltime (bowtie2)\t: $wt_bwt2\n")
 	print( "Max. memory (bowtie2)\t: $mem_bwt2\n")
 }
@@ -34,7 +31,7 @@ void chk_align_bwt2() {
 	}
 }
 
-string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, bool trimmed ) { 
+string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, int nth_bwt2, bool trimmed ) { 
 
 	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	prefix2	:= replace_dir( prefix, log_o_dir )
@@ -46,7 +43,7 @@ string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, b
 	out 	:= [ bam, log ]
 
 	taskName:= "bowtie2 "+label
-	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
+	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2,nth_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
 	wait_par( cpus )
 
@@ -71,7 +68,7 @@ string[] _bowtie2( string fastq, string o_dir, string log_o_dir, string label, b
 	return out
 }
 
-string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string label, bool trimmed ) {
+string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string label, int nth_bwt2, bool trimmed ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	prefix2 := replace_dir( prefix, log_o_dir )
@@ -86,7 +83,7 @@ string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string lab
 	out 	:= [ bam, log ]
 
 	taskName:= "bowtie2_csem "+label
-	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
+	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2,nth_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
 	wait_par( cpus )
 
@@ -117,7 +114,7 @@ string[] _bowtie2_csem( string fastq, string o_dir, string log_o_dir, string lab
 }
 
 // trimmed_fastq : fastqs are trimmed or not
-string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, string label, bool trimmed ) { 
+string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, string label, int nth_bwt2, bool trimmed ) { 
 
 	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
 	prefix2 := replace_dir( prefix, log_o_dir )
@@ -129,7 +126,7 @@ string[] _bowtie2_PE( string fastq1, string fastq2, string o_dir, string log_o_d
 	out 	:= [ bam, log ]
 
 	taskName:= "bowtie2_PE "+label
-	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2); 	timeout := get_res_wt(wt_bwt2)
+	cpus 	:= nth_bwt2; 	mem := get_res_mem(mem_bwt2,nth_bwt2); 	timeout := get_res_wt(wt_bwt2)
 
 	wait_par( cpus )
 

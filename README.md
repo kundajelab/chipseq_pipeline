@@ -91,8 +91,6 @@ If you define `-final_stage [STAGE]`, the pipeline stops right after the stage.
 
 This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL. Set `-final_stage [FINAL STAGE]`. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
 
-Mapping for each replicate will go IN PARALLEL! Consider your computating resources before running the pipeline. If you start the pipeline with fastqs, lots of processors will be taken due to bwa. Lower -nth_bwa if you have limited computing resources. It's 2 by default.
-
 Example1: You have 5 unfiltered raw bam and want to filter them (removing dupes).
 ```
 $ bds chipseq.bds \
@@ -102,7 +100,7 @@ $ bds chipseq.bds \
 ...
 -fastq10 /DATA/ENCFF000???.fastq.gz \
 -bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
--nth_bwa 3   # No. of threads for bwa for each replicate, 3 x 10 logical processors will be taken in total.
+-nth 6  # Total number of threads
 ```
 
 Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes).
@@ -310,16 +308,25 @@ $ bds chipseq.bds \
 
 
 
-### Parallelization (IMPORTANT!)
+### Parallelization and multi-threading (IMPORTANT!)
 
 For completely serialized jobs:
 ```
 -no_par
 ```
-You can also set up a limit for total # threads. Total # threads used by the pipeline will not exceed this limit.
+You can set up a limit for total # threads. Total # threads used by a pipeline will not exceed this limit.
 ```
--nth [MAX_TOTAL_NO_THREADS]
+-nth [MAX_TOTAL_NO_THREADS; 8 by default]
 ```
+A pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs according to corresponding input file sizes. For example of two fastqs (1GB and 2GB) with `-nth 6`, 2 and 4 threads are allocated for aligning 1GB and 2GB fastqs, respectively. The same policy applies to other multi-threaded tasks like deduping and peak calling.
+
+However, all multi-threaded tasks (like bwa, bowtie2, spp and macs2) still have their own max. memory (`-mem_APPNAME [MEM_APP]`) and walltime (`-wt_APPNAME [WALLTIME_APP]`) settings. Max. memory is <b>NOT PER CPU</b>. On Kundaje cluster (with SGE flag activated `bds -s sge chipseq.bds ...`) or on SCG3/4, the actual shell command submitted by BDS for each task is like the following:
+```
+qsub -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP] -h_rt=[WALLTIME_APP] ...
+```
+This ensures that total memory reserved for a cluster job equals to `[MEM_APP]`.
+
+
 
 
 ### How to efficiently manage multiple pipeline runs? (using UNIX screen)
@@ -379,14 +386,14 @@ The minimum memory requirement for the pipeline is 8GB, but we recommend to run 
 
 Example: for desktop with 4 cores
 ```
-$ bds chipseq.bds -no_par -nth_bwa 4 -nth_spp 4 ...
+$ bds chipseq.bds -no_par -nth 4
 ```
 
-2) (FAST BUT UNSTABLE) Do not turn off paralleization but just increase the number of threads for BIG-MEMORY bottleneck jobs (bwa and spp) to your computer's maximum so that no BIG-MEMORY jobs will be parallelized.
+2) (FAST BUT UNSTABLE) Do not turn off paralleization but just increase the number of threads to your computer's maximum so that no BIG-MEMORY jobs will be parallelized.
 
 Example: for desktop with 4 cores
 ```
-$ bds chipseq.bds -nth_bwa 4 -nth_spp 4 ...
+$ bds chipseq.bds -nth 4
 ```
 
 An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):
@@ -442,11 +449,9 @@ shcmd_any_suffix = export R_PATH=/home/userid/R-3.2.2
 
 species_file = /path/to/your/species.conf
 
-nth_spp = 4 	// On this cluster for spp, I want to use 4 CPUs, 4G for each CPU and 10 hours of walltime.
-mem_spp = 4G
+nth = 4 	// set default max. number of threads for each pipeline run
+mem_spp = 12G
 wt_spp  = 10:00:00
-
-nth_macs2 = 2 	// You can also have resource settings for other tasks
 
 conda_env  = my_conda_env_py2
 conda_env_py3 = my_conda_env_py3

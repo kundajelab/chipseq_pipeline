@@ -8,9 +8,8 @@ include "report.bds"
 help == callpeak spp settings
 npeak 		:= 300000 	help Threshold on # peaks (-npeak in spp) (default: 300000).
 
-nth_spp 	:= 2		help # threads for spp (run_spp.R) (default: 2).
-wt_spp		:= "15h"	help Walltime for spp (default: 10h, 10:00:00).
-mem_spp		:= "8G" 	help Max. memory for spp (default: 8G).
+wt_spp		:= "23h"	help Walltime for spp (default: 23h, 23:00:00).
+mem_spp		:= "16G" 	help Max. memory for spp (default: 16G).
 
 
 init_callpeak_spp()
@@ -19,19 +18,17 @@ init_callpeak_spp()
 void init_callpeak_spp() {
 
 	npeak 		= get_conf_val_int( npeak,		["npeak"] )
-	nth_spp 	= get_conf_val_int( nth_spp,		["nthreads_spp", "nth_spp", "cpu_spp"] )
 	wt_spp 		= get_conf_val( wt_spp, 		["walltime_spp", "wt_spp", "timeout_spp"] )
 	mem_spp 	= get_conf_val( mem_spp, 		["memory_spp", "mem_spp"] )
 
 	print("\n\n== callpeak spp settings\n")
 	print( "Threshold for # peak\t\t: $npeak\n")
-	print( "# threads (spp)\t\t: $nth_spp\n")
 	print( "Walltime (spp)\t\t: $wt_spp\n")
 	print( "Max. memory (spp)\t: $mem_spp\n")
 }
 
-string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label, \
-		string label_ctl, string hrchy ) {
+string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label, string label_ctl, \
+		int nth_spp, string hrchy ) {
 
 	if ( fraglen == "" ) error("fraglen is missing!")
 	if ( ctl_tag == "" ) error("Control tagalign is missing!")
@@ -48,7 +45,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 	out 	:= [ rpeakfile, ccscore, pdf ]
 
 	taskName:= "spp " + label
-	cpus 	:= nth_spp;	mem := get_res_mem(mem_spp);	timeout := get_res_wt(wt_spp)
+	cpus 	:= nth_spp;	mem := get_res_mem(mem_spp,nth_spp);	timeout := get_res_wt(wt_spp)
 
 	wait_par( cpus )
 

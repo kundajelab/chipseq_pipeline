@@ -8,9 +8,8 @@ include "report.bds"
 help == signal track generation settings (requirements: -umap -chrsz -seq)
 param_bam_cvrg 	:= "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10"	help Parameters for deepTools bigwig generation from filt_bam (default: "--normalizeTo1x 2451960000 --missingDataAsZero no --centerReads -f 150 -bs 10").
 
-nth_bam_cvrg	:= 3 		help # threads for bamCoverage (deepTools) (default: 3).
-wt_bam_cvrg	:= "5h"		help Walltime for bamCoverage (deepTools) (default: 5h, 5:00:00).
-mem_bam_cvrg	:= "8G" 	help Max. memory for bamCoverage (deepTools) (default: 8G).
+wt_bam_cvrg	:= "23h"	help Walltime for bamCoverage (deepTools) (default: 23h, 23:00:00).
+mem_bam_cvrg	:= "16G" 	help Max. memory for bamCoverage (deepTools) (default: 16G).
 
 
 init_signal()
@@ -19,13 +18,11 @@ init_signal()
 void init_signal() {
 
 	param_bam_cvrg	= get_conf_val( param_bam_cvrg, 	["param_bam_cvrg"] )
-	nth_bam_cvrg 	= get_conf_val_int( nth_bam_cvrg,	["nth_bam_cvrg"] )
 	wt_bam_cvrg 	= get_conf_val( wt_bam_cvrg, 		["wt_bam_cvrg"] )
 	mem_bam_cvrg 	= get_conf_val( mem_bam_cvrg, 		["mem_bam_cvrg"] )
 
 	print("\n\n== signal track generation settings\n")
 	print( "Param. for bamCoverage (deeptools)\t: $param_bam_cvrg\n")
-	print( "# threads (bam_cvrg)\t: $nth_bam_cvrg\n")
 	print( "Walltime (bam_cvrg)\t: $wt_bam_cvrg\n")
 	print( "Max. memory (bam_cvrg)\t: $mem_bam_cvrg\n")
 }
@@ -140,7 +137,7 @@ string _tag_to_wig( string tag, string fraglen, string o_dir, string label ) {
 	return out
 }
 
-string _bam_to_bw( string filt_bam, string o_dir, string label ) { // deeptools
+string _bam_to_bw( string filt_bam, string o_dir, string label, int nth_bam_cvrg ) { // deeptools
 
 	prefix 	:= replace_dir( rm_ext( filt_bam, ["bam"] ), o_dir )
 	bigwig 	:= "$prefix.bam2bw.bigwig"
@@ -149,7 +146,7 @@ string _bam_to_bw( string filt_bam, string o_dir, string label ) { // deeptools
 	out 	:= bigwig
 
 	taskName:= "bam cvrg " + label
-	cpus 	:= nth_bam_cvrg;	mem := get_res_mem(mem_bam_cvrg);	timeout := get_res_wt(wt_bam_cvrg)
+	cpus 	:= nth_bam_cvrg;	mem := get_res_mem(mem_bam_cvrg,nth_bam_cvrg);	timeout := get_res_wt(wt_bam_cvrg)
 
 	wait_par( cpus )
 

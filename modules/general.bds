@@ -9,13 +9,13 @@ out_dir 	:= "out"	help Output directory (default: out).
 title		:= ""		help Prefix for HTML report and outputs without given prefix.
 
 help == parallelization settings
-no_par		:= false	help Serialize all tasks (equivalent to '-nth 1', individual tasks can still use multiple threads).
+no_par		:= false	help Serialize all tasks (individual tasks can still use multiple threads up to '-nth').
 
 help == general resource settings
-nth 		:= 8 		help Maximum # threads for the pipeline. Use a big number for unlimited parallelization (default: 8).
-wt 		:= "11h"	help Walltime for cluster jobs (example: 8:10:00, 3h, 3600, default: 11h, 11:00:00).
-memory 		:= "12G"	help Maximum memory for cluster jobs (equivalent to '-mem', example: 4.5G, 1024M, default: 8G).
-unlimited_mem_wt:= false 	help Use unlimited max. memory and walltime for a cluster engine.
+nth 		:= 8 		help Maximum # threads for a pipeline. (default: 8).
+wt 		:= "23h"	help Walltime for all single-threaded tasks (example: 8:10:00, 3h, 3600, default: 23h, 23:00:00).
+memory 		:= "12G"	help Maximum memory for all single-threaded tasks (equivalent to '-mem', example: 4.5G, 1024M, default: 12G).
+unlimited_mem_wt:= false 	help Use unlimited max. memory and walltime.
 use_system 	:= "" 		help Force to use a system (equivalent to 'bds -s [SYSTEM_NAME] ...', any system defined in bds.config can be used).
 
 help == shell environment settings
@@ -30,6 +30,7 @@ shcmd_init 	:= "" 	// Shell command executed prior to all BigDataScript tasks (u
 shcmd_init_py3	:= "" 	// for softwares using python3
 
 string[] tids_all 	// array of task ids currently running
+string[] tids_done
 int{} nth_tasks 	// key: task id, value: # of threads for the task
 
 
@@ -57,7 +58,7 @@ void init_general() {
 	if ( use_system != "" ) system 	= use_system
 
 	cpus 		= 1
-	mem 		= get_res_mem(memory)
+	mem 		= get_res_mem(memory,1)
 	timeout 	= get_res_wt(wt)
 	walltimeout 	= 3600*24*100 	// timeout var. in BigDataScript (100 days, jobs will never be stopped by BDS due to BDS timeout)
 }
@@ -195,9 +196,15 @@ int get_res_wt( string str ) {
 	return (unlimited_mem_wt || is_system_local() ) ? -1 : parse_time( str )
 }
 
-int get_res_mem( string str ) {
+int get_res_mem( string str, int n ) {
 
-	return (unlimited_mem_wt || is_system_local() ) ? -1 : parse_mem( str )
+	return (unlimited_mem_wt || is_system_local() ) ? -1 : parse_mem( str )/n
+}
+
+void wait_clear_tids() { // DO NOT USE THIS in par function/scope!
+
+	wait
+	tids_all = []
 }
 
 void wait_par( int nth_task ) {
@@ -207,19 +214,25 @@ void wait_par( int nth_task ) {
 	while ( true ) {
 		//print("\nIn wait_par loop\n")
 		
-		tids_all_ := tids_all // make dummy for thread safety
-		
+		tids_all_  := tids_all // make dummy for thread safety
+		tids_done_ := tids_done
+
 		string[] tids_running
 		int nth_running 
 
 		// get total # threads for currently running tasks, and find the oldest task
 		for ( string tid : tids_all_ ) {
 
+			if ( is_in_array( tid, tids_done_ ) ) continue
+
 			if ( !tid.isDone() ) {
 				tids_running.add( tid )
 				nth_running += nth_tasks{tid}
-				//print("\t$tid : $nth_running\n")
+				//print("\t$tid : $nth_running, "+tids_done_.size()+"\n")
 			}
+			else if ( !is_in_array( tid, tids_done_ ) ) {
+				tids_done.add( tid )
+			}			
 		}
 
 		if ( tids_running.size() == 0 ) {
@@ -233,8 +246,9 @@ void wait_par( int nth_task ) {
 				break_loop := false
 
 				for ( string tid : tids_running ) {
-					if ( tid.isDone() ) {
-						break_loop = true
+					if ( tid.isDone() || is_in_array( tid, tids_done_ ) ) {
+						break_loop = true						
+						if ( !is_in_array( tid, tids_done_ ) ) tids_done.add( tid )
 						break
 					}
 				}
@@ -260,4 +274,112 @@ void register_par( string tid, int nth_task ) {
 
 	tids_all.add(tid)
 	nth_tasks{tid} = nth_task
+}
+
+int{} distribute_nth( int n, int{} list ) { 
+	// distribute_nth n according to weight in map arr, 
+	// no 0 in return list. 0 is converted to 1 in return list
+
+	int{} ret
+
+	int sum 
+	for ( int w : list ) sum += w
+
+	if ( sum == 0 ) error("distribute_nth: sum is zero. check if input file size is 0?\n")
+
+	for ( string key : list.keys() ) {
+		w := list{key}
+		ret{key} = (n*w)/sum
+
+		if ( ret{key} == 0 ) ret{key} = 1
+	}
+
+	while( true ) {
+
+		int sum2
+		for ( string key : list.keys() ) sum2 += ret{key}
+
+		if ( n > sum2 ) {
+
+			string key_to_plus
+			int max_diff = 0
+
+			for ( string key : list.keys() ) {
+				diff := n*list{key}-ret{key}*sum
+				if ( diff > max_diff ) {
+					key_to_plus = key
+					max_diff = diff
+				}
+			}
+
+			ret{key_to_plus}++
+		}
+		else {
+			break
+		}
+	}
+	/*
+	print("*** distribute_nth : $n")
+	print("\n")
+	print(list)
+	print("\n")
+	print(ret)
+	print("\n")
+	*/
+
+	return ret
+}
+
+int[] distribute_nth( int n, int[] list ) { 
+	// distribute_nth n according to weight in array arr
+	// no 0 in return list. 0 is converted to 1 in return list
+
+	int[] ret
+
+	int sum 
+	for ( int w : list ) sum += w
+
+	if ( sum == 0 ) error("distribute_nth: sum is zero. check if input file size is 0?\n")
+
+	for ( int i=0; i<list.size(); i++) {
+		w := list[i]
+		to_add := (n*w)/sum
+		if ( to_add == 0 ) to_add = 1
+		ret.add( to_add )
+	}
+
+	while( true ) {
+
+		int sum2
+		for ( int i=0; i<list.size(); i++) sum2 += ret[i]
+
+		if ( n > sum2 ) {
+
+			int id_to_plus
+			int max_diff = 0
+
+			for ( int i=0; i<list.size(); i++) {
+				diff := n*list[i]-ret[i]*sum
+				if ( diff > max_diff ) {
+					id_to_plus = i
+					max_diff = diff
+				}
+			}
+
+			ret[id_to_plus]++
+		}
+		else {
+			break
+		}
+	}
+	/*
+	print("*** distribute_nth : $n")
+	print("\n")
+	print(list)
+	print("\n")
+	print(ret)
+	print("\n")
+	*/
+
+	return ret
 }

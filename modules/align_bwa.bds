@@ -8,9 +8,8 @@ include "report.bds"
 help == align bwa settings (requirements: -bwa_idx)
 param_bwa_aln	:= "-q 5 -l 32 -k 2" 	help Parameters for bwa aln (default: "-q 5 -l 32 -k 2").
 
-nth_bwa		:= 2 			help # threads for bwa (default: 2).
 wt_bwa		:= "23h"		help Walltime for bwa (default: 23, 23:00:00).
-mem_bwa		:= "12G"	 	help Max. memory for bwa (default: 12G).
+mem_bwa		:= "20G"	 	help Max. memory for bwa (default: 20G).
 
 
 init_align_bwa()
@@ -19,13 +18,11 @@ init_align_bwa()
 void init_align_bwa() {
 
 	param_bwa_aln 	= get_conf_val( param_bwa_aln, 	["param_bwa_aln"] )
-	nth_bwa 	= get_conf_val_int( nth_bwa,	["nth_bwa"] )
 	wt_bwa 		= get_conf_val( wt_bwa, 	["wt_bwa"] )
 	mem_bwa 	= get_conf_val( mem_bwa, 	["mem_bwa"] )
 
 	print("\n\n== align bwa settings\n")
 	print( "Param. for bwa\t\t: $param_bwa_aln\n")
-	print( "# threads (bwa)\t\t: $nth_bwa\n")
 	print( "Walltime (bwa)\t\t: $wt_bwa\n")
 	print( "Max. memory (bwa)\t\t: $mem_bwa\n")
 }
@@ -35,7 +32,7 @@ void chk_align_bwa() {
 	if ( !path_exists("$bwa_idx.bwt") ) error("\nBwa index (-bwa_idx) doesn't exists! (file: $bwa_idx.bwt)\n")
 }
 
-string[] _bwa( string fastq, string o_dir, string log_o_dir, string label ) {
+string[] _bwa( string fastq, string o_dir, string log_o_dir, string label, int nth_bwa ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	prefix2 := replace_dir( prefix, log_o_dir )
@@ -47,10 +44,10 @@ string[] _bwa( string fastq, string o_dir, string log_o_dir, string label ) {
 
 	if ( out <- in ) { // compare file timestamps of in and out (to check if job is already done or not)
 
-		sai := _bwa_aln( fastq, o_dir, label )
+		sai := _bwa_aln( fastq, o_dir, label, nth_bwa )
 		wait
 
-		_bwa_sam( fastq, sai, o_dir, log_o_dir, label )
+		_bwa_sam( fastq, sai, o_dir, log_o_dir, label, nth_bwa )
 		wait
 
 		sai.rm() // delete intermediate file sai		
@@ -62,7 +59,7 @@ string[] _bwa( string fastq, string o_dir, string log_o_dir, string label ) {
 	return out
 }
 
-string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, string label ) {
+string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, string label, int nth_bwa ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
 	prefix2 := replace_dir( prefix, log_o_dir )
@@ -74,26 +71,29 @@ string[] _bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, 
 
 	if ( out <- in ) { // compare file timestamps of in and out (to check if job is already done or not)
 
+		nth_bwa_aln := distribute_nth( nth_bwa, [1,1] )
+
 		// parallel jobs
-		sai1 := _bwa_aln( fastq1, o_dir, label+"_1" ) 
-		sai2 := _bwa_aln( fastq2, o_dir, label+"_2" )
+		sai1 := _bwa_aln( fastq1, o_dir, label+"_1", nth_bwa_aln[0] )
+		sai2 := _bwa_aln( fastq2, o_dir, label+"_2", nth_bwa_aln[1] )
 
 		wait
 
-		_bwa_sam_PE( fastq1, fastq2, sai1, sai2, o_dir, log_o_dir, label )
+		_bwa_sam_PE( fastq1, fastq2, sai1, sai2, o_dir, log_o_dir, label, nth_bwa )
 		wait
 		
 		sai1.rm() // delete intermediate file sai1, sai2
 		sai2.rm()
 	}
 
-	_add_to_graphviz( ["fastq1_($label)", "fastq2_($label)"], [fastq1,fastq2], ["bam_($label)"], [bam], "bwa_($label)", grp_color_bwa )
+	_add_to_graphviz( ["fastq1_($label)", "fastq2_($label)"], [fastq1,fastq2], \
+			  ["bam_($label)"], [bam], "bwa_($label)", grp_color_bwa )
 	_add_to_filetable( ["L1_align/$label/bam"], [bam] )
 
 	return out
 }
 
-string _bwa_aln( string fastq, string o_dir, string label ) {
+string _bwa_aln( string fastq, string o_dir, string label, int nth_bwa ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq, "fastq" ), o_dir )
 	sai 	:= "$prefix.sai"	
@@ -102,7 +102,7 @@ string _bwa_aln( string fastq, string o_dir, string label ) {
 	out 	:= sai
 
 	taskName:= "bwa_aln " + label
-	cpus 	:= nth_bwa;	mem := get_res_mem(mem_bwa); timeout := get_res_wt(wt_bwa)
+	cpus 	:= nth_bwa;	mem := get_res_mem(mem_bwa,nth_bwa); timeout := get_res_wt(wt_bwa)
 
 	wait_par( cpus )
 
@@ -119,7 +119,7 @@ string _bwa_aln( string fastq, string o_dir, string label ) {
 	return out
 }
 
-string[] _bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, string label ) {
+string[] _bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, string label, int nth_bwa ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq, "fastq" ), o_dir )
 	prefix2 := replace_dir( prefix, log_o_dir )
@@ -130,7 +130,7 @@ string[] _bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, str
 	out 	:= [ bam, qc ]
 
 	taskName:= "bwa_sam " + label
-	cpus 	:= nth_bwa; 	mem 	:= get_res_mem(mem_bwa);	timeout:= get_res_wt(wt_bwa)
+	cpus 	:= nth_bwa; 	mem := get_res_mem(mem_bwa,nth_bwa);	timeout := get_res_wt(wt_bwa)
 
 	wait_par( cpus )
 
@@ -143,7 +143,7 @@ string[] _bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, str
 		//sys samtools flagstat $bam > $qc
 		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su /dev/stdin \
 			| sambamba sort -t $nth_bwa /dev/stdin -o $bam
-		sys sambamba flagstat $bam > $qc
+		sys sambamba flagstat -t $nth_bwa $bam > $qc
 	}
 
 	register_par( tid, cpus )
@@ -151,7 +151,7 @@ string[] _bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, str
 	return out
 }
 
-string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, string o_dir, string log_o_dir, string label ) {
+string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, string o_dir, string log_o_dir, string label, int nth_bwa ) {
 
 	prefix 	:= replace_dir( rm_ext( fastq1, "fastq" ), o_dir ) + ".PE2SE"
 	prefix2 := replace_dir( prefix, log_o_dir )
@@ -164,7 +164,7 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 	out 	:= [ bam, qc ]
 
 	taskName:= "bwa_sam_PE " + label
-	cpus 	:= nth_bwa; 	mem 	:= get_res_mem(mem_bwa);	timeout := get_res_wt(wt_bwa)
+	cpus 	:= nth_bwa; 	mem := get_res_mem(mem_bwa,nth_bwa);	timeout := get_res_wt(wt_bwa)
 
 	wait_par( cpus )
 

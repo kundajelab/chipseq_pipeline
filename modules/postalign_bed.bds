@@ -160,7 +160,7 @@ string _tn5_shift_tag( string tag, string o_dir, string label ) {
 	return out
 }
 
-string[] _xcor( string tag, string o_dir, string label, string hrchy ) {
+string[] _xcor( string tag, string o_dir, string label, int nth_xcor, string hrchy ) {
 
 	// misc.
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
@@ -172,6 +172,7 @@ string[] _xcor( string tag, string o_dir, string label, string hrchy ) {
 	out 	:= [ xcor_score, xcor_plot ]
 
 	taskName:= "xcor " + label
+	cpus 	:= nth_xcor; 	mem := get_res_mem(memory,nth_xcor);
 
 	wait_par( cpus )
 
@@ -182,7 +183,7 @@ string[] _xcor( string tag, string o_dir, string label, string hrchy ) {
 		//# CCSCORE FILE format
 		//# Filename <tab> numReads <tab> estFragLen <tab> correstFragLen <tab> PhantomPeak <tab> corrphantomPeak <tab> argmincorr <tab> mincorr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag
 		sys Rscript $(which run_spp_nodups.R) -rf \
-			-c=$tag -p=1 \
+			-c=$tag -p=$nth_xcor \
 			-filtchr=chrM -savp=$xcor_plot -out=$xcor_score $param_speak
 		sys sed -r 's/,[^\t]+//g' $xcor_score > $xcor_score.tmp
 		sys mv $xcor_score.tmp $xcor_score
