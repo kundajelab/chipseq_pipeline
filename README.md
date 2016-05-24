@@ -473,55 +473,16 @@ If you stop a BDS pipeline with `Ctrl+C` while calling peaks with `spp`. Tempora
 
 
 
+### How to add more functions to pipeline source code?
+
+<a href="https://github.com/kundajelab/bds_atac/blob/master/README_CODE.md" target=_blank>https://github.com/kundajelab/bds_atac/blob/master/README_CODE.md</a>
+
+
+
 ### Requirements 
 
-For python2 (python 2.x >= 2.7), <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements.txt" target=_blank>here</a>
-
+For python2 (python 2.x >= 2.7) and R-3.x, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements.txt" target=_blank>here</a>
 For python3, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements_py3.txt" target=_blank>here</a>
-
-IMPORTANT! Install dependencies with `install_dependencies.sh`. It will install them on Anaconda virtual environment (`aquas_chipseq` for python2, `aquas_chipseq_py3` for python3) and you don't need super-user privileges.
-
-However, if you are a super-user, it's recommended to install the following softwares on the system and share it with your colleagues. See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
-
-Recommended softwares and versions:
-```
-bwa/0.7.10
-samtools/0.1.19
-bedtools/2.19.1
-ucsc_tools/3.0.9
-picard-tools/1.92
-MACS2/2.1.0
-java/7
-gem/2.6
-r/3.2.2
-deepTools/2.2.3
-align2rawsignal/2.0
-phantompeakqualtools/2.0
-idr/latest (https://github.com/nboley/idr)
-MCR2010b
-
-python/2.7.2
-	packages: numpy, matplotlib, pysam, pyBigwig, scipy, python-levenshtein, deepTools==2.2.3
-
-python/3.4.3
-	packages: numpy, matplotlib, scipy, idr
-```
-
-Before installing the above softwares, make sure to install fundamental programs and libraries listed in the following:
-
-For Ubuntu/Debian based Linux,
-```
-$ sudo apt-get update
-$ sudo apt-get install build-essential zlib1g-dev libncurses5-dev gfortran openssl libssl-dev libfreetype6-dev liblapack-dev pkg-config poppler-utils libboost-all-dev graphviz libcurl4-openssl-dev libxp6 libgsl0-dev
-```
-
-For RedHat/Fedora based Linux,
-```
-$ sudo yum install gcc gcc-c++ kernel-devel lapack-devel libXpm-devel libXp-devel libXmu-devel wget bc zlib-devel ncurses-devel gcc-gfortran openssl openssl-devel freetype-devel poppler-utils
-boost-devel graphviz libcurl-devel libpng-devel bzip2 gsl-devel
-```
-
-See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/install_dependencies.sh" target=_blank>here (dep. installer)</a>
 
 
 
