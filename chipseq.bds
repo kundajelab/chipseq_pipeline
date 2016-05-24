@@ -2,25 +2,6 @@
 #vim: syntax=java
 
 
-// Functions usually have the following structure. Output naming policy is included in the function.
-// They find prefix of input and add suffix to output and then change output's directory (o_dir).
-// Therefore, output naming is already defined in each file. e.g. in bwa, PREFIX.fastq.gz -> PREFIX.bam
-// e.g. output (string or array of str.) = _do_something( input1, input2, ... , o_dir, info )
-
-// Don't be confused with additional code lines for each underscored( _ ) function and 'hrchy' and 'graph' things.
-// They are for automatic generation of graphviz diagram and HTML filetable
-
-// Variables can be declared with help context, they are automatically set as 'parameter variables' and become parameters on shell command line.
-// You can omit type of variable with ':='. e.g. str1 := "abc" is equivalent to string str1 = "abc".
-
-// Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
-// e.g. filt_bam{"rep1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
-
-// IMPORTANT (BDS bug in `par` function)
-// BDS global variables are not thread-safe if they are both WRITTEN and READ in the same `par` function before next `wait`. After `wait` they become safe to be READ.
-// Therefore, just WRITE on global variables don't READ them in the same `par` function before next `wait`.
-
-
 help == chipseq pipeline settings
 
 pe 		:= false 	help Paired end data.
@@ -58,8 +39,6 @@ include "modules/idr.bds"
 include "modules/signal.bds"
 
 
-//////// Global variables /////
-
 // system vars
 input 		:= ""
 num_ctl 	:= 1
@@ -67,7 +46,9 @@ num_callpeak 	:= 2 	// spp (1), macs2 (2)
 peakcallers 	:= ["spp","macs2"]
 
 
-// filepath of outputs
+// Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
+// e.g. filt_bam{"rep1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
+
 string{} tag, tag_pr1, tag_pr2 // replicate data: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
 string tag_ppr1, tag_ppr2
 string{} peak, peak_pr1, peak_pr2, peak_pooled, peak_ppr1, peak_ppr2 // peaks: map with key ("$rep")
@@ -88,24 +69,27 @@ string xcor_qc_ppr1, xcor_qc_ppr2
 string idr_qc
 
 
-//////// chipseq pipeline starts here /////
+main() 
 
-init_chipseq() // read command line parameters or configruation file
 
-chk_input() // check input files are valid
+void main() { // chipseq pipeline starts here
 
-align() // align and postalign
+	init_chipseq() // read command line parameters or configruation file
 
-pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
+	chk_input() // check input files are valid
 
-call_peaks() // call peaks
+	align() // align and postalign
 
-naive_overlap() // naive overlap
+	pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
 
-do_idr() // IDR
+	call_peaks() // call peaks
 
-report()
+	naive_overlap() // naive overlap
 
+	do_idr() // IDR
+
+	report()
+}
 
 void init_chipseq() {
 
