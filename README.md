@@ -475,7 +475,7 @@ If you stop a BDS pipeline with `Ctrl+C` while calling peaks with `spp`. Tempora
 
 ### How to add more functions to pipeline source code?
 
-<a href="https://github.com/kundajelab/bds_atac/blob/master/README_CODE.md" target=_blank>https://github.com/kundajelab/bds_atac/blob/master/README_CODE.md</a>
+<a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_CODE.md" target=_blank>https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_CODE.md</a>
 
 
 
