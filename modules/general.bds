@@ -10,9 +10,9 @@ title		:= ""		help Prefix for HTML report and outputs without given prefix.
 
 help == parallelization settings
 no_par		:= false	help Serialize all tasks (individual tasks can still use multiple threads up to '-nth').
+nth 		:= 8 		help Maximum # threads for a pipeline. (default: 8).
 
 help == general resource settings
-nth 		:= 8 		help Maximum # threads for a pipeline. (default: 8).
 wt 		:= "23h"	help Walltime for all single-threaded tasks (example: 8:10:00, 3h, 3600, default: 23h, 23:00:00).
 memory 		:= "12G"	help Maximum memory for all single-threaded tasks (equivalent to '-mem', example: 4.5G, 1024M, default: 12G).
 unlimited_mem_wt:= false 	help Use unlimited max. memory and walltime.
@@ -53,6 +53,8 @@ void init_general() {
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
 	print_general()
+
+	if ( nth > 32 ) error("Maximum # threads (-nth) for a pipeline should not exceed 32!")
 
 	// cpus, mem and timeout are BDS variables for default resource settings
 	if ( use_system != "" ) system 	= use_system

@@ -86,7 +86,7 @@ task {
 }
 ```
 
-It is important to understand a BDS operator `<-` which compares timestamp of files. In the following example, if any of files in `in` and `out` is empty or if any of files in `out` is older than any of files in 'in', it becomes true. if `task ( false ) {}`, the task is skipped. This is how a BDS pipeline can skip tasks which are already done in a previous run.
+It is important to understand a BDS operator `<-` which compares timestamp of files. In the following example, if any of files in `in` and `out` is empty or if any of files in `out` is older than any of files in `in`, it becomes true. if `task ( false ) {}`, the task is skipped. This is how a BDS pipeline can skip tasks which are already done in a previous run.
 ```
 in 	:= [input1, input2]
 out 	:= [output] // both a string or an array of string are allowed
@@ -99,7 +99,7 @@ task ( out<-in ) {
 }
 ```
 
-You can also specify computer resources settings (# thread, max. memory and walltime) for a task. There are special (system) predefined BDS variables for them. <b>Do not try to redefine them in a global scope</b>. It is recommended to make a function and define a `task` block in it. If you skip any of those special variables, default (predefined in a global scope) value will be used.
+You can also specify computer resources settings (# thread, max. memory and walltime) for a task. There are special (system) predefined BDS variables for them. <b>Do not try to redefine them in a global scope (or in a global function scope)</b>. It is recommended to make a function and define a `task` block in it. If you skip any of those special variables, default (predefined in a global scope) value will be used.
 ```
 // Note that system variables are not defined with ':='.
 // Defining them with ':=' or 'int cpus' will result in a redefinition error.
@@ -223,7 +223,7 @@ base.bds 			// basic string/file/math functions
    └ align_multimapping.bds 	// multimapping parameter
 
 [report_graphviz.bds, report_filetable.bds]
- └ report.bds 			// HTML report generation, log file parser, browser track generation.
+ └ report.bds 			// HTML report generation, log/qc file parser, WashU browser track generation.
 
 ```
 
@@ -235,7 +235,7 @@ Other non-basic child modules typically include `species.bds` and `report.bds` s
  ├ postalign_bed.bds 		// postalign functions for bed and tagaligns (including cross-corr. analysis)
  ├ callpeak_spp.bds  		// peak calling with spp
  ├ callpeak_macs2.bds  		// peak calling with macs2 (separate macs2 function for chipseq and atac)
- ├ callpeak_etc.bds  		// naive overlap threshold
+ ├ callpeak_etc.bds  		// naive overlap threshold, filtering peak files
  ├ idr.bds  			// IDR and its QC functions
  └ signal.bds  			// signal track generation using deepTools (bamCoverage) and Anshul's align2rawsignal.
 
@@ -243,7 +243,7 @@ Other non-basic child modules typically include `species.bds` and `report.bds` s
 
 [species.bds, report.bds, align_multimapping.bds]
  ├ align_bowtie2.bds  		// bowtie2 parameters, bowtie2 resource settings, align fastqs to get raw bam
- └ postalign_bam.bds 		// postalign functions for bam (including filtering bam and bam to tagalign...)
+ └ postalign_bam.bds 		// postalign functions for bam (including filtering bam and bam_to_tagalign...)
 ```
 
 
@@ -384,14 +384,18 @@ void func3() {
 
 ### Pipeline template
 
-<b> Do not use `wait` in a global scope.</b> Use `wait_clear_tids()` instead. See more details in the following `Bugs in BDS` sections.
+<b> Do not use `wait` in a global scope (or in a global function scope).</b> Use `wait_clear_tids()` instead. See more details in the following `Bugs in BDS` sections.
 ```
 include "modules/any_module_you_want.bds"
 ...
 
 main()
 
-void main() {
+// global scope
+
+void main() { 
+
+	// global function scope
 	
 	init()
 	chk_input()
@@ -487,4 +491,9 @@ void callpeak_OKAY() {
 
 2) `tid.isDone()` not working
 
-<b> Do not use `wait` in a global scope.</b> Use `wait_clear_tids()` instead.`wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear tids_all manually when all `par` function. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. You can still use `wait` in a `par` function scope.
+<b> Do not use `wait` in a global scope.</b> Use `wait_clear_tids()` instead.`wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear tids_all manually when all `par` function. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. <b>You can still use `wait` in a `par` function scope.</b>
+
+
+3) `goal` and `dep`
+
+`goal` and `dep` seem to be buggy (pipeline crashes) when combined with `par` prefix. Stay away from those syntax.
