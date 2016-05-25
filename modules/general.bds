@@ -173,7 +173,7 @@ void init_shell_env() {
 	}
 
 	// additional initialization
-	shcmd_init_ := module + path + shellcmd
+	shcmd_init_ := module + path + shellcmd + "; set -o pipefail"
 	shcmd_init_ = shcmd_init_.replace( ": :", ":" ).replace( "::", ":" ).replace( "; ;", ";" ).replace( ";;", ";" )
 
 	shcmd_init 	= conda_py2 + shcmd_init_
