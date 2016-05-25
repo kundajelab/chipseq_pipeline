@@ -232,7 +232,7 @@ Other non-basic child modules typically include `species.bds` and `report.bds` s
 [species.bds, report.bds]
  ├ align_bwa.bds  		// bwa parameters, bwa resource settings, align fastqs to get raw bam
  ├ align_trim_adapters.bds  	// bowtie2 parameters, bowtie2 resource settings, align fastqs to get raw bam
- ├ postalign_bed.bds 		// postalign functions for bed and tagaligns
+ ├ postalign_bed.bds 		// postalign functions for bed and tagaligns (including cross-corr. analysis)
  ├ callpeak_spp.bds  		// peak calling with spp
  ├ callpeak_macs2.bds  		// peak calling with macs2 (separate macs2 function for chipseq and atac)
  ├ callpeak_etc.bds  		// naive overlap threshold
@@ -243,7 +243,7 @@ Other non-basic child modules typically include `species.bds` and `report.bds` s
 
 [species.bds, report.bds, align_multimapping.bds]
  ├ align_bowtie2.bds  		// bowtie2 parameters, bowtie2 resource settings, align fastqs to get raw bam
- └ postalign_bam.bds 		// HTML report generation, log file parser, browser track generation.
+ └ postalign_bam.bds 		// postalign functions for bam (including filtering bam and bam to tagalign...)
 ```
 
 
