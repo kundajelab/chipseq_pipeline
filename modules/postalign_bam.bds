@@ -14,7 +14,7 @@ rm_chr_from_tag := "" 		help If specified, exclude lines with specified string f
 wt_dedup 	:= "23h" 	help Walltime for post-alignment filtering (default: 23h, 24:00:00).
 mem_dedup	:= "20G" 	help Max. memory for post-alignment filtering (default: 20G).
 
-use_sambamba	:= false 	use sambamba instead of picard tools
+use_sambamba	:= false 	help use sambamba instead of picard tools
 
 /*
 IMPORTANT!: legacy softwares compatibility (make the code work with legacy samtools, picard-tools)
