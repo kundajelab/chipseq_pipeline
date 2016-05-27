@@ -278,12 +278,12 @@ IDR analysis is based on <a href="https://github.com/nboley/idr" target="_blank"
 
 ### Signal track generation
 
-Define with `-sigtrk [SIG_TRK_GEN_METHOD: tag2bw (or aln2rawsig), bam2bw (or deeptools)]` to generate signal track (bigwig).
+Define with `-sigtrk [SIG_TRK_GEN_METHOD: tag2bw (or aln2rawsig), bam2bw (or deeptools)]` to generate signal track (bigwig). You can use both with `-sigtrk tag2bw,bam2bw`.
 
 If you don't want to define parameters like `seq`, `umap`, `chrsz` for every pipeline run, use species file.
 Define all species specific parameters in the species file and add parameter `-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]`.
 
-In order to generate signal track using macs2 do not use `-sigtrk macs2`. Use `-callpeak macs2` instead.
+In order to generate signal track using macs2 do not use `-sigtrk`. Use `-callpeak macs2` instead.
 
 1) using tag2bw (align2rawsignal; it converts tagalign to bigwig, final_stage >= xcor )
 ```

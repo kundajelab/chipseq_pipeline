@@ -49,6 +49,7 @@ peakcallers 	:= ["spp","macs2"]
 // Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
 // e.g. filt_bam{"rep1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
 
+string{} filt_bam
 string{} tag, tag_pr1, tag_pr2 // replicate data: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
 string tag_ppr1, tag_ppr2
 string{} peak, peak_pr1, peak_pr2, peak_pooled, peak_ppr1, peak_ppr2 // peaks: map with key ("$rep")
@@ -87,6 +88,8 @@ void main() { // chipseq pipeline starts here
 	naive_overlap() // naive overlap
 
 	do_idr() // IDR
+
+	create_sig_trk()
 
 	report()
 }
@@ -336,20 +339,16 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 		if ( is_final_stage_bam() ) return
 	}
 
-	string filt_bam
+	string filt_bam_
 
 	if ( is_input_bam() || is_input_fastq() ) {
 	
 		if ( is_input_bam() ) bam = get_bam( ctl, rep )
 
-		( filt_bam, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
+		( filt_bam_, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
 			= _dedup_bam( bam, aln_o_dir, qc_o_dir, info, nth_rep )
+		filt_bam{key} = filt_bam_
 		wait
-
-		if ( is_sigtrk_deeptools() ) {
-
-			signal_trk{key} = _bam_to_bw( filt_bam, aln_o_dir, info, 1 )
-		}
 
 		if ( is_final_stage_filt_bam() ) return
 	}
@@ -358,9 +357,12 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_filt_bam() ) filt_bam = get_filt_bam( ctl, rep )
+		if ( is_input_filt_bam() ) {
+			filt_bam_ = get_filt_bam( ctl, rep )
+			filt_bam{key} = filt_bam_
+		}
 
-		tag_ = _bam_to_tag( filt_bam, aln_o_dir, info )
+		tag_ = _bam_to_tag( filt_bam_, aln_o_dir, info )
 		wait
 
 		tag{key} = tag_
@@ -419,18 +421,6 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 				( xcor_qc_pr1{key}, tmp ) = _xcor( subsampled_tag_pr1, qc_pr1_o_dir, info+"-pr1", nth_xcor[1], "pseudo_reps/$info/pr1" )
 				( xcor_qc_pr2{key}, tmp ) = _xcor( subsampled_tag_pr2, qc_pr2_o_dir, info+"-pr2", nth_xcor[2], "pseudo_reps/$info/pr2" )
 			}
-
-			wait
-			
-			if ( is_sigtrk_aln2rawsig() ) {
-
-				sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$info" )
-
-				fraglen := get_fraglen( xcor_qc_ )				
-				signal_trk{key} = _tag_to_bw( tag_, fraglen, sig_o_dir, info )
-
-				if ( make_wig ) _tag_to_wig( tag_, fraglen, sig_o_dir, info )
-			}
 		}
 
 		if ( is_final_stage_xcor() ) return
@@ -457,20 +447,16 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 		if ( is_final_stage_bam() ) return
 	}
 
-	string filt_bam
+	string filt_bam_
 
 	if ( is_input_bam() || is_input_fastq() ) {
 
 		if ( is_input_bam() ) bam = get_bam( ctl, rep )
 
-		( filt_bam, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
+		( filt_bam_, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
 			= _dedup_bam_PE( bam, aln_o_dir, qc_o_dir, info, nth_rep )
+		filt_bam{key} = filt_bam_
 		wait
-
-		if ( is_sigtrk_deeptools() ) { // signal track generation (deeptools)
-
-			signal_trk{key} = _bam_to_bw( filt_bam, aln_o_dir, info, 1 )
-		}
 
 		if ( is_final_stage_filt_bam() ) return
 	}
@@ -479,9 +465,12 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 
 	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_filt_bam() ) filt_bam = get_filt_bam( ctl, rep )
+		if ( is_input_filt_bam() ) {
+			filt_bam_ = get_filt_bam( ctl, rep )
+			filt_bam{key} = filt_bam_
+		}
 
-		tag_ = _bam_to_tag( filt_bam, aln_o_dir, info )
+		tag_ = _bam_to_tag( filt_bam_, aln_o_dir, info )
 		wait
 		tag{key} = tag_
 
@@ -503,7 +492,7 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 				wait
 			}
 			else {
-				bedpe = _bam_to_bedpe( filt_bam, aln_o_dir, info )
+				bedpe = _bam_to_bedpe( filt_bam_, aln_o_dir, info )
 				wait
 
 				subsampled_tag = _subsample_bedpe_to_tag_xcor( bedpe, nreads, aln_o_dir, info )
@@ -548,18 +537,6 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 				string tmp
 				( xcor_qc_pr1{key}, tmp ) = _xcor( tag_pr1_, qc_pr1_o_dir, info+"-pr1", nth_xcor[1], "pseudo_reps/$info/pr1" )
 				( xcor_qc_pr2{key}, tmp ) = _xcor( tag_pr2_, qc_pr2_o_dir, info+"-pr2", nth_xcor[2], "pseudo_reps/$info/pr2" )
-			}
-
-			wait
-
-			if ( is_sigtrk_aln2rawsig() ) {
-
-				sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$info" )
-
-				fraglen := get_fraglen( xcor_qc_ )
-				signal_trk{key} = _tag_to_bw( tag_, fraglen, sig_o_dir, info )
-				
-				if ( make_wig ) _tag_to_wig( tag_, fraglen, sig_o_dir, info )
 			}
 		}
 
@@ -998,6 +975,48 @@ void do_idr() {
 	print( "\n== Done do_idr()\n" )	
 }
 
+void create_sig_trk() {
+
+	if ( !is_sigtrk_deeptools() && !is_sigtrk_aln2rawsig() ) return
+
+print("DEBUG:")
+//print(filt_bam)
+//print("\n")
+print(tag)
+print("\n")
+
+	for ( int rep=1; rep <= get_num_rep(); rep++) {
+
+		par _create_sig_trk( rep )
+	}
+
+	wait_clear_tids()
+
+	print( "\n== Done create_sig_trk()\n" )	
+}
+
+void _create_sig_trk( int rep ) {
+
+	key := "0,$rep"  // key name for global output variable (map)
+	info:= "rep$rep"
+	if ( is_sigtrk_deeptools() && filt_bam.hasKey(key) ) { // signal track generation (deeptools)
+
+		sig_o_dir := mkdir( "$out_dir/signal/bam2bw/$info" )
+
+		signal_trk{key} = _bam_to_bw( filt_bam{key}, sig_o_dir, info, 1 )
+	}
+
+	if ( is_sigtrk_aln2rawsig() && tag.hasKey(key) && xcor_qc.hasKey(key) ) {
+
+		sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$info" )
+
+		fraglen := get_fraglen( xcor_qc{key} )
+		signal_trk{key} = _tag_to_bw( tag{key}, fraglen, sig_o_dir, info )
+		
+		if ( make_wig ) _tag_to_wig( tag{key}, fraglen, sig_o_dir, info )
+	}
+}
+
 void report() {
 
 	wait_clear_tids()
@@ -1124,12 +1143,12 @@ bool is_callpeak_macs2() {
 
 bool is_sigtrk_aln2rawsig() {
 
-	return sigtrk.toLower().startsWith( "aln" ) || sigtrk.toLower().startsWith( "align" ) || sigtrk.toLower().startsWith( "tag" )
+	return sigtrk.toLower().indexOf( "aln" )>=0 || sigtrk.toLower().indexOf( "align" )>=0 || sigtrk.toLower().indexOf( "tag" )>=0
 }
 
 bool is_sigtrk_deeptools() {
 
-	return sigtrk.toLower().startsWith( "deep" ) || sigtrk.toLower().startsWith( "bam" )
+	return sigtrk.toLower().indexOf( "deep" )>=0 || sigtrk.toLower().indexOf( "bam" )>=0
 }
 
 bool is_input_fastq() {
