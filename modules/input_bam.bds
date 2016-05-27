@@ -1,8 +1,7 @@
 #!/usr/bin/env bds
 #vim: syntax=java
 
-include "species.bds"
-include "report.bds"
+include "conf.bds"
 
 
 help == bam input (raw or filtered) definition :

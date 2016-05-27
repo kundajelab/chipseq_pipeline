@@ -1,16 +1,13 @@
 #!/usr/bin/env bds
 #vim: syntax=java
 
-include "species.bds"
+include "conf.bds"
 
 
 help == fastq input definition :
 help         Single-ended : For replicate '-fastq[REP_ID]', For control '-ctl_fastq[REP_ID]'
 help         Paired end : For replicate '-fastq[REP_ID]_[PAIR_ID]', For control '-ctl_fastq[REP_ID]_[PAIR_ID]'
 
-// Dummy variables for atac.bds (for legacy input method)
-fastq1_1	:= ""
-fastq1_2	:= ""
 
 
 string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], elseif single-end else return [PE1], else []	
@@ -38,13 +35,7 @@ string get_fastq( int ctl, int rep, int p ) {
 	key3 := key_wo_p3 + "_" + p
 
 
-	if ( (ctl==0) && (rep==1) && (p==1) && (fastq1_1 != "") ) {
-		return get_path( fastq1_1 )
-	}
-	else if ( (ctl==0) && (rep==1) && (p==2) && (fastq1_2 != "") ) {
-		return get_path( fastq1_2 )
-	}
-	else if ( (p==1) && cmd_line_arg_has_key( key_wo_p ) ) {
+	if ( (p==1) && cmd_line_arg_has_key( key_wo_p ) ) {
 		return get_path( get_cmd_line_arg_val( key_wo_p ) )
 	}
 	else if ( (p==1) && cmd_line_arg_has_key( key_wo_p2 ) ) {
