@@ -42,8 +42,6 @@ include "modules/signal.bds"
 // system vars
 input 		:= ""
 num_ctl 	:= 1
-num_callpeak 	:= 2 	// spp (1), macs2 (2)
-peakcallers 	:= ["spp","macs2"]
 
 
 // Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
@@ -304,7 +302,8 @@ void align() {
 
 			key := "$ctl,$rep"  // key name for global output variable (map)
 
-			par _align( ctl, rep, nth_rep{key} ) // parallel jobs for align() for each replicate and each control
+			if ( no_par ) _align( ctl, rep, nth_rep{key} ) // parallel jobs for align() for each replicate and each control
+			else	  par _align( ctl, rep, nth_rep{key} ) // parallel jobs for align() for each replicate and each control
 		}
 	}
 
@@ -736,12 +735,28 @@ void call_peaks() {
 
 	if ( is_input_peak() ) return
 
-	for ( int i=0; i<num_callpeak; i++ ) {
+	int{} nth_peak  // distribute_nth # threads according to peak callers, priority for spp than macs2 (4 vs 1)
 
-		par _call_peaks( peakcallers[i]  )
+	if ( is_callpeak_spp() && is_callpeak_macs2() ) {
+		( nth_peak{"spp"}, nth_peak{"macs2"} ) = distribute_nth( nth, [3,1] )
+	}
+	else if ( is_callpeak_spp() ) {
+		nth_peak{"spp"} = nth
+	}
+	else if ( is_callpeak_macs2() ) {
+		nth_peak{"macs2"} = nth
+	}
+	else {
+		error("No peak caller is specified (-callpeak)!\n")
+	}
 
-		// wait 10 seconds to make all spp jobs get queued first (gives priority for spp against macs2)
-		if ( i==0 ) sleep( 10 )
+	if ( is_callpeak_spp() ) {
+		if ( no_par ) _call_peaks( "spp", nth_peak{"spp"} )
+		else 	  par _call_peaks( "spp", nth_peak{"spp"} )
+	}
+	if ( is_callpeak_macs2() ) {
+		if ( no_par ) _call_peaks( "macs2", nth_peak{"macs2"} )
+		else 	  par _call_peaks( "macs2", nth_peak{"macs2"} )
 	}
 
 	wait_clear_tids()
@@ -749,10 +764,8 @@ void call_peaks() {
 	print( "\n== Done call_peaks()\n" )	
 }
 
-void _call_peaks( string pc ) { // pc: pc
+void _call_peaks( string pc, int nth_peak ) { // pc: pc
 
-	if ( pc == "spp" && !(is_callpeak_spp()) ) return
-	if ( pc == "macs2" && !(is_callpeak_macs2()) ) return
 	if ( pc == "spp" && !control_exists() ) return
 
 	//// calculate fragment length (required for SPP and MACS2)
@@ -788,11 +801,11 @@ void _call_peaks( string pc ) { // pc: pc
 	int nth_pooled, nth_ppr, nth_true, nth_pr
 
 	if ( !true_rep ) {
-		( nth_pooled, nth_ppr ) = distribute_nth( nth, [ 2, 1, 1 ] ) // pooled, ppr1, ppr2
-		( nth_true, nth_pr ) 	= distribute_nth( nth, [ 2, 1, 1 ] ) // for each replicate (true, pr1, pr2)
+		( nth_pooled, nth_ppr ) = distribute_nth( nth_peak, [ 2, 1, 1 ] ) // pooled, ppr1, ppr2
+		( nth_true, nth_pr ) 	= distribute_nth( nth_peak, [ 2, 1, 1 ] ) // for each replicate (true, pr1, pr2)
 	}
 	else {
-		( nth_pooled, nth_true ) = distribute_nth( nth, [ get_num_rep(), 1 ] ) // pooled, true
+		( nth_pooled, nth_true ) = distribute_nth( nth_peak, [ get_num_rep(), 1 ] ) // pooled, true
 	}
 
 	//// call peaks
@@ -979,15 +992,10 @@ void create_sig_trk() {
 
 	if ( !is_sigtrk_deeptools() && !is_sigtrk_aln2rawsig() ) return
 
-print("DEBUG:")
-//print(filt_bam)
-//print("\n")
-print(tag)
-print("\n")
-
 	for ( int rep=1; rep <= get_num_rep(); rep++) {
 
-		par _create_sig_trk( rep )
+		if ( no_par ) _create_sig_trk( rep )
+		else	  par _create_sig_trk( rep )
 	}
 
 	wait_clear_tids()

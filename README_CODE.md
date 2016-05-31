@@ -491,7 +491,7 @@ void callpeak_OKAY() {
 
 2) `tid.isDone()` not working
 
-<b> Do not use `wait` in a global scope.</b> Use `wait_clear_tids()` instead.`wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear tids_all manually when all `par` function. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. <b>You can still use `wait` in a `par` function scope.</b>
+<b> Do not use `wait` in a global scope.</b> Use `wait_clear_tids()` instead.`wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear `tids_all` manually when all `par` functions finish. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. <b>You can still use `wait` in a `par` function scope.</b>
 
 
 3) `goal` and `dep`

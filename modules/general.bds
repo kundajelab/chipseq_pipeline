@@ -52,9 +52,15 @@ void init_general() {
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
-	print_general()
-
 	if ( nth > 32 ) error("Maximum # threads (-nth) for a pipeline should not exceed 32!")
+
+	if ( nth <= 1 ) {
+		print("\nWarning: Maximum # threads (-nth) for a pipeline is <= 1. Turning off parallelization... (-no_par)")
+		nth = 1
+		no_par = true
+	}
+
+	print_general()
 
 	// cpus, mem and timeout are BDS variables for default resource settings
 	if ( use_system != "" ) system 	= use_system
