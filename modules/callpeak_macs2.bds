@@ -32,8 +32,7 @@ void chk_callpeak_macs2() {
 
 
 string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
-		string peak_o_dir, string sig_o_dir, string label, string label_ctl, \
-		int nth_macs2, string hrchy ) {
+		string peak_o_dir, string sig_o_dir, string label, string label_ctl, string hrchy ) {
 
 	prefix 		:= (ctl_tag != "") ? 	("$peak_o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
 						: replace_dir( rm_ext( tag, "tagAlign" ), peak_o_dir )
@@ -58,7 +57,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
  	out 	:= make_sig ? [ npeakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile, gpeakfile ]
 
  	taskName:= "macs2 " + label
-	cpus	:= nth_macs2;	mem := get_res_mem(mem_macs2,nth_macs2);	timeout := get_res_wt(wt_macs2)
+	mem := get_res_mem(mem_macs2,1);	timeout := get_res_wt(wt_macs2)
 
 	wait_par( cpus )
 

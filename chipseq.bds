@@ -880,16 +880,18 @@ string _call_peaks( string peakcaller, string tag1, string tag1_ctl, string frag
 	if ( peakcaller == "spp" ) {
 
 		string regionpeak, score, pdf 
-		( regionpeak, score, pdf ) = _spp( tag1, tag1_ctl, fraglen, peak_o_dir, label, label_ctl, \
-							nth_peak, hrchy )
+
+		( regionpeak, score, pdf ) \
+			= _spp( tag1, tag1_ctl, fraglen, peak_o_dir, label, label_ctl, nth_peak, hrchy )
 
 		return regionpeak // use regionpeak instead of narrowpeak
 	}
 	else if ( peakcaller == "macs2" ) {
-		
+
 		string narrowpeak, gpeak, fc_bw, pval_bw
-		( narrowpeak, gpeak, fc_bw, pval_bw ) = _macs2( tag1, tag1_ctl, fraglen, make_sig, peak_o_dir, sig_o_dir, label, label_ctl, \
-							nth_peak, hrchy )
+
+		( narrowpeak, gpeak, fc_bw, pval_bw ) \
+			= _macs2( tag1, tag1_ctl, fraglen, make_sig, peak_o_dir, sig_o_dir, label, label_ctl, hrchy )
 
 		// macs2 generates signal tracks
 		if ( make_sig ) {
