@@ -295,7 +295,7 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 		sys $shcmd_init
 
 		//sys samtools sort -n $bam $nmsrt_bam_prefix
-		sys sambamba sort -n $bam -o $nmsrt_bam
+		sys sambamba sort -t 1 -n $bam -o $nmsrt_bam
 	}
 
 	register_par( tid, cpus )
@@ -332,7 +332,7 @@ string _srt_bam( string bam, string o_dir, string label ) {
 		//	cp $srt_bam.bai $srt_bam_idx; \
 		//	fi
 
-		sys sambamba sort $bam -o $srt_bam
+		sys sambamba sort -t 1 $bam -o $srt_bam
 	}
 
 	register_par( tid, cpus )
