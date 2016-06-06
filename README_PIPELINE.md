@@ -527,6 +527,11 @@ Simply re-run the pipeline with the same command. Possible bug in BDS for lockin
 Dependencies are not installed correctly. Check your Anaconda Python is correctly configured for conda environments. Run `./uninstall_dependencies.sh` and then `./install_dependencies.sh` again.
 
 
+9) Unable to run job: unknown resource "mem"
+
+Check if you have `bds.config` on your `$HOME/.bds/`.
+
+
 
 ### Contributors
 
