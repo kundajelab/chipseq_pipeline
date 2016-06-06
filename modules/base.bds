@@ -604,12 +604,19 @@ int max( int[] arr ) {
 	return tmp
 }
 
-
 int min( int[] arr ) {
 
 	tmp := arr[0]
 	for( int i=1; i<arr.size();i++ ) tmp = min( tmp, arr[i] )
 	return tmp
+}
+
+string number_with_metric_prefix( int n ) {
+	if (      n > 1000000000000 ) 	return (n/1000000000000)+"T"
+	else if ( n > 1000000000 ) 	return (n/1000000000)+"G"
+	else if ( n > 1000000 )		return (n/1000000)+"M"
+	else if ( n > 1000 )		return (n/1000)+"K"
+	else				return n
 }
 
 string[] map_to_array( string{} map ) {

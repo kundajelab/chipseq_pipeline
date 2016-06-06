@@ -25,7 +25,8 @@ void init_postalign_bed() {
 string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
-	nreads_per_mill := (nlines/1000000)
+	nreads_per_mill := number_with_metric_prefix( nlines )
+
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
 
 	in 	:= [ tag ]
@@ -54,7 +55,8 @@ string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","bed"] ), o_dir )
-	nreads_per_mill := (nlines/1000000)
+	nreads_per_mill := number_with_metric_prefix( nlines )
+
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
 
 	in 	:= [ tag ]
@@ -84,7 +86,8 @@ string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string labe
 string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, string label ) {
 	
 	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
-	nreads_per_mill := (nlines/1000000)
+	nreads_per_mill := number_with_metric_prefix( nlines )
+
 	subsampled_tag 	:= "$prefix.$nreads_per_mill.tagAlign.gz"
 
 	in 	:= [ bedpe ]
@@ -112,7 +115,8 @@ string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, str
 string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) {
 	
 	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
-	nreads_per_mill := (nlines/1000000)
+	nreads_per_mill := number_with_metric_prefix( nlines )
+
 	subsampled_bedpe:= "$prefix.$nreads_per_mill.bedpe.gz"
 
 	in 	:= [ bedpe ]
