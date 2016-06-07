@@ -532,6 +532,11 @@ Dependencies are not installed correctly. Check your Anaconda Python is correctl
 Check if you have `bds.config` on your `$HOME/.bds/`.
 
 
+10) Error trying to find out post-mortem info on task
+
+For fast scheduling clusters including SGE, doing post-mortem on jobs can fail in BDS. Add `clusterPostMortemDisabled = true` to your `~/.bds/bds.config`.
+
+
 
 ### Contributors
 

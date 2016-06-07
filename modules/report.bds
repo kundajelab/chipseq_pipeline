@@ -23,7 +23,7 @@ void init_report() {
 
 	url_base	= get_conf_val( url_base, 	["url_base"] )
 
-	sys cp $script_dir/html/jquery.treetable.* $rpt_aux_dir    # move report js/css files to out_dir
+	sys cp --remove-destination $script_dir/html/jquery.treetable.* $rpt_aux_dir    # move report js/css files to out_dir
 
 	prefix := title=="" ? "" : (title+"_")
 
