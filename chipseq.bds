@@ -226,8 +226,8 @@ void chk_input() {
 
 			// if data is missing
 			if ( data[0] == "" ) {
-				if ( (rep==2) && (ctl==1) ) \
-					print( "\tWarning: $prefix missing! keep going... (using control 1 for calling peaks on replicate 2)\n")
+				if ( (rep>=2) && (ctl==1) ) \
+					print( "\tWarning: $prefix missing! keep going... (using control 1 for calling peaks on replicate $rep)\n")
 				else if ( (rep==2) && (ctl==0) ) \
 					print( "\tWarning: $prefix missing! keep going... (peak calling for replicate 1 only)\n")
 				else \
@@ -316,6 +316,8 @@ void _align( int ctl, int rep, int nth_rep ) {
 
 	if ( is_single_ended( ctl, rep ) ) 	_align_SE( ctl, rep, nth_rep )
 	else 					_align_PE( ctl, rep, nth_rep )
+
+	if ( !no_par ) monitor_par()
 }
 
 void _align_SE( int ctl, int rep, int nth_rep ) {
@@ -824,6 +826,7 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 
 		peak_pooled{"$pc"}= _call_peaks( pc, tag{"0,pooled"}, tag_ctl{"pooled"}, fraglen_mean, true, pooled_o_dir, pooled_sig_o_dir, \
 							"pooled", tag_ctl_label{"pooled"}, nth_pooled, pooled_hrchy )
+		sleep( 4 )
 
 		if ( !true_rep ) {
 
@@ -854,6 +857,8 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 		peak{"$pc,$rep"} = _call_peaks( pc, tag{"0,$rep"}, tag_ctl{rep}, fraglen{rep}, true, o_dir, sig_dir, \
 							"rep$rep", tag_ctl_label{rep}, nth_true, hrchy )
 
+		sleep( 4 )
+
 		if ( !true_rep ) {
 
 			pr1_o_dir 	:= mkdir( "$peak_o_dir/pseudo_reps/rep$rep/pr1" )
@@ -871,6 +876,8 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 								"rep$rep-pr2", tag_ctl_label{rep}, nth_pr, pr2_hrchy )
 		}
 	}	
+
+	if ( !no_par ) monitor_par()	
 }
 
 string _call_peaks( string peakcaller, string tag1, string tag1_ctl, string fraglen, bool make_sig, \

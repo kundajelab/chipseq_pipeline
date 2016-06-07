@@ -139,7 +139,7 @@ void map( int replicate_id ) {
 	task {
 		echo "post-align ($replicate_id)"
 	}
-
+	
 	wait
 }
 ```
@@ -427,7 +427,7 @@ void call_peaks() {
 
 1) thread safety issue for global variables
 
-It is already explained that we need global variables (typically map of string to store output file names; map's key is typically replicate id here) for parallelized BDS pipelines. There is a bug in handling global variables (locking/unlocking them).Reading (as r-value) and writing (as l-value) on a global variable in a `par` function will result in a crash of a pipeline. A hacky way to prevent this problem is <b>not to read global variables</b> in a `par` function. It's safe to read gloval variables in a `par` function only when all parallel tasks are finished (`wait` or `wait_clear_tids()` in a global scope). 
+It is already explained that we need global variables (typically map of string to store output file names; map's key is typically replicate id here) for parallelized BDS pipelines. There is a bug in handling global variables (locking/unlocking them).Reading (as r-value) and writing (as l-value) on a global variable in a `par` function will result in a crash of a pipeline. A hacky way to prevent this problem is <b>not to read global variables</b> in a `par` function. It's safe to read gloval variables in a `par` function only when all parallel tasks are finished (`wait` or `wait_clear_tids()` in a global scope). Also, add `monitor_par()` at the end of all `par` function. This function is sort of a barrier marking jobs as done when they finish.
 
 ```
 string{} bam, filt_bam, tagalign, peak	// global variables to store pipeline outputs (filenames)
@@ -474,6 +474,8 @@ void align_OKAY( int replicate_id ) {
 
 	tagalign_ := _bam_to_tag( filt_bam ) // it's SAFE
 	tagalign{key} = tagalign_
+
+	monitor_par() // IMPORTANT
 }
 
 void callpeak_OKAY() {
@@ -492,6 +494,8 @@ void callpeak_OKAY() {
 2) `tid.isDone()` not working
 
 <b> Do not use `wait` in a global scope.</b> Use `wait_clear_tids()` instead.`wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear `tids_all` manually when all `par` functions finish. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. <b>You can still use `wait` in a `par` function scope.</b>
+
+This bug is fixed in the latest BDS (06/06/2016).
 
 
 3) `goal` and `dep`
