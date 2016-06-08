@@ -43,6 +43,8 @@ string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 		//# Subsample tagAlign file
 		sys zcat $tag | \
 			grep -v "chrM" | shuf -n $nlines | gzip -c > $subsampled_tag
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -74,6 +76,8 @@ string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string labe
 		sys zcat $tag | sed 'N;s/\n/\t/' | \
 			grep -v "chrM" | shuf -n $nlines | \
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$4,$5,$6}' | gzip -c > $subsampled_tag
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -105,6 +109,8 @@ string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, str
 		sys zcat $bedpe | \
 			grep -v "chrM" | shuf -n $nlines | \
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$3,"N","1000",$9}' | gzip -c > $subsampled_tag
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -131,6 +137,8 @@ string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) 
 		sys $shcmd_init
 
 		sys zcat $bedpe | grep -v "chrM" | shuf -n $nlines | gzip -c > $subsampled_bedpe
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -157,6 +165,8 @@ string _tn5_shift_tag( string tag, string o_dir, string label ) {
 		sys $shcmd_init
 
 		sys zcat $tag | awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' | gzip -c > $shifted_tag
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -233,6 +243,8 @@ string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
 		sys rm -f $prefix_pr1.00
 		sys gzip -c $prefix_pr1.01 > $tag_pr2
 		sys rm -f $prefix_pr1.01
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -277,6 +289,8 @@ string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label
 		sys awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}' "$prefix_pr1.01" | \
 			gzip -c > $tag_pr2
 		sys rm -f $prefix_pr1.01
+
+		sys $shcmd_finalize
 	}
 	
 	register_par( tid, cpus )
@@ -328,6 +342,8 @@ string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string lab
 		sys rm -f $prefix_pr1.01
 
 		sys rm -f $joined
+
+		sys $shcmd_finalize
 	}
 	
 	register_par( tid, cpus )
@@ -380,7 +396,9 @@ string _pool_tag( string tag1, string tag2, string o_dir, string label ) {
 	tid := task( out<-in ) {
 
 		sys $shcmd_init
-		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled		
+		sys zcat $tag1 $tag2 | gzip -c > $tag_pooled
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -408,6 +426,8 @@ string _pool_tag( string[] tags, string o_dir, string label ) {
 
 		sys $shcmd_init
 		sys zcat $tags_str | gzip -c > $tag_pooled
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )

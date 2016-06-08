@@ -365,6 +365,8 @@ string _bam_to_tag( string bam, string o_dir, string label ) {
 		sys bedtools bamtobed -i $bam | awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}' | gzip -c > $tag
 
 		sys $RM_CHR_
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -399,6 +401,8 @@ string _bam_to_bedpe( string bam, string o_dir, string label ) {
 
 			//# Create BEDPE file
 			sys bedtools bamtobed -bedpe -mate1 -i $nmsrt_bam | gzip -c > $bedpe
+
+			sys $shcmd_finalize
 		}
 
 		register_par( tid, cpus )
@@ -437,7 +441,9 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 		sys zcat $bedpe | awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}' | \
 			gzip -c > $tag
 
-		sys $RM_CHR_			
+		sys $RM_CHR_
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -494,6 +500,8 @@ string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label )
 				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
 			fi
 		sys rm -f $non_mito_bam $mito_bam
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )

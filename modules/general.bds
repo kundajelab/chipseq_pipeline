@@ -28,6 +28,7 @@ conda_env_py3 	:= ""		help Anaconda Python environment name for Python3.
 
 shcmd_init 	:= "" 	// Shell command executed prior to all BigDataScript tasks (use this for setting up shell environment)
 shcmd_init_py3	:= "" 	// for softwares using python3
+shcmd_finalize 	:= ""
 
 string[] tids_all 	// array of task ids currently running
 string[] tids_done
@@ -181,11 +182,21 @@ void init_shell_env() {
 	}
 
 	// additional initialization
-	shcmd_init_ := module + path + shellcmd + "; set -o pipefail"
+	shcmd_init_ := module + path + shellcmd
+	shcmd_init_ += "; set -o pipefail" 		// to catch non-zero exit code in a UNIX pipe
+	shcmd_init_ += "; STARTTIME=$(date +%s)" 	// to check running time for a task
+
 	shcmd_init_ = shcmd_init_.replace( ": :", ":" ).replace( "::", ":" ).replace( "; ;", ";" ).replace( ";;", ";" )
 
 	shcmd_init 	= conda_py2 + shcmd_init_
 	shcmd_init_py3 	= conda_py3 + shcmd_init_
+
+	if ( is_system_local() ) {
+		shcmd_finalize = "TASKTIME=$[$(date +%s)-${STARTTIME}]; echo Task has finished (${TASKTIME} seconds)."
+	}
+	else {
+		shcmd_finalize = "TASKTIME=$[$(date +%s)-${STARTTIME}]; if [ ${TASKTIME} -lt 60 ]; then echo \"Waiting for $[60-${TASKTIME}] seconds.\"; sleep $[60-${TASKTIME}]; fi"
+	}
 
 	print( "\nShell command for initialization\t: $shcmd_init\n" )
 	print( "\nShell command for initialization (py3)\t: $shcmd_init_py3\n" )
@@ -216,6 +227,8 @@ void wait_clear_tids() { // DO NOT USE THIS in par function/scope!
 }
 
 void wait_par( int nth_task ) {
+
+//	if ( no_par ) return
 
 	sleep( rand()*0.5 + 0.25 )
 
@@ -285,6 +298,11 @@ void wait_par( int nth_task ) {
 }
 
 void register_par( string tid, int nth_task ) {
+
+//	if ( no_par ) {
+//		wait
+//		return
+//	}
 
 	if ( tid == "" ) return
 
