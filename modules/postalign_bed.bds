@@ -201,6 +201,8 @@ string[] _xcor( string tag, string o_dir, string label, int nth_xcor, string hrc
 			-filtchr=chrM -savp=$xcor_plot -out=$xcor_score $param_speak
 		sys sed -r 's/,[^\t]+//g' $xcor_score > $xcor_score.tmp
 		sys mv $xcor_score.tmp $xcor_score
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -425,6 +427,7 @@ string _pool_tag( string[] tags, string o_dir, string label ) {
 	tid := task( out<-in ) {
 
 		sys $shcmd_init
+
 		sys zcat $tags_str | gzip -c > $tag_pooled
 
 		sys $shcmd_finalize

@@ -93,6 +93,8 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 
 		sys gzip -f $idr_out
 		sys rm -f $peak_idr_trk_tmp $filt_peak_idr_trk_tmp
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -215,6 +217,8 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 
 		sys echo -e "Nt\t$col_lbl""Np\tconservative_set\toptimal_set\trescue_ratio\tself_consistency_ratio\treproducibility" > $qc
 		sys echo -e "$Nt\t$col_val""$Np\t$conservative_set\t$optimal_set\t$rescue_ratio\t$self_consistency_ratio\t$reproducibility" >> $qc
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )

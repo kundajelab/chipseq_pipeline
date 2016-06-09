@@ -62,6 +62,8 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 		sys rm -f $rpeakfile_vs
 
 		sys mv $pdf_tmp $pdf
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )

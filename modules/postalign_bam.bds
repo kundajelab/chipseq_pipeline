@@ -137,6 +137,8 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 
 		sys rm -f $filt_bam
 		sys rm -f $tmp_filt_bam
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -263,6 +265,8 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 
 		sys rm -f $filt_bam
 		sys rm -f $tmp_filt_bam
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -296,6 +300,8 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 
 		//sys samtools sort -n $bam $nmsrt_bam_prefix
 		sys sambamba sort -t 1 -n $bam -o $nmsrt_bam
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -333,6 +339,8 @@ string _srt_bam( string bam, string o_dir, string label ) {
 		//	fi
 
 		sys sambamba sort -t 1 $bam -o $srt_bam
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -555,6 +563,8 @@ string _bam_to_bed_atac( string filt_bam, string o_dir, string label ) {
 				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
 			fi
 		sys rm -f $non_mito_bam $mito_bam
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )

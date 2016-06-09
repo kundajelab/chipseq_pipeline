@@ -112,6 +112,8 @@ string _bwa_aln( string fastq, string o_dir, string label, int nth_bwa ) {
 
 		//# Map reads to create raw SAM file
 		sys bwa aln $param_bwa_aln -t $nth_bwa $bwa_idx $fastq > $sai
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -144,6 +146,8 @@ string[] _bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, str
 		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su /dev/stdin \
 			| sambamba sort -t $nth_bwa /dev/stdin -o $bam
 		sys sambamba flagstat -t $nth_bwa $bam > $qc
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -204,6 +208,8 @@ string[] _bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, st
 		sys sambamba flagstat -t $nth_bwa $bam > $qc
 		
 		sys rm -f $badcigar $sam
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )

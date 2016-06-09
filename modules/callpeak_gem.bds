@@ -77,6 +77,8 @@ string[] _gem( string tag, string ctl_tag, string o_dir, string info ) {
 		sys mv "$prefix/$prefix_basename"_KSM.txt $ksm
 		sys mv "$prefix/$prefix_basename"_PFM.txt $pfm
 		sys mv "$prefix/$prefix_basename"_result.htm $html
+
+		sys $shcmd_finalize
 	}
 	
 	register_par( tid, cpus )

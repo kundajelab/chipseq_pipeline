@@ -33,6 +33,8 @@ string _filt_top_peaks( string peakfile, string o_dir, string label, \
 
 		// sort by 8th (-log10(pval) ) column and take top $npeak_filt lines
 		sys zcat $peakfile | sort -grk8 | head -n $npeak_filt | gzip -c > $peakfile_filt
+
+		sys $shcmd_finalize
 	}
 	
 	register_par( tid, cpus )

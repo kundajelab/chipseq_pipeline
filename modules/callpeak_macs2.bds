@@ -130,6 +130,8 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 			fi
 
 		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
