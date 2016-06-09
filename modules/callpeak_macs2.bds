@@ -64,7 +64,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 	tid := task( out<-in ) {
 
 		sys $shcmd_init
-		sys LC_COLLATE=C
+		sys export LC_COLLATE=C
 		
 		//==========================================
 		//# Generate narrow peaks and preliminary signal tracks
