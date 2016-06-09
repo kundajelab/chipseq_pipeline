@@ -228,11 +228,10 @@ void wait_clear_tids() { // DO NOT USE THIS in par function/scope!
 
 void wait_par( int nth_task ) {
 
-//	if ( no_par ) return
-
-	sleep( rand()*0.5 + 0.25 )
-
 	while ( true ) {
+
+		sleep( rand()*0.5 + 0.25 )
+
 		//print("\nIn wait_par loop\n")
 		
 		tids_all_  := tids_all // make dummy for thread safety
@@ -248,7 +247,7 @@ void wait_par( int nth_task ) {
 
 			if ( !tid.isDone() ) {
 				tids_running.add( tid )
-				nth_running += nth_tasks{tid}
+				nth_running = nth_running + nth_tasks{tid}
 				//print("\t$tid : $nth_running, "+tids_done_.size()+"\n")
 			}
 			else if ( !is_in_array( tid, tids_done_ ) ) {
@@ -298,11 +297,6 @@ void wait_par( int nth_task ) {
 }
 
 void register_par( string tid, int nth_task ) {
-
-//	if ( no_par ) {
-//		wait
-//		return
-//	}
 
 	if ( tid == "" ) return
 
