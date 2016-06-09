@@ -192,7 +192,7 @@ void init_shell_env() {
 	shcmd_init_py3 	= conda_py3 + shcmd_init_
 
 	if ( is_system_local() ) {
-		shcmd_finalize = "TASKTIME=$[$(date +%s)-${STARTTIME}]; echo Task has finished (${TASKTIME} seconds)."
+		shcmd_finalize = "TASKTIME=$[$(date +%s)-${STARTTIME}]; echo \"Task has finished (${TASKTIME} seconds).\""
 	}
 	else {
 		shcmd_finalize = "TASKTIME=$[$(date +%s)-${STARTTIME}]; if [ ${TASKTIME} -lt 60 ]; then echo \"Waiting for $[60-${TASKTIME}] seconds.\"; sleep $[60-${TASKTIME}]; fi"
