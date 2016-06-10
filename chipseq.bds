@@ -13,7 +13,7 @@ sigtrk 		:= ""		help (BETA) Signal track generation method : bam2bw (bamCoverage
 make_wig 	:= false	help Create wig (for '-sigtrk tag2bw' only).
 idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
 nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
-
+no_naive_overlap:= false 	help No naive overlap threshold for peaks.
 
 help() // print help if no parameters are given
 
@@ -106,6 +106,8 @@ void init_chipseq() {
 	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
 	nreads 		= get_conf_val_int( nreads,		["nreads"] )
 
+	no_naive_overlap 	= get_conf_val_bool( no_naive_overlap, 	["no_naive_overlap"] )
+
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
 	if ( get_tag(0,1) != "" ) 	input = "tag"
@@ -133,6 +135,7 @@ void print_chipseq() {
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "IDR threshold\t\t\t: $idr_thresh\n" )
+	print( "No naive overlap threshold\t: $no_naive_overlap")
 }
 
 void chk_input() {
@@ -917,6 +920,8 @@ void naive_overlap() {
 	if ( !is_callpeak_spp() ) return
 
 	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
+
+	if ( no_naive_overlap ) return
 
 	// naive overlap peak
 
