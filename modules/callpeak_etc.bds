@@ -79,6 +79,8 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 		sys zcat $peak_PooledInRep1AndRep2 | sort | uniq | gzip -c > $peak_final
 
 		sys rm -f $peak_PooledInRep1AndRep2
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
@@ -153,6 +155,8 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks,
 		sys zcat $peak_PooledInReps $peak_PooledInPsRep1AndPsRep2 | sort | uniq | gzip -c > $peak_final
 
 		sys rm -f $peak_PooledInReps $peak_PooledInPsRep1AndPsRep2
+
+		sys $shcmd_finalize
 	}
 
 	register_par( tid, cpus )
