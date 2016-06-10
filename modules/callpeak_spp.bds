@@ -8,7 +8,7 @@ include "report.bds"
 help == callpeak spp settings
 npeak 		:= 300000 	help Threshold on # peaks (-npeak in spp) (default: 300000).
 
-wt_spp		:= "23h"	help Walltime for spp (default: 23h, 23:00:00).
+wt_spp		:= "47h"	help Walltime for spp (default: 47h, 47:00:00).
 mem_spp		:= "16G" 	help Max. memory for spp (default: 16G).
 
 
