@@ -230,7 +230,7 @@ void wait_par( int nth_task ) {
 
 	while ( true ) {
 
-		sleep( rand()*0.5 + 0.25 )
+		sleep( rand()*1.5 + 0.25 )
 
 		//print("\nIn wait_par loop\n")
 		
@@ -267,7 +267,7 @@ void wait_par( int nth_task ) {
 
 			while( true ) {
 
-				if ( ++loop_cnt%10 == 0 ) { // update every 10 iteration					
+				if ( ++loop_cnt%20 == 0 ) { // update every 20 iteration
 					tids_all_  = tids_all
 					tids_done_ = tids_done
 				}
