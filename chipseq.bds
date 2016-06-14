@@ -14,6 +14,8 @@ make_wig 	:= false	help Create wig (for '-sigtrk tag2bw' only).
 idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
 nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
 no_naive_overlap:= false 	help No naive overlap threshold for peaks.
+subsample 	:= 0 		help Subsample exp. replicate if non-zero (recommended 70000000).
+subsample_ctl 	:= 0 		help Subsample control if non-zero (recommended 70000000).
 
 help() // print help if no parameters are given
 
@@ -106,7 +108,10 @@ void init_chipseq() {
 	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
 	nreads 		= get_conf_val_int( nreads,		["nreads"] )
 
-	no_naive_overlap 	= get_conf_val_bool( no_naive_overlap, 	["no_naive_overlap"] )
+	no_naive_overlap = get_conf_val_bool( no_naive_overlap, ["no_naive_overlap"] )
+
+	subsample 	= get_conf_val_int( subsample,		["subsample"] )
+	subsample_ctl 	= get_conf_val_int( subsample_ctl,	["subsample_ctl"] )
 
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
@@ -135,7 +140,9 @@ void print_chipseq() {
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "IDR threshold\t\t\t: $idr_thresh\n" )
-	print( "No naive overlap threshold\t: $no_naive_overlap")
+	print( "No naive overlap threshold\t: $no_naive_overlap\n")
+	print( "Subsample tagalign\t\t: $subsample\n")
+	print( "Subsample control tagalign\t: $subsample_ctl\n")
 }
 
 void chk_input() {
@@ -147,6 +154,12 @@ void chk_input() {
 	if ( is_sigtrk_aln2rawsig() ) 	chk_signal_aln2rawsig()
 	if ( is_final_stage_idr() ) 	chk_idr()
 	if ( multimapping > 0 ) 	error("Multimapping is not available for chipseq pipeline!\n")
+
+	if ( pe && ( subsample > 0 || subsample_ctl > 0 ) ) {
+		print("Warning: Cannot subsample paried end tagaligns. Disabling subsampling...\n")
+		subsample = 0
+		subsample_ctl = 0
+	}
 
 	print("\n")
 
@@ -369,6 +382,11 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 		tag_ = _bam_to_tag( filt_bam_, aln_o_dir, info )
 		wait
 
+		if ( subsample > 0 ) {
+			tag_ = _subsample_tag( tag_, subsample, aln_o_dir, info )
+			wait
+		}
+
 		tag{key} = tag_
 
 		if ( is_final_stage_tag() ) return
@@ -378,6 +396,12 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 		if ( is_input_tag() ) { 
 			tag_ = get_tag( ctl, rep )
+	
+			if ( subsample > 0 ) {
+				tag_ = _subsample_tag( tag_, subsample, aln_o_dir, info )
+				wait
+			}
+			
 			tag{key} = tag_
 		}
 
@@ -425,6 +449,9 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 				( xcor_qc_pr1{key}, tmp ) = _xcor( subsampled_tag_pr1, qc_pr1_o_dir, info+"-pr1", nth_xcor[1], "pseudo_reps/$info/pr1" )
 				( xcor_qc_pr2{key}, tmp ) = _xcor( subsampled_tag_pr2, qc_pr2_o_dir, info+"-pr2", nth_xcor[2], "pseudo_reps/$info/pr2" )
 			}
+		}
+		else {
+			if ( subsample_ctl > 0 ) tag{key} = _subsample_tag( tag_, subsample_ctl, aln_o_dir, info )
 		}
 
 		if ( is_final_stage_xcor() ) return
