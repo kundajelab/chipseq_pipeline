@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 
 import os
+import sys
+import operator
 
 
 def get_files_by_file_size(dirname, reverse=False):
@@ -28,32 +30,77 @@ def get_files_by_file_size(dirname, reverse=False):
 
     return filepaths
 
+fsize = dict()
+mp = dict()
+
+lst = get_files_by_file_size(os.getcwd(), True)
+#lst.sort()
+
+blacklist_ctl = [] #["GM12878","SK-N-SH","K562","HeLa-S3","GM20000","GM13977","HL-60","pancreas"]
+
 #ctl_to_subsample = ["CONTROL.K562.unpaired.fastq.gz", "CONTROL.GM12878.unpaired.fastq.gz", "CONTROL.HepG2.unpaired.fastq.gz", "CONTROL.SK-N-SH.unpaired.fastq.gz", "CONTROL.HeLa-S3.unpaired.fastq.gz", "CONTROL.H1-hESC.unpaired.fastq.gz", "CONTROL.MCF-7.unpaired.fastq.gz", "CONTROL.A549.unpaired.fastq.gz", "CONTROL.liver.BSID_ENCBS401URL.unpaired.fastq.gz", "CONTROL.Panc1.unpaired.fastq.gz", "CONTROL.HCT116.unpaired.fastq.gz", "CONTROL.liver.BSID_ENCBS046RNA.unpaired.fastq.gz", "CONTROL.PC-3.unpaired.fastq.gz", "CONTROL.B_cell.unpaired.fastq.gz", "CONTROL.fibroblast_of_lung.unpaired.fastq.gz", "CONTROL.endothelial_cell_of_umbilical_vein.unpaired.fastq.gz"]
 ctl_to_subsample = ["CONTROL.K562.unpaired.fastq.gz", "CONTROL.GM12878.unpaired.fastq.gz", "CONTROL.HepG2.unpaired.fastq.gz", "CONTROL.SK-N-SH.unpaired.fastq.gz", "CONTROL.HeLa-S3.unpaired.fastq.gz", "CONTROL.H1-hESC.unpaired.fastq.gz", "CONTROL.MCF-7.unpaired.fastq.gz", "CONTROL.A549.unpaired.fastq.gz", "CONTROL.liver.BSID_ENCBS401URL.unpaired.fastq.gz", "CONTROL.Panc1.unpaired.fastq.gz", "CONTROL.HCT116.unpaired.fastq.gz", "CONTROL.liver.BSID_ENCBS046RNA.unpaired.fastq.gz", "CONTROL.PC-3.unpaired.fastq.gz", "CONTROL.B_cell.unpaired.fastq.gz", "CONTROL.fibroblast_of_lung.unpaired.fastq.gz", "CONTROL.endothelial_cell_of_umbilical_vein.unpaired.fastq.gz", "CONTROL.astrocyte.unpaired.fastq.gz", "CONTROL.NT2_D1.unpaired.fastq.gz", "CONTROL.myotube.unpaired.fastq.gz", "CONTROL.induced_pluripotent_stem_cell.unpaired.fastq.gz", "CONTROL.GM12892.unpaired.fastq.gz", "CONTROL.HL-60.unpaired.fastq.gz", "CONTROL.foreskin_fibroblast.unpaired.fastq.gz", "CONTROL.IMR-90.unpaired.fastq.gz", "CONTROL.T47D.unpaired.fastq.gz"]
 
-lst = get_files_by_file_size( os.getcwd(), True )
+f = open("CTCF_blacklist.txt")
+blacklist_fastq = f.read().splitlines()
 
-ctl = []
+#print blacklist_fastq
+#sys.exit(1)
+
 for i in lst:
-    if "CONTROL." in i:
-        ctl.append( os.path.basename(i) )
+    prefix = os.path.basename(i).rsplit(".BSID",1)[0]
 
-cnt = 1
-for j in ctl:
-    if ".R1." in j or ".R2." in j:
+    if ".R1." in i or ".R2." in i or not "CHIPseq" in i:
         continue
-    prefix = j.rsplit(".unpaired",1)[0]
-    filesize = os.path.getsize(j)
-    print "#" + str(cnt) + " size:" + str( filesize )
-    nth = filesize/2000000000
+
+    if os.path.basename(i) in blacklist_fastq:
+        continue
+
+    prefixCTL = prefix.rsplit(".")[2]
+
+    if prefixCTL in blacklist_ctl:
+        continue
+
+    filesize = os.path.getsize(i)
+    
+    if prefix in mp.keys():
+        mp[prefix].append( os.path.basename(i) )
+        fsize[prefix] = fsize[prefix] + filesize
+    else:
+        mp[prefix] = []
+        mp[prefix].append( os.path.basename(i) )
+        fsize[prefix] = filesize
+
+
+sorted_fsize = sorted(fsize.items(), key=operator.itemgetter(1),reverse=True)
+
+#print sorted_fsize
+
+cnt = 0
+for tup in sorted_fsize:
+    key = tup[0]
+    cnt = cnt + 1
+    length = len(mp[key])
+
+    filesize = tup[1] #os.path.getsize(mp[key][0])
+    #nth = filesize/1000000000
+    nth = filesize/500000000
     if nth == 0:
         nth = 1
-    subsample = ""
-    if os.path.basename(j) in ctl_to_subsample:
-        subsample = " -subsample 40000000 -mem 40G "
-    print "NTH="+str(nth)+"; SUFFIX="+prefix
-    print "FASTQ1=$DATA/DREAM_challenge/"+j
-    print "WORK=$RUN/DREAM_challenge_ctl/$SUFFIX; mkdir -p $WORK; cd $WORK;"
-    print "bds_scr ${SUFFIX//\//_} $CODE/bds_atac/chipseq/chipseq.bds -species hg19 -nth $NTH -fastq1 $FASTQ1 -final_stage tag" + subsample
-    print
-    cnt = cnt + 1
+
+    print "#"+ str(cnt) + " , " + str(filesize)
+    print "NTH="+str(nth)+"; SUFFIX=\""+key+"\""
+
+    prefixCTL = key.rsplit(".")[2]
+
+    foundCTL = False      
+
+    lst2 = get_files_by_file_size("/srv/gsfs0/scratch/leepc12/data/DREAM_challenge", True)
+
+    for k in lst2:
+        if "."+prefixCTL+"." in k and "CONTROL" in k and k.endswith("unpaired.fastq.gz"):
+            if os.path.basename(k) in ctl_to_subsample:
+                print "WORK=$RUN/DREAM_challenge/$SUFFIX;"
+                print "cd $WORK;"
+                print "mv out/peak out/peak_with_large_ctl_before_40M"
+            print

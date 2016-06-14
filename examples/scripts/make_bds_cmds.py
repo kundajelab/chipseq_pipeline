@@ -33,10 +33,15 @@ def get_files_by_file_size(dirname, reverse=False):
 fsize = dict()
 mp = dict()
 
+order=["ATF7", "FOS", "ATF2", "CREB1", "E2F1", "EGR1", "TCF12", "TCF7L2", "NANOG", "FOXA2", "HNF4A", "FOXA1", "TAF1", "GABPA", "CEBPB", "REST", "MAX", "CTCF", "MYC", "SPI1", "JUND", "MAFK", "GATA3", "FOSL2", "YY1", "ZNF143", "E2F6", "RFX5", "SIX5", "ATF3", "RCOR1", "TBP", "SRF", "TEAD4", "EP300", "STAT3", "ARID3A"]
+
 lst = get_files_by_file_size(os.getcwd(), True)
 #lst.sort()
 
 blacklist_ctl = [] #["GM12878","SK-N-SH","K562","HeLa-S3","GM20000","GM13977","HL-60","pancreas"]
+
+#ctl_to_subsample = ["CONTROL.K562.unpaired.fastq.gz", "CONTROL.GM12878.unpaired.fastq.gz", "CONTROL.HepG2.unpaired.fastq.gz", "CONTROL.SK-N-SH.unpaired.fastq.gz", "CONTROL.HeLa-S3.unpaired.fastq.gz", "CONTROL.H1-hESC.unpaired.fastq.gz", "CONTROL.MCF-7.unpaired.fastq.gz", "CONTROL.A549.unpaired.fastq.gz", "CONTROL.liver.BSID_ENCBS401URL.unpaired.fastq.gz", "CONTROL.Panc1.unpaired.fastq.gz", "CONTROL.HCT116.unpaired.fastq.gz", "CONTROL.liver.BSID_ENCBS046RNA.unpaired.fastq.gz", "CONTROL.PC-3.unpaired.fastq.gz", "CONTROL.B_cell.unpaired.fastq.gz", "CONTROL.fibroblast_of_lung.unpaired.fastq.gz", "CONTROL.endothelial_cell_of_umbilical_vein.unpaired.fastq.gz"]
+ctl_to_subsample = ["CONTROL.K562.unpaired.fastq.gz", "CONTROL.GM12878.unpaired.fastq.gz", "CONTROL.HepG2.unpaired.fastq.gz", "CONTROL.SK-N-SH.unpaired.fastq.gz", "CONTROL.HeLa-S3.unpaired.fastq.gz", "CONTROL.H1-hESC.unpaired.fastq.gz", "CONTROL.MCF-7.unpaired.fastq.gz", "CONTROL.A549.unpaired.fastq.gz", "CONTROL.liver.BSID_ENCBS401URL.unpaired.fastq.gz", "CONTROL.Panc1.unpaired.fastq.gz", "CONTROL.HCT116.unpaired.fastq.gz", "CONTROL.liver.BSID_ENCBS046RNA.unpaired.fastq.gz", "CONTROL.PC-3.unpaired.fastq.gz", "CONTROL.B_cell.unpaired.fastq.gz", "CONTROL.fibroblast_of_lung.unpaired.fastq.gz", "CONTROL.endothelial_cell_of_umbilical_vein.unpaired.fastq.gz", "CONTROL.astrocyte.unpaired.fastq.gz", "CONTROL.NT2_D1.unpaired.fastq.gz", "CONTROL.myotube.unpaired.fastq.gz", "CONTROL.induced_pluripotent_stem_cell.unpaired.fastq.gz", "CONTROL.GM12892.unpaired.fastq.gz", "CONTROL.HL-60.unpaired.fastq.gz", "CONTROL.foreskin_fibroblast.unpaired.fastq.gz", "CONTROL.IMR-90.unpaired.fastq.gz", "CONTROL.T47D.unpaired.fastq.gz"]
 
 f = open("CTCF_blacklist.txt")
 blacklist_fastq = f.read().splitlines()
@@ -44,7 +49,7 @@ blacklist_fastq = f.read().splitlines()
 #print blacklist_fastq
 #sys.exit(1)
 
-for i in lst:
+for i in lst:    
     prefix = os.path.basename(i).rsplit(".BSID",1)[0]
 
     if ".R1." in i or ".R2." in i or not "CHIPseq" in i:
@@ -59,33 +64,99 @@ for i in lst:
         continue
 
     filesize = os.path.getsize(i)
+
+    idx = 1
+    for o in order:
+        if "."+o+"." in prefix:
+            break;
+        idx = idx + 1
     
     if prefix in mp.keys():
         mp[prefix].append( os.path.basename(i) )
-        fsize[prefix] = fsize[prefix] + filesize
+        fsize[prefix] = (fsize[prefix][0] + filesize, idx)
     else:
         mp[prefix] = []
         mp[prefix].append( os.path.basename(i) )
-        fsize[prefix] = filesize
-
+        fsize[prefix] = (filesize, idx)
 
 sorted_fsize = sorted(fsize.items(), key=operator.itemgetter(1),reverse=True)
 
-#print sorted_fsize
 
-cnt = 0
+
+sorted_fsize2 = []
+
+i = 0
+
 for tup in sorted_fsize:
     key = tup[0]
+    i = i + 1
+
+    svr = 0
+    if 1<=i and i<=193:
+        svr = 1 #"scg"
+    elif 194<=i and i<=196:
+        svr = 2 #"nandi"
+    elif 197<=i and i<=200:
+        svr = 3 #"mitra"
+    elif 201<=i and i<=207:
+        svr = 4 #"kali"
+    elif 208<=i and i<=212:
+        svr = 3 #"mitra"
+    elif 213<=i and i<=215:
+        svr = 4 #"kali"
+    elif 216<=i and i<=217:
+        svr = 3 #"mitra"
+    elif 218<=i and i<=220:
+        svr = 5 #"kadru"
+    elif 220<=i and i<=229:
+        svr = 2 #"nandi"
+    elif 230<=i and i<=239:
+        svr = 5 #"kadru"
+    elif 240<=i and i<=255:
+        svr = 1 #"scg"
+    elif 256<=i and i<=276:
+        svr = 6 #"wotan"
+    else:
+        svr = 10 #"ERROR"
+    
+    sorted_fsize2.append( (key, tup[1][0], tup[1][1], svr, i) )
+
+
+sorted_fsize3 = sorted(sorted_fsize2, key=operator.itemgetter(2),reverse=False)
+sorted_fsize4 = sorted(sorted_fsize3, key=operator.itemgetter(3),reverse=False)
+
+cnt = 0
+for tup in sorted_fsize4:
+    key = tup[0]
     cnt = cnt + 1
+
     length = len(mp[key])
 
-    filesize = tup[1] #os.path.getsize(mp[key][0])
+    filesize = tup[1]
+    o = tup[2]
+    svr = tup[3]
     #nth = filesize/1000000000
     nth = filesize/500000000
     if nth == 0:
         nth = 1
 
-    print "#"+ str(cnt) + " , " + str(filesize)
+    svr_name = "NONE"
+    if svr==1:
+        svr_name="scg"
+    elif svr==2:
+        svr_name="nandi"
+    elif svr==3:
+        svr_name="mitra"
+    elif svr==4:
+        svr_name="kali"
+    elif svr==5:
+        svr_name="kadru"
+    elif svr==6:
+        svr_name="wotan"
+    else:
+        svr_name="NULL"
+
+    print "#"+ str(cnt) + " , " + str(filesize) + ", order: " + str(o) + ", svr: " + svr_name + ", old #: " + str(tup[4])
     print "NTH="+str(nth)+"; SUFFIX=\""+key+"\""
 
     if length  == 3:
@@ -104,7 +175,9 @@ for tup in sorted_fsize:
 
     foundCTL = False      
 
-    for k in lst:
+    lst2 = get_files_by_file_size("/srv/gsfs0/scratch/leepc12/data/DREAM_challenge", True)
+
+    for k in lst2:
         if "."+prefixCTL+"." in k and "CONTROL" in k and k.endswith("unpaired.fastq.gz"):
             print "CTL_FASTQ=$DATA/DREAM_challenge/"+os.path.basename(k)
             print "WORK=$RUN/DREAM_challenge/$SUFFIX; mkdir -p $WORK/out/align; mkdir -p $WORK/out/qc"
@@ -119,7 +192,14 @@ for tup in sorted_fsize:
             if length == 1:
                 str_FASTQ = " -fastq1 $FASTQ1 "
 
-            print "bds_scr ${SUFFIX//\//_} $CODE/bds_atac/chipseq/chipseq.bds -species hg19 -nth $NTH " + str_FASTQ + "-ctl_fastq $CTL_FASTQ -title ${SUFFIX//\//_} -url_base http://mitra.stanford.edu/kundaje/leepc12/DREAM_challenge/$SUFFIX/out"
+            subsample = ""
+            if os.path.basename(k) in ctl_to_subsample:
+                subsample = " -subsample_ctl 40000000 "
+
+            print "bds_scr ${SUFFIX//\//_} $CODE/bds_atac/chipseq/chipseq.bds -callpeak spp -no_naive_overlap -species hg19 -nth $NTH " + str_FASTQ + "-ctl_fastq $CTL_FASTQ -title ${SUFFIX//\//_} -url_base http://mitra.stanford.edu/kundaje/leepc12/DREAM_challenge/$SUFFIX/out" + subsample
+            if os.path.basename(k) in ctl_to_subsample:
+                print "##SUBSAMPLE!"
+            print "sleep 5"
             print
             foundCTL = True
 
