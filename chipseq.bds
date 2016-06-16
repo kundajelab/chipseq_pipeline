@@ -16,6 +16,7 @@ nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (def
 no_naive_overlap:= false 	help No naive overlap threshold for peaks.
 subsample 	:= 0 		help Subsample exp. replicate if non-zero (recommended 70000000).
 subsample_ctl 	:= 0 		help Subsample control if non-zero (recommended 70000000).
+nth_1_ctl 	:= false 	help Force to use 1 thread for mapping control.
 
 help() // print help if no parameters are given
 
@@ -113,6 +114,9 @@ void init_chipseq() {
 	subsample 	= get_conf_val_int( subsample,		["subsample"] )
 	subsample_ctl 	= get_conf_val_int( subsample_ctl,	["subsample_ctl"] )
 
+	nth_1_ctl 	= get_conf_val_bool( nth_1_ctl, 	["nth_1_ctl"] )
+
+
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
 	if ( get_tag(0,1) != "" ) 	input = "tag"
@@ -141,8 +145,9 @@ void print_chipseq() {
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "IDR threshold\t\t\t: $idr_thresh\n" )
 	print( "No naive overlap threshold\t: $no_naive_overlap\n")
-	print( "Subsample tagalign\t\t: $subsample\n")
-	print( "Subsample control tagalign\t: $subsample_ctl\n")
+	print( "Subsample # read in tagalign\t\t: $subsample\n")
+	print( "Subsample # read in ctl tagalign\t: $subsample_ctl\n")
+	print( "Use 1 thread for mapping control: $nth_1_ctl\n")	
 }
 
 void chk_input() {
@@ -299,6 +304,8 @@ void align() {
 
 				filesize{key} = (get_tag( ctl, rep )).size()
 			}
+
+			if ( ctl > 0 && nth_1_ctl ) filesize{key} = 1
 		}
 	}
 
