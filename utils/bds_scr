@@ -39,6 +39,7 @@ for ((i=$PARAM_START_IDX;i<=$#;i++)); do
   PARAM="$PARAM ${!i}"
 done
 
+echo "[HOST] : $(hostname -f)"
 echo "[LOG_FILE_NAME] : $LOG_FILE_NAME"
 echo "[BDS_PARAM] : $PARAM"
 
@@ -46,7 +47,8 @@ mkdir -p $(dirname $LOG_FILE_NAME)
 
 echo ""
 echo "===== Created a new screen ====" >> $LOG_FILE_NAME
-echo "DATE : $(date)" >> $LOG_FILE_NAME
+echo "[DATE] : $(date)" >> $LOG_FILE_NAME
+echo "[HOST] : $(hostname -f)" >> $LOG_FILE_NAME
 echo "[SCR_NAME] : $SCR_NAME" >> $LOG_FILE_NAME
 echo "[BDS_PARAM] : $PARAM" >> $LOG_FILE_NAME
 echo "" >> $LOG_FILE_NAME

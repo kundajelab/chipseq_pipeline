@@ -33,6 +33,8 @@ def get_files_by_file_size(dirname, reverse=False):
 fsize = dict()
 mp = dict()
 
+order=["ATF7", "FOS", "ATF2", "CREB1", "E2F1", "EGR1", "TCF12", "TCF7L2", "NANOG", "FOXA2", "HNF4A", "FOXA1", "TAF1", "GABPA", "CEBPB", "REST", "MAX", "CTCF", "MYC", "SPI1", "JUND", "MAFK", "GATA3", "FOSL2", "YY1", "ZNF143", "E2F6", "RFX5", "SIX5", "ATF3", "RCOR1", "TBP", "SRF", "TEAD4", "EP300", "STAT3", "ARID3A"]
+
 lst = get_files_by_file_size(os.getcwd(), True)
 #lst.sort()
 
@@ -47,10 +49,10 @@ blacklist_fastq = f.read().splitlines()
 #print blacklist_fastq
 #sys.exit(1)
 
-for i in lst:
+for i in lst:    
     prefix = os.path.basename(i).rsplit(".BSID",1)[0]
 
-    if ".R1." in i or ".R2." in i or not "CHIPseq" in i:
+    if ".unpaired." in i or not "CHIPseq" in i:
         continue
 
     if os.path.basename(i) in blacklist_fastq:
@@ -62,34 +64,78 @@ for i in lst:
         continue
 
     filesize = os.path.getsize(i)
-    
+
+    idx = 1
+    for o in order:
+        if "."+o+"." in prefix:
+            break;
+        idx = idx + 1
+
     if prefix in mp.keys():
         mp[prefix].append( os.path.basename(i) )
-        fsize[prefix] = fsize[prefix] + filesize
+        fsize[prefix] = (fsize[prefix][0] + filesize, idx)
     else:
         mp[prefix] = []
         mp[prefix].append( os.path.basename(i) )
-        fsize[prefix] = filesize
-
+        fsize[prefix] = (filesize, idx)
 
 sorted_fsize = sorted(fsize.items(), key=operator.itemgetter(1),reverse=True)
 
-#print sorted_fsize
+i = 0
+
+sorted_fsize3 = sorted(sorted_fsize, key=operator.itemgetter(2),reverse=False)
+sorted_fsize4 = sorted(sorted_fsize3, key=operator.itemgetter(3),reverse=False)
 
 cnt = 0
-for tup in sorted_fsize:
+for tup in sorted_fsize4:
     key = tup[0]
     cnt = cnt + 1
+
     length = len(mp[key])
 
-    filesize = tup[1] #os.path.getsize(mp[key][0])
+    filesize = tup[1]
+    o = tup[2]
+    svr = tup[3]
     #nth = filesize/1000000000
     nth = filesize/500000000
     if nth == 0:
         nth = 1
 
-    print "#"+ str(cnt) + " , " + str(filesize)
+    svr_name = "NONE"
+    if svr==1:
+        svr_name="scg"
+    elif svr==2:
+        svr_name="nandi"
+    elif svr==3:
+        svr_name="mitra"
+    elif svr==4:
+        svr_name="kali"
+    elif svr==5:
+        svr_name="kadru"
+    elif svr==6:
+        svr_name="wotan"
+    else:
+        svr_name="NULL"
+
+    print "#"+ str(cnt) + " , " + str(filesize) + ", order: " + str(o) + ", svr: " + svr_name + ", old #: " + str(tup[4])
     print "NTH="+str(nth)+"; SUFFIX=\""+key+"\""
+
+    if length  == 4:
+        print "FASTQ1=$DATA/DREAM_challenge/"+os.path.basename(mp[key][0])
+        print "FASTQ2=$DATA/DREAM_challenge/"+os.path.basename(mp[key][1])
+        print "FASTQ3=$DATA/DREAM_challenge/"+os.path.basename(mp[key][2])
+        print "FASTQ4=$DATA/DREAM_challenge/"+os.path.basename(mp[key][2])
+    elif length  == 3:
+        print "FASTQ1=$DATA/DREAM_challenge/"+os.path.basename(mp[key][0])
+        print "FASTQ2=$DATA/DREAM_challenge/"+os.path.basename(mp[key][1])
+        print "FASTQ3=$DATA/DREAM_challenge/"+os.path.basename(mp[key][2])
+    elif length  == 2:
+        print "FASTQ1=$DATA/DREAM_challenge/"+os.path.basename(mp[key][0])
+        print "FASTQ2=$DATA/DREAM_challenge/"+os.path.basename(mp[key][1])
+    elif length == 1:
+        print "FASTQ1=$DATA/DREAM_challenge/"+os.path.basename(mp[key][0])
+    else:
+        print "LEN>3: " + str( length )
 
     prefixCTL = key.rsplit(".")[2]
 
@@ -99,8 +145,30 @@ for tup in sorted_fsize:
 
     for k in lst2:
         if "."+prefixCTL+"." in k and "CONTROL" in k and k.endswith("unpaired.fastq.gz"):
+            print "CTL_FASTQ=$DATA/DREAM_challenge/"+os.path.basename(k)
+            print "WORK=$RUN/DREAM_challenge/$SUFFIX; mkdir -p $WORK/out/align; mkdir -p $WORK/out/qc"
+            print "cd $WORK/out/align; ln -s ../../../../DREAM_challenge_ctl/CONTROL."+prefixCTL+"/out/align/rep1 ctl1"
+            print "cd $WORK/out/qc; ln -s ../../../../DREAM_challenge_ctl/CONTROL."+prefixCTL+"/out/qc/rep1 ctl1"
+            print "cd $WORK;"
+            str_FASTQ = " "
+            if length == 3:
+                str_FASTQ = " -fastq1 $FASTQ1 -fastq2 $FASTQ2 -fastq3 $FASTQ3 "
+            if length == 2:
+                str_FASTQ = " -fastq1 $FASTQ1 -fastq2 $FASTQ2 "
+            if length == 1:
+                str_FASTQ = " -fastq1 $FASTQ1 "
+
+            subsample = ""
             if os.path.basename(k) in ctl_to_subsample:
-                print "WORK=$RUN/DREAM_challenge/$SUFFIX;"
-                print "cd $WORK;"
-                print "mv out/peak out/peak_with_large_ctl_before_40M"
+                subsample = " -subsample_ctl 40000000 "
+
+            print "bds_scr ${SUFFIX//\//_} $CODE/bds_atac/chipseq/chipseq.bds -callpeak spp -no_naive_overlap -species hg19 -nth $NTH " + str_FASTQ + "-ctl_fastq $CTL_FASTQ -title ${SUFFIX//\//_} -url_base http://mitra.stanford.edu/kundaje/leepc12/DREAM_challenge/$SUFFIX/out" + subsample
+            if os.path.basename(k) in ctl_to_subsample:
+                print "##SUBSAMPLE!"
+            print "sleep 5"
             print
+            foundCTL = True
+
+    if not foundCTL:
+        print "#NOT FOUND! (SE, CTL)"
+        print

@@ -154,12 +154,8 @@ void chk_input() {
 	if ( is_sigtrk_aln2rawsig() ) 	chk_signal_aln2rawsig()
 	if ( is_final_stage_idr() ) 	chk_idr()
 	if ( multimapping > 0 ) 	error("Multimapping is not available for chipseq pipeline!\n")
-
-	if ( pe && ( subsample > 0 || subsample_ctl > 0 ) ) {
-		print("Warning: Cannot subsample paried end tagaligns. Disabling subsampling...\n")
-		subsample = 0
-		subsample_ctl = 0
-	}
+	
+	if ( is_paired_end() && is_input_tag() ) error("Cannot start from tagaligns for PE data set!\n")
 
 	print("\n")
 
@@ -352,8 +348,6 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 		( bam, flagstat_qc{key} ) = _bwa( fastqs[0], aln_o_dir, qc_o_dir, info, nth_rep )
 		wait
-
-		if ( is_final_stage_bam() ) return
 	}
 
 	string filt_bam_
@@ -362,48 +356,43 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 	
 		if ( is_input_bam() ) bam = get_bam( ctl, rep )
 
+		if ( is_final_stage_bam() ) return
+
 		( filt_bam_, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
 			= _dedup_bam( bam, aln_o_dir, qc_o_dir, info, nth_rep )
-		filt_bam{key} = filt_bam_
 		wait
-
-		if ( is_final_stage_filt_bam() ) return
 	}
 
 	string tag_
 
 	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_filt_bam() ) {
-			filt_bam_ = get_filt_bam( ctl, rep )
-			filt_bam{key} = filt_bam_
-		}
+		if ( is_input_filt_bam() ) filt_bam_ = get_filt_bam( ctl, rep )
+
+		filt_bam{key} = filt_bam_
+
+		if ( is_final_stage_filt_bam() ) return
 
 		tag_ = _bam_to_tag( filt_bam_, aln_o_dir, info )
 		wait
+	}
 
-		if ( subsample > 0 ) {
+	if ( is_input_tag() || is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
+
+		if ( is_input_tag() ) tag_ = get_tag( ctl, rep )
+
+		if ( ctl == 0 && subsample > 0 ) {
 			tag_ = _subsample_tag( tag_, subsample, aln_o_dir, info )
+			wait
+		}
+		else if ( ctl > 0 && subsample_ctl > 0 ) {
+			tag_ = _subsample_tag( tag_, subsample_ctl, aln_o_dir, info )
 			wait
 		}
 
 		tag{key} = tag_
 
 		if ( is_final_stage_tag() ) return
-	}
-
-	if ( is_input_tag() || is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
-
-		if ( is_input_tag() ) { 
-			tag_ = get_tag( ctl, rep )
-	
-			if ( subsample > 0 ) {
-				tag_ = _subsample_tag( tag_, subsample, aln_o_dir, info )
-				wait
-			}
-			
-			tag{key} = tag_
-		}
 
 		string xcor_qc_
 
@@ -450,9 +439,6 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 				( xcor_qc_pr2{key}, tmp ) = _xcor( subsampled_tag_pr2, qc_pr2_o_dir, info+"-pr2", nth_xcor[2], "pseudo_reps/$info/pr2" )
 			}
 		}
-		else {
-			if ( subsample_ctl > 0 ) tag{key} = _subsample_tag( tag_, subsample_ctl, aln_o_dir, info )
-		}
 
 		if ( is_final_stage_xcor() ) return
 	}	
@@ -474,8 +460,6 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 
 		( bam, flagstat_qc{key} ) = _bwa_PE( fastqs[0], fastqs[1], aln_o_dir, qc_o_dir, info, nth_rep )
 		wait
-
-		if ( is_final_stage_bam() ) return
 	}
 
 	string filt_bam_
@@ -484,53 +468,45 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 
 		if ( is_input_bam() ) bam = get_bam( ctl, rep )
 
+		if ( is_final_stage_bam() ) return
+
 		( filt_bam_, dup_qc{key}, flagstat_nodup_qc{key}, pbc_qc{key} ) \
 			= _dedup_bam_PE( bam, aln_o_dir, qc_o_dir, info, nth_rep )
-		filt_bam{key} = filt_bam_
 		wait
-
-		if ( is_final_stage_filt_bam() ) return
 	}
 	
-	string tag_
-
 	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_filt_bam() ) {
-			filt_bam_ = get_filt_bam( ctl, rep )
-			filt_bam{key} = filt_bam_
+		if ( is_input_filt_bam() ) filt_bam_ = get_filt_bam( ctl, rep )
+
+		filt_bam{key} = filt_bam_
+
+		if ( is_final_stage_filt_bam() ) return
+
+		bedpe := _bam_to_bedpe( filt_bam_, aln_o_dir, info )
+		wait
+
+		if ( ctl == 0 && subsample > 0 ) {
+			bedpe = _subsample_bedpe( bedpe, subsample, aln_o_dir, info )
+			wait
+		}
+		else if ( ctl > 0 && subsample_ctl > 0 ) {
+			bedpe = _subsample_bedpe( bedpe, subsample_ctl, aln_o_dir, info )
+			wait
 		}
 
-		tag_ = _bam_to_tag( filt_bam_, aln_o_dir, info )
+		tag_ := _bedpe_to_tag( bedpe, aln_o_dir, info )
 		wait
+
 		tag{key} = tag_
 
 		if ( is_final_stage_tag() ) return
-	}
-
-	string bedpe, subsampled_tag
-
-	if ( is_input_tag() || is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
 		if ( ctl == 0 ) { // if replicate
 
-			if ( is_input_tag() ) {
-
-				tag_ = get_tag( ctl, rep )
-				tag{key} = tag_
-
-				subsampled_tag = _subsample_tag_PE_xcor( tag_, nreads, aln_o_dir, info )
-				wait
-			}
-			else {
-				bedpe = _bam_to_bedpe( filt_bam_, aln_o_dir, info )
-				wait
-
-				subsampled_tag = _subsample_bedpe_to_tag_xcor( bedpe, nreads, aln_o_dir, info )
-			}
+			subsampled_tag := _subsample_bedpe_to_tag_xcor( bedpe, nreads, aln_o_dir, info )
 
 			string tag_pr1_, tag_pr2_
-
 			string qc_pr1_o_dir, qc_pr2_o_dir
 
 			if ( !true_rep ) { // if replicate
