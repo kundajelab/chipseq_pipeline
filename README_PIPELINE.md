@@ -537,6 +537,10 @@ Check if you have `bds.config` on your `$HOME/.bds/`.
 For fast scheduling clusters including SGE, doing post-mortem on jobs can fail in BDS. Add `clusterPostMortemDisabled = true` to your `~/.bds/bds.config`.
 
 
+11) java.lang.OutOfMemoryError: unable to create new native thread
+
+# of threads created by BDS exceeds limit (`ulimit -a`). BDS created lots of thread per pipeline (more than 20). So if you see any thread related error, check your `ulimit -a` and increase it a bit.
+
 
 ### Contributors
 
