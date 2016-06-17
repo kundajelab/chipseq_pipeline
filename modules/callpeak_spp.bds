@@ -63,6 +63,9 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 
 		sys mv $pdf_tmp $pdf
 
+		// if compressed output file is empty (spp error), remove it
+		sys if [ $(zcat $rpeakfile | wc -l ) == "0" ]; then rm -f $rpeakfile; fi
+
 		sys $shcmd_finalize
 	}
 
