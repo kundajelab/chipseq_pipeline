@@ -42,7 +42,7 @@ Example (for single ended fastqs):
 $ bds chipseq.bds \
 -fastq1 /DATA/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCFF000YLY.fastq.gz \
--fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz \
+-ctl_fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz \
 -bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa \
 ```
 
