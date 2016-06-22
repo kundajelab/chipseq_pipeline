@@ -1,6 +1,7 @@
 # channels : defaults, r, bioconda
 
 bwa ==0.7.13
+ncurses
 samtools ==0.1.19
 bedtools ==2.19.1
 ucsc-wigtobigwig
