@@ -102,6 +102,9 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 
 	register_par( tid, cpus )
 
+	dupmark_bam := "none"
+	dup_qc := "none"
+
 	if ( use_sambamba_markdup ) {
 		(dupmark_bam, dup_qc) = _markdup_bam_sambamba(filt_bam, o_dir, log_o_dir, label, cpus)
 	} else {
@@ -110,7 +113,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 
 	wait_par( cpus )
 
-	tid := task( out<-in ) {
+	tid2 := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -143,7 +146,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 		sys $shcmd_finalize
 	}
 
-	register_par( tid, cpus )
+	register_par( tid2, cpus )
 
 	graph_in  := ["bam_($label)"]
 	graph_out := ["filt_bam_($label)"]
@@ -218,6 +221,9 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 
 	register_par( tid, cpus )
 
+	dupmark_bam := "none"
+	dup_qc := "none"
+
 	if ( use_sambamba_markdup ) {
 		(dupmark_bam, dup_qc) = _markdup_bam_sambamba(filt_bam, o_dir, log_o_dir, label, cpus)
 	} else {
@@ -226,7 +232,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 
 	wait_par( cpus )
 
-	tid := task( out<-in ) {
+	tid2 := task( out<-in ) {
 
 		sys $shcmd_init
 
@@ -268,7 +274,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		sys $shcmd_finalize
 	}
 
-	register_par( tid, cpus )
+	register_par( tid2, cpus )
 
 	graph_in  := ["bam_($label)"]
 	graph_out := ["filt_bam_($label)"]
