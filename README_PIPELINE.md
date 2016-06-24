@@ -536,7 +536,7 @@ Dependencies are not installed correctly. Check your Anaconda Python is correctl
 
 9) Unable to run job: unknown resource "mem"
 
-Check if you have `bds.config` on your `$HOME/.bds/`.
+Copy `./bds.config` to `$HOME/.bds/`.
 
 
 10) Error trying to find out post-mortem info on task
@@ -547,6 +547,11 @@ For fast scheduling clusters including SGE, doing post-mortem on jobs can fail i
 11) java.lang.OutOfMemoryError: unable to create new native thread
 
 Number of threads created by BDS exceeds limit (`ulimit -a`). BDS created lots of thread per pipeline (more than 20). So if you see any thread related error, check your `ulimit -a` and increase it a bit.
+
+
+12) Task disappeared
+
+Increase max. memory (`-mem` or `-mem_APPNAME`) for the task.
 
 
 ### Contributors
