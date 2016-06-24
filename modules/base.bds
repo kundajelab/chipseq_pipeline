@@ -211,30 +211,45 @@ string make_x_basename_wo_gz( string file1, string file2, string suffix ) {
 int parse_time( string str ) {
 	trimmed := str.trim().toLower()
 
-	if (  trimmed.indexOf("w")>=0 || trimmed.indexOf("d")>=0 || trimmed.indexOf("h")>=0 \
-		|| trimmed.indexOf("m")>=0 || trimmed.indexOf("s")>=0 ) {
+	idx_w := trimmed.indexOf("w")
+	idx_d := trimmed.indexOf("d")
+	idx_h := trimmed.indexOf("h")
+	idx_m := trimmed.indexOf("m")
+	idx_s := trimmed.indexOf("s")
+
+	if ( idx_w>=0 || idx_d>=0 || idx_h>=0 || idx_m>=0 || idx_s>=0 ) {
 
 		real multiplier
 		string delimiter
+		int idx
 
-		if ( trimmed.indexOf("w")>=0 ) {
-			delimiter = "w";        multiplier = 3600*24*7
+		if ( idx_w>=0 ) {
+			delimiter = "w"; multiplier = 3600*24*7			
 		}
-		else if ( trimmed.indexOf("d")>=0 ) {
-			delimiter = "d";        multiplier = 3600*24
+		else if ( idx_d>=0 ) {
+			delimiter = "d"; multiplier = 3600*24
 		}
-		else if ( trimmed.indexOf("h")>=0 ) {
-			delimiter = "h";        multiplier = 3600
+		else if ( idx_h>=0 ) {
+			delimiter = "h"; multiplier = 3600
 		}
-		else if ( trimmed.indexOf("m")>=0 ) {
-			delimiter = "m";        multiplier = 60
+		else if ( idx_m>=0 ) {
+			delimiter = "m"; multiplier = 60
 		}
-		else if ( trimmed.indexOf("s")>=0 ) {
-			delimiter = "s";        multiplier = 1
+		else if ( idx_s>=0 ) {
+			delimiter = "s"; multiplier = 1
 		}
 
 		string[] arr = trimmed.split( delimiter )
-		return round(arr[0].parseReal()*multiplier)
+
+		if ( arr.size() == 0 ) {
+			error("parse_time: cannot parse time string! ($str)")
+		}
+		else if ( arr.size() >= 2 ) {
+			return round(arr[0].parseReal()*multiplier) + parse_time(arr[1])
+		}
+		else {
+			return round(arr[0].parseReal()*multiplier)
+		}		
 	}
 	else if ( trimmed.indexOf(":")>=0 ) {
 		string[] arr = trimmed.split( ":" )
@@ -300,7 +315,16 @@ int parse_mem( string str ) {
 	}
 
 	string[] arr = trimmed.split( delimiter )
-	return round(arr[0].parseReal()*multiplier)
+
+	if ( arr.size() == 0 ) {
+		error("parse_mem: cannot parse memory string! ($str)")
+	}
+	else if ( arr.size() >= 2 ) {
+		return round(arr[0].parseReal()*multiplier) + parse_mem(arr[1])
+	}
+	else {
+		return round(arr[0].parseReal()*multiplier)
+	}
 }
 
 int parse_int( string str ) {
