@@ -14,8 +14,6 @@ rm_chr_from_tag := "" 		help If specified, exclude lines with specified string f
 wt_dedup 	:= "23h" 	help Walltime for post-alignment filtering (default: 23h, 24:00:00).
 mem_dedup	:= "20G" 	help Max. memory for post-alignment filtering (default: 20G).
 
-use_sambamba_markdup	:= false	help Use sambamba markdup instead of Picard MarkDuplicates (default: false).
-
 /*
 IMPORTANT!: legacy softwares compatibility (make the code work with legacy samtools, picard-tools)
 
@@ -38,18 +36,16 @@ init_postalign_bam()
 void init_postalign_bam() {
 
 	mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
-	rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )
+	rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )		
 
 	wt_dedup 	= get_conf_val( wt_dedup, 		["wt_dedup"] )
 	mem_dedup 	= get_conf_val( mem_dedup, 		["mem_dedup"] )
-	use_sambamba_markdup	= get_conf_val( use_sambamba_markdup, ["use_sambamba_markdup"] )
 
 	print("\n\n== postalign bam settings\n")
 	print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")
 	print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
 	print( "Walltime (bam filter)\t: $wt_dedup\n")
 	print( "Max. memory (bam filter)\t: $mem_dedup\n")
-	print( "Use sambamba markdup (instead of picard)\t: $use_sambamba_markdup\n")
 }
 
 string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, int nth_dedup ) {
@@ -85,7 +81,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 		//# Remove  unmapped, mate unmapped
 		//# not primary alignment, reads failing platform
 		//# Remove low MAPQ reads
-		//# ==================
+		//# ==================  
 
 		sys if [[ $multimapping > 0 ]]; then \
 			sambamba sort -t $nth_dedup $bam -n -o $qname_sort_bam; \
@@ -98,33 +94,32 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 		    	sambamba sort -t $nth_dedup /dev/stdin -o $filt_bam; \
 		    fi
 
-	}
+		//# Set Java environment variable with Xmx, because JVM will ignore our
+		//# runtime flag and use this if it has been set.
+		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
+		sys export MAX_JAVA_MEM="12G"
 
-	register_par( tid, cpus )
-
-	dupmark_bam := "none"
-	dup_qc := "none"
-
-	if ( use_sambamba_markdup ) {
-		(dupmark_bam, dup_qc) = _markdup_bam_sambamba(filt_bam, o_dir, log_o_dir, label, cpus)
-	} else {
-		(dupmark_bam, dup_qc) = _markdup_bam_picard(filt_bam, o_dir, log_o_dir, label, cpus)
-	}
-
-	wait_par( cpus )
-
-	tid2 := task( out<-in ) {
-
-		sys $shcmd_init
+		//# Mark duplicates
+		sys if [ -f ${PICARDROOT}/MarkDuplicates.jar ]; then \
+			java -Xmx4G -jar ${PICARDROOT}/MarkDuplicates.jar \
+				INPUT="$filt_bam" OUTPUT="$tmp_filt_bam" \
+				METRICS_FILE="$dup_qc" VALIDATION_STRINGENCY=LENIENT \
+				ASSUME_SORTED=true REMOVE_DUPLICATES=false; \
+			else \
+			java -Xmx4G -jar ${PICARDROOT}/picard.jar MarkDuplicates \
+				INPUT="$filt_bam" OUTPUT="$tmp_filt_bam" \
+				METRICS_FILE="$dup_qc" VALIDATION_STRINGENCY=LENIENT \
+				ASSUME_SORTED=true REMOVE_DUPLICATES=false; \
+			fi
 
 		//# Remove duplicates
 		//# Index final position sorted BAM
-		sys mv $dupmark_bam $filt_bam
+		sys mv $tmp_filt_bam $filt_bam
 		sys samtools view -F 1804 -b $filt_bam > $nodup_bam
-
+		
 		//# Index Final BAM file
 		sys sambamba index -t $nth_dedup $nodup_bam
-
+	
 		sys sambamba flagstat -t $nth_dedup $nodup_bam > $map_qc
 
 		//# =============================
@@ -146,7 +141,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 		sys $shcmd_finalize
 	}
 
-	register_par( tid2, cpus )
+	register_par( tid, cpus )
 
 	graph_in  := ["bam_($label)"]
 	graph_out := ["filt_bam_($label)"]
@@ -199,7 +194,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		//# Will produce name sorted BAM
 		//# Remove orphan reads (pair was removed)
 		//# and read pairs mapping to different chromosomes
-		//# Obtain position sorted BAM
+		//# Obtain position sorted BAM			
 		//# Will produce coordinate sorted BAM
 
 		sys if [[ $multimapping > 0 ]]; then \
@@ -213,28 +208,28 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		    	sambamba sort -t $nth_dedup -n /dev/stdin -o $tmp_filt_bam; \
 		        samtools fixmate -r $tmp_filt_bam $tmp_filt_bam.fixmate.bam; \
 		    fi
-
+		
 		sys samtools view -F 1804 -f 2 -u $tmp_filt_bam.fixmate.bam | sambamba sort -t $nth_dedup /dev/stdin -o $filt_bam
 
 		sys rm -f $tmp_filt_bam.fixmate.bam
-	}
 
-	register_par( tid, cpus )
+		//# Set Java environment variable with Xmx, because JVM will ignore our
+		//# runtime flag and use this if it has been set.
+		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
+		sys export MAX_JAVA_MEM="12G"
 
-	dupmark_bam := "none"
-	dup_qc := "none"
-
-	if ( use_sambamba_markdup ) {
-		(dupmark_bam, dup_qc) = _markdup_bam_sambamba(filt_bam, o_dir, log_o_dir, label, cpus)
-	} else {
-		(dupmark_bam, dup_qc) = _markdup_bam_picard(filt_bam, o_dir, log_o_dir, label, cpus)
-	}
-
-	wait_par( cpus )
-
-	tid2 := task( out<-in ) {
-
-		sys $shcmd_init
+		//# Mark duplicates
+		sys if [ -f ${PICARDROOT}/MarkDuplicates.jar ]; then \
+			java -Xmx4G -jar ${PICARDROOT}/MarkDuplicates.jar \
+				INPUT="$filt_bam" OUTPUT="$tmp_filt_bam" \
+				METRICS_FILE="$dup_qc" VALIDATION_STRINGENCY=LENIENT \
+				ASSUME_SORTED=true REMOVE_DUPLICATES=false; \
+			else \
+			java -Xmx4G -jar ${PICARDROOT}/picard.jar MarkDuplicates \
+				INPUT="$filt_bam" OUTPUT="$tmp_filt_bam" \
+				METRICS_FILE="$dup_qc" VALIDATION_STRINGENCY=LENIENT \
+				ASSUME_SORTED=true REMOVE_DUPLICATES=false; \
+			fi
 
 		//# ============================
 		//# Remove duplicates
@@ -242,10 +237,10 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		//# Create final name sorted BAM
 		//# ============================
 
-		sys mv $dupmark_bam $filt_bam
-
+		sys mv $tmp_filt_bam $filt_bam
+		
 		sys samtools view -F 1804 -f 2 -b $filt_bam > $nodup_bam
-
+						
 		sys sambamba index -t $nth_dedup $nodup_bam
 
 		sys sambamba flagstat -t $nth_dedup $nodup_bam > $map_qc
@@ -257,10 +252,10 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		//# convert to bedPE and obtain fragment coordinates
 		//# sort by position and strand
 		//# Obtain unique count statistics
-
+	
 		//# TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
 		sys sambamba sort -t $nth_dedup -n $filt_bam -o $filt_bam.tmp.bam
-
+		
 		sys bedtools bamtobed -bedpe -i $filt_bam.tmp.bam | \
 			awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}' | \
 			grep -v 'chrM' | sort | uniq -c | \
@@ -274,7 +269,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		sys $shcmd_finalize
 	}
 
-	register_par( tid2, cpus )
+	register_par( tid, cpus )
 
 	graph_in  := ["bam_($label)"]
 	graph_out := ["filt_bam_($label)"]
@@ -282,78 +277,6 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 
 	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
 	_add_to_filetable( hrchy_out, out )
-
-	return out
-}
-
-string _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string label, int cpus ) {
-
-	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
-	prefix2 	:= replace_dir( prefix, log_o_dir )
-	dup_qc 		:= "$prefix2.dup.qc"
-	dupmark_bam 	:= "$prefix.dupmark.bam"
-	dupmark_bam_prefix := "$prefix.dupmark"
-
-	in 		:= [ bam ]
-	out 		:= [ dupmark_bam, dup_qc ]
-
-	taskName:= "markdup_bam_picard " + label
-
-	wait_par( cpus )
-
-	tid := task( out<-in ) {
-
-		sys $shcmd_init
-
-		//# Set Java environment variable with Xmx, because JVM will ignore our
-		//# runtime flag and use this if it has been set.
-		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
-		sys export MAX_JAVA_MEM="12G"
-
-		//# Mark duplicates
-		sys if [ -f ${PICARDROOT}/MarkDuplicates.jar ]; then \
-			java -Xmx4G -jar ${PICARDROOT}/MarkDuplicates.jar \
-				INPUT="$bam" OUTPUT="$dupmark_bam" \
-				METRICS_FILE="$dup_qc" VALIDATION_STRINGENCY=LENIENT \
-				ASSUME_SORTED=true REMOVE_DUPLICATES=false; \
-			else \
-			java -Xmx4G -jar ${PICARDROOT}/picard.jar MarkDuplicates \
-				INPUT="$bam" OUTPUT="$dupmark_bam" \
-				METRICS_FILE="$dup_qc" VALIDATION_STRINGENCY=LENIENT \
-				ASSUME_SORTED=true REMOVE_DUPLICATES=false; \
-			fi
-	}
-
-	register_par( tid, cpus )
-
-	return out
-}
-
-string _markdup_bam_sambamba( string bam, string o_dir, string log_o_dir, string label, int cpus ) {
-
-	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
-	prefix2 	:= replace_dir( prefix, log_o_dir )
-	dup_qc 		:= "$prefix2.dup.qc"
-	dupmark_bam 	:= "$prefix.dupmark.bam"
-	dupmark_bam_prefix := "$prefix.dupmark"
-
-	in 		:= [ bam ]
-	out 		:= [ dupmark_bam, dup_qc ]
-
-	taskName:= "markdup_bam_sambamba " + label
-
-	wait_par( cpus )
-
-	tid := task( out<-in ) {
-
-		sys $shcmd_init
-
-		sys sambamba markdup -t $cpus --hash-table-size=17592186044416 \
-			--overflow-list-size=20000000 --io-buffer-size=256 $bam $dupmark_bam \
-			2> $dup_qc
-	}
-
-	register_par( tid, cpus )
 
 	return out
 }
@@ -383,7 +306,7 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
-	return out
+	return out	
 }
 
 string _srt_bam( string bam, string o_dir, string label ) {
@@ -425,7 +348,7 @@ string _srt_bam( string bam, string o_dir, string label ) {
 	_add_to_graphviz(  ["bam_($label)"], in, ["srt_bam_($label)"], [out] )
 	_add_to_filetable( ["L1_align/$label/srt_bam"], [out] )
 
-	return out
+	return out	
 }
 
 string _bam_to_tag( string bam, string o_dir, string label ) {
@@ -445,7 +368,7 @@ string _bam_to_tag( string bam, string o_dir, string label ) {
 	tid := task( out<-in ) {
 
 		sys $shcmd_init
-
+	
 		//# Create SE tagAlign file
 		sys bedtools bamtobed -i $bam | awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}' | gzip -c > $tag
 
@@ -504,10 +427,10 @@ string _bam_to_bedpe( string bam, string o_dir, string label ) {
 }
 
 string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
-
+	
 	prefix 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
 	tag 	:= "$prefix.tagAlign.gz"
-	RM_CHR_ := "echo"
+	RM_CHR_ := "echo"	
 	if ( rm_chr_from_tag != "" ) {
 		RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -c > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
 	}
@@ -562,7 +485,7 @@ string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label )
 		sys nonMitoChromosomes=$(samtools view -H "$filt_bam" | \
 					grep chr | cut -f2 | sed 's/SN://g' | grep -v chrM)
 
-		sys samtools view -b "$filt_bam" ${nonMitoChromosomes} > "$non_mito_bam"
+		sys samtools view -b "$filt_bam" ${nonMitoChromosomes} > "$non_mito_bam"		
 		sys samtools view -b "$filt_bam" chrM > "$mito_bam"
 
 		//# Process only non chrM reads
@@ -570,7 +493,7 @@ string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label )
 		sys bamToBed -i "$non_mito_bam" | \
 			awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' | \
 			gzip -c > "$bed"
-
+			
 		//# Set Java environment variable with Xmx, because JVM will ignore our
 		//# runtime flag and use this if it has been set.
 		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
@@ -620,12 +543,12 @@ string _bam_to_bed_atac( string filt_bam, string o_dir, string label ) {
 		sys nonMitoChromosomes=$(samtools view -H "$filt_bam" | \
 					grep chr | cut -f2 | sed 's/SN://g' | grep -v chrM)
 
-		sys samtools view -b "$filt_bam" ${nonMitoChromosomes} > "$non_mito_bam"
+		sys samtools view -b "$filt_bam" ${nonMitoChromosomes} > "$non_mito_bam"		
 		sys samtools view -b "$filt_bam" chrM > "$mito_bam"
 
 		//# Process only non chrM reads
 		sys bamToBed -i "$non_mito_bam" | gzip -c > "$bed"
-
+		
 		//# Set Java environment variable with Xmx, because JVM will ignore our
 		//# runtime flag and use this if it has been set.
 		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
