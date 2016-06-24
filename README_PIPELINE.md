@@ -33,10 +33,17 @@ You can also add any BDS parameters (like `-dryRun`, `-d` and `-s`). The followi
 ```
 bds_scr [SCR_NAME] [LOG_FILE_NAME] -s sge [PIPELINE.BDS] ...
 ```
+Use `bds_scr_5min` instead of `bds_scr` to prevent from running multiple pipelines on the same data set and output directory. `bds_scr_5min` does not start a screen if the last modified time of a log file is fresh (5 minutes).
+
 Once the pipeline run is done, the screen will be automatically closed. To kill a pipeline manually while it's running:
+```
+kill_scr [SCR_NAME]
+```
+or
 ```
 screen -X -S [SCR_NAME] quit
 ```
+
 
 
 ### Running pipelines with a cluster engine

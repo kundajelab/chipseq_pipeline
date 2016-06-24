@@ -14,8 +14,6 @@ rm_chr_from_tag := "" 		help If specified, exclude lines with specified string f
 wt_dedup 	:= "23h" 	help Walltime for post-alignment filtering (default: 23h, 24:00:00).
 mem_dedup	:= "20G" 	help Max. memory for post-alignment filtering (default: 20G).
 
-use_sambamba_markdup	:= false	help Use sambamba markdup instead of Picard MarkDuplicates (default: false).
-
 /*
 IMPORTANT!: legacy softwares compatibility (make the code work with legacy samtools, picard-tools)
 
@@ -49,7 +47,6 @@ void init_postalign_bam() {
 	print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
 	print( "Walltime (bam filter)\t: $wt_dedup\n")
 	print( "Max. memory (bam filter)\t: $mem_dedup\n")
-	print( "Use sambamba markdup (instead of picard)\t: $use_sambamba_markdup\n")
 }
 
 string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, int nth_dedup ) {
