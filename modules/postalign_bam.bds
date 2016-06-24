@@ -47,9 +47,9 @@ void init_postalign_bam() {
 	print("\n\n== postalign bam settings\n")
 	print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")
 	print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
-	print( "Walltime (bam filter)\t: $wt_dedup\n")
+	print( "Walltime (bam filter)\t\t: $wt_dedup\n")
 	print( "Max. memory (bam filter)\t: $mem_dedup\n")
-	print( "Use sambamba markdup (instead of picard)\t: $use_sambamba_markdup\n")
+	print( "Use sambamba markdup (instead of picard)\t\t: $use_sambamba_markdup\n")
 }
 
 string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, int nth_dedup ) {
@@ -58,24 +58,22 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 	prefix2 	:= replace_dir( prefix, log_o_dir )
 
 	nodup_bam 	:= "$prefix.nodup.bam"
-	nodup_bam_idx 	:= "$prefix.nodup.bai"
 	dup_qc 		:= "$prefix2.dup.qc"
 	map_qc 		:= "$prefix2.nodup.flagstat.qc"
 	pbc_qc 		:= "$prefix2.nodup.pbc.qc"
-	filt_bam_prefix	:= "$prefix.filt"
-	filt_bam 	:= "$prefix.filt.bam"
-	tmp_filt_bam 	:= "$prefix.dupmark.bam"
 
-	// multimapping
-	qname_sort_bam 	:= "$prefix.qnmsrt.bam"
-
-	// in -> dedup_bam1 -> temp and then temp -> dedup_bam2 -> out
 	in	:= [ bam ]
 	out	:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	cpus 	:= nth_dedup; 	mem := get_res_mem(mem_dedup,nth_dedup);	timeout := get_res_wt(wt_dedup)
 
 	if ( out<-in ) {
+
+		//////////// step 1
+
+		filt_bam 	:= "$prefix.filt.bam"
+		tmp_filt_bam 	:= "$prefix.dupmark.bam"
+		qname_sort_bam 	:= "$prefix.qnmsrt.bam" // multimapping
 
 		taskName:= "dedup_bam_1 " + label
 		in1 	:= in
@@ -111,17 +109,20 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 
 		wait // wait for filt_bam
 
+		//////////// step 2
+
 		string dupmark_bam, dup_qc
 
 		if ( use_sambamba_markdup ) {
-
-			(dupmark_bam, dup_qc) = _markdup_bam_sambamba(filt_bam, o_dir, log_o_dir, label, cpus)
-		} else {
-
-			(dupmark_bam, dup_qc) = _markdup_bam_picard(filt_bam, o_dir, log_o_dir, label, cpus)
+			(dupmark_bam, dup_qc) = _markdup_bam_sambamba( filt_bam, o_dir, log_o_dir, label, nth_dedup )
+		} 
+		else {
+			(dupmark_bam, dup_qc) = _markdup_bam_picard( filt_bam, o_dir, log_o_dir, label )
 		}
 
 		wait // wait for dupmark_bam and dup_qc
+
+		//////////// step 3
 
 		taskName= "dedup_bam_2 " + label
 		in2  := [ dupmark_bam ]
@@ -135,8 +136,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 
 			//# Remove duplicates
 			//# Index final position sorted BAM
-			sys mv $dupmark_bam $filt_bam
-			sys samtools view -F 1804 -b $filt_bam > $nodup_bam
+			sys samtools view -F 1804 -b $dupmark_bam > $nodup_bam
 
 			//# Index Final BAM file
 			sys sambamba index -t $nth_dedup $nodup_bam
@@ -151,11 +151,11 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 
 			//# PBC File output
 			//# TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
-			sys bedtools bamtobed -i $filt_bam | \
+			sys bedtools bamtobed -i $dupmark_bam | \
 				awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}' | \
 				grep -v 'chrM' | sort | uniq -c | \
 				awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}' > $pbc_qc
-
+			
 			sys $shcmd_finalize
 		}
 
@@ -163,11 +163,12 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 
 		wait // wait for final bam
 
-		// remove all intermediate files
+		/////// remove all intermediate files
+
 		dupmark_bam.rm()
-		sys rm -f dupmark_bam.bai
+		"$dupmark_bam.bai".rm()
 		filt_bam.rm()
-		tmp_filt_bam.rm()
+		"$filt_bam.bai".rm()
 	}
 
 	graph_in  := ["bam_($label)"]
@@ -186,24 +187,21 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 	prefix2 	:= replace_dir( prefix, log_o_dir )
 
 	nodup_bam 	:= "$prefix.nodup.bam"
-	nodup_bam_idx 	:= "$prefix.nodup.bai"
-
 	dup_qc 		:= "$prefix2.dup.qc"
 	map_qc 		:= "$prefix2.nodup.flagstat.qc"
 	pbc_qc 		:= "$prefix2.nodup.pbc.qc"
 
-	filt_bam 	:= "$prefix.filt.bam"
-	filt_bam_prefix := "$prefix.filt"
-
-	tmp_filt_bam 	:= "$prefix.dupmark.bam"
-	tmp_filt_bam_prefix := "$prefix.dupmark"
-
-	in 		:= [ bam ]
-	out 		:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
+	in 	:= [ bam ]
+	out 	:= [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	cpus 	:= nth_dedup;	mem := get_res_mem(mem_dedup,nth_dedup);	timeout := get_res_wt(wt_dedup)
 
 	if ( out<-in ) {
+
+		/////// step 1
+
+		filt_bam 	:= "$prefix.filt.bam"
+		tmp_filt_bam 	:= "$prefix.dupmark.bam"
 
 		taskName:= "dedup_bam_PE_1 " + label
 		in1 	:= in
@@ -244,6 +242,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 			sys samtools view -F 1804 -f 2 -u $tmp_filt_bam.fixmate.bam | sambamba sort -t $nth_dedup /dev/stdin -o $filt_bam
 
 			sys rm -f $tmp_filt_bam.fixmate.bam
+			sys rm -f $tmp_filt_bam
 
 			sys $shcmd_finalize
 		}
@@ -252,17 +251,20 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 
 		wait
 
+		/////// step 2
+
 		string dupmark_bam, dup_qc
 
 		if ( use_sambamba_markdup ) {
-
-			(dupmark_bam, dup_qc) = _markdup_bam_sambamba(filt_bam, o_dir, log_o_dir, label, cpus)
-		} else {
-
-			(dupmark_bam, dup_qc) = _markdup_bam_picard(filt_bam, o_dir, log_o_dir, label, cpus)
+			(dupmark_bam, dup_qc) = _markdup_bam_sambamba( filt_bam, o_dir, log_o_dir, label, nth_dedup )
+		}
+		else {
+			(dupmark_bam, dup_qc) = _markdup_bam_picard( filt_bam, o_dir, log_o_dir, label )
 		}
 
 		wait
+
+		/////// step 3
 
 		taskName= "dedup_bam_PE_2 " + label
 		in2  := [ dupmark_bam ]
@@ -279,10 +281,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 			//# Index final position sorted BAM
 			//# Create final name sorted BAM
 			//# ============================
-
-			sys mv $dupmark_bam $filt_bam
-
-			sys samtools view -F 1804 -f 2 -b $filt_bam > $nodup_bam
+			sys samtools view -F 1804 -f 2 -b $dupmark_bam > $nodup_bam
 
 			sys sambamba index -t $nth_dedup $nodup_bam
 
@@ -297,18 +296,14 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 			//# Obtain unique count statistics
 
 			//# TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
-			sys sambamba sort -t $nth_dedup -n $filt_bam -o $filt_bam.tmp.bam
+			sys sambamba sort -t $nth_dedup -n $dupmark_bam -o $dupmark_bam.tmp.bam
 
-			sys bedtools bamtobed -bedpe -i $filt_bam.tmp.bam | \
+			sys bedtools bamtobed -bedpe -i $dupmark_bam.tmp.bam | \
 				awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}' | \
 				grep -v 'chrM' | sort | uniq -c | \
 				awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}' > $pbc_qc
 
-			sys rm -f $filt_bam.tmp.bam
-
-			sys rm -f $filt_bam
-			sys rm -f $filt_bam.bai
-			sys rm -f $tmp_filt_bam
+			sys rm -f $dupmark_bam.tmp.bam
 
 			sys $shcmd_finalize
 		}
@@ -317,9 +312,12 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 
 		wait
 
+		/////// remove all intermediate files
+
 		dupmark_bam.rm()
+		"$dupmark_bam.bai".rm()
 		filt_bam.rm()
-		tmp_filt_bam.rm()
+		"$filt_bam.bai".rm()
 	}
 
 	graph_in  := ["bam_($label)"]
@@ -332,7 +330,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 	return out
 }
 
-string[] _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string label, int nth_markdup ) {
+string[] _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string label ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
@@ -343,7 +341,7 @@ string[] _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string
 	out 		:= [ dupmark_bam, dup_qc ]
 
 	taskName:= "markdup_bam_picard " + label
-	cpus 	:= nth_markdup; 	mem := get_res_mem(mem_dedup,nth_markdup);	timeout := get_res_wt(wt_dedup)
+	cpus := 1; 	mem := get_res_mem(mem_dedup,1);	timeout := get_res_wt(wt_dedup)
 
 	wait_par( cpus )
 
@@ -396,7 +394,7 @@ string[] _markdup_bam_sambamba( string bam, string o_dir, string log_o_dir, stri
 
 		sys $shcmd_init
 
-		sys sambamba markdup -t $cpus --hash-table-size=17592186044416 \
+		sys sambamba markdup -t $nth_markdup --hash-table-size=17592186044416 \
 			--overflow-list-size=20000000 --io-buffer-size=256 $bam $dupmark_bam \
 			2> $dup_qc
 
