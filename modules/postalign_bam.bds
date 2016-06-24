@@ -42,7 +42,7 @@ void init_postalign_bam() {
 
 	wt_dedup 	= get_conf_val( wt_dedup, 		["wt_dedup"] )
 	mem_dedup 	= get_conf_val( mem_dedup, 		["mem_dedup"] )
-	use_sambamba_markdup	= get_conf_val( use_sambamba_markdup, ["use_sambamba_markdup"] )
+	use_sambamba_markdup	= get_conf_val_bool( use_sambamba_markdup, ["use_sambamba_markdup"] )
 
 	print("\n\n== postalign bam settings\n")
 	print( "MAPQ reads rm thresh.\t\t: $mapq_thresh\n")
@@ -165,6 +165,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 
 		// remove all intermediate files
 		dupmark_bam.rm()
+		sys rm -f dupmark_bam.bai
 		filt_bam.rm()
 		tmp_filt_bam.rm()
 	}
@@ -306,6 +307,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 			sys rm -f $filt_bam.tmp.bam
 
 			sys rm -f $filt_bam
+			sys rm -f $filt_bam.bai
 			sys rm -f $tmp_filt_bam
 
 			sys $shcmd_finalize
@@ -397,6 +399,8 @@ string[] _markdup_bam_sambamba( string bam, string o_dir, string log_o_dir, stri
 		sys sambamba markdup -t $cpus --hash-table-size=17592186044416 \
 			--overflow-list-size=20000000 --io-buffer-size=256 $bam $dupmark_bam \
 			2> $dup_qc
+
+		sys rm -f $dupmark_bam.bai
 
 		sys $shcmd_finalize
 	}
