@@ -477,6 +477,7 @@ $ git checkout tags/0.7.3
 $ make
 $ ./bwa
 ```
+Then, append `-addpath /path/to/your/bwa` to your command line.
 
 Solution2:
 Upgrade zlib to 1.2.8. (https://github.com/MikkelSchubert/paleomix/wiki/BAM-pipeline-specific-troubleshooting#4.3.)
@@ -499,7 +500,7 @@ $ ./bwa
 
 Tested bwa versions (with zlib 1.2.8)
 ```
-succeeded:
+successful:
 0.6.2 0.7.1 0.7.2 0.7.3
 
 failed:
@@ -541,6 +542,21 @@ $ bds chipseq.bds -no_par ...
 4) Error: could not find environment: aquas_chipseq
 
 Unload any Anaconda Python modules. Remove locally installed Anaconda Python from your `$PATH`
+
+
+5) SPP error: `In min(npld$y[npld$fdr <= fdr])`
+
+```
+Warning message:
+In min(npld$y[npld$fdr <= fdr]) :
+  no non-missing arguments to min; returning Inf
+excluding systematic background anomalies ... done
+calculating statistical thresholds
+FDR 0.99 threshold= Inf
+Detected 0 peaks
+```
+Check if number of reads in your control tagalign is too high, and then reduce it with `-subsample_ctl [NO_READ_TO_SUBSAMPLE_CONTROL]`.
+Try with half of the original number of reads in control.
 
 
 
