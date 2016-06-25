@@ -332,7 +332,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 
 string[] _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string label ) {
 
-	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
+	prefix 		:= replace_dir( rm_str_at_end( rm_ext( bam, "bam" ), ".filt"), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
 	dup_qc 		:= "$prefix2.dup.qc"
 	dupmark_bam 	:= "$prefix.dupmark.bam"
@@ -377,7 +377,7 @@ string[] _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string
 
 string[] _markdup_bam_sambamba( string bam, string o_dir, string log_o_dir, string label, int nth_markdup ) {
 
-	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
+	prefix 		:= replace_dir( rm_str_at_end( rm_ext( bam, "bam" ), ".filt"), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
 	dup_qc 		:= "$prefix2.dup.qc"
 	dupmark_bam 	:= "$prefix.dupmark.bam"
