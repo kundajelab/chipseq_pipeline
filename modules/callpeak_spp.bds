@@ -66,6 +66,9 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 		// if compressed output file is empty (spp error), remove it
 		sys if [ $(zcat $rpeakfile | wc -l ) == "0" ]; then rm -f $rpeakfile; fi
 
+		// if no rpeak file, do something to return non-zero exit code
+		sys if [ ! -f $rpeakfile ]; then error_in_spp_output_peak_does_not_exist; fi
+
 		sys $shcmd_finalize
 	}
 
