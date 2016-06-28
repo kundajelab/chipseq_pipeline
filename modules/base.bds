@@ -643,6 +643,14 @@ string number_with_metric_prefix( int n ) {
 	else				return n
 }
 
+string number_with_binary_prefix( int n ) {
+	if (      n > 1024*1024*1024*1024 ) 	return (n/(1024*1024*1024*1024))+"T"
+	else if ( n > 1024*1024*1024 ) 		return (n/(1024*1024*1024))+"G"
+	else if ( n > 1024*1024 )		return (n/(1024*1024))+"M"
+	else if ( n > 1024 )			return (n/1024)+"K"
+	else					return n
+}
+
 string[] map_to_array( string{} map ) {
 
 	string[] array
