@@ -327,6 +327,41 @@ int parse_mem( string str ) {
 	}
 }
 
+int parse_number( string str ) {
+	trimmed := str.trim().toLower()
+
+	real multiplier
+	string delimiter
+
+	if ( trimmed.indexOf("g")>=0 ) {
+		delimiter = "g"
+		multiplier = 1000*1000*1000
+	}
+	else if ( trimmed.indexOf("m")>=0 ) {
+		delimiter = "m"
+		multiplier = 1000*1000
+	}
+	else if ( trimmed.indexOf("k")>=0 ) {
+		delimiter = "k"
+		multiplier = 1000
+	}
+	else {
+		return round( trimmed.parseReal() )
+	}
+
+	string[] arr = trimmed.split( delimiter )
+
+	if ( arr.size() == 0 ) {
+		error("parse_number: cannot parse number string! ($str)")
+	}
+	else if ( arr.size() >= 2 ) {
+		return round(arr[0].parseReal()*multiplier) + parse_number(arr[1])
+	}
+	else {
+		return round(arr[0].parseReal()*multiplier)
+	}
+}
+
 int parse_int( string str ) {
 
 	return str.trim().parseInt()

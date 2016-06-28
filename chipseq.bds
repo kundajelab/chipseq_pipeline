@@ -12,10 +12,10 @@ ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling
 sigtrk 		:= ""		help (BETA) Signal track generation method : bam2bw (bamCoverage in deepTools) or tag2bw (align2rawsignal).
 make_wig 	:= false	help Create wig (for '-sigtrk tag2bw' only).
 idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
-nreads 		:= 15000000	help # reads to be subsampled for cross corr. analysis (default: 15000000).
 no_naive_overlap:= false 	help No naive overlap threshold for peaks.
-subsample 	:= 0 		help Subsample exp. replicate if non-zero (recommended 70000000).
-subsample_ctl 	:= 0 		help Subsample control if non-zero (recommended 70000000).
+subsample_xcor 	:= "15M"	help # reads to be subsampled for cross corr. analysis (default: 15M).
+subsample 	:= "0" 		help # reads to subsample exp. replicate. Subsampled tagalign will be used for steps downstream (default: 0; no subsampling).
+subsample_ctl 	:= "0" 		help # reads to subsample control if non-zero (recommended: 40M or lower).
 nth_1_ctl 	:= false 	help Force to use 1 thread for mapping control.
 bw_for_pooled_rep_only:= false 	help Generate signal tracks for pooled replicate only with MACS2.
 
@@ -46,7 +46,9 @@ include "modules/signal.bds"
 // system vars
 input 		:= ""
 num_ctl 	:= 1
-
+nreads_subsample_xcor 	:= 15000000
+nreads_subsample 	:= 0
+nreads_subsample_ctl 	:= 0
 
 // Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
 // e.g. filt_bam{"rep1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
@@ -108,12 +110,12 @@ void init_chipseq() {
 	sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
 
 	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
-	nreads 		= get_conf_val_int( nreads,		["nreads"] )
+	subsample_xcor 	= get_conf_val( subsample_xcor,		["subsample_xcor"] )
 
 	no_naive_overlap = get_conf_val_bool( no_naive_overlap, ["no_naive_overlap"] )
 
-	subsample 	= get_conf_val_int( subsample,		["subsample"] )
-	subsample_ctl 	= get_conf_val_int( subsample_ctl,	["subsample_ctl"] )
+	subsample 	= get_conf_val( subsample,		["subsample"] )
+	subsample_ctl 	= get_conf_val( subsample_ctl,		["subsample_ctl"] )
 
 	nth_1_ctl 	= get_conf_val_bool( nth_1_ctl, 	["nth_1_ctl"] )
 
@@ -127,6 +129,11 @@ void init_chipseq() {
 	if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
 
 	if ( !control_exists() ) num_ctl = 0
+
+	// parse number of reads to subsample
+	nreads_subsample_xcor 	= parse_number( subsample_xcor )
+	nreads_subsample 	= parse_number( subsample )
+	nreads_subsample_ctl 	= parse_number( subsample_ctl )
 
 	print_chipseq()
 	
@@ -146,9 +153,9 @@ void print_chipseq() {
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "IDR threshold\t\t\t: $idr_thresh\n" )
 	print( "No naive overlap threshold\t: $no_naive_overlap\n")
-	print( "Subsample # read for cross-corr. analysis \t: $nreads\n")
-	print( "Subsample # read in tagalign\t\t: $subsample\n")
-	print( "Subsample # read in ctl tagalign\t: $subsample_ctl\n")
+	print( "# reads to subsample for cross-corr. analysis\t: $nreads_subsample_xcor\n")
+	print( "# reads to subsample exp. replicates (0: no subsampling)\t: $nreads_subsample\n")
+	print( "# reads to subsample controls (0: no subsampling)\t: $nreads_subsample_ctl\n")
 	print( "Use 1 thread for mapping control\t: $nth_1_ctl\n")	
 	print( "Signal tracks for pooled rep. only\t: $bw_for_pooled_rep_only\n")	
 }
@@ -391,12 +398,12 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 		if ( is_input_tag() ) tag_ = get_tag( ctl, rep )
 
-		if ( ctl == 0 && subsample > 0 ) {
-			tag_ = _subsample_tag( tag_, subsample, aln_o_dir, info )
+		if ( ctl == 0 && nreads_subsample > 0 ) {
+			tag_ = _subsample_tag( tag_, nreads_subsample, aln_o_dir, info )
 			wait
 		}
-		else if ( ctl > 0 && subsample_ctl > 0 ) {
-			tag_ = _subsample_tag( tag_, subsample_ctl, aln_o_dir, info )
+		else if ( ctl > 0 && nreads_subsample_ctl > 0 ) {
+			tag_ = _subsample_tag( tag_, nreads_subsample_ctl, aln_o_dir, info )
 			wait
 		}
 
@@ -408,7 +415,7 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 		if ( ctl == 0 ) { // if replicate
 
-			subsampled_tag := _subsample_tag( tag_, nreads, aln_o_dir, info )
+			subsampled_tag := _subsample_tag( tag_, nreads_subsample_xcor, aln_o_dir, info )
 
 			string subsampled_tag_pr1, subsampled_tag_pr2
 
@@ -428,8 +435,8 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 				tag_pr2{key} = tag_pr2_
 				wait
 
-				subsampled_tag_pr1 = _subsample_tag( tag_pr1_, nreads, aln_o_dir, info )
-				subsampled_tag_pr2 = _subsample_tag( tag_pr2_, nreads, aln_o_dir, info )				
+				subsampled_tag_pr1 = _subsample_tag( tag_pr1_, nreads_subsample_xcor, aln_o_dir, info )
+				subsampled_tag_pr2 = _subsample_tag( tag_pr2_, nreads_subsample_xcor, aln_o_dir, info )				
 			}
 
 			wait
@@ -496,12 +503,12 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 		bedpe := _bam_to_bedpe( filt_bam_, aln_o_dir, info )
 		wait
 
-		if ( ctl == 0 && subsample > 0 ) {
-			bedpe = _subsample_bedpe( bedpe, subsample, aln_o_dir, info )
+		if ( ctl == 0 && nreads_subsample > 0 ) {
+			bedpe = _subsample_bedpe( bedpe, nreads_subsample, aln_o_dir, info )
 			wait
 		}
-		else if ( ctl > 0 && subsample_ctl > 0 ) {
-			bedpe = _subsample_bedpe( bedpe, subsample_ctl, aln_o_dir, info )
+		else if ( ctl > 0 && nreads_subsample_ctl > 0 ) {
+			bedpe = _subsample_bedpe( bedpe, nreads_subsample_ctl, aln_o_dir, info )
 			wait
 		}
 
@@ -514,7 +521,7 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 
 		if ( ctl == 0 ) { // if replicate
 
-			subsampled_tag := _subsample_bedpe_to_tag_xcor( bedpe, nreads, aln_o_dir, info )
+			subsampled_tag := _subsample_bedpe_to_tag_xcor( bedpe, nreads_subsample_xcor, aln_o_dir, info )
 
 			string tag_pr1_, tag_pr2_
 			string qc_pr1_o_dir, qc_pr2_o_dir
