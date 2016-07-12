@@ -17,7 +17,8 @@ subsample_xcor 	:= "15M"	help # reads to be subsampled for cross corr. analysis 
 subsample 	:= "0" 		help # reads to subsample exp. replicate. Subsampled tagalign will be used for steps downstream (default: 0; no subsampling).
 subsample_ctl 	:= "0" 		help # reads to subsample control if non-zero (recommended: 40M or lower).
 nth_1_ctl 	:= false 	help Force to use 1 thread for mapping control.
-bw_for_pooled_rep_only:= false 	help Generate signal tracks for pooled replicate only with MACS2.
+bw_for_pooled_rep_only := false help Generate signal tracks for pooled replicate only with MACS2.
+//xcor_for_pooled_rep := false 	help Perform cross-correlation analysis to get fragment length for pooled replicate.
 
 help() // print help if no parameters are given
 
@@ -120,6 +121,7 @@ void init_chipseq() {
 	nth_1_ctl 	= get_conf_val_bool( nth_1_ctl, 	["nth_1_ctl"] )
 
 	bw_for_pooled_rep_only 	= get_conf_val_bool( bw_for_pooled_rep_only, 	["bw_for_pooled_rep_only"] )
+	//xcor_for_pooled_rep 	= get_conf_val_bool( xcor_for_pooled_rep, 	["xcor_for_pooled_rep"] )
 
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
@@ -158,6 +160,7 @@ void print_chipseq() {
 	print( "# reads to subsample controls (0: no subsampling)\t: $nreads_subsample_ctl\n")
 	print( "Use 1 thread for mapping control\t: $nth_1_ctl\n")	
 	print( "Signal tracks for pooled rep. only\t: $bw_for_pooled_rep_only\n")	
+	//print( "Cross-corr. analysis to get fraglen. for pooled rep.\t: $xcor_for_pooled_rep\n")
 }
 
 void chk_input() {
@@ -434,9 +437,6 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 				tag_pr1{key} = tag_pr1_
 				tag_pr2{key} = tag_pr2_
 				wait
-
-				subsampled_tag_pr1 = _subsample_tag( tag_pr1_, nreads_subsample_xcor, aln_o_dir, info )
-				subsampled_tag_pr2 = _subsample_tag( tag_pr2_, nreads_subsample_xcor, aln_o_dir, info )				
 			}
 
 			wait
@@ -447,14 +447,6 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 			// xcor for true rep
 			( xcor_qc_, xcor_plot{key} ) = _xcor( subsampled_tag, qc_o_dir, info, nth_xcor[0], info )
 			xcor_qc{key} = xcor_qc_
-
-			if ( !true_rep ) { // pseudo replicates
-
-				// xcor for pseudo replicates
-				string tmp
-				( xcor_qc_pr1{key}, tmp ) = _xcor( subsampled_tag_pr1, qc_pr1_o_dir, info+"-pr1", nth_xcor[1], "pseudo_reps/$info/pr1" )
-				( xcor_qc_pr2{key}, tmp ) = _xcor( subsampled_tag_pr2, qc_pr2_o_dir, info+"-pr2", nth_xcor[2], "pseudo_reps/$info/pr2" )
-			}
 		}
 
 		if ( is_final_stage_xcor() ) return
@@ -554,14 +546,6 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 			string xcor_qc_
 			( xcor_qc_, xcor_plot{key} ) = _xcor( subsampled_tag, qc_o_dir, info, nth_xcor[0], info )
 			xcor_qc{key} = xcor_qc_
-
-			if ( !true_rep ) { // if replicate
-
-				// xcor for pseudo replicates
-				string tmp
-				( xcor_qc_pr1{key}, tmp ) = _xcor( tag_pr1_, qc_pr1_o_dir, info+"-pr1", nth_xcor[1], "pseudo_reps/$info/pr1" )
-				( xcor_qc_pr2{key}, tmp ) = _xcor( tag_pr2_, qc_pr2_o_dir, info+"-pr2", nth_xcor[2], "pseudo_reps/$info/pr2" )
-			}
 		}
 
 		if ( is_final_stage_xcor() ) return
@@ -805,21 +789,20 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 
 		if ( !true_rep ) {
 
-			fraglen_pr1{rep} = get_fraglen( xcor_qc_pr1{"0,$rep"} )
-			fraglen_pr2{rep} = get_fraglen( xcor_qc_pr2{"0,$rep"} )
+			fraglen_pr1{rep} = fraglen{rep}
+			fraglen_pr2{rep} = fraglen{rep}
 		}
 
 		fraglen_sum += fraglen{rep}.parseReal()
 	}
 
-	if ( !true_rep && get_num_rep() > 1 ) {
-		fraglen_ppr1 = get_fraglen( xcor_qc_ppr1 )
-		fraglen_ppr2 = get_fraglen( xcor_qc_ppr2 )
-	}
-
 	real num_rep_real = get_num_rep()
 	fraglen_mean = round( fraglen_sum / num_rep_real ) // compute fraglen mean for pooled
 
+	if ( !true_rep && get_num_rep() > 1 ) {
+		fraglen_ppr1 = fraglen_mean
+		fraglen_ppr2 = fraglen_mean
+	}
 
 	//// distribute # threads for each peak calling
 
