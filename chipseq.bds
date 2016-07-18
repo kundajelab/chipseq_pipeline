@@ -37,6 +37,7 @@ include "modules/postalign_bed.bds"
 
 include "modules/callpeak_spp.bds"
 include "modules/callpeak_macs2.bds"
+include "modules/callpeak_naive_overlap.bds"
 include "modules/callpeak_etc.bds"
 
 include "modules/idr.bds"
@@ -111,23 +112,16 @@ void read_conf_chipseq() {
 
 	pe		= get_conf_val_bool( pe, 		["pe"] )
 	final_stage	= get_conf_val( final_stage, 		["final_stage"] )
-
 	callpeak	= get_conf_val( callpeak, 		["callpeak"] )
 	true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
-	ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])
-		
+	ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])		
 	sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
-
 	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
 	subsample_xcor 	= get_conf_val( subsample_xcor,		["subsample_xcor"] )
-
-	no_naive_overlap = get_conf_val_bool( no_naive_overlap, ["no_naive_overlap"] )
-
 	subsample 	= get_conf_val( subsample,		["subsample"] )
 	subsample_ctl 	= get_conf_val( subsample_ctl,		["subsample_ctl"] )
-
+	no_naive_overlap = get_conf_val_bool( no_naive_overlap, ["no_naive_overlap"] )
 	nth_1_ctl 	= get_conf_val_bool( nth_1_ctl, 	["nth_1_ctl"] )
-
 	bw_for_pooled_rep_only 	= get_conf_val_bool( bw_for_pooled_rep_only, 	["bw_for_pooled_rep_only"] )
 }
 
@@ -158,10 +152,10 @@ void print_chipseq() {
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
 	print( "IDR threshold\t\t\t: $idr_thresh\n" )
-	print( "No naive overlap threshold\t: $no_naive_overlap\n")
 	print( "# reads to subsample for cross-corr. analysis\t: "+parse_number( subsample_xcor)+"\n")
 	print( "# reads to subsample exp. replicates (0: no subsampling)\t: "+parse_number( subsample )+"\n")
 	print( "# reads to subsample controls (0: no subsampling)\t: "+parse_number( subsample_ctl)+"\n")
+	print( "No naive overlap threshold\t: $no_naive_overlap\n")
 	print( "Use 1 thread for mapping control\t: $nth_1_ctl\n")	
 	print( "Signal tracks for pooled rep. only\t: $bw_for_pooled_rep_only\n")	
 }
