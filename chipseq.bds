@@ -168,7 +168,7 @@ void chk_input() {
 	print( "\n\n== checking chipseq inputs (data type = $input) ...\n\n" );
 
 	if ( is_input_fastq() ) 	chk_align_bwa()
-	if ( is_callpeak_macs2() ) 	chk_callpeak_macs2()
+	if ( ( is_final_stage_idr() || is_final_stage_peak() ) && is_callpeak_macs2() ) 	chk_callpeak_macs2()
 	if ( is_sigtrk_aln2rawsig() ) 	chk_signal_aln2rawsig()
 	if ( is_final_stage_idr() ) 	chk_idr()
 	if ( multimapping > 0 ) 	error("Multimapping is not available for chipseq pipeline!\n")
