@@ -12,12 +12,11 @@ ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling
 sigtrk 		:= ""		help (BETA) Signal track generation method : bam2bw (bamCoverage in deepTools) or tag2bw (align2rawsignal).
 make_wig 	:= false	help Create wig (for '-sigtrk tag2bw' only).
 idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
-no_naive_overlap:= false 	help No naive overlap threshold for peaks.
 subsample_xcor 	:= "15M"	help # reads to be subsampled for cross corr. analysis (default: 15M).
 subsample 	:= "0" 		help # reads to subsample exp. replicate. Subsampled tagalign will be used for steps downstream (default: 0; no subsampling).
 subsample_ctl 	:= "0" 		help # reads to subsample control if non-zero (recommended: 40M or lower).
 nth_1_ctl 	:= false 	help Force to use 1 thread for mapping control.
-bw_for_pooled_rep_only := false help Generate signal tracks for pooled replicate only with MACS2.
+sigtrk_for_pooled_rep_only := false help Generate signal tracks for pooled replicate only with MACS2.
 
 
 help() // print help if no parameters are given
@@ -120,9 +119,8 @@ void read_conf_chipseq() {
 	subsample_xcor 	= get_conf_val( subsample_xcor,		["subsample_xcor"] )
 	subsample 	= get_conf_val( subsample,		["subsample"] )
 	subsample_ctl 	= get_conf_val( subsample_ctl,		["subsample_ctl"] )
-	no_naive_overlap = get_conf_val_bool( no_naive_overlap, ["no_naive_overlap"] )
 	nth_1_ctl 	= get_conf_val_bool( nth_1_ctl, 	["nth_1_ctl"] )
-	bw_for_pooled_rep_only 	= get_conf_val_bool( bw_for_pooled_rep_only, 	["bw_for_pooled_rep_only"] )
+	sigtrk_for_pooled_rep_only 	= get_conf_val_bool( sigtrk_for_pooled_rep_only, 	["sigtrk_for_pooled_rep_only"] )
 }
 
 void detect_input() {
@@ -155,9 +153,8 @@ void print_chipseq() {
 	print( "# reads to subsample for cross-corr. analysis\t: "+parse_number( subsample_xcor)+"\n")
 	print( "# reads to subsample exp. replicates (0: no subsampling)\t: "+parse_number( subsample )+"\n")
 	print( "# reads to subsample controls (0: no subsampling)\t: "+parse_number( subsample_ctl)+"\n")
-	print( "No naive overlap threshold\t: $no_naive_overlap\n")
 	print( "Use 1 thread for mapping control\t: $nth_1_ctl\n")	
-	print( "Signal tracks for pooled rep. only\t: $bw_for_pooled_rep_only\n")	
+	print( "Signal tracks for pooled rep. only\t: $sigtrk_for_pooled_rep_only\n")	
 }
 
 void chk_input() {
@@ -841,11 +838,11 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 			ppr1_hrchy 	:= "pooled_pseudo_reps/ppr1"
 			ppr2_hrchy 	:= "pooled_pseudo_reps/ppr2"
 
-			if ( !bw_for_pooled_rep_only || pc != "macs2" ) \
+			if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
 				peak_ppr1{"$pc"} = _call_peaks( pc, tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, false, ppr1_o_dir, ppr1_sig_o_dir, \
 								"ppr1", tag_ctl_label{"pooled"}, nth_ppr, ppr1_hrchy )
 
-			if ( !bw_for_pooled_rep_only || pc != "macs2" ) \
+			if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
 				peak_ppr2{"$pc"} = _call_peaks( pc, tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, false, ppr2_o_dir, ppr2_sig_o_dir, \
 								"ppr2",	tag_ctl_label{"pooled"}, nth_ppr, ppr2_hrchy )
 		}
@@ -859,7 +856,7 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 
 		hrchy 	:= "rep$rep"
 
-		if ( !bw_for_pooled_rep_only || pc != "macs2" ) \
+		if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
 			peak{"$pc,$rep"} = _call_peaks( pc, tag{"0,$rep"}, tag_ctl{rep}, fraglen{rep}, true, o_dir, sig_dir, \
 							"rep$rep", tag_ctl_label{rep}, nth_true, hrchy )
 		sleep( 4 )
@@ -874,11 +871,11 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 			pr1_hrchy 	:= "pseudo_reps/rep$rep/pr1"
 			pr2_hrchy 	:= "pseudo_reps/rep$rep/pr2"
 
-			if ( !bw_for_pooled_rep_only || pc != "macs2" ) \
+			if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
 				peak_pr1{"$pc,$rep"} = _call_peaks( pc, tag_pr1{"0,$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, pr1_o_dir, pr1_sig_o_dir, \
 								"rep$rep-pr1", tag_ctl_label{rep}, nth_pr, pr1_hrchy )
 
-			if ( !bw_for_pooled_rep_only || pc != "macs2" ) \
+			if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
 				peak_pr2{"$pc,$rep"} = _call_peaks( pc, tag_pr2{"0,$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, pr2_o_dir, pr2_sig_o_dir, \
 								"rep$rep-pr2", tag_ctl_label{rep}, nth_pr, pr2_hrchy )
 		}
@@ -924,8 +921,6 @@ void naive_overlap() {
 	if ( !is_callpeak_spp() ) return
 
 	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
-
-	if ( no_naive_overlap ) return
 
 	// naive overlap peak
 
