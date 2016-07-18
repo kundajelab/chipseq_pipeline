@@ -70,6 +70,8 @@ void init_general() {
 	mem 		= get_res_mem(memory,1)
 	timeout 	= get_res_wt(wt)
 	walltimeout 	= 3600*24*100 	// timeout var. in BigDataScript (100 days, jobs will never be stopped by BDS due to BDS timeout)
+
+	if ( !is_cmd_line_arg_empty() ) out_dir = mkdir( out_dir ) // create output directory and get absolute path for it	
 }
 
 void print_general() {
@@ -375,14 +377,6 @@ int{} distribute_nth( int n, int{} list ) {
 			break
 		}
 	}
-	/*
-	print("*** distribute_nth : $n")
-	print("\n")
-	print(list)
-	print("\n")
-	print(ret)
-	print("\n")
-	*/
 
 	return ret
 }
@@ -429,14 +423,6 @@ int[] distribute_nth( int n, int[] list ) {
 			break
 		}
 	}
-	/*
-	print("*** distribute_nth : $n")
-	print("\n")
-	print(list)
-	print("\n")
-	print(ret)
-	print("\n")
-	*/
 
 	return ret
 }

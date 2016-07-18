@@ -18,7 +18,7 @@ subsample 	:= "0" 		help # reads to subsample exp. replicate. Subsampled tagalig
 subsample_ctl 	:= "0" 		help # reads to subsample control if non-zero (recommended: 40M or lower).
 nth_1_ctl 	:= false 	help Force to use 1 thread for mapping control.
 bw_for_pooled_rep_only := false help Generate signal tracks for pooled replicate only with MACS2.
-//xcor_for_pooled_rep := false 	help Perform cross-correlation analysis to get fragment length for pooled replicate.
+
 
 help() // print help if no parameters are given
 
@@ -101,6 +101,19 @@ void main() { // chipseq pipeline starts here
 
 void init_chipseq() {
 
+	read_conf_chipseq()
+
+	detect_input()
+
+	parse_nreads_subsample()
+
+	init_etc_chipseq()
+
+	print_chipseq()	
+}
+
+void read_conf_chipseq() {
+
 	pe		= get_conf_val_bool( pe, 		["pe"] )
 	final_stage	= get_conf_val( final_stage, 		["final_stage"] )
 
@@ -121,7 +134,9 @@ void init_chipseq() {
 	nth_1_ctl 	= get_conf_val_bool( nth_1_ctl, 	["nth_1_ctl"] )
 
 	bw_for_pooled_rep_only 	= get_conf_val_bool( bw_for_pooled_rep_only, 	["bw_for_pooled_rep_only"] )
-	//xcor_for_pooled_rep 	= get_conf_val_bool( xcor_for_pooled_rep, 	["xcor_for_pooled_rep"] )
+}
+
+void detect_input() {
 
 	// determine input type
 	if ( get_peak(1,0) != "" ) 	input = "peak"
@@ -129,18 +144,19 @@ void init_chipseq() {
 	if ( get_filt_bam(0,1) != "" ) 	input = "filt_bam"
 	if ( get_bam(0,1) != "" ) 	input = "bam"
 	if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
+}
 
-	if ( !control_exists() ) num_ctl = 0
-
-	// parse number of reads to subsample
+void parse_nreads_subsample() { // parse number of reads to subsample
+	
 	nreads_subsample_xcor 	= parse_number( subsample_xcor )
 	nreads_subsample 	= parse_number( subsample )
 	nreads_subsample_ctl 	= parse_number( subsample_ctl )
-
-	print_chipseq()
-	
-	out_dir = mkdir( out_dir ) // create output directory and get absolute path for it	
 }
+
+void init_etc_chipseq() {
+
+	if ( !control_exists() ) num_ctl = 0
+}	
 
 void print_chipseq() {
 
@@ -160,7 +176,6 @@ void print_chipseq() {
 	print( "# reads to subsample controls (0: no subsampling)\t: $nreads_subsample_ctl\n")
 	print( "Use 1 thread for mapping control\t: $nth_1_ctl\n")	
 	print( "Signal tracks for pooled rep. only\t: $bw_for_pooled_rep_only\n")	
-	//print( "Cross-corr. analysis to get fraglen. for pooled rep.\t: $xcor_for_pooled_rep\n")
 }
 
 void chk_input() {
