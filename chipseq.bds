@@ -8,6 +8,7 @@ pe 		:= false 	help Paired end data.
 final_stage	:= "" 		help Final stage for pipeline (bam, filt_bam, tag, xcor and peak).
 callpeak 	:= "spp,macs2"	help Peak calling method : spp and macs2, can choose both (default: 'spp,macs2').
 true_rep   	:= false	help Call peaks on true replicates only.
+no_pseudo_rep	:= false 	help Do not call peaks on self pseudo replicates.
 ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
 sigtrk 		:= ""		help (BETA) Signal track generation method : bam2bw (bamCoverage in deepTools) or tag2bw (align2rawsignal).
 make_wig 	:= false	help Create wig (for '-sigtrk tag2bw' only).
@@ -19,16 +20,12 @@ nth_1_ctl 	:= false 	help Force to use 1 thread for mapping control.
 sigtrk_for_pooled_rep_only := false help Generate signal tracks for pooled replicate only with MACS2.
 
 
-help() // print help if no parameters are given
+help() // print help and exit if no parameters are given
 
 include "modules/input_fastq.bds"
 include "modules/input_bam.bds"
 include "modules/input_tagalign.bds"
 include "modules/input_peak.bds"
-
-include "modules/species.bds"
-
-include "modules/report.bds"
 
 include "modules/align_bwa.bds"
 include "modules/postalign_bam.bds"
@@ -38,7 +35,6 @@ include "modules/callpeak_spp.bds"
 include "modules/callpeak_macs2.bds"
 include "modules/callpeak_naive_overlap.bds"
 include "modules/callpeak_etc.bds"
-
 include "modules/idr.bds"
 
 include "modules/signal.bds"
@@ -46,7 +42,6 @@ include "modules/signal.bds"
 
 // system vars
 input 		:= ""
-num_ctl 	:= 1
 
 // Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
 // e.g. filt_bam{"rep1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
@@ -102,8 +97,6 @@ void init_chipseq() {
 
 	detect_input()
 
-	init_etc_chipseq()
-
 	print_chipseq()	
 }
 
@@ -113,6 +106,7 @@ void read_conf_chipseq() {
 	final_stage	= get_conf_val( final_stage, 		["final_stage"] )
 	callpeak	= get_conf_val( callpeak, 		["callpeak"] )
 	true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
+	no_pseudo_rep	= get_conf_val_bool( no_pseudo_rep, 	["no_pseudo_rep"] )
 	ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])		
 	sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
 	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
@@ -133,11 +127,6 @@ void detect_input() {
 	if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
 }
 
-void init_etc_chipseq() {
-
-	if ( !control_exists() ) num_ctl = 0
-}	
-
 void print_chipseq() {
 
 	print( "\n\n== chipseq pipeline settings\n")
@@ -146,6 +135,7 @@ void print_chipseq() {
 	print( "Input data type\t\t\t: $input\n")
 	print( "Peak calling method\t\t: $callpeak\n" )
 	print( "Peak calling for true reps only\t: $true_rep\n" )
+	print( "No peak calling for self pseudo reps\t: $no_pseudo_rep\n" )
 	print( "Control rep. depth ratio\t: $ctl_depth_ratio\n" )
 	print( "Sig. trk. generation method\t: $sigtrk\n" )
 	print( "Create wig\t\t\t: $make_wig\n" )
@@ -209,7 +199,9 @@ void chk_input() {
 
 	string[] data_all
 
-	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through replicats (0: not control, 1~: controls)
+	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through replicats (0: not control, 1: control)
+		
+		if ( ctl==1 && !control_exists() ) continue
 
 		for ( int rep=1; rep <= get_num_rep(); rep++) {
 
@@ -281,7 +273,9 @@ void align() {
 
 	int{} filesize
 
-	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)		
+	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)		
+
+		if ( ctl==1 && !control_exists() ) continue
 
 		for ( int rep=1; rep <= get_num_rep(); rep++) {
 		
@@ -320,7 +314,9 @@ void align() {
 
 	//// align
 	
-	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)
+	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)
+
+		if ( ctl==1 && !control_exists() ) continue		
 
 		for ( int rep=1; rep <= get_num_rep(); rep++) {
 
@@ -871,13 +867,16 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 			pr1_hrchy 	:= "pseudo_reps/rep$rep/pr1"
 			pr2_hrchy 	:= "pseudo_reps/rep$rep/pr2"
 
-			if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
-				peak_pr1{"$pc,$rep"} = _call_peaks( pc, tag_pr1{"0,$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, pr1_o_dir, pr1_sig_o_dir, \
-								"rep$rep-pr1", tag_ctl_label{rep}, nth_pr, pr1_hrchy )
+			if ( !no_pseudo_rep ) {
 
-			if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
-				peak_pr2{"$pc,$rep"} = _call_peaks( pc, tag_pr2{"0,$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, pr2_o_dir, pr2_sig_o_dir, \
-								"rep$rep-pr2", tag_ctl_label{rep}, nth_pr, pr2_hrchy )
+				if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
+					peak_pr1{"$pc,$rep"} = _call_peaks( pc, tag_pr1{"0,$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, pr1_o_dir, pr1_sig_o_dir, \
+									"rep$rep-pr1", tag_ctl_label{rep}, nth_pr, pr1_hrchy )
+
+				if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
+					peak_pr2{"$pc,$rep"} = _call_peaks( pc, tag_pr2{"0,$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, pr2_o_dir, pr2_sig_o_dir, \
+									"rep$rep-pr2", tag_ctl_label{rep}, nth_pr, pr2_hrchy )
+			}
 		}
 	}	
 
@@ -930,7 +929,8 @@ void naive_overlap() {
 
 		if ( !true_rep ) {
 
-			peak_overlap = _naive_overlap_peak( "regionPeak", peak{"spp,1"}, peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, overlap_o_dir, "peak", \
+                        if ( !no_pseudo_rep ) \
+				peak_overlap = _naive_overlap_peak( "regionPeak", peak{"spp,1"}, peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, overlap_o_dir, "peak", \
 									"peak_spp", "spp/overlap")
 		}
 	}
@@ -976,7 +976,8 @@ void do_idr() {
 
 			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$i" )
 
-			(idr_pr{i}, idr_pr_png{i}) = _idr2( peak_pr1{"spp,$i"}, peak_pr2{"spp,$i"}, peak{"spp,$i"}, idr_thresh, "signal.value", idr_pr_o_dir, "rep$i-pr", \
+                        if ( !no_pseudo_rep ) {
+				(idr_pr{i}, idr_pr_png{i}) = _idr2( peak_pr1{"spp,$i"}, peak_pr2{"spp,$i"}, peak{"spp,$i"}, idr_thresh, "signal.value", idr_pr_o_dir, "rep$i-pr", \
 								"peak_spp", ["rep$i-pr1","rep$i-pr2","rep$i"], "pseudo_reps/rep$i" )
 		}
 	}
@@ -1057,7 +1058,9 @@ string _html_chipseq_QC() {
 	string[] flagstat_qcs, dup_qcs, flagstat_nodup_qcs, pbc_qcs, xcor_qcs, xcor_plots
 	string[] flagstat_headers, dup_headers, flagstat_nodup_headers, pbc_headers, xcor_headers
 
-	for ( int ctl=0; ctl <= num_ctl; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)	
+	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)	
+
+		if ( ctl==1 && !control_exists() ) continue		
 	
 		for ( int rep=1; rep <= get_num_rep(); rep++) {
 
@@ -1264,8 +1267,6 @@ bool is_single_ended() {
 
 	return !is_paired_end()
 }
-
-
 
 bool is_data_available( int ctl, int rep ) {
 
