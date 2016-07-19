@@ -13,7 +13,7 @@ if [ "$#" -lt 2 ]; then
   exit 0
 fi
 
-SCR_NAME=$1
+SCR_NAME="$1".BDS
 
 if [ $(screen -ls $SCR_NAME | grep 'No Sockets' | wc -l) != "1" ]; then
   echo "error: A screen named $SCR_NAME already exists."
