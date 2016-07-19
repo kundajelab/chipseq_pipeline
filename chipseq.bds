@@ -976,7 +976,7 @@ void do_idr() {
 
 			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$i" )
 
-                        if ( !no_pseudo_rep ) {
+                        if ( !no_pseudo_rep ) \
 				(idr_pr{i}, idr_pr_png{i}) = _idr2( peak_pr1{"spp,$i"}, peak_pr2{"spp,$i"}, peak{"spp,$i"}, idr_thresh, "signal.value", idr_pr_o_dir, "rep$i-pr", \
 								"peak_spp", ["rep$i-pr1","rep$i-pr2","rep$i"], "pseudo_reps/rep$i" )
 		}
