@@ -17,6 +17,7 @@ wt 		:= "23h"	help Walltime for all single-threaded tasks (example: 8:10:00, 3h,
 memory 		:= "12G"	help Maximum memory for all single-threaded tasks (equivalent to '-mem', example: 4.5G, 1024M, default: 12G).
 unlimited_mem_wt:= false 	help Use unlimited max. memory and walltime.
 use_system 	:= "" 		help Force to use a system (equivalent to 'bds -s [SYSTEM_NAME] ...', any system defined in bds.config can be used).
+nice 		:= 0 		help Set process priority for all tasks (default: 0; -20 (highest) ~ 19 (lowest) ).
 
 help == shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
@@ -50,6 +51,7 @@ void init_general() {
 	conda_env	= get_conf_val( conda_env, 		["conda_env"] )
 	conda_env_py3	= get_conf_val( conda_env_py3, 		["conda_env_py3"] )
 	use_system 	= get_conf_val( use_system, 		["use_system"] )
+	nice 		= get_conf_val_int( nice, 		["nice"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
@@ -60,6 +62,8 @@ void init_general() {
 		nth = 1
 		no_par = true
 	}
+	if ( nice <= -20 ) nice = -20
+	if ( nice > 19 ) nice = 19
 
 	print_general()
 
@@ -85,6 +89,7 @@ void print_general() {
 	print( "Env. for Anaconda python2\t: $conda_env\n" )
 	print( "Env. for Anaconda python3\t: $conda_env_py3\n" )
 	print( "Force to use a system\t: $use_system\n" )
+	print( "Process priority (niceness)\t: $nice\n" )
 
 	if ( unlimited_mem_wt ) {
 		print( "Use limited max. memory and walltime (jobs will be submitted to a cluster engine without memory and walltime settings)\n")
@@ -187,6 +192,7 @@ void init_shell_env() {
 	shcmd_init_ := module + path + shellcmd
 	shcmd_init_ += "; set -o pipefail" 		// to catch non-zero exit code in a UNIX pipe
 	shcmd_init_ += "; STARTTIME=$(date +%s)" 	// to check running time for a task
+	shcmd_init_ += "; renice -n $nice $$" 		// to set process priority (niceness)
 
 	shcmd_init_ = shcmd_init_.replace( ": :", ":" ).replace( "::", ":" ).replace( "; ;", ";" ).replace( ";;", ";" )
 
