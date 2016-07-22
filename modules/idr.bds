@@ -127,7 +127,7 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 	for ( string key : idr_tr.keys() ) { // key = rep id 1, rep id 2
 
 		peak := idr_tr{ key }
-		nlines := get_no_lines( peak )
+		nlines := ( peak != "" ) ? get_no_lines( peak ) : 0
 
 		if ( nlines >= Nt ) {
 			Nt = nlines
