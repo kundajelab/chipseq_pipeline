@@ -488,6 +488,8 @@ string replace_dir( string file, string o_dir ) {
 
 string get_path( string str ) {
 
+	if (str.trim() == "") return ""
+
 	base := rm_str_at_end( str, "/" ).path()
 	return base
 }
@@ -498,6 +500,8 @@ string mkdir( string str ) {
 }
 
 string mkdir_path( string str ) { 
+
+	if (str.trim() == "") return ""
 
 	// make filename full path and mkdir -p
 	path := get_path( str )
