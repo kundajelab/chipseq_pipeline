@@ -266,29 +266,27 @@ $ bds chipseq.bds \
 
 ### Peak calling method
 
-Define peak calling method with `-callpeak [METHOD]`, choose `[METHOD]` in `[spp, macs2]`. You can also choose both like `-callpeak spp,macs2` (default).
+Peak calling with SPP and signal track generation with MACS2 are by default. To turn off SPP or MACS2, use `-no_spp` or `-no_macs2`,respectively.
 If you want to call peaks on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate) only, add `-true_rep`.
 
-Both spp and macs2 generate peaks but signal tracks (pvalue and fold enrichment) are generated from macs2 only. IDR analysis will take peaks from spp. For spp, no additional parameter is required. For macs2, define additional parameters (`-chrsz`, `-gensz`).
+Both SPP and MACS2 generate peaks but signal tracks (pvalue and fold enrichment) are generated from MACS2 only. IDR analysis will take peaks from SPP. For SPP, no additional parameter is required. For macs2, define additional parameters (`-chrsz`, `-gensz`).
 
-Example for both spp and macs2 (you can omit `-callpeak spp,macs2` since it's by default):
+Example for both SPP and MACS2
 ```
 $ bds chipseq.bds \
 ...
--callpeak spp,macs2 \
 -chrsz /DATA/hg19.chrom.sizes \
 -gensz hs
 ```
 Seq is the directory where reference genome files exist. Chrsz is chrome sizes file. Gensz is hs for human and mm for mouse.
 
-If you don't want IDR analysis and want to get peaks and signal tracks from macs2 only:
+If you don't want SPP peaks and IDR on them and want to get peaks and signal tracks from MACS2:
 ```
--callpeak macs2 -chrsz /DATA/hg19.chrom.sizes -gensz hs
+-no_spp -chrsz /DATA/hg19.chrom.sizes -gensz hs
 ```
-
-If you don't want to get peaks and signal tracks from macs2:
+If you don't want to get peaks and signal tracks from MACS2:
 ```
--callpeak spp
+-no_macs2
 ```
 
 
@@ -302,20 +300,18 @@ IDR analysis is based on <a href="https://github.com/nboley/idr" target="_blank"
 
 
 
-### Signal track generation
+### Signal track generation (BETA)
 
-Define with `-sigtrk [SIG_TRK_GEN_METHOD: tag2bw (or aln2rawsig), bam2bw (or deeptools)]` to generate signal track (bigwig). You can use both with `-sigtrk tag2bw,bam2bw`.
+There are two methods to generate signal tracks (bigwigs). Use `-tag2bw` to generate bigwig from tagalign (using align2rawsignal), and `-bam2bw` to generate bigwig from filtered bam (using bamCoverage in deepTools).
 
-If you don't want to define parameters like `seq`, `umap`, `chrsz` for every pipeline run, use species file.
+If you don't want to define parameters like `seq`, `umap`, `chrsz` for every pipeline run, use a species file.
 Define all species specific parameters in the species file and add parameter `-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]`.
-
-In order to generate signal track using macs2 do not use `-sigtrk`. Use `-callpeak macs2` instead.
 
 1) using tag2bw (align2rawsignal; it converts tagalign to bigwig, final_stage >= xcor )
 ```
 $ bds chipseq.bds \
 ...
--sigtrk tag2bw \
+-tag2bw \
 -seq /DATA/encodeHg19Male \
 -umap /DATA/encodeHg19Male/globalmap_k20tok54 \
 -chrsz /DATA/hg19.chrom.sizes
@@ -329,7 +325,7 @@ If you want both bigwig and wig, then add `-make_wig`.
 ```
 $ bds chipseq.bds \
 ...
--sigtrk bam2bw
+-bam2bw
 ```
 
 
