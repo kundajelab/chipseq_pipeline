@@ -132,7 +132,7 @@ void print_chipseq() {
 	print( "Create bigwig from tagalign\t\t: $tag2bw\n")
 	print( "Create wig\t\t\t\t: $make_wig\n" )
 	print( "No MACS2 peak calling/sig. trk. gen.\t: $no_macs2\n")
-	print( "No SPP peak calling\t\t\t : $no_spp\n")
+	print( "No SPP peak calling\t\t\t: $no_spp\n")
 	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")	
 }
 
@@ -146,7 +146,7 @@ void chk_param() {
 
 	// errors
 	if ( multimapping > 0 ) 	error("Multimapping is not available for chipseq pipeline!\n")
-	if ( !no_spp && !ctl_exists() ) error("Cannot call peaks with SPP without controls!\n")
+	if ( !is_input_peak() && !no_spp && !ctl_exists() ) error("Cannot call peaks with SPP without controls!\n")
 	if ( is_input_peak() && true_rep && get_num_rep() == 1 ) \
 		error("Cannot perform IDR with only one replicate!")
 
