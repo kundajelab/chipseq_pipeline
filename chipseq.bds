@@ -4,27 +4,25 @@
 
 help == chipseq pipeline settings
 
-pe 		:= false 	help Paired end data.
 final_stage	:= "" 		help Final stage for pipeline (bam, filt_bam, tag, xcor and peak).
-callpeak 	:= "spp,macs2"	help Peak calling method : spp and macs2, can choose both (default: 'spp,macs2').
 true_rep   	:= false	help Call peaks on true replicates only.
 no_pseudo_rep	:= false 	help Do not call peaks on self pseudo replicates.
 ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
-sigtrk 		:= ""		help (BETA) Signal track generation method : bam2bw (bamCoverage in deepTools) or tag2bw (align2rawsignal).
-make_wig 	:= false	help Create wig (for '-sigtrk tag2bw' only).
 idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
 subsample_xcor 	:= "15M"	help # reads to be subsampled for cross corr. analysis (default: 15M).
 subsample 	:= "0" 		help # reads to subsample exp. replicate. Subsampled tagalign will be used for steps downstream (default: 0; no subsampling).
 subsample_ctl 	:= "0" 		help # reads to subsample control if non-zero (recommended: 40M or lower).
-nth_1_ctl 	:= false 	help Force to use 1 thread for mapping control.
-sigtrk_for_pooled_rep_only := false help Generate signal tracks for pooled replicate only with MACS2.
+bam2bw 		:= false	help (BETA) Create bigwig from filtered bam (using bamCoverage in deepTools).
+tag2bw 		:= false 	help (BETA) Create bigwig from tagalign (using align2rawsignal).
+make_wig 	:= false	help (BETA) Create wig (works with '-tag2bw' only).
+no_macs2 	:= false	help No MACS2 peak calling and signal track generation.
+no_spp 		:= false 	help No SPP peak calling.
+macs2_for_pooled_rep_only := false help Generate signal tracks for pooled replicate only with MACS2.
 
 
 help() // print help and exit if no parameters are given
 
-include "modules/input_fastq.bds"
-include "modules/input_bam.bds"
-include "modules/input_tagalign.bds"
+include "modules/input.bds"
 include "modules/input_peak.bds"
 
 include "modules/align_bwa.bds"
@@ -40,8 +38,6 @@ include "modules/idr.bds"
 include "modules/signal.bds"
 
 
-// system vars
-input 		:= ""
 
 // Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
 // e.g. filt_bam{"rep1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
@@ -74,19 +70,23 @@ void main() { // chipseq pipeline starts here
 
 	init_chipseq() // read command line parameters or configruation file
 
-	chk_input() // check input files are valid
+	chk_param() // check if parameters are valid
 
+	chk_input( true_rep ) // if inputs are fastq, bam, or tagalign, check if they exist
+	
 	align() // align and postalign
 
 	pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
 
 	call_peaks() // call peaks
 
-	naive_overlap() // naive overlap
+	read_input_peak() // if inputs are peaks, read them
+
+	naive_overlap() // get naive overlap peaks
 
 	do_idr() // IDR
 
-	create_sig_trk()
+	create_sig_trk() // (BETA)
 
 	report()
 }
@@ -95,174 +95,69 @@ void init_chipseq() {
 
 	read_conf_chipseq()
 
-	detect_input()
-
 	print_chipseq()	
 }
 
 void read_conf_chipseq() {
 
-	pe		= get_conf_val_bool( pe, 		["pe"] )
 	final_stage	= get_conf_val( final_stage, 		["final_stage"] )
-	callpeak	= get_conf_val( callpeak, 		["callpeak"] )
 	true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
 	no_pseudo_rep	= get_conf_val_bool( no_pseudo_rep, 	["no_pseudo_rep"] )
 	ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])		
-	sigtrk 		= get_conf_val( sigtrk, 		["sigtrk"] )
 	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
 	subsample_xcor 	= get_conf_val( subsample_xcor,		["subsample_xcor"] )
 	subsample 	= get_conf_val( subsample,		["subsample"] )
 	subsample_ctl 	= get_conf_val( subsample_ctl,		["subsample_ctl"] )
-	nth_1_ctl 	= get_conf_val_bool( nth_1_ctl, 	["nth_1_ctl"] )
-	sigtrk_for_pooled_rep_only 	= get_conf_val_bool( sigtrk_for_pooled_rep_only, 	["sigtrk_for_pooled_rep_only"] )
-}
-
-void detect_input() {
-
-	// determine input type
-	if ( get_peak(1,0) != "" ) 	input = "peak"
-	if ( get_tag(0,1) != "" ) 	input = "tag"
-	if ( get_filt_bam(0,1) != "" ) 	input = "filt_bam"
-	if ( get_bam(0,1) != "" ) 	input = "bam"
-	if ( get_fastq(0,1,1) != "" ) 	input = "fastq"
+	bam2bw 		= get_conf_val_bool( bam2bw, 		["bam2bw"])
+	tag2bw 		= get_conf_val_bool( tag2bw, 		["tag2bw"])
+	make_wig	= get_conf_val_bool( make_wig, 		["make_wig"])
+	no_macs2 	= get_conf_val_bool( no_macs2, 		["no_macs2"])
+	no_spp 		= get_conf_val_bool( no_spp, 		["no_spp"])
+	macs2_for_pooled_rep_only = get_conf_val_bool( macs2_for_pooled_rep_only, 	["macs2_for_pooled_rep_only"] )
 }
 
 void print_chipseq() {
 
 	print( "\n\n== chipseq pipeline settings\n")
-	print( "Final stage for ChIP-Seq\t: $final_stage\n" )
-	print( "# replicates \t\t\t: "+get_num_rep()+"\n" )
-	print( "Input data type\t\t\t: $input\n")
-	print( "Peak calling method\t\t: $callpeak\n" )
-	print( "Peak calling for true reps only\t: $true_rep\n" )
+	print( "Final stage for ChIP-Seq\t\t: $final_stage\n" )
+	print( "# replicates \t\t\t\t: "+get_num_rep()+"\n" )
+	print( "Peak calling for true reps only\t\t: $true_rep\n" )
 	print( "No peak calling for self pseudo reps\t: $no_pseudo_rep\n" )
-	print( "Control rep. depth ratio\t: $ctl_depth_ratio\n" )
-	print( "Sig. trk. generation method\t: $sigtrk\n" )
-	print( "Create wig\t\t\t: $make_wig\n" )
-	print( "IDR threshold\t\t\t: $idr_thresh\n" )
-	print( "# reads to subsample for cross-corr. analysis\t: "+parse_number( subsample_xcor)+"\n")
-	print( "# reads to subsample exp. replicates (0: no subsampling)\t: "+parse_number( subsample )+"\n")
+	print( "Control rep. depth ratio\t\t: $ctl_depth_ratio\n" )
+	print( "IDR threshold\t\t\t\t: $idr_thresh\n" )
+	print( "# reads to subsample for cross-corr. analysis\t\t: "+parse_number( subsample_xcor)+"\n")
+	print( "# reads to subsample exp. replicates (0: no subsampling): "+parse_number( subsample )+"\n")
 	print( "# reads to subsample controls (0: no subsampling)\t: "+parse_number( subsample_ctl)+"\n")
-	print( "Use 1 thread for mapping control\t: $nth_1_ctl\n")	
-	print( "Signal tracks for pooled rep. only\t: $sigtrk_for_pooled_rep_only\n")	
+	print( "Create bigwig from filt_bam\t\t: $bam2bw\n")
+	print( "Create bigwig from tagalign\t\t: $tag2bw\n")
+	print( "Create wig\t\t\t\t: $make_wig\n" )
+	print( "No MACS2 peak calling/sig. trk. gen.\t: $no_macs2\n")
+	print( "No SPP peak calling\t\t\t : $no_spp\n")
+	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")	
 }
 
-void chk_input() {
+void chk_param() {
 
-	print( "\n\n== checking chipseq inputs (data type = $input) ...\n\n" );
-
-	if ( is_input_fastq() ) 	chk_align_bwa()
-	if ( ( is_final_stage_idr() || is_final_stage_peak() ) && is_callpeak_macs2() ) 	chk_callpeak_macs2()
-	if ( is_sigtrk_aln2rawsig() ) 	chk_signal_aln2rawsig()
+	print( "\n\n== checking chipseq parameters ...\n" );
+	if ( has_input_fastq() ) 	chk_align_bwa()
+	if ( tag2bw ) 			chk_signal_aln2rawsig()
 	if ( is_final_stage_idr() ) 	chk_idr()
+	if ( !no_macs2 && ( is_final_stage_idr() || is_final_stage_peak() )  ) chk_callpeak_macs2()
+
+	// errors
 	if ( multimapping > 0 ) 	error("Multimapping is not available for chipseq pipeline!\n")
-	
-	if ( is_paired_end() && is_input_tag() ) error("Cannot start from tagaligns for PE data set!\n")
+	if ( !no_spp && !ctl_exists() ) error("Cannot call peaks with SPP without controls!\n")
+	if ( is_input_peak() && true_rep && get_num_rep() == 1 ) \
+		error("Cannot perform IDR with only one replicate!")
 
-	print("\n")
+	if ( has_pe_input_tag() && parse_number( subsample_xcor ) > 0 ) \
+			print("Warning: PE tagaligns cannot be subsampled for cross-corr. analysis.\n")
 
-	if ( is_input_peak() ) { // read peaks here
+	if ( has_pe_input_tag() && parse_number( subsample ) > 0 ) \
+			print("Warning: PE tagaligns cannot be subsampled!\n")
 
-		if ( true_rep && get_num_rep() == 1 ) error("Cannot do IDR for true replicates with only one replicate!")
-
-		for ( int rep=0; rep<=get_num_rep(); rep++) { // rep==0 : pooled
-
-			if ( get_num_rep() == 1 && rep==0 ) continue // if only one replicate, skip reading pooled rep
-
-			for (int pse=0; pse<=2; pse++) { // pse==0 : true rep
-
-				if ( true_rep && pse > 0 ) continue
-
-				peak_ := get_peak(rep,pse)
-				suffix1 := rep==0 ? "replicate" : "replicate $rep"
-				suffix2 := rep==0 ? "pseudo-replicate $pse" : "pseudo-replicate $pse for replicate $rep"
-				prefix := (rep==0 ? "pooled " : "") + (pse==0 ? suffix1 : suffix2)
-				
-				print( "$prefix: \n\t$peak_"+"\n")
-				if ( !path_exists( peak_ ) ) error("\t\tFile not found!\n")
-
-				if ( rep == 0 ) {
-					if ( pse == 0 )		peak_pooled{"spp"} 	= peak_
-					else if ( pse == 1 )	peak_ppr1{"spp"} 	= peak_
-					else if ( pse == 2 )	peak_ppr2{"spp"} 	= peak_
-				}
-				else {
-					if ( pse == 0 )		peak{"spp,$rep"} 	= peak_
-					else if ( pse == 1 )	peak_pr1{"spp,$rep"} 	= peak_
-					else if ( pse == 2 )	peak_pr2{"spp,$rep"} 	= peak_
-				}
-			}
-		}
-
-		return
-	}
-
-	string[] data_all
-
-	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through replicats (0: not control, 1: control)
-		
-		if ( ctl==1 && !control_exists() ) continue
-
-		for ( int rep=1; rep <= get_num_rep(); rep++) {
-
-			string[] data
-
-			prefix := (ctl==1) ? "Control " : ""
-			suffix := is_paired_end( ctl, rep ) ? " (PE)" : " (SE)"
-
-			if ( is_input_fastq() ) {
-				prefix = prefix + "Rep$rep fastq" + suffix
-				fastqs := get_fastqs( ctl, rep )
-				if ( fastqs.size()==0 ) {
-					data.push( "" )
-				}
-				else {
-					for ( string fastq : fastqs ) data.push( fastq )
-				}
-			}
-			else if ( is_input_bam() ) {
-				prefix = prefix +"Rep$rep bam" + suffix
-				data.push( get_bam( ctl, rep ) )
-			}
-			else if ( is_input_filt_bam() ) {
-				prefix = prefix +"Rep$rep filt_bam" + suffix
-				data.push( get_filt_bam( ctl, rep ) )
-			}
-			else if ( is_input_tag() ) {
-				prefix = prefix + "Rep$rep tagalign" + suffix
-				data.push( get_tag( ctl, rep ) )
-			}
-
-			print("$prefix :\n")
-
-			for ( string s : data ) {
-				print("\t$s\n")
-				if ( (s != "") && !path_exists(s) ) error("\t\tFile not found!\n")
-			}
-
-			// if data is missing
-			if ( data[0] == "" ) {
-				if ( (rep>=2) && (ctl==1) ) \
-					print( "\tWarning: $prefix missing! keep going... (using control 1 for calling peaks on replicate $rep)\n")
-				else if ( (rep==2) && (ctl==0) ) \
-					print( "\tWarning: $prefix missing! keep going... (peak calling for replicate 1 only)\n")
-				else \
-					error( "\t$prefix missing!\n")
-				continue
-			}
-
-			// check any duplicate input filename
-			for ( string s : data ) {
-				if ( is_in_array( get_basename( s ), get_basename( data_all ) ) ) \
-					error( "\t$prefix has duplicate filename!\n")
-			}
-
-			data_all = concat( data_all, data )
-		}
-	}
-
-	if ( final_stage != "" ) \
-		print( "\n====== Final stage : $final_stage \n\n" );
+	if ( has_pe_input_tag(1) && parse_number( subsample_ctl ) > 0 ) \
+			error("Warning: PE contol tagaligns cannot be subsampled!\n")
 }
 
 void align() {
@@ -273,13 +168,11 @@ void align() {
 
 	int{} filesize
 
-	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)		
+	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : exp. replicate, ctl==1 : control)
+		if ( ctl==1 && !ctl_exists() ) continue
 
-		if ( ctl==1 && !control_exists() ) continue
-
-		for ( int rep=1; rep <= get_num_rep(); rep++) {
-		
-			if ( !is_data_available( ctl, rep ) ) continue
+		for ( int rep=1; rep <= get_num_rep( ctl ); rep++) {		
+			if ( !input_file_exists( ctl, rep ) ) continue
 
 			// check file size to distribute_nth nth to each nth_app
 			// determine # threads for each app related to alignment
@@ -287,26 +180,15 @@ void align() {
 			key := "$ctl,$rep"  // key name for global output variable (map)
 
 			// get file size in bytes
-			if ( is_input_fastq() ) {
+			if ( is_input_fastq( ctl, rep ) ) {
 
 				fastqs := get_fastqs( ctl, rep )
-				filesize{key} = (fastqs[0]).size()
-				if ( fastqs.size() > 1) filesize{key} += (fastqs[1]).size()				
+				filesize{key} = (fastqs[0]).size()*3 // multiply 3 to allocate more cpus for align
+				if ( fastqs.size() > 1) filesize{key} += (fastqs[1]).size()
 			}
-			else if ( is_input_bam() ) {
-
-				filesize{key} = (get_bam( ctl, rep )).size()
-			}
-			else if ( is_input_filt_bam() ) {
-
-				filesize{key} = (get_filt_bam( ctl, rep )).size()
-			}
-			else if ( is_input_tag() ) {
-
-				filesize{key} = (get_tag( ctl, rep )).size()
-			}
-
-			if ( ctl > 0 && nth_1_ctl ) filesize{key} = 1
+			else if ( is_input_bam( ctl, rep ) ) 		filesize{key} = (get_bam( ctl, rep )).size()
+			else if ( is_input_filt_bam( ctl, rep ) ) 	filesize{key} = (get_filt_bam( ctl, rep )).size()
+			else if ( is_input_tag( ctl, rep ) ) 		filesize{key} = (get_tag( ctl, rep )).size()*5
 		}
 	}
 
@@ -314,13 +196,12 @@ void align() {
 
 	//// align
 	
-	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)
+	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : exp. replicate, ctl==1 : control)
+		if ( ctl==1 && !ctl_exists() ) continue		
 
-		if ( ctl==1 && !control_exists() ) continue		
+		for ( int rep=1; rep <= get_num_rep( ctl ); rep++) {
 
-		for ( int rep=1; rep <= get_num_rep(); rep++) {
-
-			if ( !is_data_available( ctl, rep ) ) continue
+			if ( !input_file_exists( ctl, rep ) ) continue
 
 			key := "$ctl,$rep"  // key name for global output variable (map)
 
@@ -336,15 +217,15 @@ void align() {
 
 void _align( int ctl, int rep, int nth_rep ) {
 
-	if ( is_single_ended( ctl, rep ) ) 	_align_SE( ctl, rep, nth_rep )
-	else 					_align_PE( ctl, rep, nth_rep )
+	if ( is_se( ctl, rep ) ) 	_align_SE( ctl, rep, nth_rep )
+	else 				_align_PE( ctl, rep, nth_rep )
 
 	if ( !no_par ) monitor_par()
 }
 
 void _align_SE( int ctl, int rep, int nth_rep ) {
 
-	info 	:= get_info( ctl, rep )
+	info 	:= get_info_str( ctl, rep )
 	key 	:= "$ctl,$rep"  // key name for global output variable (map)
 
 	aln_o_dir := mkdir( "$out_dir/align/$info" ) // create align output directory
@@ -352,7 +233,7 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 	string bam
 
-	if ( is_input_fastq() ) {
+	if ( is_input_fastq( ctl, rep ) ) {
 
 		fastqs := get_fastqs( ctl, rep )
 
@@ -362,9 +243,9 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 	string filt_bam_
 
-	if ( is_input_bam() || is_input_fastq() ) {
+	if ( is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
 	
-		if ( is_input_bam() ) bam = get_bam( ctl, rep )
+		if ( is_input_bam( ctl, rep ) ) bam = get_bam( ctl, rep )
 
 		if ( is_final_stage_bam() ) return
 
@@ -375,9 +256,9 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 	string tag_
 
-	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
+	if ( is_input_filt_bam( ctl, rep ) || is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
 
-		if ( is_input_filt_bam() ) filt_bam_ = get_filt_bam( ctl, rep )
+		if ( is_input_filt_bam( ctl, rep ) ) filt_bam_ = get_filt_bam( ctl, rep )
 
 		filt_bam{key} = filt_bam_
 
@@ -387,9 +268,9 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 		wait
 	}
 
-	if ( is_input_tag() || is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
+	if ( is_input_tag( ctl, rep ) || is_input_filt_bam( ctl, rep ) || is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
 
-		if ( is_input_tag() ) tag_ = get_tag( ctl, rep )
+		if ( is_input_tag( ctl, rep ) ) tag_ = get_tag( ctl, rep )
 
 		if ( ctl == 0 && parse_number( subsample ) > 0 ) {
 			tag_ = _subsample_tag( tag_, parse_number( subsample ), aln_o_dir, info )
@@ -445,15 +326,15 @@ void _align_SE( int ctl, int rep, int nth_rep ) {
 
 void _align_PE( int ctl, int rep, int nth_rep ) {
 
-	info 	:= get_info( ctl, rep )
+	info 	:= get_info_str( ctl, rep )
 	key 	:= "$ctl,$rep"  // key name for global output variable (map)
 
 	aln_o_dir := mkdir( "$out_dir/align/$info" ) // create align output directory
-	qc_o_dir    := mkdir( "$out_dir/qc/$info" ) // create qc output dir.
+	qc_o_dir  := mkdir( "$out_dir/qc/$info" ) // create qc output dir.
 
 	string bam
 
-	if ( is_input_fastq() ) {
+	if ( is_input_fastq( ctl, rep ) ) {
 
 		fastqs := get_fastqs( ctl, rep )
 
@@ -463,9 +344,9 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 
 	string filt_bam_
 
-	if ( is_input_bam() || is_input_fastq() ) {
+	if ( is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
 
-		if ( is_input_bam() ) bam = get_bam( ctl, rep )
+		if ( is_input_bam( ctl, rep ) ) bam = get_bam( ctl, rep )
 
 		if ( is_final_stage_bam() ) return
 
@@ -473,16 +354,18 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 			= _dedup_bam_PE( bam, aln_o_dir, qc_o_dir, info, nth_rep )
 		wait
 	}
-	
-	if ( is_input_filt_bam() || is_input_bam() || is_input_fastq() ) {
 
-		if ( is_input_filt_bam() ) filt_bam_ = get_filt_bam( ctl, rep )
+	string tag_, bedpe
+	
+	if ( is_input_filt_bam( ctl, rep ) || is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
+
+		if ( is_input_filt_bam( ctl, rep ) ) filt_bam_ = get_filt_bam( ctl, rep )
 
 		filt_bam{key} = filt_bam_
 
 		if ( is_final_stage_filt_bam() ) return
 
-		bedpe := _bam_to_bedpe( filt_bam_, aln_o_dir, info )
+		bedpe = _bam_to_bedpe( filt_bam_, aln_o_dir, info )
 		wait
 
 		if ( ctl == 0 && parse_number( subsample ) > 0 ) {
@@ -494,8 +377,13 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 			wait
 		}
 
-		tag_ := _bedpe_to_tag( bedpe, aln_o_dir, info )
+		tag_ = _bedpe_to_tag( bedpe, aln_o_dir, info )
 		wait
+	}
+
+	if ( is_input_tag( ctl, rep ) || is_input_filt_bam( ctl, rep ) || is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
+
+		if ( is_input_tag( ctl, rep ) ) tag_ = get_tag( ctl, rep )
 
 		tag{key} = tag_
 
@@ -503,7 +391,12 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 
 		if ( ctl == 0 ) { // if replicate
 
-			subsampled_tag := _subsample_bedpe_to_tag_xcor( bedpe, parse_number( subsample_xcor ), aln_o_dir, info )
+			string subsampled_tag
+
+			if ( bedpe == "" ) \
+				subsampled_tag = tag_
+			else \
+				subsampled_tag = _subsample_bedpe_to_tag_xcor( bedpe, parse_number( subsample_xcor ), aln_o_dir, info )
 
 			string tag_pr1_, tag_pr2_
 			string qc_pr1_o_dir, qc_pr2_o_dir
@@ -516,7 +409,7 @@ void _align_PE( int ctl, int rep, int nth_rep ) {
 				qc_pr1_o_dir    = mkdir( "$out_dir/qc/pseudo_reps/$info/pr1" ) // create qc output dir.
 				qc_pr2_o_dir    = mkdir( "$out_dir/qc/pseudo_reps/$info/pr2" ) // create qc output dir.
 
-				if ( is_input_tag() ) { // if starting from tag, we don't have bedpe file			
+				if ( bedpe == "" ) { // if starting from tag, we don't have bedpe file
 					( tag_pr1_, tag_pr2_ ) = _spr_tag_PE( tag_, aln_pr1_o_dir, aln_pr2_o_dir, info )
 					tag_pr1{key} = tag_pr1_
 					tag_pr2{key} = tag_pr2_
@@ -562,7 +455,7 @@ void pool_tags() {
 			tags_pr2.add( tag_pr2{"0,$rep"} )
 		}
 
-		if ( is_data_available( 1, rep ) ) { // if control exists
+		if ( input_file_exists( 1, rep ) ) { // if control exists
 			tags_ctl.add( tag{"1,$rep"} )
 			ids_ctl.add( rep )
 		}
@@ -673,7 +566,7 @@ void pool_tags() {
 
 			//print("DEBUG: # lines rep $rep tag.: " + nlines{"0,$rep"} + ", " + tag{"0,$rep"} + "\n")
 
-			if ( is_data_available( 1, rep ) ) { // if control exists
+			if ( input_file_exists( 1, rep ) ) { // if control exists
 
 				nlines{"1,$rep"} = get_no_lines( tag{"1,$rep"} )
 				nlines_ctl.add( nlines{"1,$rep"} )
@@ -701,7 +594,7 @@ void pool_tags() {
 
 		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
 
-			if ( !use_pooled_ctl && is_data_available( 1, rep ) ) {
+			if ( !use_pooled_ctl && input_file_exists( 1, rep ) ) {
 			
 				if ( nlines{"1,$rep"} < nlines{"0,$rep"} ) {
 
@@ -734,26 +627,20 @@ void call_peaks() {
 
 	if ( is_input_peak() ) return
 
-	int{} nth_peak  // distribute_nth # threads according to peak callers, priority for spp than macs2 (4 vs 1)
+	// distribute_nth # threads according to peak callers, priority for spp than macs2 (4 vs 1)
+	// because macs2 is single threaded.
+	int{} nth_peak  
 
-	if ( is_callpeak_spp() && is_callpeak_macs2() ) {
-		( nth_peak{"spp"}, nth_peak{"macs2"} ) = distribute_nth( nth, [4,1] )
-	}
-	else if ( is_callpeak_spp() ) {
-		nth_peak{"spp"} = nth
-	}
-	else if ( is_callpeak_macs2() ) {
-		nth_peak{"macs2"} = nth
-	}
-	else {
-		error("No peak caller is specified (-callpeak)!\n")
-	}
+	if ( !no_spp && !no_macs2 ) 	( nth_peak{"spp"}, nth_peak{"macs2"} ) = distribute_nth( nth, [4,1] )
+	else if ( !no_spp ) 		nth_peak{"spp"} = nth
+	else if ( !no_macs2 ) 		nth_peak{"macs2"} = nth
 
-	if ( is_callpeak_spp() ) {
+	if ( !no_spp ) {
 		if ( no_par ) _call_peaks( "spp", nth_peak{"spp"} )
 		else 	  par _call_peaks( "spp", nth_peak{"spp"} )
 	}
-	if ( is_callpeak_macs2() ) {
+
+	if ( !no_macs2 ) {
 		if ( no_par ) _call_peaks( "macs2", nth_peak{"macs2"} )
 		else 	  par _call_peaks( "macs2", nth_peak{"macs2"} )
 	}
@@ -765,7 +652,7 @@ void call_peaks() {
 
 void _call_peaks( string pc, int nth_peak ) { // pc: pc
 
-	if ( pc == "spp" && !control_exists() ) return
+	if ( pc == "spp" && !ctl_exists() ) return
 
 	//// calculate fragment length (required for SPP and MACS2)
 
@@ -834,11 +721,11 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 			ppr1_hrchy 	:= "pooled_pseudo_reps/ppr1"
 			ppr2_hrchy 	:= "pooled_pseudo_reps/ppr2"
 
-			if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
+			if ( !macs2_for_pooled_rep_only || pc != "macs2" ) \
 				peak_ppr1{"$pc"} = _call_peaks( pc, tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, false, ppr1_o_dir, ppr1_sig_o_dir, \
 								"ppr1", tag_ctl_label{"pooled"}, nth_ppr, ppr1_hrchy )
 
-			if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
+			if ( !macs2_for_pooled_rep_only || pc != "macs2" ) \
 				peak_ppr2{"$pc"} = _call_peaks( pc, tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, false, ppr2_o_dir, ppr2_sig_o_dir, \
 								"ppr2",	tag_ctl_label{"pooled"}, nth_ppr, ppr2_hrchy )
 		}
@@ -852,7 +739,7 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 
 		hrchy 	:= "rep$rep"
 
-		if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
+		if ( !macs2_for_pooled_rep_only || pc != "macs2" ) \
 			peak{"$pc,$rep"} = _call_peaks( pc, tag{"0,$rep"}, tag_ctl{rep}, fraglen{rep}, true, o_dir, sig_dir, \
 							"rep$rep", tag_ctl_label{rep}, nth_true, hrchy )
 		sleep( 4 )
@@ -869,11 +756,11 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 
 			if ( !no_pseudo_rep ) {
 
-				if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
+				if ( !macs2_for_pooled_rep_only || pc != "macs2" ) \
 					peak_pr1{"$pc,$rep"} = _call_peaks( pc, tag_pr1{"0,$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, pr1_o_dir, pr1_sig_o_dir, \
 									"rep$rep-pr1", tag_ctl_label{rep}, nth_pr, pr1_hrchy )
 
-				if ( !sigtrk_for_pooled_rep_only || pc != "macs2" ) \
+				if ( !macs2_for_pooled_rep_only || pc != "macs2" ) \
 					peak_pr2{"$pc,$rep"} = _call_peaks( pc, tag_pr2{"0,$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, pr2_o_dir, pr2_sig_o_dir, \
 									"rep$rep-pr2", tag_ctl_label{rep}, nth_pr, pr2_hrchy )
 			}
@@ -913,11 +800,36 @@ string _call_peaks( string peakcaller, string tag1, string tag1_ctl, string frag
 	}
 }
 
+void read_input_peak() {
+
+	if ( !is_input_peak() ) return // read peaks here
+
+	for ( int rep=0; rep<=get_num_rep_peak(); rep++) { // rep==0 : pooled
+		if ( get_num_rep_peak() == 1 && rep==0 ) continue // if only one replicate, skip reading pooled rep
+
+		for (int pse=0; pse<=2; pse++) { // pse==0 : true rep
+			if ( true_rep && pse > 0 ) continue
+
+			peak_ := get_peak(rep,pse)
+			if ( rep == 0 ) {
+				if ( pse == 0 )		peak_pooled{"spp"} 	= peak_
+				else if ( pse == 1 )	peak_ppr1{"spp"} 	= peak_
+				else if ( pse == 2 )	peak_ppr2{"spp"} 	= peak_
+			}
+			else {
+				if ( pse == 0 )		peak{"spp,$rep"} 	= peak_
+				else if ( pse == 1 )	peak_pr1{"spp,$rep"} 	= peak_
+				else if ( pse == 2 )	peak_pr2{"spp,$rep"} 	= peak_
+			}
+		}
+	}
+}
+
 void naive_overlap() {
 
 	if ( !(is_final_stage_peak() || is_final_stage_idr()) ) return
 
-	if ( !is_callpeak_spp() ) return
+	if ( no_spp ) return
 
 	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
 
@@ -954,7 +866,7 @@ void naive_overlap() {
 void do_idr() {
 
 	if ( !is_final_stage_idr() ) return
-	if ( !is_callpeak_spp() ) return
+	if ( no_spp ) return
 
 	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
 
@@ -1004,7 +916,7 @@ void do_idr() {
 
 void create_sig_trk() {
 
-	if ( !is_sigtrk_deeptools() && !is_sigtrk_aln2rawsig() ) return
+	if ( !bam2bw && !tag2bw ) return
 
 	for ( int rep=1; rep <= get_num_rep(); rep++) {
 
@@ -1021,14 +933,14 @@ void _create_sig_trk( int rep ) {
 
 	key := "0,$rep"  // key name for global output variable (map)
 	info:= "rep$rep"
-	if ( is_sigtrk_deeptools() && filt_bam.hasKey(key) ) { // signal track generation (deeptools)
+	if ( bam2bw && filt_bam.hasKey(key) ) { // signal track generation (deeptools)
 
 		sig_o_dir := mkdir( "$out_dir/signal/bam2bw/$info" )
 
 		signal_trk{key} = _bam_to_bw( filt_bam{key}, sig_o_dir, info, 1 )
 	}
 
-	if ( is_sigtrk_aln2rawsig() && tag.hasKey(key) && xcor_qc.hasKey(key) ) {
+	if ( tag2bw && tag.hasKey(key) && xcor_qc.hasKey(key) ) {
 
 		sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$info" )
 
@@ -1058,15 +970,14 @@ string _html_chipseq_QC() {
 	string[] flagstat_qcs, dup_qcs, flagstat_nodup_qcs, pbc_qcs, xcor_qcs, xcor_plots
 	string[] flagstat_headers, dup_headers, flagstat_nodup_headers, pbc_headers, xcor_headers
 
-	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : replicate, ctl==1 : control)	
-
-		if ( ctl==1 && !control_exists() ) continue		
+	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : exp. replicate, ctl==1 : control)	
+		if ( ctl==1 && !ctl_exists() ) continue		
 	
-		for ( int rep=1; rep <= get_num_rep(); rep++) {
+		for ( int rep=1; rep <= get_num_rep( ctl ); rep++) {
 
-			if ( !is_data_available( ctl, rep ) ) continue
+			if ( !input_file_exists( ctl, rep ) ) continue
 
-			info := get_info( ctl, rep )
+			info := get_info_str( ctl, rep )
 			key := "$ctl,$rep"
 
 			if ( ctl == 0 ) {
@@ -1153,64 +1064,6 @@ void help() {
 	}
 }
 
-// basic functions
-
-bool is_callpeak_spp() {
-
-	return callpeak.toLower().indexOf("spp")>=0
-}
-
-bool is_callpeak_macs2() {
-
-	return callpeak.toLower().indexOf("macs")>=0
-}
-
-bool is_sigtrk_aln2rawsig() {
-
-	return sigtrk.toLower().indexOf( "aln" )>=0 || sigtrk.toLower().indexOf( "align" )>=0 || sigtrk.toLower().indexOf( "tag" )>=0
-}
-
-bool is_sigtrk_deeptools() {
-
-	return sigtrk.toLower().indexOf( "deep" )>=0 || sigtrk.toLower().indexOf( "bam" )>=0
-}
-
-bool is_input_fastq() {
-
-	return input.toLower() == "fastq"
-}
-
-bool is_input_bam() {
-
-	return input.toLower() == "bam"
-}
-
-bool is_input_filt_bam() {
-
-	return input.toLower() == "filt_bam"
-}
-
-bool is_input_tag() {
-
-	return input.toLower() == "tag" || input.toLower() == "tagalign"
-}
-
-bool is_input_peak() {
-
-	return input.toLower() == "peak"
-}
-
-int get_num_rep() {
-
-	if ( is_input_fastq() ) 	 return get_num_rep_fastq()
-	else if ( is_input_bam() )  	 return get_num_rep_bam()
-	else if ( is_input_filt_bam() )  return get_num_rep_filt_bam()
-	else if ( is_input_tag() ) 	 return get_num_rep_tag()
-	else if ( is_input_peak() ) 	 return get_num_rep_peak()
-
-	return 0
-}
-
 bool is_final_stage_bam() {
 
 	return final_stage.toLower() == "bam"
@@ -1239,67 +1092,4 @@ bool is_final_stage_peak() {
 bool is_final_stage_idr() {
 
 	return (final_stage.toLower() == "idr") || (final_stage.toLower() == "")
-}
-
-bool is_paired_end( int ctl, int rep ) {
-
-	if ( is_input_fastq() ) {
-
-		fastqs := get_fastqs( ctl, rep )
-		return fastqs.size()==2
-	}
-	else {
-		return pe
-	}
-}
-
-bool is_single_ended( int ctl, int rep ) {
-
-	return !is_paired_end( ctl, rep )
-}
-
-bool is_paired_end() {
-
-	return is_paired_end( 0, 1 )
-}
-
-bool is_single_ended() {
-
-	return !is_paired_end()
-}
-
-bool is_data_available( int ctl, int rep ) {
-
-	if ( (ctl==1) && (rep>2) ) return false
-
-	if ( is_input_fastq() ) {
-		return get_fastqs( ctl, rep ).size() > 0
-	}
-	else if ( is_input_bam() ) {
-		return get_bam( ctl, rep ) != ""
-	}
-	else if ( is_input_filt_bam() ) {
-		return get_filt_bam( ctl, rep ) != ""
-	}
-	else if ( is_input_tag() ) {
-		return get_tag( ctl, rep ) != ""
-	}
-	else {
-		return false
-	}
-}
-
-bool control_exists() {
-
-	for ( int rep=1; rep<=get_num_rep(); rep++ ) {
-
-		if ( is_data_available( 1, rep ) ) return true
-	}
-
-	return false
-}
-
-string get_info( int ctl, int rep ) {
-
-	return ( (ctl>0) ? "ctl" : "rep") + rep
 }

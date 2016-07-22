@@ -7,9 +7,30 @@ include "conf.bds"
 help == narrow peak input definition : 
 help         For true replicates, use '-peak1' and '-peak2',
 help         For pooled replicates, use '-peak_pooled',
-help         For two PR (pseudo-replicates), use '-peak[REP_ID]_pr1' and '-peak[REP_ID]_pr2',
-help         For two PPR (pooled pseudo-replicates), use '-peak_ppr1' and '-peak_ppr2',
+help         For two PR (self-pseudo-replicates), use '-peak[REP_ID]_pr1' and '-peak[REP_ID]_pr2'
+help         For two PPR (pooled pseudo-replicates), use '-peak_ppr1' and '-peak_ppr2'
 
+
+void chk_input_peak( bool true_rep ) {
+
+	if ( !is_input_peak() ) return // read peaks here
+
+	for ( int rep=0; rep<=get_num_rep_peak(); rep++) { // rep==0 : pooled
+		if ( get_num_rep_peak() == 1 && rep==0 ) continue // if only one replicate, skip reading pooled rep
+
+		for (int pse=0; pse<=2; pse++) { // pse(pseudo)==0 : true rep, pse==1,2 : self-pseudo rep 1,2
+			if ( true_rep && pse > 0 ) continue
+
+			peak_ := get_peak(rep,pse)
+			suffix1 := rep==0 ? "replicate" : "replicate $rep"
+			suffix2 := rep==0 ? "pseudo-replicate $pse" : "pseudo-replicate $pse for replicate $rep"
+			prefix := (rep==0 ? "pooled " : "") + (pse==0 ? suffix1 : suffix2)
+			
+			print( "$prefix: \n\t$peak_"+"\n")
+			if ( !path_exists( peak_ ) ) error("\t\tFile not found!\n")
+		}
+	}
+}
 
 string get_peak( int rep, int pse ) { // rep==0 : pooled peak, pse==0 : true replicate
 
@@ -39,6 +60,11 @@ string get_peak( int rep, int pse ) { // rep==0 : pooled peak, pse==0 : true rep
 	}
 
 	return ""
+}
+
+bool is_input_peak() {
+
+	return get_peak( 1, 0 ) != ""
 }
 
 int get_num_rep_peak() {

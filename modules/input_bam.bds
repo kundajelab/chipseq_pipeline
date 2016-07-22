@@ -36,6 +36,11 @@ string get_bam( int ctl, int rep ) {
 	return ""
 }
 
+string get_bam( int rep ) {
+
+	return get_bam( 0, rep )
+}
+
 string get_filt_bam( int ctl, int rep ) {
 
 	key := ( ctl > 0 ? "ctl_filt_bam" : "filt_bam" ) + "_rep" + rep
@@ -63,20 +68,27 @@ string get_filt_bam( int ctl, int rep ) {
 	return ""
 }
 
-int get_num_rep_bam() {
+string get_filt_bam( int rep ) {
 
-	rep := 1
-
-	while( get_bam( 0, rep ) != "" ) rep++
-
-	return rep-1
+	return get_filt_bam( 0, rep )
 }
 
-int get_num_rep_filt_bam() {
+bool is_input_bam( int ctl, int rep ) {
 
-	rep := 1
+	return get_bam( ctl, rep ) != ""
+}
 
-	while( get_filt_bam( 0, rep ) != "" ) rep++
+bool is_input_bam( int rep ) {
 
-	return rep-1
+	return is_input_bam( 0, rep )
+}
+
+bool is_input_filt_bam( int ctl, int rep ) {
+
+	return get_filt_bam( ctl, rep ) != ""
+}
+
+bool is_input_filt_bam( int rep ) {
+
+	return is_input_filt_bam( 0, rep )
 }

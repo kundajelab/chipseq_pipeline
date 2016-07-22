@@ -58,11 +58,17 @@ string get_tag( int ctl, int rep ) {
 	return ""
 }
 
-int get_num_rep_tag() {
+string get_tag( int rep ) {
 
-	rep := 1
+	return get_tag( 0, rep )
+}
 
-	while( get_tag( 0, rep ) != "" ) rep++
+bool is_input_tag( int ctl, int rep ) {
 
-	return rep-1
+	return get_tag( ctl, rep ) != ""
+}
+
+bool is_input_tag( int rep ) {
+
+	return is_input_tag( 0, rep )
 }

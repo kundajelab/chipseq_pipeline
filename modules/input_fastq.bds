@@ -23,6 +23,11 @@ string[] get_fastqs( int ctl, int rep ) {  // if paired-end return [PE1, PE2], e
 	return ret
 }
 
+string[] get_fastqs( int rep ) {  // if paired-end return [PE1, PE2], elseif single-end else return [PE1], else []	
+
+	return get_fastqs( 0, rep )
+}
+
 string get_fastq( int ctl, int rep, int p ) {
 
 	key_wo_p := ( ctl > 0 ? "ctl_fastq" : "fastq" ) + "_rep" + rep 
@@ -75,11 +80,19 @@ string get_fastq( int ctl, int rep, int p ) {
 	return ""
 }
 
-int get_num_rep_fastq() {
+string get_fastq( int rep, int p ) {
 
-	rep := 1
+	return get_fastq( 0, rep, p )
+}
 
-	while( get_fastqs( 0, rep ).size() > 0 ) rep++
+bool is_input_fastq( int ctl, int rep ) {
 
-	return rep-1
+	fastqs := get_fastqs( ctl, rep )
+	if ( fastqs.size() > 0 ) return true
+	return false
+}
+
+bool is_input_fastq( int rep ) {
+
+	return is_input_fastq( 0, rep )	
 }

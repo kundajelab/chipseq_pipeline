@@ -123,9 +123,9 @@ The ENCODE ChIP-Seq pipeline can start from various types of data.
 4) tag
 5) peak
 ```
-Except for fastq, add `-pe` if your data set is paired-end.
+Except for fastq, add `-pe` if your data set is paired-end. You can also individually specify endedness for each replicate; `-pe[REPLICATE_ID]` for exp. replicates, `-ctl_pe[CONTROL_ID]` for controls.
 
-For repllicates:
+For exp. replicates:
 Define data path with `-[DATA_TYPE][REPLICATE_ID]`.
 
 For contols:
@@ -194,12 +194,27 @@ For IDR on pooled pseduro replicates:
 ...
 ```
 
+You can also mix up data types. All data are treated as singled-ended if endedness is not explicltly specifed. For fastqs, it's automatically determined.
+```
+$ bds chipseq.bds \
+-fastq1 /DATA/ENCFF000YLW.fastq.gz \
+-bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
+...
+```
+
+
 
 ### How to define paired-end (PE) data set
 
-Add the following flag to the command line.
+Add the following flag to the command line if all data set are paired-end.
 ```
 -pe
+```
+You can also individually specify endedness for each replicate.
+```
+-pe[REPLICATE_ID] 	# for exp. replicates, 
+-ctl_pe[CONTROL_ID] 	# for controls.
 ```
 
 For fastqs, you do not need to add '-pe' since the pipeline will automatically determine if SE or PE.
@@ -236,6 +251,17 @@ $ bds chipseq.bds \
 -bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 ```
 
+You can mix up not only data types but also endedness (single-ended and paired end).
+
+SE: 1 fastq
+PE: 1 bam and 1 tag (control)
+```
+$ bds chipseq.bds \
+-fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
+-pe2 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-pe_ctl -ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
+...
+```
 
 
 ### Peak calling method
