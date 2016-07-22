@@ -22,8 +22,8 @@ void init_align_bwa() {
 	mem_bwa 	= get_conf_val( mem_bwa, 	["mem_bwa"] )
 
 	print("\n\n== align bwa settings\n")
-	print( "Param. for bwa\t\t: $param_bwa_aln\n")
-	print( "Walltime (bwa)\t\t: $wt_bwa\n")
+	print( "Param. for bwa\t\t\t: $param_bwa_aln\n")
+	print( "Walltime (bwa)\t\t\t: $wt_bwa\n")
 	print( "Max. memory (bwa)\t\t: $mem_bwa\n")
 }
 

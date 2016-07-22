@@ -23,8 +23,8 @@ void init_callpeak_spp() {
 
 	print("\n\n== callpeak spp settings\n")
 	print( "Threshold for # peak\t\t: $npeak\n")
-	print( "Walltime (spp)\t\t: $wt_spp\n")
-	print( "Max. memory (spp)\t: $mem_spp\n")
+	print( "Walltime (spp)\t\t\t: $wt_spp\n")
+	print( "Max. memory (spp)\t\t: $mem_spp\n")
 }
 
 string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label, string label_ctl, \

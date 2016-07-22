@@ -34,9 +34,9 @@ void init_conf() {
 void print_conf() {
 
 	print( "\n\n== configuration file settings\n")
-	print( "Hostname\t\t\t\t: $hostname\n")
-	print( "Configuration file\t\t\t: $c\n" )
-	print( "Environment file\t\t\t: $env\n" )
+	print( "Hostname\t\t\t: $hostname\n")
+	print( "Configuration file\t\t: $c\n" )
+	print( "Environment file\t\t: $env\n" )
 }
 
 string{} read_conf( string file, string section ) {
