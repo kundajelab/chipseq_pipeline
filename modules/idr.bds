@@ -21,7 +21,7 @@ void init_idr() {
 void print_idr() {
 
 	print( "\n\n== IDR settings\n")
-	print( "Append IDR threshold to IDR out_dir\t\t: $idr_suffix\n" )
+	print( "Append IDR threshold to IDR out_dir\t: $idr_suffix\n" )
 }
 
 void chk_idr() {

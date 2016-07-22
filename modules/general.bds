@@ -88,7 +88,7 @@ void print_general() {
 	print( "Max. memory (general)\t\t: $memory\n" )
 	print( "Env. for Anaconda python2\t: $conda_env\n" )
 	print( "Env. for Anaconda python3\t: $conda_env_py3\n" )
-	print( "Force to use a system\t: $use_system\n" )
+	print( "Force to use a system\t\t: $use_system\n" )
 	print( "Process priority (niceness)\t: $nice\n" )
 
 	if ( unlimited_mem_wt ) {

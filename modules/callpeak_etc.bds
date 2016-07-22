@@ -17,7 +17,7 @@ void init_callpeak_etc() {
 	npeak_filt 	= get_conf_val_int( npeak_filt,		["npeak_filt"] )
 
 	print("\n\n== callpeak etc settings\n")
-	print( "# of top peaks to pick up in peak files\t\t: $npeak_filt\n")
+	print( "# of top peaks to pick up in peak files\t: $npeak_filt\n")
 }
 
 string _filt_top_peaks( string peakfile, string o_dir, string label, \

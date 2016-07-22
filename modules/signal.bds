@@ -23,8 +23,8 @@ void init_signal() {
 
 	print("\n\n== signal track generation settings\n")
 	print( "Param. for bamCoverage (deeptools)\t: $param_bam_cvrg\n")
-	print( "Walltime (bam_cvrg)\t: $wt_bam_cvrg\n")
-	print( "Max. memory (bam_cvrg)\t: $mem_bam_cvrg\n")
+	print( "Walltime (bam_cvrg)\t\t\t: $wt_bam_cvrg\n")
+	print( "Max. memory (bam_cvrg)\t\t\t: $mem_bam_cvrg\n")
 }
 
 void chk_signal_aln2rawsig() {

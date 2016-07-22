@@ -37,11 +37,11 @@ init_postalign_bam()
 
 void init_postalign_bam() {
 
-	mapq_thresh 	= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
-	rm_chr_from_tag = get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )
+	mapq_thresh 		= get_conf_val_int( mapq_thresh,	["mapq_thresh"] )
+	rm_chr_from_tag 	= get_conf_val( rm_chr_from_tag, 	["rm_chr_from_tag"] )
 
-	wt_dedup 	= get_conf_val( wt_dedup, 		["wt_dedup"] )
-	mem_dedup 	= get_conf_val( mem_dedup, 		["mem_dedup"] )
+	wt_dedup 		= get_conf_val( wt_dedup, 		["wt_dedup"] )
+	mem_dedup 		= get_conf_val( mem_dedup, 		["mem_dedup"] )
 	use_sambamba_markdup	= get_conf_val_bool( use_sambamba_markdup, ["use_sambamba_markdup"] )
 
 	print("\n\n== postalign bam settings\n")
@@ -49,7 +49,7 @@ void init_postalign_bam() {
 	print( "Rm. tag reads with str.\t\t: $rm_chr_from_tag\n")
 	print( "Walltime (bam filter)\t\t: $wt_dedup\n")
 	print( "Max. memory (bam filter)\t: $mem_dedup\n")
-	print( "Use sambamba markdup (instead of picard)\t\t: $use_sambamba_markdup\n")
+	print( "Use sambamba markdup (instead of picard)\t: $use_sambamba_markdup\n")
 }
 
 string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, int nth_dedup ) {
