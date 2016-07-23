@@ -28,9 +28,7 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 
 ### Usage
 
-We recommend using BASH to run pipelines.
-
-There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names.
+We recommend using BASH to run pipelines. There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names.
 
 
 1) Parameters from command line arguments: 
@@ -40,10 +38,8 @@ $ bds chipseq.bds [OPTIONS]
 Example (for single ended fastqs):
 ```
 $ bds chipseq.bds \
--fastq1 /DATA/ENCFF000YLW.fastq.gz \
--fastq2 /DATA/ENCFF000YLY.fastq.gz \
--ctl_fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz \
--bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa \
+-fastq1 /DATA/ENCFF000YLW.fastq.gz -fastq2 /DATA/ENCFF000YLY.fastq.gz -ctl_fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz \
+-bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ```
 
 2) Parameters from a configuration file:
@@ -62,17 +58,16 @@ bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 
 The pipeline automatically determines if each task has finished or not (by comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
 
+<b>IMPORTANT!</b> On servers with a cluster engine (such as Sun Grid Engine), <b>DO NOT QSUB BDS COMMAND</b>. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub) and manage its sub tasks.
 
 
 ### Using Species file
 
-There are many species specific parameters like indices (bwa, bowtie, ...), chromosome sizes, sequence file and genome size. If you have multiple pipelines, it's a hard job to individually define all parameters for each pipeline. However, if you have a species file with all species specific parameters defined, then you define less parameters and share the species file with all other pipelines.
+There are many species specific parameters like indices (bwa, bowtie, ...), chromosome sizes, sequence file and genome size. If you have multiple pipelines, it's not very convenient to individually define all parameters for each pipeline. You can create a species file with all parameters defined and share the species file with all other pipelines.
 ```
 $ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE]
 ```
-<b>IMPORTANT</b> for Kundaje lab cluster and SCG3/4, skip `-species_file` and all genome specific parameters (like `-bwa_idx`, `-chrsz`, `-blacklist`, ... ) and then just specify species.
-
-See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
+<b>IMPORTANT</b> for Kundaje lab cluster and SCG3/4, skip `-species_file` and all genome specific parameters (like `-bwa_idx`, `-chrsz`, `-blacklist`, ... ) and then just specify species. See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
 
 
 
@@ -82,16 +77,14 @@ The AQUAS transcription factor ChIP-Seq pipeline goes through the following stag
 ```
 1) bam          : mapping (fastq -> bam)
 2) filt_bam     : filtering and deduping bam (bam -> filt_bam)
-3) tag          : creating tagalign (bam -> tagalign)
+3) tag          : creating tagalign (filt_bam -> tagalign)
 4) xcor         : cross-correlation analysis (tagalign -> xcor plot.pdf/score.txt )
-5) peak         : peak calling (tagaligns -> peaks)
+5) peak         : peak calling (tagalign -> peak)
 6) idr          : IDR (peaks -> IDR score and peaks)
 ```
-If you define `-final_stage [STAGE]`, the pipeline stops right after the stage.
+The pipeline stops right after `-final_stage [STAGE]`. It is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL.
 
-This is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL. Set `-final_stage [FINAL STAGE]`. Choose your final stage. You can find description for each stage in the previous chapter (Chapter Input data type and final stage).
-
-Example1: You have 5 unfiltered raw bam and want to filter them (removing dupes).
+Example1: (You have 10 fastqs to be mapped and want to filter them and remove dups and create tagaligns)
 ```
 $ bds chipseq.bds \
 -final_stage tag \
@@ -100,10 +93,9 @@ $ bds chipseq.bds \
 ...
 -fastq10 /DATA/ENCFF000???.fastq.gz \
 -bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
--nth 6  # Total number of threads for the pipeline
 ```
 
-Example2: You have 5 unfiltered raw bam and want to filter them (removing dupes).
+Example2: (You have 5 unfiltered raw bam and want to just filter them (removing dupes).
 ```
 $ bds chipseq.bds \
 -final_stage filt_bam \
@@ -119,27 +111,19 @@ The ENCODE ChIP-Seq pipeline can start from various types of data.
 ```
 1) fastq 
 2) bam
-3) filt_bam	(it's bam but dupes are removed)
+3) filt_bam	(it's bam but filtered and dupes are removed)
 4) tag
 5) peak
 ```
-Except for fastq, add `-pe` if your data set is paired-end. You can also individually specify endedness for each replicate; `-pe[REPLICATE_ID]` for exp. replicates, `-ctl_pe[CONTROL_ID]` for controls.
 
-For exp. replicates:
-Define data path with `-[DATA_TYPE][REPLICATE_ID]`.
-
-For contols:
-Define data path with `-ctl_[DATA_TYPE][CONTROL_ID]`.
-
-You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_bam`, `-tag`, ... )
+For exp. replicates: define data path with `-[DATA_TYPE][REPLICATE_ID]`. For contols: define data path with `-ctl_[DATA_TYPE][CONTROL_ID]`. You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_bam`, `-tag`, ... ). Except for fastq, add `-pe` if your data set is PAIRED-END. You can also individually specify endedness for each replicate; `-pe[REPLICATE_ID]` for exp. replicates, `-ctl_pe[CONTROL_ID]` for controls.
 
 1) Starting from fastqs (see the example in the previous chapter)
 
 2) Starting from bams
 ```
 $ bds chipseq.bds \
--bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
--bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
 -ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRBbam \
 ...
 ```
@@ -147,8 +131,7 @@ $ bds chipseq.bds \
 3) Starting from filtered bams (filt_bam: bam with dupe removed)
 ```
 $ bds chipseq.bds \
--bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam \
--bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
+-bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
 -ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
 ...
 ```
@@ -156,8 +139,7 @@ $ bds chipseq.bds \
 4) Starting from tagaligns
 ```
 $ bds chipseq.bds \
--tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz \
--tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
+-tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz -tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
 -ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
 ...
 ```
@@ -165,36 +147,17 @@ $ bds chipseq.bds \
 5) Starting from peak files
 ```
 $ bds chipseq.bds \
--peak1 /DATA/Example1.regionPeak.gz \
--peak2 /DATA/Example2.regionPeak.gz \
+-peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz \
 -peak_pooled /DATA/Example.pooled.regionPeak.gz \
 ...
 ```
-If you want do perform full IDR including pseudo-replicates and pooled pseudo-replicates, add the following:
+If you want do perform full IDR including pseudo-replicates and pooled pseudo-replicates, add the following to the command line.
+For IDR on pseduro replicates of replicate 1: `-peak1_pr1 [PEAK1_PR1] -peak1_pr2 [PEAK1_PR2]`
+For IDR on pseduro replicates of replicate 2: `-peak2_pr1 [PEAK2_PR1] -peak2_pr2 [PEAK2_PR2]`
+For IDR on pseduro replicates of replicate N: `-peakN_pr1 [PEAK2_PR1] -peakN_pr2 [PEAK2_PR2]`
+For IDR on pooled pseduro replicates: `-peak_ppr1 [PEAK_PPR1] -peak_ppr2 [PEAK_PPR2]`
 
-For IDR on pseduro replicates of replicate 1:
-```
-...
--peak1_pr1 /DATA/Example1_PR1.regionPeak.gz \
--peak1_pr2 /DATA/Example1_PR2.regionPeak.gz \
-...
-```
-For IDR on pseduro replicates of replicate 2:
-```
-...
--peak2_pr1 /DATA/Example2_PR1.regionPeak.gz \
--peak2_pr2 /DATA/Example2_PR2.regionPeak.gz \
-...
-```
-For IDR on pooled pseduro replicates:
-```
-...
--peak_ppr1 /DATA/Example_PPR1.regionPeak.gz \
--peak_ppr2 /DATA/Example_PPR2.regionPeak.gz \
-...
-```
-
-You can also mix up data types. All data are treated as singled-ended if endedness is not explicltly specifed. For fastqs, it's automatically determined.
+<b>You can also mix up data types</b>. All data are treated as SINGLED-ENDED if endedness is not explicltly specifed. For fastqs, it's automatically determined.
 ```
 $ bds chipseq.bds \
 -fastq1 /DATA/ENCFF000YLW.fastq.gz \
@@ -204,20 +167,15 @@ $ bds chipseq.bds \
 ```
 
 
-
 ### How to define paired-end (PE) data set
 
-Add the following flag to the command line if all data set are paired-end.
-```
--pe
-```
-You can also individually specify endedness for each replicate.
+Add `-pe` to the command line if all data set are paired-end. You can also individually specify endedness for each replicate.
 ```
 -pe[REPLICATE_ID] 	# for exp. replicates, 
 -ctl_pe[CONTROL_ID] 	# for controls.
 ```
 
-For fastqs, you do not need to add '-pe' since the pipeline will automatically determine if SE or PE.
+For fastqs, you do not need to add '-pe' since the pipeline will automatically determine it according to indices in input parameters.
 
 For replicates:
 Define data path as -fastq[REPLICATE_ID], then it's SE (single ended).
@@ -227,8 +185,7 @@ For controls:
 Define data path as -ctl_fastq[REPLICATE_ID], it's SE.
 Define data path as -ctl_fastq[REPLICATE_ID]_[PAIRING_ID], it's PE.
 
-Example:
-SE: 2 replicates and 1 control replicate
+Example: 2 replicates and 1 control replicate (all SE)
 ```
 $ bds chipseq.bds \
 -fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
@@ -237,7 +194,7 @@ $ bds chipseq.bds \
 -bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 ```
 
-PE: 2 replicates and 2 control replicates
+Example: 2 replicates and 2 control replicates (all PE)
 ```
 $ bds chipseq.bds \
 -fastq1_1 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
@@ -253,8 +210,7 @@ $ bds chipseq.bds \
 
 You can mix up not only data types but also endedness (single-ended and paired end).
 
-SE: 1 fastq
-PE: 1 bam and 1 tag (control)
+Example: 1 SE fastq, 1 PE bam and 1 PE control tagalign
 ```
 $ bds chipseq.bds \
 -fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
@@ -332,15 +288,7 @@ $ bds chipseq.bds \
 
 ### Parallelization and multi-threading (IMPORTANT!)
 
-For completely serialized jobs. Individual tasks can still go multi-threaded.
-```
--no_par
-```
-You can set up a limit for total # threads. Total # threads used by a pipeline will not exceed this limit. By default, it's 16 on SCG3/4 and 8 on Kundaje clusters and others.
-```
--nth [MAX_TOTAL_NO_THREADS]
-```
-A pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs according to corresponding input file sizes. For example of two fastqs (1GB and 2GB) with `-nth 6`, 2 and 4 threads are allocated for aligning 1GB and 2GB fastqs, respectively. The same policy applies to other multi-threaded tasks like deduping and peak calling.
+For completely serialized jobs, add `-no_par` to the command line. Individual tasks can still go multi-threaded. <b>IMPORTANT!</b> You can set up a limit for total # threads with `-nth [MAX_TOTAL_NO_THREADS]`. Total # threads used by a pipeline will not exceed this limit. By default, it's 16 on SCG3/4, 8 on Kundaje clusters and 4 for others. The pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs according to corresponding input file sizes. For example of two fastqs (1GB and 2GB) with `-nth 6`, 2 and 4 threads are allocated for aligning 1GB and 2GB fastqs, respectively. The same policy applies to other multi-threaded tasks like deduping and peak calling.
 
 However, all multi-threaded tasks (like bwa, bowtie2, spp and macs2) still have their own max. memory (`-mem_APPNAME [MEM_APP]`) and walltime (`-wt_APPNAME [WALLTIME_APP]`) settings. Max. memory is <b>NOT PER CPU</b>. On Kundaje cluster (with SGE flag activated `bds -s sge chipseq.bds ...`) or on SCG3/4, the actual shell command submitted by BDS for each task is like the following:
 ```
