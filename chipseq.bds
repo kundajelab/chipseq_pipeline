@@ -23,7 +23,6 @@ macs2_for_pooled_rep_only := false help Generate signal tracks for pooled replic
 help() // print help and exit if no parameters are given
 
 include "modules/input.bds"
-include "modules/input_peak.bds"
 
 include "modules/align_bwa.bds"
 include "modules/postalign_bam.bds"
@@ -53,8 +52,8 @@ string{} tag_ctl, tag_ctl_label // key: replicate id, value: actual control used
 string{} idr_tr, idr_pr, idr_tr_png, idr_pr_png
 string idr_ppr, idr_opt, idr_consv, idr_ppr_png
 
-string{} signal_trk 	 // signal tracks from deepTools or bamCoverage: map with key ("$ctl,$rep")
-string{} signal_trk_pval, signal_trk_fc // signal track from macs2
+string{} sig_trk 	 	// signal tracks from deepTools or bamCoverage: map with key ("$ctl,$rep")
+string{} pval_bigwig, fc_bigwig // signal track from macs2
 
 string{} flagstat_qc, dup_qc, flagstat_nodup_qc, pbc_qc, xcor_qc, xcor_plot // QC logs: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
 
@@ -145,19 +144,23 @@ void chk_param() {
 	if ( !no_macs2 && ( is_final_stage_idr() || is_final_stage_peak() )  ) chk_callpeak_macs2()
 
 	// errors
-	if ( multimapping > 0 ) 	error("Multimapping is not available for chipseq pipeline!\n")
-	if ( !is_input_peak() && !no_spp && !ctl_exists() ) error("Cannot call peaks with SPP without controls!\n")
+	if ( multimapping > 0 ) \
+		error("Multimapping is not available for chipseq pipeline!\n")
+
+	if ( !is_input_peak() && !no_spp && !ctl_exists() ) \
+		error("Cannot call peaks with SPP without controls!\n")
+
 	if ( is_input_peak() && true_rep && get_num_rep() == 1 ) \
 		error("Cannot perform IDR with only one replicate!")
 
 	if ( has_pe_input_tag() && parse_number( subsample_xcor ) > 0 ) \
-			print("Warning: PE tagaligns cannot be subsampled for cross-corr. analysis.\n")
+		print("Warning: PE tagaligns cannot be subsampled for cross-corr. analysis.\n")
 
 	if ( has_pe_input_tag() && parse_number( subsample ) > 0 ) \
-			print("Warning: PE tagaligns cannot be subsampled!\n")
+		print("Warning: PE tagaligns cannot be subsampled!\n")
 
 	if ( has_pe_input_tag(1) && parse_number( subsample_ctl ) > 0 ) \
-			error("Warning: PE contol tagaligns cannot be subsampled!\n")
+		error("Warning: PE contol tagaligns cannot be subsampled!\n")
 }
 
 void align() {
@@ -183,7 +186,7 @@ void align() {
 			if ( is_input_fastq( ctl, rep ) ) {
 
 				fastqs := get_fastqs( ctl, rep )
-				filesize{key} = (fastqs[0]).size()*3 // multiply 3 to allocate more cpus for align
+				filesize{key} = (fastqs[0]).size()*3 // multiply 3 (weight) to allocate more cpus for align
 				if ( fastqs.size() > 1) filesize{key} += (fastqs[1]).size()
 			}
 			else if ( is_input_bam( ctl, rep ) ) 		filesize{key} = (get_bam( ctl, rep )).size()
@@ -470,13 +473,13 @@ void pool_tags() {
 		tag_pooled := _pool_tag( tags, aln_pooled_o_dir, "reps" )
 		tag{"0,pooled"} = tag_pooled
 
-		// graphviz, filetable for pooled tagalign
-		string[] graph_in
-		for ( int rep=1; rep<=get_num_rep(); rep++ ) graph_in.add("tagalign_(rep$rep)")
+			// graphviz, filetable for pooled tagalign
+			string[] graph_in
+			for ( int rep=1; rep<=get_num_rep(); rep++ ) graph_in.add("tagalign_(rep$rep)")
 
-		_add_to_graphviz( graph_in, tags, ["tagalign_(pooled)"], [tag_pooled] )
-		_add_to_filetable(["L1_align/pooled_rep/tagalign"], [tag_pooled] )
-		//
+			_add_to_graphviz( graph_in, tags, ["tagalign_(pooled)"], [tag_pooled] )
+			_add_to_filetable(["L1_align/pooled_rep/tagalign"], [tag_pooled] )
+			//
 
 	 	if ( !true_rep ) {
 		 	aln_ppr1_o_dir   := mkdir( "$out_dir/align/pooled_pseudo_reps/ppr1" )
@@ -491,18 +494,18 @@ void pool_tags() {
 			tag_ppr2 = tag_ppr2_
 			wait
 
-			// graphviz, filetable for ppr
-			string[] graph_in_pr1, graph_in_pr2
-			for ( int rep=1; rep<=get_num_rep(); rep++ ) {
-				graph_in_pr1.add("tagalign_(rep$rep-pr1)")
-				graph_in_pr2.add("tagalign_(rep$rep-pr2)")
-			}
+				// graphviz, filetable for ppr
+				string[] graph_in_pr1, graph_in_pr2
+				for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+					graph_in_pr1.add("tagalign_(rep$rep-pr1)")
+					graph_in_pr2.add("tagalign_(rep$rep-pr2)")
+				}
 
-			_add_to_graphviz( graph_in_pr1, tags_pr1, ["tagalign_(ppr1)"], [tag_ppr1] )
-			_add_to_graphviz( graph_in_pr2, tags_pr2, ["tagalign_(ppr2)"], [tag_ppr2] )
-			_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr1/tagalign"], [tag_ppr1] )
-			_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr2/tagalign"], [tag_ppr2] )
-			//
+				_add_to_graphviz( graph_in_pr1, tags_pr1, ["tagalign_(ppr1)"], [tag_ppr1] )
+				_add_to_graphviz( graph_in_pr2, tags_pr2, ["tagalign_(ppr2)"], [tag_ppr2] )
+				_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr1/tagalign"], [tag_ppr1] )
+				_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr2/tagalign"], [tag_ppr2] )
+				//
 
 			string tmp
 			(xcor_qc_ppr1, tmp) = _xcor( tag_ppr1_, qc_ppr1_o_dir, "ppr1", nth_xcor[0], "pooled_pseudo_reps/ppr1" )
@@ -517,13 +520,13 @@ void pool_tags() {
 		tag_ctl_pooled := _pool_tag( tags_ctl, aln_pooled_ctl_o_dir, "ctls" )
 		tag{"1,pooled"} = tag_ctl_pooled
 
-		// graphviz, filetable for pooled control tagalign
-		string[] graph_in
-		for ( int ctl : ids_ctl ) graph_in.add("tagalign_(ctl$ctl)")
+			// graphviz, filetable for pooled control tagalign
+			string[] graph_in
+			for ( int ctl : ids_ctl ) graph_in.add("tagalign_(ctl$ctl)")
 
-		_add_to_graphviz( graph_in, tags_ctl, ["tagalign_(ctl, pooled)"], [tag_ctl_pooled] )
-		_add_to_filetable(["L1_align/pooled_ctl/tagalign"], [tag_ctl_pooled] )
-		//		
+			_add_to_graphviz( graph_in, tags_ctl, ["tagalign_(ctl, pooled)"], [tag_ctl_pooled] )
+			_add_to_filetable(["L1_align/pooled_ctl/tagalign"], [tag_ctl_pooled] )
+			//		
 	}
 
 	wait_clear_tids()
@@ -765,7 +768,7 @@ void _call_peaks( string pc, int nth_peak ) { // pc: pc
 									"rep$rep-pr2", tag_ctl_label{rep}, nth_pr, pr2_hrchy )
 			}
 		}
-	}	
+	}
 
 	if ( !no_par ) monitor_par()	
 }
@@ -792,8 +795,8 @@ string _call_peaks( string peakcaller, string tag1, string tag1_ctl, string frag
 
 		// macs2 generates signal tracks
 		if ( make_sig ) {
- 			signal_trk_pval{label} 		= pval_bw
-			signal_trk_fc{label} 		= fc_bw
+ 			pval_bigwig{label} 		= pval_bw
+			fc_bigwig{label} 		= fc_bw
 		}
 
 		return narrowpeak // use narrowpeak
@@ -937,7 +940,7 @@ void _create_sig_trk( int rep ) {
 
 		sig_o_dir := mkdir( "$out_dir/signal/bam2bw/$info" )
 
-		signal_trk{key} = _bam_to_bw( filt_bam{key}, sig_o_dir, info, 1 )
+		sig_trk{key} = _bam_to_bw( filt_bam{key}, sig_o_dir, info, 1 )
 	}
 
 	if ( tag2bw && tag.hasKey(key) && xcor_qc.hasKey(key) ) {
@@ -945,7 +948,7 @@ void _create_sig_trk( int rep ) {
 		sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$info" )
 
 		fraglen := get_fraglen( xcor_qc{key} )
-		signal_trk{key} = _tag_to_bw( tag{key}, fraglen, sig_o_dir, info )
+		sig_trk{key} = _tag_to_bw( tag{key}, fraglen, sig_o_dir, info )
 		
 		if ( make_wig ) _tag_to_wig( tag{key}, fraglen, sig_o_dir, info )
 	}
@@ -1036,8 +1039,8 @@ string _html_chipseq_tracks() {
 
 	string[] trk_files, trk_types, trk_names
 
-	if ( signal_trk_pval.hasKey( "pooled" ) ) { trk_types += "bigwig"; trk_names += "$title pval (pooled)"; trk_files += signal_trk_pval{"pooled"} }
-	if ( signal_trk_fc.hasKey( "pooled" ) )   { trk_types += "bigwig"; trk_names += "$title fc (pooled)";   trk_files += signal_trk_fc{"pooled"}   }
+	if ( pval_bigwig.hasKey( "pooled" ) ) { trk_types += "bigwig"; trk_names += "$title pval (pooled)"; trk_files += pval_bigwig{"pooled"} }
+	if ( fc_bigwig.hasKey( "pooled" ) )   { trk_types += "bigwig"; trk_names += "$title fc (pooled)";   trk_files += fc_bigwig{"pooled"}   }
 
 	if ( peak_overlap != "" ) { trk_types += "hammock"; trk_names += "$title peak overlap"; trk_files += _peak_to_hammock( peak_overlap ) }
 
@@ -1046,8 +1049,8 @@ string _html_chipseq_tracks() {
 
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 
-		if ( signal_trk_pval.hasKey( "rep$rep" ) ) { trk_types += "bigwig"; trk_names += "$title pval (rep$rep)"; trk_files += signal_trk_pval{"rep$rep"} }
-		if ( signal_trk_fc.hasKey( "rep$rep" ) )   { trk_types += "bigwig"; trk_names += "$title fc (rep$rep)";   trk_files += signal_trk_fc{"rep$rep"}   }
+		if ( pval_bigwig.hasKey( "rep$rep" ) ) { trk_types += "bigwig"; trk_names += "$title pval (rep$rep)"; trk_files += pval_bigwig{"rep$rep"} }
+		if ( fc_bigwig.hasKey( "rep$rep" ) )   { trk_types += "bigwig"; trk_names += "$title fc (rep$rep)";   trk_files += fc_bigwig{"rep$rep"}   }
 		if ( idr_pr.hasKey(rep) ) {trk_types += "hammock"; trk_names += "$title peak idr (rep$rep-pr)"; trk_files += _peak_to_hammock( _get_idr_peak_trk( idr_pr{rep} ) ) }
 	}
 
