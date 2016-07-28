@@ -144,11 +144,11 @@ void chk_param() {
 	if ( !no_macs2 && ( is_final_stage_idr() || is_final_stage_peak() )  ) chk_callpeak_macs2()
 
 	// errors
+	if ( !is_input_peak() && !no_spp && !ctl_exists() && !is_final_stage_before_peak() ) \
+		error("Cannot call peaks with SPP without controls!\n")
+
 	if ( multimapping > 0 ) \
 		error("Multimapping is not available for chipseq pipeline!\n")
-
-	if ( !is_input_peak() && !no_spp && !ctl_exists() ) \
-		error("Cannot call peaks with SPP without controls!\n")
 
 	if ( is_input_peak() && true_rep && get_num_rep() == 1 ) \
 		error("Cannot perform IDR with only one replicate!")
@@ -1095,4 +1095,9 @@ bool is_final_stage_peak() {
 bool is_final_stage_idr() {
 
 	return (final_stage.toLower() == "idr") || (final_stage.toLower() == "")
+}
+
+bool is_final_stage_before_peak() {
+
+	return is_final_stage_bam() || is_final_stage_filt_bam() || is_final_stage_tag() || is_final_stage_xcor()
 }
