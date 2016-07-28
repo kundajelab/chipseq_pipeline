@@ -18,7 +18,7 @@ make_wig 	:= false	help (BETA) Create wig (works with '-tag2bw' only).
 no_macs2 	:= false	help No MACS2 peak calling and signal track generation.
 no_spp 		:= false 	help No SPP peak calling.
 macs2_for_pooled_rep_only := false help Generate signal tracks for pooled replicate only with MACS2.
-
+use_pval_idr_rank := false 	help Force to use --rank p.value in IDR.
 
 help() // print help and exit if no parameters are given
 
@@ -113,6 +113,7 @@ void read_conf_chipseq() {
 	no_macs2 	= get_conf_val_bool( no_macs2, 		["no_macs2"])
 	no_spp 		= get_conf_val_bool( no_spp, 		["no_spp"])
 	macs2_for_pooled_rep_only = get_conf_val_bool( macs2_for_pooled_rep_only, 	["macs2_for_pooled_rep_only"] )
+	use_pval_idr_rank = get_conf_val_bool( use_pval_idr_rank, 	["use_pval_idr_rank"] )
 }
 
 void print_chipseq() {
@@ -133,6 +134,9 @@ void print_chipseq() {
 	print( "No MACS2 peak calling/sig. trk. gen.\t: $no_macs2\n")
 	print( "No SPP peak calling\t\t\t: $no_spp\n")
 	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")	
+	print( "Force to use --rank p.value in IDR\t: $use_pval_idr_rank\n")	
+
+
 }
 
 void chk_param() {
@@ -877,13 +881,15 @@ void do_idr() {
 
 	// IDR on true replicates (on every pair of peaks from replicates)
 
+	rank := use_pval_idr_rank ? "p.value" : "signal.value"
+
 	for ( int i=1; i<=get_num_rep(); i++ ) {
 
 		for ( int j=i+1; j<=get_num_rep(); j++ ) {
 
 			idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep$i-rep$j" )
 
-			(idr_tr{"$i,$j"}, idr_tr_png{"$i,$j"} ) = _idr2( peak{"spp,$i"}, peak{"spp,$j"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_true_o_dir, "rep$i-rep$j", \
+			(idr_tr{"$i,$j"}, idr_tr_png{"$i,$j"} ) = _idr2( peak{"spp,$i"}, peak{"spp,$j"}, peak_pooled{"spp"}, idr_thresh, rank, idr_true_o_dir, "rep$i-rep$j", \
 									"peak_spp", ["rep$i","rep$j","pooled"], "true_reps/rep$i-rep$j" )
 		}
 
@@ -892,7 +898,7 @@ void do_idr() {
 			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$i" )
 
                         if ( !no_pseudo_rep ) \
-				(idr_pr{i}, idr_pr_png{i}) = _idr2( peak_pr1{"spp,$i"}, peak_pr2{"spp,$i"}, peak{"spp,$i"}, idr_thresh, "signal.value", idr_pr_o_dir, "rep$i-pr", \
+				(idr_pr{i}, idr_pr_png{i}) = _idr2( peak_pr1{"spp,$i"}, peak_pr2{"spp,$i"}, peak{"spp,$i"}, idr_thresh, rank, idr_pr_o_dir, "rep$i-pr", \
 								"peak_spp", ["rep$i-pr1","rep$i-pr2","rep$i"], "pseudo_reps/rep$i" )
 		}
 	}
@@ -901,7 +907,7 @@ void do_idr() {
 
 		idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
 
-		(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, "signal.value", idr_ppr_o_dir, "ppr", \
+		(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, rank, idr_ppr_o_dir, "ppr", \
 							"peak_spp", ["ppr1","ppr2","pooled"], "pooled_pseudo_reps" )
 	}
 
