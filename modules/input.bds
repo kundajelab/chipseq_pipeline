@@ -26,11 +26,11 @@ void init_input() {
 
 /////////////////// ctl==0: non-control, ctl==1: control
 
-void chk_input( bool true_rep ) {
+void chk_input( bool true_rep, bool no_pseudo_rep ) {
 
 	if ( is_input_peak() ) {
 
-		chk_input_peak( true_rep )
+		chk_input_peak( true_rep, no_pseudo_rep )
 		return
 	}	
 

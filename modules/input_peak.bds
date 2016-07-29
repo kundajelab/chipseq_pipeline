@@ -11,7 +11,7 @@ help         For two PR (self-pseudo-replicates), use '-peak[REP_ID]_pr1' and '-
 help         For two PPR (pooled pseudo-replicates), use '-peak_ppr1' and '-peak_ppr2'
 
 
-void chk_input_peak( bool true_rep ) {
+void chk_input_peak( bool true_rep, bool no_pseudo_rep ) {
 
 	if ( !is_input_peak() ) return // read peaks here
 
@@ -20,6 +20,7 @@ void chk_input_peak( bool true_rep ) {
 
 		for (int pse=0; pse<=2; pse++) { // pse(pseudo)==0 : true rep, pse==1,2 : self-pseudo rep 1,2
 			if ( true_rep && pse > 0 ) continue
+			if ( no_pseudo_rep && rep != 0 && pse > 0 ) continue
 
 			peak_ := get_peak(rep,pse)
 			suffix1 := rep==0 ? "replicate" : "replicate $rep"

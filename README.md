@@ -285,7 +285,6 @@ $ bds chipseq.bds \
 ```
 
 
-
 ### Parallelization and multi-threading (IMPORTANT!)
 
 For completely serialized jobs, add `-no_par` to the command line. Individual tasks can still go multi-threaded. <b>IMPORTANT!</b> You can set up a limit for total # threads with `-nth [MAX_TOTAL_NO_THREADS]`. Total # threads used by a pipeline will not exceed this limit. By default, it's 16 on SCG3/4, 8 on Kundaje clusters and 4 for others. The pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs according to corresponding input file sizes. For example of two fastqs (1GB and 2GB) with `-nth 6`, 2 and 4 threads are allocated for aligning 1GB and 2GB fastqs, respectively. The same policy applies to other multi-threaded tasks like deduping and peak calling.

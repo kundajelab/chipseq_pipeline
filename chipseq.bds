@@ -72,7 +72,7 @@ void main() { // chipseq pipeline starts here
 
 	chk_param() // check if parameters are valid
 
-	chk_input( true_rep ) // if inputs are fastq, bam, or tagalign, check if they exist
+	chk_input( true_rep, no_pseudo_rep ) // if inputs are fastq, bam, or tagalign, check if they exist
 	
 	align() // align and postalign
 
