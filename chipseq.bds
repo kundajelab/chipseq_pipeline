@@ -4,6 +4,8 @@
 
 help == chipseq pipeline settings
 
+type 		:= "TF" 	help Type of ChIP-Seq pipeline. TF or histone (default: TF).
+histone 	:= false	help Histone ChIP-Seq. Equivalent to '-type histone'
 final_stage	:= "" 		help Final stage for pipeline (bam, filt_bam, tag, xcor and peak).
 true_rep   	:= false	help Call peaks on true replicates only.
 no_pseudo_rep	:= false 	help Do not call peaks on self pseudo replicates.
@@ -15,11 +17,8 @@ subsample_ctl 	:= "0" 		help # reads to subsample control if non-zero (recommend
 bam2bw 		:= false	help (BETA) Create bigwig from filtered bam (using bamCoverage in deepTools).
 tag2bw 		:= false 	help (BETA) Create bigwig from tagalign (using align2rawsignal).
 make_wig 	:= false	help (BETA) Create wig (works with '-tag2bw' only).
-no_macs2 	:= false	help No MACS2 peak calling and signal track generation.
-no_spp 		:= false 	help No SPP peak calling.
-macs2_for_pooled_rep_only := false 	help Generate signal tracks for pooled replicate only with MACS2.
+macs2_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pooled replicate only.
 idr_rank 	:= "signal.value"  	help Scoring column in narrow peak files for IDR. Use signal.value for SPP peaks, and p.value for MACS2 peaks (default: signal.value).
-
 
 help() // print help and exit if no parameters are given
 
@@ -100,6 +99,8 @@ void init_chipseq() {
 
 void read_conf_chipseq() {
 
+	type		= get_conf_val( type,			["type"] )
+	histone 	= get_conf_val_bool( histone, 		["histone"] )
 	final_stage	= get_conf_val( final_stage, 		["final_stage"] )
 	true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
 	no_pseudo_rep	= get_conf_val_bool( no_pseudo_rep, 	["no_pseudo_rep"] )
@@ -111,15 +112,16 @@ void read_conf_chipseq() {
 	bam2bw 		= get_conf_val_bool( bam2bw, 		["bam2bw"])
 	tag2bw 		= get_conf_val_bool( tag2bw, 		["tag2bw"])
 	make_wig	= get_conf_val_bool( make_wig, 		["make_wig"])
-	no_macs2 	= get_conf_val_bool( no_macs2, 		["no_macs2"])
-	no_spp 		= get_conf_val_bool( no_spp, 		["no_spp"])
 	macs2_for_pooled_rep_only = get_conf_val_bool( macs2_for_pooled_rep_only, 	["macs2_for_pooled_rep_only"] )
 	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
+
+	if ( histone ) type = "histone"
 }
 
 void print_chipseq() {
 
 	print( "\n\n== chipseq pipeline settings\n")
+	print( "Type of ChIP-Seq pipeline\t\t: $type\n")
 	print( "Final stage for ChIP-Seq\t\t: $final_stage\n" )
 	print( "# replicates \t\t\t\t: "+get_num_rep()+"\n" )
 	print( "Peak calling for true reps only\t\t: $true_rep\n" )
@@ -132,12 +134,8 @@ void print_chipseq() {
 	print( "Create bigwig from filt_bam\t\t: $bam2bw\n")
 	print( "Create bigwig from tagalign\t\t: $tag2bw\n")
 	print( "Create wig\t\t\t\t: $make_wig\n" )
-	print( "No MACS2 peak calling/sig. trk. gen.\t: $no_macs2\n")
-	print( "No SPP peak calling\t\t\t: $no_spp\n")
 	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")	
 	print( "Scoring column for IDR\t\t\t: $idr_rank\n")	
-
-
 }
 
 void chk_param() {
@@ -146,17 +144,20 @@ void chk_param() {
 	if ( has_input_fastq() ) 	chk_align_bwa()
 	if ( tag2bw ) 			chk_signal_aln2rawsig()
 	if ( is_final_stage_idr() ) 	chk_idr()
-	if ( !no_macs2 && ( is_final_stage_idr() || is_final_stage_peak() )  ) chk_callpeak_macs2()
+	if ( is_final_stage_idr() || is_final_stage_peak() ) chk_callpeak_macs2()
 
 	// errors
-	if ( !is_input_peak() && !no_spp && !ctl_exists() && !is_final_stage_before_peak() ) \
-		error("Cannot call peaks with SPP without controls!\n")
+	if ( !is_input_peak() && need_spp() && !ctl_exists() && !is_final_stage_before_peak() ) \
+		error("Cannot call peaks (SPP) without controls!\n")
 
 	if ( multimapping > 0 ) \
 		error("Multimapping is not available for chipseq pipeline!\n")
 
 	if ( is_input_peak() && true_rep && get_num_rep() == 1 ) \
 		error("Cannot perform IDR with only one replicate!")
+
+	if ( is_histone_chipseq() && macs2_for_pooled_rep_only ) \
+		macs2_for_pooled_rep_only = false
 
 	if ( has_pe_input_tag() && parse_number( subsample_xcor ) > 0 ) \
 		print("Warning: PE tagaligns cannot be subsampled for cross-corr. analysis.\n")
@@ -636,8 +637,11 @@ void call_peaks() {
 	if ( is_input_peak() ) return
 
 	// distribute_nth # threads according to peak callers, priority for spp than macs2 (4 vs 1)
-	// because macs2 is single threaded.
+	// spp: multi-threaded, macs2: single threaded
 	int{} nth_peak  
+
+	no_spp 	 := !need_spp()
+	no_macs2 := !need_macs2()
 
 	if ( !no_spp && !no_macs2 ) 	( nth_peak{"spp"}, nth_peak{"macs2"} ) = distribute_nth( nth, [4,1] )
 	else if ( !no_spp ) 		nth_peak{"spp"} = nth
@@ -820,15 +824,18 @@ void read_input_peak() {
 			if ( no_pseudo_rep && rep != 0 && pse > 0 ) continue
 
 			peak_ := get_peak(rep,pse)
+
+			pc := get_peak_caller()
+
 			if ( rep == 0 ) {
-				if ( pse == 0 )		peak_pooled{"spp"} 	= peak_
-				else if ( pse == 1 )	peak_ppr1{"spp"} 	= peak_
-				else if ( pse == 2 )	peak_ppr2{"spp"} 	= peak_
+				if ( pse == 0 )		peak_pooled{"$pc"} 	= peak_
+				else if ( pse == 1 )	peak_ppr1{"$pc"} 	= peak_
+				else if ( pse == 2 )	peak_ppr2{"$pc"} 	= peak_
 			}
 			else {
-				if ( pse == 0 )		peak{"spp,$rep"} 	= peak_
-				else if ( pse == 1 )	peak_pr1{"spp,$rep"} 	= peak_
-				else if ( pse == 2 )	peak_pr2{"spp,$rep"} 	= peak_
+				if ( pse == 0 )		peak{"$pc,$rep"} 	= peak_
+				else if ( pse == 1 )	peak_pr1{"$pc,$rep"} 	= peak_
+				else if ( pse == 2 )	peak_pr2{"$pc,$rep"} 	= peak_
 			}
 		}
 	}
@@ -837,34 +844,34 @@ void read_input_peak() {
 void naive_overlap() {
 
 	if ( !(is_final_stage_peak() || is_final_stage_idr()) ) return
+	if ( !peak_exists() ) return // if no peaks from peak caller exit
 
-	if ( no_spp ) return
-
-	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
+	// peak caller
+	pc := get_peak_caller()
 
 	// naive overlap peak
 
-	overlap_o_dir := mkdir( "$out_dir/peak/spp/overlap" )
+	overlap_o_dir := mkdir( "$out_dir/peak/$pc/overlap" )
 
 	if ( get_num_rep() == 1 ) {
 
 		if ( !true_rep ) {
 
-                        if ( !no_pseudo_rep ) \
-				peak_overlap = _naive_overlap_peak( "regionPeak", peak{"spp,1"}, peak_pr1{"spp,1"}, peak_pr2{"spp,1"}, overlap_o_dir, "peak", \
-									"peak_spp", "spp/overlap")
+			if ( !no_pseudo_rep ) \
+				peak_overlap = _naive_overlap_peak( "regionPeak", peak{"$pc,1"}, peak_pr1{"$pc,1"}, peak_pr2{"$pc,1"}, overlap_o_dir, "peak", \
+									"peak_$pc", "$pc/overlap")
 		}
 	}
 	else {
 		string[] peaks // make array of peaks from true replicates
-		for ( int rep=1; rep<=get_num_rep(); rep++ ) peaks.add( peak{"spp,$rep"} )
+		for ( int rep=1; rep<=get_num_rep(); rep++ ) peaks.add( peak{"$pc,$rep"} )
 
-		peak_ppr1_ := true_rep ? "" : peak_ppr1{"spp"}
-		peak_ppr2_ := true_rep ? "" : peak_ppr2{"spp"}
+		peak_ppr1_ := true_rep ? "" : peak_ppr1{"$pc"}
+		peak_ppr2_ := true_rep ? "" : peak_ppr2{"$pc"}
 
-		peak_overlap = _naive_overlap_peak( "regionPeak", peak_pooled{"spp"}, peaks, \
+		peak_overlap = _naive_overlap_peak( "regionPeak", peak_pooled{"$pc"}, peaks, \
 								  peak_ppr1_, peak_ppr2_, overlap_o_dir, "peak",\
-								"peak_spp", "spp/overlap")
+								"peak_$pc", "$pc/overlap")
 	}
 
 	wait_clear_tids()
@@ -875,9 +882,11 @@ void naive_overlap() {
 void do_idr() {
 
 	if ( !is_final_stage_idr() ) return
-	if ( no_spp ) return
+	if ( is_histone_chipseq() ) return
+	if ( !peak_exists() ) return // if no peaks from peak caller exit
 
-	if ( !peak.hasKey("spp,1") ) return // if no peaks from SPP exit
+	// peak caller
+	pc := get_peak_caller()
 
 	idr_o_dir 	:= mkdir( "$out_dir/peak/idr" )
 
@@ -889,8 +898,8 @@ void do_idr() {
 
 			idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep$i-rep$j" )
 
-			(idr_tr{"$i,$j"}, idr_tr_png{"$i,$j"} ) = _idr2( peak{"spp,$i"}, peak{"spp,$j"}, peak_pooled{"spp"}, idr_thresh, idr_rank, idr_true_o_dir, "rep$i-rep$j", \
-									"peak_spp", ["rep$i","rep$j","pooled"], "true_reps/rep$i-rep$j" )
+			(idr_tr{"$i,$j"}, idr_tr_png{"$i,$j"} ) = _idr2( peak{"$pc,$i"}, peak{"$pc,$j"}, peak_pooled{"$pc"}, idr_thresh, idr_rank, idr_true_o_dir, "rep$i-rep$j", \
+									"peak_$pc", ["rep$i","rep$j","pooled"], "true_reps/rep$i-rep$j" )
 		}
 
 		if ( !true_rep ) {
@@ -898,8 +907,8 @@ void do_idr() {
 			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$i" )
 
                         if ( !no_pseudo_rep ) \
-				(idr_pr{i}, idr_pr_png{i}) = _idr2( peak_pr1{"spp,$i"}, peak_pr2{"spp,$i"}, peak{"spp,$i"}, idr_thresh, idr_rank, idr_pr_o_dir, "rep$i-pr", \
-								"peak_spp", ["rep$i-pr1","rep$i-pr2","rep$i"], "pseudo_reps/rep$i" )
+				(idr_pr{i}, idr_pr_png{i}) = _idr2( peak_pr1{"$pc,$i"}, peak_pr2{"$pc,$i"}, peak{"$pc,$i"}, idr_thresh, idr_rank, idr_pr_o_dir, "rep$i-pr", \
+								"peak_$pc", ["rep$i-pr1","rep$i-pr2","rep$i"], "pseudo_reps/rep$i" )
 		}
 	}
 
@@ -907,8 +916,8 @@ void do_idr() {
 
 		idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
 
-		(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"spp"}, peak_ppr2{"spp"}, peak_pooled{"spp"}, idr_thresh, idr_rank, idr_ppr_o_dir, "ppr", \
-							"peak_spp", ["ppr1","ppr2","pooled"], "pooled_pseudo_reps" )
+		(idr_ppr, idr_ppr_png) = _idr2( peak_ppr1{"$pc"}, peak_ppr2{"$pc"}, peak_pooled{"$pc"}, idr_thresh, idr_rank, idr_ppr_o_dir, "ppr", \
+							"peak_$pc", ["ppr1","ppr2","pooled"], "pooled_pseudo_reps" )
 	}
 
 	wait_clear_tids()
@@ -1106,4 +1115,38 @@ bool is_final_stage_idr() {
 bool is_final_stage_before_peak() {
 
 	return is_final_stage_bam() || is_final_stage_filt_bam() || is_final_stage_tag() || is_final_stage_xcor()
+}
+
+bool is_TF_chipseq() {
+
+	return type.toLower() == "tf"
+}
+
+bool is_histone_chipseq() {
+
+	return type.toLower() == "histone"
+}
+
+string get_peak_caller() {
+
+	if ( is_TF_chipseq() ) 		 return "spp"
+	else if ( is_histone_chipseq() ) return "macs2"	
+	else 				 return ""
+}
+
+bool peak_exists() {
+
+	pc := get_peak_caller()
+
+	return peak.hasKey("$pc,1")
+}
+
+bool need_spp() {
+
+	return !is_histone_chipseq()
+}
+
+bool need_macs2() {
+
+	return true
 }
