@@ -23,7 +23,7 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 
 <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL_Kundaje.md">Kundaje lab</a>
 
-<a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL_SCG.md">SCG3/4</a>
+<a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/INSTALL_SCG_Sherlock.md">Stanford SCG3/4 and Sherlock clusters</a>
 
 
 ### Usage
@@ -59,6 +59,13 @@ bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 The pipeline automatically determines if each task has finished or not (by comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
 
 <b>IMPORTANT!</b> On servers with a cluster engine (such as Sun Grid Engine), <b>DO NOT QSUB BDS COMMAND</b>. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub) and manage its sub tasks.
+
+
+
+### Histone ChIP-Seq
+
+Simply add `-histone` or `-type histone` to the command line. Peaks will be called with MACS2 only and those peaks will be used for naive overlap thresholding. No IDR for histone ChIP-Seq.
+
 
 
 ### Using Species file
@@ -222,9 +229,7 @@ $ bds chipseq.bds \
 
 ### Peak calling method
 
-Peak calling with SPP and signal track generation with MACS2 are by default. To turn off SPP or MACS2, use `-no_spp` or `-no_macs2`,respectively.
-If you want to call peaks on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate) only, add `-true_rep`.
-
+Peak calling with SPP and signal track generation with MACS2 are by default. To call peaks on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate) only, add `-true_rep`.
 Both SPP and MACS2 generate peaks but signal tracks (pvalue and fold enrichment) are generated from MACS2 only. IDR analysis will take peaks from SPP. For SPP, no additional parameter is required. For macs2, define additional parameters (`-chrsz`, `-gensz`).
 
 Example for both SPP and MACS2
@@ -234,16 +239,7 @@ $ bds chipseq.bds \
 -chrsz /DATA/hg19.chrom.sizes \
 -gensz hs
 ```
-Seq is the directory where reference genome files exist. Chrsz is chrome sizes file. Gensz is hs for human and mm for mouse.
-
-If you don't want SPP peaks and IDR on them and want to get peaks and signal tracks from MACS2:
-```
--no_spp -chrsz /DATA/hg19.chrom.sizes -gensz hs
-```
-If you don't want to get peaks and signal tracks from MACS2:
-```
--no_macs2
-```
+Seq is the directory where reference genome files exist. Chrsz is chromosome sizes file. Gensz is hs for human and mm for mouse.
 
 
 

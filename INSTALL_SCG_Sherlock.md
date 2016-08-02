@@ -42,9 +42,10 @@ $ cp bds.config ./utils/bds_scr $HOME/.bds
 ```
 If `install_dependencies.sh` fails, run `./uninstall_dependencies.sh`, fix problems and then try `./install_dependencies.sh` again.
 
+
 ### Genome data files
 
-For SCG3/4 (carmack*, crick*, scg3*, scg4*), the pipeline automatically determines the type of servers and set shell environments and species database. Skip all genome-specific parameters (e.g. bwa index) and just specify species.
+For SCG3/4 (carmack*, crick*, scg3*, scg4*) and Sherlock (sherlock*.stanford.edu) clusters, the pipeline automatically determines the type of servers and set shell environments and species database. Skip all genome-specific parameters (e.g. bwa index) and just specify species.
 ```
 $ bds chipseq.bds ... -species [SPECIES; hg19, mm9, ... ]
 ```
