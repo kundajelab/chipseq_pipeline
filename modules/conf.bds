@@ -5,8 +5,8 @@ include "base.bds"
 
 
 help == configuration file settings
-c		:= "" 					help Configuration file path.
-env		:= "$script_dir/conf/default.env"	help Environment file path.
+c		:= "" 				help Configuration file path.
+env		:= "$script_dir/default.env"	help Environment file path.
 
 
 string{} conf 	// map for configuration
@@ -41,7 +41,7 @@ void print_conf() {
 
 string{} read_conf( string file, string section ) {
 
-	section = section.trim().toLower()
+	section = section.trim()
 
 	string{} ret
 
@@ -68,7 +68,7 @@ string{} read_conf( string file, string section ) {
 			// find alias if exists
 			arr := line2.split(":")
 
-			if ( arr.size() > 1 ) 	alias = arr[1].trim().toLower()
+			if ( arr.size() > 1 ) 	alias = arr[1].trim()
 
 			hostnames = arr[0].split(",")
 
@@ -76,27 +76,29 @@ string{} read_conf( string file, string section ) {
 
 				can_read = false
 			}
-			else { 
+			else {
 
 				for ( string host : hostnames ) {
 
-					host = host.trim().toLower()
+					host = host.trim()
 
-					if ( section == host ) {
+					if ( match_str_one_asterisk( section, host ) ) { // one asterisk (wildcard chr: *) is allowed in hostname string
 
 						if ( section == alias ) {
 							error("Recursion (section name == alias) found in a conf. or an env. file! (file: $file, section: $section, alias: $alias)\n")
 						}
 						else if ( alias != "" ) {
-							print("\tReading parameters from section ($section) or alias($alias) in file($file)...\n")
+							print("\tReading parameters from section alias($alias) in file($file)...\n")
 
 							return read_conf( file, alias )
 						}
 						else {
-							print("\tReading parameters from section ($section) or alias($alias) in file($file)...\n")
+							print("\tReading parameters from section ($host) in file($file)...\n")
 
 							found_section = true
 							can_read = true
+
+							break;
 						}
 					}
 					else {

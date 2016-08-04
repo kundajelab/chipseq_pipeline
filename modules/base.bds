@@ -208,6 +208,35 @@ string make_x_basename_wo_gz( string file1, string file2, string suffix ) {
 	return ret
 }
 
+
+bool match_str_one_asterisk( string str, string search ) {
+
+	idx_asterisk := search.indexOf("*")
+
+	if ( idx_asterisk > -1 ) { // if * found
+
+		if ( search.lastIndexOf("*") != idx_asterisk ) \
+			error("multiple asterisks (*) not allowed in a search string in match_str_one_asterisk($str,$search)!")
+
+		arr := search.split("\\*") // split takes RegEx
+
+		if ( idx_asterisk == 0 ) { // * at the beginning
+			return str.endsWith( arr[1] )
+		}
+		else if ( idx_asterisk == search.length()-1 ) { // * at the end
+
+			return str.startsWith( arr[0] )
+		}
+		else { // * in the middle
+
+			return str.startsWith( arr[0] ) && str.endsWith( arr[1] )
+		}
+	}
+	else { // if * not found
+		return str == search
+	}
+}
+
 int parse_time( string str ) {
 	trimmed := str.trim().toLower()
 

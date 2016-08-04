@@ -71,7 +71,7 @@ void read_species() { // check for species configruation files
 					_conf = read_conf( path, species ) // read species file
 				}
 
-				print("Species file (or conf./env. file) found ($path,loop:$i).\n")
+				print("\tSpecies file (or conf./env. file) found ($path,loop:$i).\n")
 
 				if ( _conf.size() == 0 ) continue // no species section (like [hg19], [mm9], ...) found, keep going with next
 
