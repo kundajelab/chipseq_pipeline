@@ -58,7 +58,6 @@ string{} pval_bigwig, fc_bigwig // signal track from macs2
 string{} flagstat_qc, dup_qc, flagstat_nodup_qc, pbc_qc, xcor_qc, xcor_plot // QC logs: map with key ("$ctl,$rep" or "$ctl,$rep,$pe" for PE fastqs)
 
 string{} xcor_qc_pr1, xcor_qc_pr2
-string xcor_qc_ppr1, xcor_qc_ppr2
 string idr_qc
 
 
@@ -513,9 +512,6 @@ void pool_tags() {
 				_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr2/tagalign"], [tag_ppr2] )
 				//
 
-			string tmp
-			(xcor_qc_ppr1, tmp) = _xcor( tag_ppr1_, qc_ppr1_o_dir, "ppr1", nth_xcor[0], "pooled_pseudo_reps/ppr1" )
-			(xcor_qc_ppr2, tmp) = _xcor( tag_ppr2_, qc_ppr2_o_dir, "ppr2", nth_xcor[1], "pooled_pseudo_reps/ppr2" )
 		}
 	}
 
