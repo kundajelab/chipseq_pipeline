@@ -551,8 +551,42 @@ Number of threads created by BDS exceeds limit (`ulimit -a`). BDS created lots o
 
 12) Task disappeared
 
-Increase max. memory (`-mem` or `-mem_APPNAME`) for the task.
+Increase max. memory (`-mem` or `-mem_APPNAME`) for the task of failure.
 
+
+13) File exists, No file or directory (related to parallel conda activations)
+
+This is a known bug in conda (<a href="https://github.com/conda/conda/issues/2837" target="_blank">#2837</a>) and has not been fixed yet even in the latest version (4.2.1).
+Downgrade conda to 4.0.5 or 4.0.10. 
+
+```
+Traceback (most recent call last):
+  File "/home/leepc12/miniconda3/bin/conda", line 6, in <module>
+    sys.exit(main())
+  File "/home/leepc12/miniconda3/lib/python3.5/site-packages/conda/cli/main.py", line 48, in main
+    activate.main()
+  File "/home/leepc12/miniconda3/lib/python3.5/site-packages/conda/cli/activate.py", line 135, in main
+    conda.install.symlink_conda(prefix, root_dir, shell)
+  File "/home/leepc12/miniconda3/lib/python3.5/site-packages/conda/install.py", line 596, in symlink_conda
+    symlink_conda_hlp(prefix, root_dir, where, symlink_fn)
+  File "/home/leepc12/miniconda3/lib/python3.5/site-packages/conda/install.py", line 613, in symlink_conda_hlp
+    symlink_fn(root_file, prefix_file)
+FileExistsError: [Errno 17] File exists: '/home/leepc12/miniconda3/bin/conda' -> '/home/leepc12/miniconda3/envs/bds_atac/bin/conda'
+
+Traceback (most recent call last):
+  File "/home/leepc12/miniconda3/bin/conda", line 6, in <module>
+    sys.exit(main())
+  File "/home/leepc12/miniconda3/lib/python3.5/site-packages/conda/cli/main.py", line 48, in main
+    activate.main()
+  File "/home/leepc12/miniconda3/lib/python3.5/site-packages/conda/cli/activate.py", line 135, in main
+    conda.install.symlink_conda(prefix, root_dir, shell)
+  File "/home/leepc12/miniconda3/lib/python3.5/site-packages/conda/install.py", line 596, in symlink_conda
+    symlink_conda_hlp(prefix, root_dir, where, symlink_fn)
+  File "/home/leepc12/miniconda3/lib/python3.5/site-packages/conda/install.py", line 610, in symlink_conda_hlp
+    os.remove(prefix_file)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/leepc12/miniconda3/envs/bds_atac_py3/bin/conda'
+```
+`
 
 ### Contributors
 

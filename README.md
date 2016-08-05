@@ -524,6 +524,8 @@ Check if number of reads in your control tagalign is too high, and then reduce i
 Try with half of the original number of reads in control.
 
 
+<a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>More troubleshooting</a>
+
 
 ### Contributors
 

@@ -43,6 +43,17 @@ $ cp bds.config ./utils/bds_scr $HOME/.bds
 If `install_dependencies.sh` fails, run `./uninstall_dependencies.sh`, fix problems and then try `./install_dependencies.sh` again.
 
 
+### Downgrading conda version on CentOS (Sherlock clusters)
+
+There is a known issue (has not beed fixed) in conda (`File exists` error when parallel conda activation). We recommend to downgrade your conda version to `4.0.5` or `4.0.10`. Make sure that you have already installed the latest Miniconda.
+```
+$ git clone https://github.com/conda/conda
+$ cd conda
+$ git checkout tag/4.0.5
+$ python setup.py install
+$ conda --version 	# check conda version
+```
+
 ### Genome data files
 
 For SCG3/4 (carmack*, crick*, scg3*, scg4*) and Sherlock (sherlock*.stanford.edu) clusters, the pipeline automatically determines the type of servers and set shell environments and species database. Skip all genome-specific parameters (e.g. bwa index) and just specify species.
