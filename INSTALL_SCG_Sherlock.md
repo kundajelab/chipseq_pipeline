@@ -1,9 +1,9 @@
 ### Installation instruction
 
-Install Anaconda Python3 (or Miniconda3) on your system. If you already have it, skip this. Get the latest Miniconda3 installer at <a href="http://conda.pydata.org/miniconda.html" target=_blank>http://conda.pydata.org/miniconda.html</a> and install it. The following command is for Anaconda Python3 on 64bit Linux system.
+Install Anaconda Python3 (or Miniconda3) on your system. If you already have it, skip this. Get the Miniconda3 installer (4.0.5) at <a href="https://repo.continuum.io/miniconda/Miniconda3-4.0.5-Linux-x86_64.sh" target=_blank>https://repo.continuum.io/miniconda/Miniconda3-4.0.5-Linux-x86_64.sh</a> and install it.
 ```
-$ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-$ bash Miniconda3-latest-Linux-x86_64.sh
+$ wget https://repo.continuum.io/miniconda/Miniconda3-4.0.5-Linux-x86_64.sh
+$ bash Miniconda3-4.0.5-Linux-x86_64.sh
 ```
 Choose `yes` for the final question. If you choose `no`, you need to manually add Miniconda3 to your `$HOME/.bashrc`.
 ```
@@ -42,17 +42,6 @@ $ cp bds.config ./utils/bds_scr $HOME/.bds
 ```
 If `install_dependencies.sh` fails, run `./uninstall_dependencies.sh`, fix problems and then try `./install_dependencies.sh` again.
 
-
-### Downgrading conda version on CentOS (Sherlock clusters)
-
-There is a known issue (has not beed fixed) in conda (`File exists` error when parallel conda activation). We recommend to downgrade your conda version to `4.0.5` or `4.0.10`. Make sure that you have already installed the latest Miniconda.
-```
-$ git clone https://github.com/conda/conda
-$ cd conda
-$ git checkout tag/4.0.5
-$ python setup.py install
-$ conda --version 	# check conda version
-```
 
 ### Genome data files
 
