@@ -12,7 +12,7 @@ mapq_thresh	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
 rm_chr_from_tag := "" 		help If specified, exclude lines with specified string from tagaligns. (example: 'other|ribo|mito|_', '_', default: blank)
 
 wt_dedup 	:= "23h" 	help Walltime for post-alignment filtering (default: 23h, 24:00:00).
-mem_dedup	:= "20G" 	help Max. memory for post-alignment filtering (default: 20G).
+mem_dedup	:= "12G" 	help Max. memory for post-alignment filtering (default: 12G).
 
 use_sambamba_markdup	:= false	help Use sambamba markdup instead of Picard MarkDuplicates (default: false).
 
