@@ -9,7 +9,7 @@ help == align bwa settings (requirements: -bwa_idx)
 param_bwa_aln	:= "-q 5 -l 32 -k 2" 	help Parameters for bwa aln (default: "-q 5 -l 32 -k 2").
 
 wt_bwa		:= "23h"		help Walltime for bwa (default: 23, 23:00:00).
-mem_bwa		:= "20G"	 	help Max. memory for bwa (default: 20G).
+mem_bwa		:= "10G"	 	help Max. memory for bwa (default: 10G).
 
 
 init_align_bwa()
