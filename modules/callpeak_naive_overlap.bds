@@ -22,6 +22,7 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 	out 	:= peak_final
 	
 	taskName:= "naive_overlap_thresh " + label
+	timeout := 3600 // to get queued fast
 
 	wait_par( cpus )
 
@@ -30,9 +31,9 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string peak_rep
 		sys $shcmd_init
 
 		//# Find pooled peaks that overlap Rep1 and Rep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  >= 0.5
-		sys intersectBed -wo -a $peak_pooled -b $peak_rep1 | \
+		sys intersectBed -wo -a <(zcat -f $peak_pooled) -b <(zcat -f $peak_rep1) | \
 			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | \
-			intersectBed -wo -a stdin -b $peak_rep2 | \
+			intersectBed -wo -a stdin -b <(zcat -f $peak_rep2) | \
 			awk 'BEGIN{FS="\t";OFS="\t"} $awk_param' | cut -f $cut_param | sort | uniq | gzip -c > $peak_PooledInRep1AndRep2
 
 		//# Combine peak lists
@@ -75,18 +76,18 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks,
 	string command
 	for (int i=0;i<peaks.size();i++) {
 		if ( i == 0 ) {
-			command += "intersectBed -wo -a $peak_pooled -b " + peaks[i] + " | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | "
+			command += "intersectBed -wo -a <(zcat -f $peak_pooled) -b <(zcat -f " + peaks[i] + ") | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | "
 		}
 		else {
-			command += "intersectBed -wo -a stdin -b " + peaks[i] + " | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | "
+			command += "intersectBed -wo -a stdin -b <(zcat -f " + peaks[i] + ") | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | "
 		}		
 	}
 	command += "gzip -c > $peak_PooledInReps"
 
 	string command2
 	if ( peak_ppr1 != "" )  {
-		command2 = "intersectBed -wo -a $peak_pooled -b $peak_ppr1 | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | " + \
-		 	   "intersectBed -wo -a stdin -b $peak_ppr2 |    awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | " + \
+		command2 = "intersectBed -wo -a <(zcat -f $peak_pooled) -b <(zcat -f $peak_ppr1) | awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | " + \
+		 	   "intersectBed -wo -a stdin -b <(zcat -f $peak_ppr2) |    awk 'BEGIN{FS=\"\t\";OFS=\"\t\"} $awk_param' | cut -f $cut_param | sort | uniq | " + \
 			   "gzip -c > $peak_PooledInPsRep1AndPsRep2"
 	}
 	else {

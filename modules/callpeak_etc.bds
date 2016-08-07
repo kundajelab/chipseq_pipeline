@@ -30,7 +30,10 @@ string _filt_top_peaks( string peakfile, string o_dir, string label, \
 
 	in 	:= [ peakfile ]
 	out 	:= peakfile_filt
+
 	taskName:= "filt_top_peaks " + label
+	timeout := 3600 // to get queued fast
+	system  := "local"
 
 	wait_par( cpus )
 
