@@ -18,6 +18,7 @@ memory 		:= "7G"		help Maximum memory for all single-threaded tasks (equivalent 
 unlimited_mem_wt:= false 	help Use unlimited max. memory and walltime.
 use_system 	:= "" 		help Force to use a system (equivalent to 'bds -s [SYSTEM_NAME] ...', any system defined in bds.config can be used).
 nice 		:= 0 		help Set process priority for all tasks (default: 0; -20 (highest) ~ 19 (lowest) ).
+retrial		:= 0 		help # of Retrial for failed tasks (default: 0).
 
 help == shell environment settings
 mod 		:= ""		help Modules separated by ; (example: "bowtie/2.2.4; bwa/0.7.7; picard-tools/1.92").
@@ -52,6 +53,7 @@ void init_general() {
 	conda_env_py3	= get_conf_val( conda_env_py3, 		["conda_env_py3"] )
 	use_system 	= get_conf_val( use_system, 		["use_system"] )
 	nice 		= get_conf_val_int( nice, 		["nice"] )
+	retrial 	= get_conf_val_int( retrial, 		["retrial","retry"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
 
@@ -75,6 +77,7 @@ void init_general() {
 	mem 		= get_res_mem(memory,1)
 	timeout 	= get_res_wt(wt)
 	walltimeout 	= 3600*24*100 	// timeout var. in BigDataScript (100 days, jobs will never be stopped by BDS due to BDS timeout)
+	retry 		= retrial
 
 	if ( !is_cmd_line_arg_empty() ) out_dir = mkdir( out_dir ) // create output directory and get absolute path for it	
 }
