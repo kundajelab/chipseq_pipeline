@@ -9,7 +9,7 @@ help == callpeak spp settings
 npeak 		:= 300000 	help Threshold on # peaks (-npeak in spp) (default: 300000).
 
 wt_spp		:= "47h"	help Walltime for spp (default: 47h, 47:00:00).
-mem_spp		:= "12G" 	help Max. memory for spp (default: 12G).
+mem_spp		:= "14G" 	help Max. memory for spp (default: 14G).
 
 
 init_callpeak_spp()
