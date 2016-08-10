@@ -13,7 +13,7 @@ no_par		:= false	help Serialize all tasks (individual tasks can still use multip
 nth 		:= 8 		help Maximum # threads for a pipeline. (default: 8).
 
 help == general resource settings
-wt 		:= "23h"	help Walltime for all single-threaded tasks (example: 8:10:00, 3h, 3600, default: 23h, 23:00:00).
+wt 		:= "5h50m"	help Walltime for all single-threaded tasks (example: 8:10:00, 3h, 3600, default: 5h50m, 5:50:00).
 memory 		:= "7G"		help Maximum memory for all single-threaded tasks (equivalent to '-mem', example: 4.5G, 1024M, default: 7G).
 unlimited_mem_wt:= false 	help Use unlimited max. memory and walltime.
 use_system 	:= "" 		help Force to use a system (equivalent to 'bds -s [SYSTEM_NAME] ...', any system defined in bds.config can be used).
