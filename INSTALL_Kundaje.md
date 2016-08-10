@@ -8,7 +8,7 @@ $ cd TF_chipseq_pipeline
 Replace BDS's default `bds.config` with a correct one:
 ```
 $ mkdir -p $HOME/.bds
-$ cp bds.config bds_scr ./utils/bds_scr $HOME/.bds
+$ cp bds.config ./utils/bds_scr $HOME/.bds
 ```
 
 
@@ -16,14 +16,18 @@ $ cp bds.config bds_scr ./utils/bds_scr $HOME/.bds
 
 If you have a local Anaconda Python in your `$PATH`, the pipeline will not work correctly because it cannot find conda environments `aquas_chipseq` and `aquas_chipseq_py3` on your local Anaconda Python. Remove your local Anaconda Python from your `$PATH` or unload Anaconda Python modules. Check if `conda` points to the correct global Miniconda3 installed on `/software/miniconda3/bin/conda`.
 ```
-which conda
+$ which conda
+```
+If conda version is higher than 4.0.10, downgrade it to 4.0.5.
+```
+$ conda install conda==4.0.5
 ```
 
-If you want to keep using your local Anaconda Python, run the following to install dependencies on your local one (this is not recommended):
+To keep using your local Anaconda Python, run the following to install dependencies on your local one (this is not recommended):
 ```
 ./install_dependencies.sh
 ```
-If you see the following error, then update your Anaconda with `conda update conda`.
+If you see the following error, then update your Anaconda with `conda update conda` and then downgrade it to 4.0.5 (`conda install conda==4.0.5`).
 ```
 Error: ERROR: placeholder '/root/miniconda3/envs/_build_placehold_placehold_placehold_placehold_placehold_p' too short in: glib-2.43.0-2
 ```
