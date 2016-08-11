@@ -113,7 +113,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 			slopBed -i "$prefix"_FE.bdg -g $chrsz -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $chrsz $fc_bedgraph; \
 			rm -f "$prefix"_FE.bdg; \
 			\
-			sort -k1,1 -k2,2n $fc_bedgraph > $fc_bedgraph_srt; \
+			LC_COLLATE=C sort -k1,1 -k2,2n $fc_bedgraph > $fc_bedgraph_srt; \
 			bedGraphToBigWig $fc_bedgraph_srt $chrsz $fc_bigwig; \
 			rm -f $fc_bedgraph $fc_bedgraph_srt; \
 			\
@@ -123,7 +123,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 			slopBed -i "$prefix"_ppois.bdg -g $chrsz -b 0 |   awk '{if ($3 != -1) print $0}' |  bedClip stdin $chrsz $peak_o_dir/$prefix_basename.pval.signal.bedgraph; \
 			rm -rf "$prefix"_ppois.bdg; \
 			\
-			sort -k1,1 -k2,2n $pval_bedgraph > $pval_bedgraph_srt; \
+			LC_COLLATE=C sort -k1,1 -k2,2n $pval_bedgraph > $pval_bedgraph_srt; \
 			bedGraphToBigWig $pval_bedgraph_srt $chrsz $pval_bigwig; \
 			\
 			rm -f $pval_bedgraph $pval_bedgraph_srt; \
