@@ -225,7 +225,7 @@ string _parse_xcor_to_html( string id, string[] names, string[] logs, string[] p
 
 	html := "<div id='xcor_$id'><b>Cross-correlation QC ($id)</b><div style='padding-left: "+padding_left+"px'>"
 
-	html += _html_table_header( ["&nbsp","numReads","estFragLen","corr_estFragLen","PhantomPeak","corr_phantomPeak","argmin_corr","min_corr","phantomPeakCoef","relPhantomPeakCoef","QualityTag"] )
+	html += _html_table_header( ["&nbsp","numReads","estFragLen","corr_estFragLen","PhantomPeak","corr_phantomPeak","argmin_corr","min_corr","NSC","RSC"] )
 
 	// parse cc.qc
 	for ( int i=0; i<logs.size(); i++ ) {
@@ -236,6 +236,7 @@ string _parse_xcor_to_html( string id, string[] names, string[] logs, string[] p
 		lines := log.readLines();
 		items := lines[0].split("\t")
 		items.removeIdx(0) // remove file name
+		items.removeIdx(items.size()-1) // remove quality tag
 		
 		html += "<tr><td>"+_html_link( log, name )+"</td><td>" + items.join("\t").replace("\t","</td><td>") + "</td></tr>"
 	}
