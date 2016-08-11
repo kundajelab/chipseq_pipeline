@@ -74,7 +74,7 @@ There are many species specific parameters like indices (bwa, bowtie, ...), chro
 ```
 $ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE]
 ```
-<b>IMPORTANT</b> for Kundaje lab cluster and SCG3/4, skip `-species_file` and all genome specific parameters (like `-bwa_idx`, `-chrsz`, `-blacklist`, ... ) and then just specify species. See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
+<b>IMPORTANT</b> for Kundaje lab cluster, SCG3/4 and Sherlock cluster, skip `-species_file` and all genome specific parameters (like `-bwa_idx`, `-chrsz`, `-blacklist`, ... ) and then just specify species. See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
 
 
 

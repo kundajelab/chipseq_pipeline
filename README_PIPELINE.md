@@ -48,7 +48,7 @@ screen -X -S [SCR_NAME] quit
 
 ### Running pipelines with a cluster engine
 
-You can run BDS pipeline with a specified cluster engine. Choose your cluster system (`local`: UNIX threads, `sge`: Sun Grid Engine, ...).
+You can run BDS pipeline with a specified cluster engine. Choose your cluster system (`local`: UNIX threads, `sge`: Sun Grid Engine, `slurm`: SLURM ...).
 ```
 $ bds -s [SYSTEM] [PIPELINE.BDS] ...
 ```
@@ -56,8 +56,9 @@ Modify `$HOME./.bds/bds.config` to change your default system. The following exa
 ```
 #system = local
 system = sge
+#system = slurm
 ```
-You need additional modification on bds.config to correctly configure your cluster engine. Read more on <a href="http://pcingola.github.io/BigDataScript/bigDataScript_manual.html" target="_blank">http://pcingola.github.io/BigDataScript/bigDataScript_manual.html</a>. For Kundaje lab clusters and SCG3, it's already set up for Sun Grid Engine.
+You need additional modification on bds.config to correctly configure your cluster engine. Read more on <a href="http://pcingola.github.io/BigDataScript/bigDataScript_manual.html" target="_blank">http://pcingola.github.io/BigDataScript/bigDataScript_manual.html</a>. For Kundaje lab clusters and SCG3, it's already set up for Sun Grid Engine. For Stanford Sherlock cluster, it's set up for SLURM.
 
 
 
@@ -586,7 +587,28 @@ Traceback (most recent call last):
     os.remove(prefix_file)
 FileNotFoundError: [Errno 2] No such file or directory: '/home/leepc12/miniconda3/envs/bds_atac_py3/bin/conda'
 ```
-`
+
+14) Exception in thread "main" java.lang.NumberFormatException: For input string: "40G"
+
+Do not use `-mem` in your command line. Use '-memory` instead.
+
+```
+$ bds chipseq.bds -mem 40G
+Picked up _JAVA_OPTIONS: -Xms256M -Xmx1024M -XX:ParallelGCThreads=1
+Exception in thread "main" java.lang.NumberFormatException: For input string: "40G"
+        at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+        at java.lang.Long.parseLong(Long.java:589)
+        at java.lang.Long.parseLong(Long.java:631)
+        at org.bds.lang.Type.parse(Type.java:334)
+        at org.bds.BdsParseArgs.parseArgs(BdsParseArgs.java:207)
+        at org.bds.BdsParseArgs.initializeArgs(BdsParseArgs.java:150)
+        at org.bds.BdsParseArgs.initializeArgs(BdsParseArgs.java:106)
+        at org.bds.BdsParseArgs.parse(BdsParseArgs.java:172)
+        at org.bds.Bds.runCompile(Bds.java:872)
+        at org.bds.Bds.run(Bds.java:815)
+        at org.bds.Bds.main(Bds.java:182)
+```
+
 
 ### Contributors
 
