@@ -51,11 +51,12 @@ void init_general() {
 	unlimited_mem_wt= get_conf_val_bool( unlimited_mem_wt, 	["unlimited_mem_wt"] )
 	conda_env	= get_conf_val( conda_env, 		["conda_env"] )
 	conda_env_py3	= get_conf_val( conda_env_py3, 		["conda_env_py3"] )
-	use_system 	= get_conf_val( use_system, 		["use_system"] )
+	use_system 	= get_conf_val( use_system, 		["use_system","system"] )
 	nice 		= get_conf_val_int( nice, 		["nice"] )
 	retrial 	= get_conf_val_int( retrial, 		["retrial","retry"] )
 
 	if ( cmd_line_arg_has_key("mem") ) memory = get_cmd_line_arg_val( "mem" )
+	if ( cmd_line_arg_has_key("system") ) use_system = get_cmd_line_arg_val( "system" )
 
 	if ( nth > 32 ) error("Maximum # threads (-nth) for a pipeline should not exceed 32!")
 
