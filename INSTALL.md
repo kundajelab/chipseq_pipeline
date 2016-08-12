@@ -60,6 +60,13 @@ $ cp bds.config ./utils/bds_scr $HOME/.bds
 If `install_dependencies.sh` fails, run `./uninstall_dependencies.sh`, fix problems and then try `./install_dependencies.sh` again.
 
 
+### Installation instruction (genome data)
+
+Install genome data for a specific genome `[GENOME]`. Currently `hg19` and `mm9` are available. Specify a directory `[DATA_DIR]` to download/process all genome data. A species file generated on `[DATA_DIR]` will be automatically added to your `./default.env` so that the pipeline knows that you have installed genome data using `install_genome_data.sh`. If you want to install both genomes (`hg19` and `mm9`), make sure that you use the same directory `[DATA_DIR]` for them. Each genome data will be installed on `[DATA_DIR]/[GENOME]`. If you use other BDS pipelines, it is recommended to use the same directory `[DATA_DIR]` to save disk space.
+```
+$ ./install_genome_data.sh [GENOME] [DATA_DIR]
+```
+
 
 ### How to install dependencies and share them on a cluster
 
@@ -74,3 +81,13 @@ In order to make Miniconda3 accessible for all users, create an intialization sc
 $ echo '#!/bin/bash' > /etc/profile.d/conda_init.sh
 $ echo 'export PATH=$PATH:/opt/miniconda3/bin' >> /etc/profile.d/conda_init.sh
 ```
+
+
+### How to install genome data and share them with others
+
+If you have super-user privileges on your system, you can install genome data on `/data/bds_pipeline_genome_data` and share them with others.
+```
+$ sudo su
+$ ./install_genome_data.sh [GENOME] /data/bds_pipeline_genome_data
+```
+You can find a species file `[SPECIES_FILE]` on `/data/bds_pipeline_genome_data` for each pipeline type. Then others can use the genome data by adding `-species_file [SPECIES_FILE_PATH]` to the pipeline command line. Or they need to add `species_file = [SPECIES_FILE_PATH]` to their `./default.env`.

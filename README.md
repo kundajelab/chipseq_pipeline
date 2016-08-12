@@ -38,8 +38,7 @@ $ bds chipseq.bds [OPTIONS]
 Example (for single ended fastqs):
 ```
 $ bds chipseq.bds \
--fastq1 /DATA/ENCFF000YLW.fastq.gz -fastq2 /DATA/ENCFF000YLY.fastq.gz -ctl_fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz \
--bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa
+-species hg19 -fastq1 /DATA/ENCFF000YLW.fastq.gz -fastq2 /DATA/ENCFF000YLY.fastq.gz -ctl_fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz
 ```
 
 2) Parameters from a configuration file:
@@ -49,32 +48,21 @@ $ bds chipseq.bds [CONF_FILE]
 Example configuriation file:
 ```
 $ cat [CONF_FILE]
-
+species= hg19
 fastq1= /DATA/ENCFF000YLW.fastq.gz
 fastq2= /DATA/ENCFF000YLY.fastq.gz
 ctl_fastq1= /DATA/Ctl/ENCFF000YRB.fastq.gz
-bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ```
 
 The pipeline automatically determines if each task has finished or not (by comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
 
-<b>IMPORTANT!</b> On servers with a cluster engine (such as Sun Grid Engine), <b>DO NOT QSUB BDS COMMAND</b>. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub) and manage its sub tasks.
+<b>IMPORTANT!</b> On servers with a cluster engine (such as Sun Grid Engine and SLURM), <b>DO NOT QSUB BDS COMMAND</b>. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub) and manage its sub tasks.
 
 
 
 ### Histone ChIP-Seq
 
 Simply add `-histone` or `-type histone` to the command line. Peaks will be called with MACS2 only and those peaks will be used for naive overlap thresholding. No IDR for histone ChIP-Seq.
-
-
-
-### Using Species file
-
-There are many species specific parameters like indices (bwa, bowtie, ...), chromosome sizes, sequence file and genome size. If you have multiple pipelines, it's not very convenient to individually define all parameters for each pipeline. You can create a species file with all parameters defined and share the species file with all other pipelines.
-```
-$ bds chipseq.bds ... -species [SPECIES] -species_file [SPECIES_FILE]
-```
-<b>IMPORTANT</b> for Kundaje lab cluster, SCG3/4 and Sherlock cluster, skip `-species_file` and all genome specific parameters (like `-bwa_idx`, `-chrsz`, `-blacklist`, ... ) and then just specify species. See details <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md" target=_blank>here</a>
 
 
 
@@ -93,18 +81,17 @@ The pipeline stops right after `-final_stage [STAGE]`. It is useful if you are n
 
 Example1: (You have 10 fastqs to be mapped and want to filter them and remove dups and create tagaligns)
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -final_stage tag \
 -fastq1 /DATA/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCFF000YLY.fastq.gz \
 ...
 -fastq10 /DATA/ENCFF000???.fastq.gz \
--bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa \
 ```
 
 Example2: (You have 5 unfiltered raw bam and want to just filter them (removing dupes).
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -final_stage filt_bam \
 -bam1 /DATA/ENCFF000YLW.bam \
 ...
@@ -129,7 +116,7 @@ For exp. replicates: define data path with `-[DATA_TYPE][REPLICATE_ID]`. For con
 
 2) Starting from bams
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
 -ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRBbam \
 ...
@@ -137,7 +124,7 @@ $ bds chipseq.bds \
 
 3) Starting from filtered bams (filt_bam: bam with dupe removed)
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
 -ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
 ...
@@ -145,7 +132,7 @@ $ bds chipseq.bds \
 
 4) Starting from tagaligns
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz -tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
 -ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
 ...
@@ -153,7 +140,7 @@ $ bds chipseq.bds \
 
 5) Starting from peak files
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz \
 -peak_pooled /DATA/Example.pooled.regionPeak.gz \
 ...
@@ -194,16 +181,15 @@ Define data path as -ctl_fastq[REPLICATE_ID]_[PAIRING_ID], it's PE.
 
 Example: 2 replicates and 1 control replicate (all SE)
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
 -fastq2 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
 -ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFQ.fastq.gz \
--bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 ```
 
 Example: 2 replicates and 2 control replicates (all PE)
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -fastq1_1 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
 -fastq1_2 /DATA/ENCSR769ZTN/ENCFF002ELK.fastq.gz \
 -fastq2_1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
@@ -212,14 +198,13 @@ $ bds chipseq.bds \
 -ctl_fastq1_2 /DATA/ENCSR000EGM/Ctl/ENCFF002EFR.fastq.gz \
 -ctl_fastq2_1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFS.fastq.gz \
 -ctl_fastq2_2 /DATA/ENCSR000EGM/Ctl/ENCFF002EFT.fastq.gz \
--bwa_idx /INDEX/encodeHg19Male_v0.7.3/encodeHg19Male_bwa-0.7.3.fa
 ```
 
 You can mix up not only data types but also endedness (single-ended and paired end).
 
 Example: 1 SE fastq, 1 PE bam and 1 PE control tagalign
 ```
-$ bds chipseq.bds \
+$ bds chipseq.bds -species hg19 \
 -fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
 -pe2 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
 -pe_ctl -ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
@@ -227,57 +212,11 @@ $ bds chipseq.bds \
 ```
 
 
-### Peak calling method
-
-Peak calling with SPP and signal track generation with MACS2 are by default. To call peaks on true/pooled replicates (not on pseudoreplicates or pooled pseudoreplicate) only, add `-true_rep`.
-Both SPP and MACS2 generate peaks but signal tracks (pvalue and fold enrichment) are generated from MACS2 only. IDR analysis will take peaks from SPP. For SPP, no additional parameter is required. For macs2, define additional parameters (`-chrsz`, `-gensz`).
-
-Example for both SPP and MACS2
-```
-$ bds chipseq.bds \
-...
--chrsz /DATA/hg19.chrom.sizes \
--gensz hs
-```
-Seq is the directory where reference genome files exist. Chrsz is chromosome sizes file. Gensz is hs for human and mm for mouse.
-
-
-
-### IDR
-
-IDR analysis is based on <a href="https://github.com/nboley/idr" target="_blank">https://github.com/nboley/idr</a>. No additional parameter required but specify a blacklist (for hg19, <a href="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeMapability/wgEncodeDacMapabilityConsensusExcludable.bed.gz">here</a>) for full IDR QC. For other genomes, <a href="https://sites.google.com/site/anshulkundaje/projects/blacklists">https://sites.google.com/site/anshulkundaje/projects/blacklists</a>.
-```
--blacklist [BLACKLIST_BED]
-```
-
-
-
 ### Signal track generation (BETA)
 
-There are two methods to generate signal tracks (bigwigs). Use `-tag2bw` to generate bigwig from tagalign (using align2rawsignal), and `-bam2bw` to generate bigwig from filtered bam (using bamCoverage in deepTools).
-
-If you don't want to define parameters like `seq`, `umap`, `chrsz` for every pipeline run, use a species file.
-Define all species specific parameters in the species file and add parameter `-species [SPECIES: hg19, mm9, ...] -species_file [SPECIES_FILE]`.
-
-1) using tag2bw (align2rawsignal; it converts tagalign to bigwig, final_stage >= xcor )
+Signal tracks for MACS2 signal p-value and fold enrichment are generated by default. You can also generate signal track using `align2rawsignal`. It converts a tagalign to a signal track bigwig. If you want both bigwig and wig, then add `-make_wig`.
 ```
-$ bds chipseq.bds \
-...
--tag2bw \
--seq /DATA/encodeHg19Male \
--umap /DATA/encodeHg19Male/globalmap_k20tok54 \
--chrsz /DATA/hg19.chrom.sizes
-```
-Seq is the directory where reference genome files exist.
-Umap files are provided at http://www.broadinstitute.org/~anshul/projects/encode/rawdata/umap/.
-
-If you want both bigwig and wig, then add `-make_wig`.
-
-2) using bam2bw (bamCoverage in deepTools; it converts filt_bam to bigwig, final_stage >= filt_bam )
-```
-$ bds chipseq.bds \
-...
--bam2bw
+$ bds chipseq.bds -species hg19 -tag2bw ...
 ```
 
 
@@ -287,7 +226,7 @@ For completely serialized jobs, add `-no_par` to the command line. Individual ta
 
 However, all multi-threaded tasks (like bwa, bowtie2, spp and macs2) still have their own max. memory (`-mem_APPNAME [MEM_APP]`) and walltime (`-wt_APPNAME [WALLTIME_APP]`) settings. Max. memory is <b>NOT PER CPU</b>. On Kundaje cluster (with SGE flag activated `bds -s sge chipseq.bds ...`) or on SCG3/4, the actual shell command submitted by BDS for each task is like the following:
 ```
-qsub -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP] -h_rt=[WALLTIME_APP] ...
+qsub -V -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP] -h_rt=[WALLTIME_APP] -s_rt=[WALLTIME_APP] ...
 ```
 This ensures that total memory reserved for a cluster job equals to `[MEM_APP]`.
 
@@ -336,7 +275,7 @@ Move your output directory to a web directory (for example, /var/www/somewhere) 
 
 Add the following to the command line:
 ```
--url_base http://your/url/to/output
+-url_base http://your/url/to/output -title [PREFIX_FOR_YOUR_REPORT_AND_OUTPUT]
 ```
 
 
@@ -349,7 +288,7 @@ The minimum memory requirement for the pipeline is 8GB, but we recommend to run 
 
 Example: for desktop with 4 cores
 ```
-$ bds chipseq.bds -no_par -nth 4
+$ bds chipseq.bds -no_par -nth 4 ...
 ```
 
 An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):

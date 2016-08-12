@@ -84,7 +84,7 @@ A pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs a
 
 However, all multi-threaded tasks (like bwa, bowtie2, spp and macs2) still have their own max. memory (`-mem_APPNAME [MEM_APP]`) and walltime (`-wt_APPNAME [WALLTIME_APP]`) settings. Max. memory is <b>NOT PER CPU</b>. On Kundaje cluster (with SGE flag activated `bds -s sge chipseq.bds ...`) or on SCG3/4, the actual shell command submitted by BDS for each task is like the following:
 ```
-qsub -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP] -h_rt=[WALLTIME_APP] ...
+qsub -V -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP] -h_rt=[WALLTIME_APP] -s_rt=[WALLTIME_APP] ...
 ```
 This ensures that total memory reserved for a cluster job equals to `[MEM_APP]`.
 
@@ -151,7 +151,6 @@ $ bds chipseq.bds \
 -fastq1 /DATA/ENCFF000YLW.fastq.gz \
 -fastq2 /DATA/ENCFF000YLY.fastq.gz \
 -ctl_fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz \
--bwa_idx /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ...
 ```
 
@@ -166,7 +165,6 @@ $ cat [CONF_FILE]
 fastq1= /DATA/ENCFF000YLW.fastq.gz
 fastq2= /DATA/ENCFF000YLY.fastq.gz
 ctl_fastq1= /DATA/Ctl/ENCFF000YRB.fastq.gz
-bwa_idx= /INDEX/encodeHg19Male_bwa-0.7.3.fa
 ...
 ```
 
@@ -197,10 +195,13 @@ gensz   = hs // genome size: hs for humna, mm for mouse
 umap    = /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k1tok1000 	// uniq. mappability tracks
 umap_hic= /mnt/data/ENCODE/umap/encodeHg19Male/globalmap_k20tok54 	// uniq. mappability tracks
 bwa_idx = /mnt/data/annotations/indexes/bwa_indexes/encodeHg19Male/v0.7.10/encodeHg19Male_bwa-0.7.10.fa
-bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
-bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
 blacklist = /mnt/data/ENCODE/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz
 
+# for atac-seq pipeline (bds_atac.bds)
+bwt_idx = /mnt/data/annotations/indexes/bowtie1_indexes/encodeHg19Male/encodeHg19Male
+bwt2_idx = /mnt/data/annotations/indexes/bowtie2_indexes/bowtie2/ENCODEHg19_male
+
+# for ataqc
 tss_enrich = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/hg19_RefSeq_stranded.bed.gz
 ref_fa  = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/encodeHg19Male.fa  // genome reference fasta
 dnase = /mnt/lab_data/kundaje/users/dskim89/ataqc/annotations/hg19/reg2map_honeybadger2_dnase_all_p10_ucsc.bed.gz
@@ -230,10 +231,12 @@ gensz               : Genome size; hs for human, mm for mouse (default: hs).
 umap                : Unique mappability tracks directory path (https://sites.google.com/site/anshulkundaje/projects/mappability).
 umap_hic            : Unique mappability tracks directory path (for HiC, DO NOT USE all-mappable umap track starting from 1bp)
 bwa_idx             : BWA index (full path prefix of [].bwt file) .
+
+# for atac-seq pipeline (atac.bds)
 bwt_idx             : Bowtie index (full path prefix of [].1.ebwt file).
 bwt2_idx            : Bowtie2 index (full path prefix of [].1.bt2 file).
 
-// for ataqc
+# for ataqc
 tss_enrich          : TSS enrichment bed.
 ref_fa 		    : Reference genome sequence fasta.
 blacklist 	    : Blacklist bed for ataqc.
@@ -376,11 +379,8 @@ shcmd_any_suffix = export R_PATH=/home/userid/R-3.2.2
 
 species_file = /path/to/your/species.conf
 
-nth_spp = 4 	// On this cluster for spp, I want to use 4 CPUs, 4G for each CPU and 10 hours of walltime.
 mem_spp = 4G
 wt_spp  = 10:00:00
-
-nth_macs2 = 2 	// You can also have resource settings for other tasks
 
 conda_env = my_conda_env_py2
 conda_env_py3 = my_conda_env_py3
