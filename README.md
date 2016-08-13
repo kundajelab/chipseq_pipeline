@@ -28,9 +28,9 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 
 ### Usage
 
-We recommend using BASH to run pipelines. There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names.
+We recommend using BASH to run pipelines. There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names. AQUAS pipeline is multi-threaded. Set up maximum number of processors with `-nth`.
 
-1) Parameters from command line arguments: `$ bds chipseq.bds -species [SPECIES] -fastq1 ... -fastq2 ... -ctl_fastq ...`
+1) Parameters from command line arguments: `$ bds chipseq.bds -species [SPECIES] -nth [NUM_THREADS] -fastq1 ... -fastq2 ... -ctl_fastq ...`
 
 2) Parameters from a configuration file: `$ bds chipseq.bds [CONF_FILE]` with a configuration file
 ```
@@ -65,10 +65,7 @@ All data are treated as <b>SINGLED-ENDED</b> if endedness is not explicltly spec
 
 5) Starting from peak files:
 ```
-$ bds chipseq.bds -species hg19 \
--peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz \
--peak_pooled /DATA/Example.pooled.regionPeak.gz \
-...
+$ bds chipseq.bds -species hg19 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz -peak_pooled /DATA/Example.pooled.regionPeak.gz ...
 ```
 If you want do perform full IDR including pseudo-replicates and pooled pseudo-replicates, add the following to the command line.
 For IDR on pseduro replicates of replicate 1: `-peak1_pr1 [PEAK1_PR1] -peak1_pr2 [PEAK1_PR2]`
@@ -76,10 +73,9 @@ For IDR on pseduro replicates of replicate 2: `-peak2_pr1 [PEAK2_PR1] -peak2_pr2
 For IDR on pseduro replicates of replicate N: `-peakN_pr1 [PEAK2_PR1] -peakN_pr2 [PEAK2_PR2]`
 For IDR on pooled pseduro replicates: `-peak_ppr1 [PEAK_PPR1] -peak_ppr2 [PEAK_PPR2]`
 
-6) Mixing up different input types: For fastqs, it's automatically determined.
-```
-$ bds chipseq.bds -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz
-```
+6) Mixing up different input types: `$ bds chipseq.bds -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz`
+
+
 
 ### How to define endedness (SE/PE)
 
