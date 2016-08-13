@@ -19,6 +19,8 @@ tag2bw 		:= false 	help (BETA) Create bigwig from tagalign (using align2rawsigna
 make_wig 	:= false	help (BETA) Create wig (works with '-tag2bw' only).
 macs2_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pooled replicate only.
 idr_rank 	:= "signal.value"  	help Scoring column in narrow peak files for IDR. Use signal.value for SPP peaks, and p.value for MACS2 peaks (default: signal.value).
+use_macs2_gapped_peak := false	help Use gapped peak instead of narrow peak (MACS2 only) (defaut: false)
+
 
 help() // print help and exit if no parameters are given
 
@@ -113,6 +115,7 @@ void read_conf_chipseq() {
 	make_wig	= get_conf_val_bool( make_wig, 		["make_wig"])
 	macs2_for_pooled_rep_only = get_conf_val_bool( macs2_for_pooled_rep_only, 	["macs2_for_pooled_rep_only"] )
 	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
+	use_macs2_gapped_peak = get_conf_val_bool( use_macs2_gapped_peak, 		["use_macs2_gapped_peak"] )
 
 	if ( histone ) type = "histone"
 }
@@ -133,8 +136,9 @@ void print_chipseq() {
 	print( "Create bigwig from filt_bam\t\t: $bam2bw\n")
 	print( "Create bigwig from tagalign\t\t: $tag2bw\n")
 	print( "Create wig\t\t\t\t: $make_wig\n" )
-	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")	
-	print( "Scoring column for IDR\t\t\t: $idr_rank\n")	
+	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")
+	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
+	print( "Use gapped peak (MACS2)\t\t: $use_macs2_gapped_peak\n")
 }
 
 void chk_param() {
@@ -804,7 +808,8 @@ string _call_peaks( string peakcaller, string tag1, string tag1_ctl, string frag
 			fc_bigwig{label} 		= fc_bw
 		}
 
-		return narrowpeak // use narrowpeak
+		if ( use_macs2_gapped_peak ) return gpeak
+		else return narrowpeak
 	}
 }
 
@@ -845,6 +850,23 @@ void naive_overlap() {
 	// peak caller
 	pc := get_peak_caller()
 
+	label 		:= "peak"
+	label_peak 	:= "peak_$pc"
+
+	string filetype
+	if ( is_histone_chipseq() ) {
+
+		if ( use_macs2_gapped_peak ) {
+			filetype 	= "gappedPeak"
+			label 		= "gpeak"
+			label_peak 	= "gpeak_$pc"
+		}
+		else filetype = "narrowPeak"
+	}
+	else {
+		filetype = "regionPeak"
+	}
+
 	// naive overlap peak
 
 	overlap_o_dir := mkdir( "$out_dir/peak/$pc/overlap" )
@@ -854,8 +876,8 @@ void naive_overlap() {
 		if ( !true_rep ) {
 
 			if ( !no_pseudo_rep ) \
-				peak_overlap = _naive_overlap_peak( "regionPeak", peak{"$pc,1"}, peak_pr1{"$pc,1"}, peak_pr2{"$pc,1"}, overlap_o_dir, "peak", \
-									"peak_$pc", "$pc/overlap")
+				peak_overlap = _naive_overlap_peak( filetype, peak{"$pc,1"}, peak_pr1{"$pc,1"}, peak_pr2{"$pc,1"}, overlap_o_dir, label, \
+									label_peak, "$pc/overlap")
 		}
 	}
 	else {
@@ -865,9 +887,9 @@ void naive_overlap() {
 		peak_ppr1_ := true_rep ? "" : peak_ppr1{"$pc"}
 		peak_ppr2_ := true_rep ? "" : peak_ppr2{"$pc"}
 
-		peak_overlap = _naive_overlap_peak( "regionPeak", peak_pooled{"$pc"}, peaks, \
-								  peak_ppr1_, peak_ppr2_, overlap_o_dir, "peak",\
-								"peak_$pc", "$pc/overlap")
+		peak_overlap = _naive_overlap_peak( filetype, peak_pooled{"$pc"}, peaks, \
+								  peak_ppr1_, peak_ppr2_, overlap_o_dir, label,\
+								label_peak, "$pc/overlap")
 	}
 
 	wait_clear_tids()

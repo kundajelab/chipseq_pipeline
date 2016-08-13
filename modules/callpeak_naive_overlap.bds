@@ -138,11 +138,7 @@ string _naive_overlap_peak( string filetype, string peak_pooled, string[] peaks,
 
 string _get_awk_param( string filetype ) {
 
-	if ( filetype.toLower() == "narrowpeak" ) {
-
-		return "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
-	}
-	else if ( filetype.toLower() == "regionpeak" ) {
+	if ( filetype.toLower() == "narrowpeak" || filetype.toLower() == "regionpeak" ) {
 
 		return "{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}"
 	}
@@ -161,11 +157,7 @@ string _get_awk_param( string filetype ) {
 
 string _get_cut_param( string filetype ) {
 
-	if ( filetype.toLower() == "narrowpeak" ) {
-
-		return "1-10"
-	}
-	else if ( filetype.toLower() == "regionpeak" ) {
+	if ( filetype.toLower() == "narrowpeak" || filetype.toLower() == "regionpeak" ) {
 
 		return "1-10"
 	}
