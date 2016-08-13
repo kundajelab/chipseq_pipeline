@@ -1,12 +1,12 @@
-PROGRAMMING GUIDELINES FOR BDS PIPELINES
-===============================================
+Programming guildelines for BigDataScript (BDS) and AQUAS pipeline modules
+==============
 
-### BigDataScript (BDS)
+## BigDataScript (BDS)
 
 BigDataScript is a scripting language specialized for NGS pipelines/workflows. Basic functions and syntax for BDS are documented at <a href=http://pcingola.github.io/BigDataScript/bigDataScript_manual.html>here</a>. The grammar is quite similar to Java but there is no high-level data structure like classes and multi-dimensional arrays.
 
 
-### BDS basics
+## BDS basics
 
 You have basic variable types such as `int`, `real`, `string` and `bool`. You can omit declaration of those variables using `:=`. For example, `int n = 10` is equivalent to `n := 10`. Also, if you add a help context for a variable with `help`, it automatically becomes a command line parameter with a help context. For example, `bds pipeline.bds -num_rep 3 -callpeak macs2` and `bds pipeline.bds -h` shows help for all parameter variables.
 ```
@@ -44,7 +44,7 @@ for ( string key : map.keys() ) {
 ```
 
 
-### BDS syntax (basics)
+## BDS syntax (basics)
 
 Before moving on to next sections, read carefully about BDS syntax particularly for `sys`, `task`, `wait` and `par` on <a href=http://pcingola.github.io/BigDataScript/bigDataScript_manual.html>here</a>. There are more advanced syntax such as `goal` and `dep` but currently they are not used for BDS pipelines in Kundaje group (I actually found thatn they are buggy when combined with `par`). Parallelization of tasks are implemented by only using `sys`, `task`, `wait` and `par`.
 
@@ -72,7 +72,7 @@ sys echo "closing..."
 ```
 
 
-### BDS syntax: `task`
+## BDS syntax: `task`
 
 To make `sys` commands serially executed in the same interactive shell, use `task`. In such task block, you can define any shell variables shared in the shell. Now we need to distinguish between BDS variables and shell variables. You can refer to a shell variable by `${VAR_NAME}`.
 ```
@@ -124,7 +124,7 @@ void func {
 ```
 
 
-### BDS syntax for parallelization: `task`, `wait` and `par`
+## BDS syntax for parallelization: `task`, `wait` and `par`
 
 Parallelization of the pipeline can be implemented with `task`, `wait` and `par`. Consecutive tasks in a function are non-blockable. In the following example, two tasks will be queued and executed at the same time <b>without</b> `wait`, which is not an expected behavior. So explicltly add `wait` between tasks if you want them to be serialized.
 ```
@@ -204,7 +204,7 @@ void sum( int i, int j ) {
 ```
 
 
-### Hierarchy of BDS Pipelines
+## Hierarchy of BDS Pipelines
 
 BDS is not object-oriented so that the hierarchy of modules is implemented by including a parent module in a child module. All variables and functions in a module are global so they can be referred and called in any of the successor modules, so it is important to explicitly leave comments to tell if variables and funciton are global or local. A module is loaded only once for a global scope so variable declaration and function calls in a global scope is called only once when the module is loaded first.
 
@@ -247,7 +247,7 @@ Other non-basic child modules typically include `species.bds` and `report.bds` s
 ```
 
 
-### Module template
+## Module template
 ```
 include "modules/species.bds"
 include "modules/report.bds"
@@ -382,7 +382,7 @@ void func3() {
 ```
 
 
-### Pipeline template
+## Pipeline template
 
 <b> Do not use `wait` in a global scope (or in a global function scope).</b> Use `wait_clear_tids()` instead. See more details in the following `Bugs in BDS` sections.
 ```
@@ -423,9 +423,9 @@ void call_peaks() {
 ```
 
 
-### Bugs in BDS
+## Bugs in BDS
 
-1) thread safety issue for global variables
+### Thread safety issue for global variables
 
 It is already explained that we need global variables (typically map of string to store output file names; map's key is typically replicate id here) for parallelized BDS pipelines. There is a bug in handling global variables (locking/unlocking them).Reading (as r-value) and writing (as l-value) on a global variable in a `par` function will result in a crash of a pipeline. A hacky way to prevent this problem is <b>not to read global variables</b> in a `par` function. It's safe to read gloval variables in a `par` function only when all parallel tasks are finished (`wait` or `wait_clear_tids()` in a global scope). Also, add `monitor_par()` at the end of all `par` function. This function is sort of a barrier marking jobs as done when they finish.
 
@@ -491,13 +491,13 @@ void callpeak_OKAY() {
 }
 ```
 
-2) `tid.isDone()` not working
+### `tid.isDone()` not working
 
 <b> Do not use `wait` in a global scope.</b> Use `wait_clear_tids()` instead.`wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear `tids_all` manually when all `par` functions finish. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. <b>You can still use `wait` in a `par` function scope.</b>
 
 This bug is fixed in the latest BDS (06/06/2016).
 
 
-3) `goal` and `dep`
+### `goal` and `dep`
 
 `goal` and `dep` seem to be buggy (pipeline crashes) when combined with `par` prefix. Stay away from those syntax.
