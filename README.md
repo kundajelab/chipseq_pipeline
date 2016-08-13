@@ -30,24 +30,10 @@ AQUAS takes advantage of the powerful pipeline language BigDataScript (http://pc
 
 We recommend using BASH to run pipelines. There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names.
 
-
-1) Parameters from command line arguments: 
+1) Parameters from command line arguments: `$ bds chipseq.bds -species [SPECIES] -fastq1 ... -fastq2 ... -ctl_fastq ...`
+2) Parameters from a configuration file: `$ bds chipseq.bds [CONF_FILE]` with a configuration file
 ```
-$ bds chipseq.bds [OPTIONS]
-```
-Example (for single ended fastqs):
-```
-$ bds chipseq.bds \
--species hg19 -fastq1 /DATA/ENCFF000YLW.fastq.gz -fastq2 /DATA/ENCFF000YLY.fastq.gz -ctl_fastq1 /DATA/Ctl/ENCFF000YRB.fastq.gz
-```
-
-2) Parameters from a configuration file:
-```
-$ bds chipseq.bds [CONF_FILE]
-```
-Example configuriation file:
-```
-$ cat [CONF_FILE]
+# example conf. file
 species= hg19
 fastq1= /DATA/ENCFF000YLW.fastq.gz
 fastq2= /DATA/ENCFF000YLY.fastq.gz
@@ -55,7 +41,6 @@ ctl_fastq1= /DATA/Ctl/ENCFF000YRB.fastq.gz
 ```
 
 The pipeline automatically determines if each task has finished or not (by comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
-
 <b>IMPORTANT!</b> On servers with a cluster engine (such as Sun Grid Engine and SLURM), <b>DO NOT QSUB BDS COMMAND</b>. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub) and manage its sub tasks.
 
 
@@ -65,80 +50,16 @@ The pipeline automatically determines if each task has finished or not (by compa
 Simply add `-histone` or `-type histone` to the command line. Peaks will be called with MACS2 only and those peaks will be used for naive overlap thresholding. No IDR for histone ChIP-Seq.
 
 
+### Input types
 
-### Pipeline stages and Mapping-only mode
-
-The AQUAS transcription factor ChIP-Seq pipeline goes through the following stages:
-```
-1) bam          : mapping (fastq -> bam)
-2) filt_bam     : filtering and deduping bam (bam -> filt_bam)
-3) tag          : creating tagalign (filt_bam -> tagalign)
-4) xcor         : cross-correlation analysis (tagalign -> xcor plot.pdf/score.txt )
-5) peak         : peak calling (tagalign -> peak)
-6) idr          : IDR (peaks -> IDR score and peaks)
-```
-The pipeline stops right after `-final_stage [STAGE]`. It is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL.
-
-Example1: (You have 10 fastqs to be mapped and want to filter them and remove dups and create tagaligns)
-```
-$ bds chipseq.bds -species hg19 \
--final_stage tag \
--fastq1 /DATA/ENCFF000YLW.fastq.gz \
--fastq2 /DATA/ENCFF000YLY.fastq.gz \
-...
--fastq10 /DATA/ENCFF000???.fastq.gz \
-```
-
-Example2: (You have 5 unfiltered raw bam and want to just filter them (removing dupes).
-```
-$ bds chipseq.bds -species hg19 \
--final_stage filt_bam \
--bam1 /DATA/ENCFF000YLW.bam \
-...
--bam5 /DATA/ENCFF000???.bam
-```
-
-
-### How to define input data
-
-The ENCODE ChIP-Seq pipeline can start from various types of data.
-```
-1) fastq 
-2) bam
-3) filt_bam	(it's bam but filtered and dupes are removed)
-4) tag
-5) peak
-```
-
-For exp. replicates: define data path with `-[DATA_TYPE][REPLICATE_ID]`. For contols: define data path with `-ctl_[DATA_TYPE][CONTROL_ID]`. You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_bam`, `-tag`, ... ). Except for fastq, add `-pe` if your data set is PAIRED-END. You can also individually specify endedness for each replicate; `-pe[REPLICATE_ID]` for exp. replicates, `-ctl_pe[CONTROL_ID]` for controls.
+All data are treated as <b>SINGLED-ENDED</b> if endedness is not explicltly specifed. For fastqs, it's automatically determined. For exp. replicates: define data path with `-[DATA_TYPE][REPLICATE_ID]`. For contols: define data path with `-ctl_[DATA_TYPE][CONTROL_ID]`. You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_bam`, `-tag`, ... ). Except for fastq, add `-pe` if your data set is PAIRED-END. You can also individually specify endedness for each replicate; `-pe[REPLICATE_ID]` for exp. replicates, `-ctl_pe[CONTROL_ID]` for controls.
 
 1) Starting from fastqs (see the example in the previous chapter)
+2) Starting from bams: `$ bds chipseq.bds -species hg19 -pe -bam1 /DATA/REP1.bam -bam2 /DATA/REP2.bam -ctl_bam /DATA/CTL.bam ...`
+3) Starting from deduped bams: `$ bds chipseq.bds -species hg19 -se -filt_bam1 /DATA/REP1.filt.bam -filt_bam2 /DATA/REP2.filt.bam -ctl_filt_bam /DATA/CTL.filt.bam ...`
+4) Starting from tagaligns: `$ bds chipseq.bds -species mm9 -pe -tag1 /DATA/REP1.tagAlign.gz -tag2 /DATA/REP2.tagAlign.gz -ctl_tag /DATA/CTL.tagAlign.gz`
 
-2) Starting from bams
-```
-$ bds chipseq.bds -species hg19 \
--bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRBbam \
-...
-```
-
-3) Starting from filtered bams (filt_bam: bam with dupe removed)
-```
-$ bds chipseq.bds -species hg19 \
--bam1 /DATA/ENCSR000EGM/ENCFF000YLW.bam -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--ctl_bam /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.bam \
-...
-```
-
-4) Starting from tagaligns
-```
-$ bds chipseq.bds -species hg19 \
--tag1 /DATA/ENCSR000EGM/ENCFF000YLW.tagAlign.gz -tag2 /DATA/ENCSR000EGM/ENCFF000YLY.tagAlign.gz \
--ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
-...
-```
-
-5) Starting from peak files
+5) Starting from peak files:
 ```
 $ bds chipseq.bds -species hg19 \
 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz \
@@ -151,17 +72,12 @@ For IDR on pseduro replicates of replicate 2: `-peak2_pr1 [PEAK2_PR1] -peak2_pr2
 For IDR on pseduro replicates of replicate N: `-peakN_pr1 [PEAK2_PR1] -peakN_pr2 [PEAK2_PR2]`
 For IDR on pooled pseduro replicates: `-peak_ppr1 [PEAK_PPR1] -peak_ppr2 [PEAK_PPR2]`
 
-<b>You can also mix up data types</b>. All data are treated as SINGLED-ENDED if endedness is not explicltly specifed. For fastqs, it's automatically determined.
+6) Mixing up different input types: For fastqs, it's automatically determined.
 ```
-$ bds chipseq.bds \
--fastq1 /DATA/ENCFF000YLW.fastq.gz \
--bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
-...
+$ bds chipseq.bds -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz
 ```
 
-
-### How to define paired-end (PE) data set
+### How to define endedness (SE/PE)
 
 Add `-pe` to the command line if all data set are paired-end. You can also individually specify endedness for each replicate.
 ```
@@ -181,59 +97,61 @@ Define data path as -ctl_fastq[REPLICATE_ID]_[PAIRING_ID], it's PE.
 
 Example: 2 replicates and 1 control replicate (all SE)
 ```
-$ bds chipseq.bds -species hg19 \
--fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
--fastq2 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
--ctl_fastq1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFQ.fastq.gz \
+$ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -fastq2 /DATA/REP2.fastq.gz -ctl_fastq1 /DATA/CTL.fastq.gz
 ```
-
 Example: 2 replicates and 2 control replicates (all PE)
 ```
-$ bds chipseq.bds -species hg19 \
--fastq1_1 /DATA/ENCSR769ZTN/ENCFF002ELJ.fastq.gz \
--fastq1_2 /DATA/ENCSR769ZTN/ENCFF002ELK.fastq.gz \
--fastq2_1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
--fastq2_2 /DATA/ENCSR769ZTN/ENCFF002ELM.fastq.gz \
--ctl_fastq1_1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFQ.fastq.gz \
--ctl_fastq1_2 /DATA/ENCSR000EGM/Ctl/ENCFF002EFR.fastq.gz \
--ctl_fastq2_1 /DATA/ENCSR000EGM/Ctl/ENCFF002EFS.fastq.gz \
--ctl_fastq2_2 /DATA/ENCSR000EGM/Ctl/ENCFF002EFT.fastq.gz \
+$ bds chipseq.bds -species hg19 -fastq1_1 /DATA/REP1_1.fastq.gz -fastq1_2 /DATA/REP1_2.fastq.gz -fastq2_1 /DATA/REP2_1.fastq.gz -fastq2_2 /DATA/REP2_2.fastq.gz \
+-ctl_fastq1_1 /DATA/Ctl/CTL_1_1.fastq.gz -ctl_fastq1_2 /DATA/Ctl/CTL_1_2.fastq.gz -ctl_fastq2_1 /DATA/Ctl/CTL_2_1.fastq.gz -ctl_fastq2_2 /DATA/Ctl/CTL_2_1.fastq.gz
 ```
-
-You can mix up not only data types but also endedness (single-ended and paired end).
-
+You can mix up not only data types but also endedness.
 Example: 1 SE fastq, 1 PE bam and 1 PE control tagalign
 ```
-$ bds chipseq.bds -species hg19 \
--fastq1 /DATA/ENCSR769ZTN/ENCFF002ELL.fastq.gz \
--pe2 -bam2 /DATA/ENCSR000EGM/ENCFF000YLY.bam \
--pe_ctl -ctl_tag /DATA/ENCSR000EGM/Ctl/ENCFF000YRB.tagAlign.gz \
-...
+$ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -pe2 -bam2 /DATA/REP2.bam -pe_ctl -ctl_tag /DATA/CTL.tagAlign.gz
 ```
+
+
+### Pipeline steps
+
+The AQUAS transcription factor ChIP-Seq pipeline goes through the following stages:
+```
+1) bam          : mapping (fastq -> bam)
+2) filt_bam     : filtering and deduping bam (bam -> filt_bam)
+3) tag          : creating tagalign (filt_bam -> tagalign)
+4) xcor         : cross-correlation analysis (tagalign -> xcor plot.pdf/score.txt )
+5) peak         : peak calling (tagalign -> peak)
+6) idr          : IDR (peaks -> IDR score and peaks)
+```
+The pipeline stops right after `-final_stage [STAGE]`. It is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL.
+
 
 
 ### Signal track generation (BETA)
 
 Signal tracks for MACS2 signal p-value and fold enrichment are generated by default. You can also generate signal track using `align2rawsignal`. It converts a tagalign to a signal track bigwig. If you want both bigwig and wig, then add `-make_wig`.
 ```
-$ bds chipseq.bds -species hg19 -tag2bw ...
+$ bds chipseq.bds -species hg19 ... -tag2bw
 ```
 
 
 ### Parallelization and multi-threading (IMPORTANT!)
 
-For completely serialized jobs, add `-no_par` to the command line. Individual tasks can still go multi-threaded. <b>IMPORTANT!</b> You can set up a limit for total # threads with `-nth [MAX_TOTAL_NO_THREADS]`. Total # threads used by a pipeline will not exceed this limit. By default, it's 16 on SCG3/4, 8 on Kundaje clusters and 4 for others. The pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs according to corresponding input file sizes. For example of two fastqs (1GB and 2GB) with `-nth 6`, 2 and 4 threads are allocated for aligning 1GB and 2GB fastqs, respectively. The same policy applies to other multi-threaded tasks like deduping and peak calling.
+For completely serialized jobs, add `-no_par` to the command line. Individual tasks can still go multi-threaded.
+
+<b>IMPORTANT!</b> You can set up a limit for total # threads with `-nth [MAX_TOTAL_NO_THREADS]`. Total # threads used by a pipeline will not exceed this limit.
+
+By default, it's 16 on SCG3/4 and Stanford Sherlock cluster, 8 on Kundaje clusters and 4 for others. The pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs according to corresponding input file sizes. For example of two fastqs (1GB and 2GB) with `-nth 6`, 2 and 4 threads are allocated for aligning 1GB and 2GB fastqs, respectively. The same policy applies to other multi-threaded tasks like deduping and peak calling.
 
 However, all multi-threaded tasks (like bwa, bowtie2, spp and macs2) still have their own max. memory (`-mem_APPNAME [MEM_APP]`) and walltime (`-wt_APPNAME [WALLTIME_APP]`) settings. Max. memory is <b>NOT PER CPU</b>. On Kundaje cluster (with SGE flag activated `bds -s sge chipseq.bds ...`) or on SCG3/4, the actual shell command submitted by BDS for each task is like the following:
 ```
 qsub -V -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP] -h_rt=[WALLTIME_APP] -s_rt=[WALLTIME_APP] ...
 ```
-This ensures that total memory reserved for a cluster job equals to `[MEM_APP]`.
+This ensures that total memory reserved for a cluster job equals to `[MEM_APP]`. The same policy applies to SLURM.
 
 
 
 
-### How to efficiently manage multiple pipeline runs? (using UNIX screen)
+### How to manage multiple pipeline runs? (using UNIX screen)
 
 `./utils/bds_scr` is a BASH script to create a detached screen for a BDS script and redirect stdout/stderr to a log file `[LOG_FILE_NAME]`. If a log file already exists, stdout/stderr will be appended to it. Monitor a pipeline with `tail -f [LOG_FILE_NAME]`. The only difference between `bds_scr` and `bds` is that you have `[SCR_NAME] [LOG_FILE_NAME]` between `bds` command and its parameters (or a BDS script name).
 ```
@@ -257,50 +175,16 @@ kill_scr [SCR_NAME]
 ```
 
 
-
 ### Useful HTML reports
 
-There are two kinds of HTML reports provided by the pipeline:
+There are two kinds of HTML reports provided by the pipeline.
 
-1) BigDataScript HTML report for debugging
-
-Located at the working folder with name chipseq_[TIMESTAMP]_report.html.
-This report is automatically generated by BigDataScript and is useful for debugging since it shows summary, timeline, Stdout and Stderr for each job.
-
-2) ChIP-Seq pipeline report for QC and result
-
-The pipeline automatically generate a nice HTML report (Report.html) on its output directory (specified with -out_dir or just './out'). It summarizes files and directory structure, includes QC reports and show a workflow diagram and genome browser tracks for peaks and signals (bigwigs for pValue and fold change).
-
-Move your output directory to a web directory (for example, /var/www/somewhere) or make a softlink of it to a web directory. For genome browser tracks, specify your web directory root for your output  While keeping its structure. Make sure that you have bgzip and tabix installed on your system.
-
-Add the following to the command line:
+1) BigDataScript HTML report for debugging: Located at the working folder with name chipseq_[TIMESTAMP]_report.html. This report is automatically generated by BigDataScript and is useful for debugging since it shows summary, timeline, Stdout and Stderr for each job.
+2) ChIP-Seq pipeline report for QC and result: The pipeline automatically generate a nice HTML report (Report.html) on its output directory (specified with -out_dir or just './out'). It summarizes files and directory structure, includes QC reports and show a workflow diagram and genome browser tracks for peaks and signals (bigwigs for pValue and fold change). Move your output directory to a web directory (for example, /var/www/somewhere) or make a softlink of it to a web directory. For genome browser tracks, specify your web directory root for your output  While keeping its structure. Make sure that you have bgzip and tabix installed on your system. Add the following to the command line:
 ```
 -url_base http://your/url/to/output -title [PREFIX_FOR_YOUR_REPORT_AND_OUTPUT]
 ```
 
-
-
-### For desktops with limited memory (< 16GB)
-
-Some bioinformatics softwares like bwa 0.7.3, samtools 0.1.12 do not return non-zero error code even though they are lack of memory (See the following example of bwa 0.7.3 for a desktop with 4 cores and 12GB of memory). Therefore, the pipeline will continue with wrong files. If you get unsatisfactory result take a closer look at HTML report generated by the pipeline. Such HTML report must be found in the working directory where you run the pipeline.
-
-The minimum memory requirement for the pipeline is 8GB, but we recommend to run the pipeline on computers with more than 16GB of memory. If you have memory issues, turn off parallelization by using the flag `-no_par` in command line argument or `no_par = true` in a configuration file. However, individual jobs can still use multiple number of processors so increase the number of threads to speed up the pipeline.
-
-Example: for desktop with 4 cores
-```
-$ bds chipseq.bds -no_par -nth 4 ...
-```
-
-An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):
-```
-[bam_header_read] EOF marker is absent. The input is probably truncated.
-[bwa_read_seq] 0.0% bases are trimmed.
-[bwa_aln_core] convert to sequence coordinate... [bwt_restore_sa] Failed to allocate 1547846992 bytes at bwt.c line 404: Cannot allocate memory
-[samopen] SAM header is present: 25 sequences.
-[sam_read1] reference 'ID:bwa	PN:bwa	VN:0.7.3-r789	CL:bwa samse /home/leepc12/run/index/encodeHg19Male_bwa-0.7.3.fa /home/leepc12/run/ENCSR000EGM3/out/TEST_Rep2.sai /home/leepc12/run/ENCODE/ENCFF000YLY.fastq.gz
-' is recognized as '*'.
-[main_samview] truncated file.
-```
 
 
 ### List of all parameters for ChIP-Seq pipelines
@@ -309,7 +193,6 @@ For advanced users, all command line parameters for the pipeline will be listed 
 ```
 $ bds chipseq.bds
 ```
-
 
 
 ### Temporary files on `$TMP` or `/tmp`
@@ -328,7 +211,6 @@ If you stop a BDS pipeline with `Ctrl+C` while calling peaks with `spp`. Tempora
 
 For python2 (python 2.x >= 2.7) and R-3.x, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements.txt" target=_blank>here</a>
 For python3, <a href="https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/requirements_py3.txt" target=_blank>here</a>
-
 
 
 
