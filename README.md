@@ -41,17 +41,23 @@ Install Java 8 (jdk >= 1.8 or jre >= 1.8) on your system. If you don't have supe
 
 * For Debian/Ubuntu (>14.10) based Linux:
 
-      $ sudo apt-get install git openjdk-8-jre```
+     ```
+     $ sudo apt-get install git openjdk-8-jre
+     ```
 
 * For Fedora/Red-Hat based Linux: 
  
-      $ sudo yum install git java-1.8.0-openjdk```
+     ```
+     $ sudo yum install git java-1.8.0-openjdk
+     ```
 
 * For Ubuntu 14.04 (trusty):
 
-      $ sudo add-apt-repository ppa:webupd8team/java -y
-      $ sudo apt-get update
-      $ sudo apt-get install oracle-java8-installer
+     ```
+     $ sudo add-apt-repository ppa:webupd8team/java -y
+     $ sudo apt-get update
+     $ sudo apt-get install oracle-java8-installer
+     ```
 
 ## Conda
 
