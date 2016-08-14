@@ -1,3 +1,9 @@
+AQUAS ChIP-Seq pipeline
+==============
+
+* Jump to [Usage](#usage)
+* Jump to [Troubleshooting](#troubleshooting)
+
 # Introduction
 
 The AQUAS pipeline is based off the ENCODE (phase-3) transcription factor ChIP-seq pipeline specifications (by Anshul Kundaje) in [this google doc](https://docs.google.com/document/d/1lG_Rd7fnYgRpSIqrIfuVlAz2dW1VaSQThzk836Db99c/edit#) . However, please note that this is NOT the official ENCODE (phase-3) pipeline but rather a free and open-source implementation that adheres to the specifications. The official ENCODE (phase-3) pipeline is being implemented by the ENCODE DCC on a cloud computing platform knows as DNAnexus.It will be released shortly by the ENCODE DCC and will be linked to from this site as well. The official DNAnexus pipeline is open-source as well. However, users need to create an account on DNAnexus and pay for cloud compute. We have created this free version as an alternative for those who might have access to local compute infrastructure and not necessarily want to pay for DNAnexus cloud compute. We have run extensive tests to make sure the output of AQUAS and the official DNAnexus pipeline match exactly. We plan to continue making sure AQUAS and the DNAnexus implementation continue to remain in sync.
@@ -5,46 +11,47 @@ The AQUAS pipeline is based off the ENCODE (phase-3) transcription factor ChIP-s
 # Installation
 
 * General computer
- * [Java](#Java)
- * [Conda](#Conda)
- * [BigDataScript](#BigDataScript)
- * [AQUAS Pipeline](#AQUAS Pipeline)
- * [Dependencies](#Dependencies)
- * [Genome data](#Genome data)
+  * [Java](#java)
+  * [Conda](#conda)
+  * [BigDataScript](#bigdatascript)
+  * [AQUAS Pipeline](#aquas-pipeline)
+  * [Dependencies](#dependencies)
+  * [Genome data](#genome-data)
 
 * Kundaje lab's clusters
- * [AQUAS Pipeline](#AQUAS Pipeline)
+  * [AQUAS Pipeline](#aquaspipeline)
 
 * Stanford SCG cluster
- * [Conda](#Conda)
- * [BigDataScript](#BigDataScript)
- * [AQUAS Pipeline](#AQUAS Pipeline)
- * [Dependencies](#Dependencies)
- * [Genome data](#Genome data)
+  * [Conda](#conda)
+  * [BigDataScript](#bigdatascript)
+  * [AQUAS Pipeline](#aquas-pipeline)
+  * [Dependencies](#dependencies)
+  * [Genome data](#genome-data)
 
 * Stanford Sherlock cluster
- * [Conda](#Conda)
- * [BigDataScript](#BigDataScript)
- * [AQUAS Pipeline](#AQUAS Pipeline)
- * [Dependencies](#Dependencies)
- * [Genome data](#Genome data)
+  * [Conda](#conda)
+  * [BigDataScript](#bigdatascript)
+  * [AQUAS Pipeline](#aquas-pipeline)
+  * [Dependencies](#dependencies)
+  * [Genome data](#genome-data)
 
 ## Java
 
 Install Java 8 (jdk >= 1.8 or jre >= 1.8) on your system. If you don't have super-user privileges on your system, locally install it and add it to your `$PATH`.
 
-
 * For Debian/Ubuntu (>14.10) based Linux:
->```$ sudo apt-get install git openjdk-8-jre```
+
+      $ sudo apt-get install git openjdk-8-jre```
 
 * For Fedora/Red-Hat based Linux: 
->```$ sudo yum install git java-1.8.0-openjdk```
+ 
+      $ sudo yum install git java-1.8.0-openjdk```
 
 * For Ubuntu 14.04 (trusty):
->```
-$ sudo add-apt-repository ppa:webupd8team/java -y
-$ sudo apt-get update
-$ sudo apt-get install oracle-java8-installer```
+
+      $ sudo add-apt-repository ppa:webupd8team/java -y
+      $ sudo apt-get update
+      $ sudo apt-get install oracle-java8-installer
 
 ## Conda
 
@@ -116,6 +123,7 @@ $ chmod 755 -R /opt/miniconda3/  # if you get some annoying permission issues.
 ```
 
 In order to make Miniconda3 accessible for all users, create an intialization script `/etc/profile.d/conda_init.sh`.
+
 ```
 $ echo '#!/bin/bash' > /etc/profile.d/conda_init.sh
 $ echo 'export PATH=$PATH:/opt/miniconda3/bin' >> /etc/profile.d/conda_init.sh
@@ -132,10 +140,12 @@ $ ./install_genome_data.sh [GENOME] [DATA_DIR]
 ```
 
 If you have super-user privileges on your system, it is recommended to install genome data on `/your/data/bds_pipeline_genome_data` and share them with others.
+
 ```
 $ sudo su
 $ ./install_genome_data.sh [GENOME] /your/data/bds_pipeline_genome_data
 ```
+
 You can find a species file `[SPECIES_FILE]` on `/your/data/bds_pipeline_genome_data` for each pipeline type. Then others can use the genome data by adding `-species_file [SPECIES_FILE_PATH]` to the pipeline command line. Or they need to add `species_file = [SPECIES_FILE_PATH]` to the section `[default]` in their `./default.env`.
 
 # Usage
@@ -146,33 +156,27 @@ We recommend using BASH to run pipelines.
 
 There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names. AQUAS pipeline is multi-threaded. Set up maximum number of processors with `-nth`.
 
-1) Parameters from command line arguments: 
+1. Parameters from command line arguments: 
 
-```
-$ bds chipseq.bds -species [SPECIES] -nth [NUM_THREADS] -fastq1 ... -fastq2 ... -ctl_fastq ...
-```
+       $ bds chipseq.bds -species [SPECIES] -nth [NUM_THREADS] -fastq1 ... -fastq2 ... -ctl_fastq ...
 
-2) Parameters from a configuration file: 
+2. Parameters from a configuration file: 
 
-```
-$ bds chipseq.bds [CONF_FILE]
+       $ bds chipseq.bds [CONF_FILE]
 
-# configuration file
-species= hg19
-fastq1= /DATA/ENCFF000YLW.fastq.gz
-fastq2= /DATA/ENCFF000YLY.fastq.gz
-ctl_fastq1= /DATA/Ctl/ENCFF000YRB.fastq.gz
-```
+       # configuration file
+       species= hg19
+       fastq1= /DATA/ENCFF000YLW.fastq.gz
+       fastq2= /DATA/ENCFF000YLY.fastq.gz
+       ctl_fastq1= /DATA/Ctl/ENCFF000YRB.fastq.gz
 
-To list all parameters:
+You can override any parameters defined in a configuration file by adding them to the command line.
 
-```
-$ bds chipseq.bds
-```
+To list all parameters: `$ bds chipseq.bds`
 
-## Resuming pipeline
+## Stopping / Resuming pipeline
 
-AQUAS pipeline automatically determines if each task has finished or not (by comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
+Press Ctrl + C on a terminal or send any kind of kill signals to it. Please note that this will delete all intermediate files and incomplete outputs for the running tasks. AQUAS pipeline automatically determines if each task has finished or not (by comparing timestamps of input/output files for each task). To run the pipeline from the point of failure, correct error first and then just run the pipeline with the same command that you started the pipeline with. There is no additional parameter for restarting the pipeline.
 
 ## Running pipelines with a cluster engine
 
@@ -191,37 +195,33 @@ There are five data types; `fastq`, `bam`, `filt_bam`, `tag` and `peak`.
 
 You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_bam`, `-tag`, ... ). Except for fastq, add `-pe` if your data set is **PAIRED-END**. You can also individually specify endedness for each replicate; `-pe[REPLICATE_ID]` for exp. replicates, `-ctl_pe[CONTROL_ID]` for controls.
 
-* Starting from fastqs (see the example in the previous section)
+* Starting from fastqs: see the example in the previous section
 
 * Starting from bams: 
 
->```
-$ bds chipseq.bds -species hg19 -pe -bam1 /DATA/REP1.bam -bam2 /DATA/REP2.bam -ctl_bam /DATA/CTL.bam ...```
+      $ bds chipseq.bds -species hg19 -pe -bam1 /DATA/REP1.bam -bam2 /DATA/REP2.bam -ctl_bam /DATA/CTL.bam ...
 
 * Starting from deduped / filtered bams:
 
->```
-$ bds chipseq.bds -species hg19 -se -filt_bam1 /DATA/REP1.filt.bam -filt_bam2 /DATA/REP2.filt.bam -ctl_filt_bam /DATA/CTL.filt.bam ...```
+      $ bds chipseq.bds -species hg19 -se -filt_bam1 /DATA/REP1.filt.bam -filt_bam2 /DATA/REP2.filt.bam -ctl_filt_bam /DATA/CTL.filt.bam ...
 
 * Starting from tagaligns:
 
->```$ bds chipseq.bds -species mm9 -pe -tag1 /DATA/REP1.tagAlign.gz -tag2 /DATA/REP2.tagAlign.gz -ctl_tag /DATA/CTL.tagAlign.gz```
+      $ bds chipseq.bds -species mm9 -pe -tag1 /DATA/REP1.tagAlign.gz -tag2 /DATA/REP2.tagAlign.gz -ctl_tag /DATA/CTL.tagAlign.gz
 
 * Starting from narrow peak / region peak files:
 
->```
-$ bds chipseq.bds -species hg19 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz -peak_pooled /DATA/Example.pooled.regionPeak.gz ...```
+      $ bds chipseq.bds -species hg19 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz -peak_pooled /DATA/Example.pooled.regionPeak.gz ...
 
-> If you want do perform full IDR including pseudo-replicates and pooled pseudo-replicates, add the following to the command line.
-For IDR on pseduro replicates of replicate 1: `-peak1_pr1 [PEAK1_PR1] -peak1_pr2 [PEAK1_PR2]`
-For IDR on pseduro replicates of replicate 2: `-peak2_pr1 [PEAK2_PR1] -peak2_pr2 [PEAK2_PR2]`
-For IDR on pseduro replicates of replicate N: `-peakN_pr1 [PEAK2_PR1] -peakN_pr2 [PEAK2_PR2]`
-For IDR on pooled pseduro replicates: `-peak_ppr1 [PEAK_PPR1] -peak_ppr2 [PEAK_PPR2]`
+  If you want do perform full IDR including pseudo-replicates and pooled pseudo-replicates, add the following to the command line.
+  * For IDR on pseduro replicates of replicate 1: `-peak1_pr1 [PEAK1_PR1] -peak1_pr2 [PEAK1_PR2]`
+  * For IDR on pseduro replicates of replicate 2: `-peak2_pr1 [PEAK2_PR1] -peak2_pr2 [PEAK2_PR2]`
+  * For IDR on pseduro replicates of replicate N: `-peakN_pr1 [PEAK2_PR1] -peakN_pr2 [PEAK2_PR2]`
+  * For IDR on pooled pseduro replicates: `-peak_ppr1 [PEAK_PPR1] -peak_ppr2 [PEAK_PPR2]`
 
 * Mixing up input types: 
 
->```
-$ bds chipseq.bds -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz```
+      $ bds chipseq.bds -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz
 
 ## Endedness (SE/PE)
 
@@ -235,28 +235,26 @@ Add `-pe` to the command line if all data set are paired-end. You can also indiv
 For fastqs, you do not need to add '-pe' since the pipeline will automatically determine it according to indices in command line parameters.
 
 * For exp. replicates:
- * Define data path as -fastq[REPLICATE_ID], then it's SE (single ended).
- * Define data path as -fastq[REPLICATE_ID]_[PAIRING_ID], then it's PE.
+  * Define data path as -fastq[REPLICATE_ID], then it's SE (single ended).
+  * Define data path as -fastq[REPLICATE_ID]_[PAIRING_ID], then it's PE.
 
 * For controls:
- * Define data path as -ctl_fastq[REPLICATE_ID], it's SE.
- * Define data path as -ctl_fastq[REPLICATE_ID]_[PAIRING_ID], it's PE.
+  * Define data path as -ctl_fastq[REPLICATE_ID], it's SE.
+  * Define data path as -ctl_fastq[REPLICATE_ID]_[PAIRING_ID], it's PE.
 
 * Example: 2 replicates and 1 control replicate (all SE)
 
->```
-$ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -fastq2 /DATA/REP2.fastq.gz -ctl_fastq1 /DATA/CTL.fastq.gz```
+      $ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -fastq2 /DATA/REP2.fastq.gz -ctl_fastq1 /DATA/CTL.fastq.gz
+      
 * Example: 2 replicates and 2 control replicates (all PE)
 
->```
-$ bds chipseq.bds -species hg19 -fastq1_1 /DATA/REP1_1.fastq.gz -fastq1_2 /DATA/REP1_2.fastq.gz -fastq2_1 /DATA/REP2_1.fastq.gz -fastq2_2 /DATA/REP2_2.fastq.gz \
--ctl_fastq1_1 /DATA/Ctl/CTL_1_1.fastq.gz -ctl_fastq1_2 /DATA/Ctl/CTL_1_2.fastq.gz -ctl_fastq2_1 /DATA/Ctl/CTL_2_1.fastq.gz -ctl_fastq2_2 /DATA/Ctl/CTL_2_1.fastq.gz```
+      $ bds chipseq.bds -species hg19 -fastq1_1 /DATA/REP1_1.fastq.gz -fastq1_2 /DATA/REP1_2.fastq.gz -fastq2_1 /DATA/REP2_1.fastq.gz -fastq2_2 /DATA/REP2_2.fastq.gz -ctl_fastq1_1 /DATA/Ctl/CTL_1_1.fastq.gz -ctl_fastq1_2 /DATA/Ctl/CTL_1_2.fastq.gz -ctl_fastq2_1 /DATA/Ctl/CTL_2_1.fastq.gz -ctl_fastq2_2 /DATA/Ctl/CTL_2_1.fastq.gz
 
 You can mix up not only data types but also endedness.
 
 * Example: 1 SE fastq, 1 PE bam and 1 PE control tagalign
->```
-$ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -pe2 -bam2 /DATA/REP2.bam -pe_ctl -ctl_tag /DATA/CTL.tagAlign.gz```
+
+      $ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -pe2 -bam2 /DATA/REP2.bam -pe_ctl -ctl_tag /DATA/CTL.tagAlign.gz
 
 ## Pipeline steps
 
@@ -282,9 +280,11 @@ Default `-nth` for each cluster is defined on `./default.env` (e.g. 16 on SCG an
 The pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs according to corresponding input file sizes. For example of two fastqs (1GB and 2GB) with `-nth 6`, 2 and 4 threads are allocated for aligning 1GB and 2GB fastqs, respectively. The same policy applies to other multi-threaded tasks like deduping and peak calling.
 
 However, all multi-threaded tasks (like bwa, bowtie2, spp and macs2) still have their own max. memory (`-mem_APPNAME [MEM_APP]`) and walltime (`-wt_APPNAME [WALLTIME_APP]`) settings. Max. memory is **NOT PER CPU**. For example on Kundaje lab cluster (with SGE flag activated `bds -s sge chipseq.bds ...`) or on SCG4, the actual shell command submitted by BDS for each task is like the following:
+
 ```
 qsub -V -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP] -h_rt=[WALLTIME_APP] -s_rt=[WALLTIME_APP] ...
 ```
+
 This ensures that total memory reserved for a cluster job equals to `[MEM_APP]`. The same policy applies to SLURM.
 
 ## Managing multiple pipelines
@@ -318,8 +318,7 @@ There are two kinds of HTML reports provided by the pipeline.
 
 * ChIP-Seq pipeline report for QC and result: The pipeline automatically generate a nice HTML report (Report.html) on its output directory (specified with -out_dir or just './out'). It summarizes files and directory structure, includes QC reports and show a workflow diagram and genome browser tracks for peaks and signals (bigwigs for pValue and fold change). Move your output directory to a web directory (for example, /var/www/somewhere) or make a softlink of it to a web directory. For genome browser tracks, specify your web directory root for your output  While keeping its structure. Make sure that you have bgzip and tabix installed on your system. Add the following to the command line:
 
->```
--url_base http://your/url/to/output -title [PREFIX_FOR_YOUR_REPORT]```
+      -url_base http://your/url/to/output -title [PREFIX_FOR_YOUR_REPORT]
 
 ## Temporary files
 
@@ -341,13 +340,12 @@ If you stop a BDS pipeline with `Ctrl+C` while calling peaks with `spp`. Tempora
 
 # Troubleshooting
 
-See [more troubleshootings](https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_PIPELINE.md).
+See [more troubleshootings](README_PIPELINE.md/#trougleshooting).
 
-* "[gzclose] buffer error" during bwa aln
+### "[gzclose] buffer error" during bwa aln
 
-> Example:
-
->```
+Example:
+```
 [bwa_aln] 17bp reads: max_diff = 2
 [bwa_aln] 38bp reads: max_diff = 3
 [bwa_aln] 64bp reads: max_diff = 4
@@ -378,10 +376,9 @@ See [more troubleshootings](https://github.com/kundajelab/TF_chipseq_pipeline/bl
 [bwa_aln_core] 1309550 sequences have been processed.
 [gzclose] buffer error
 ```
+Solution1 (BEST): Use bwa-0.7.3 or bwa-0.6.2.
 
-> Solution1 (BEST): Use bwa-0.7.3 or bwa-0.6.2.
-
->```
+```
 $ git clone https://github.com/lh3/bwa bwa-0.7.3
 $ cd bwa-0.7.3
 $ git checkout tags/0.7.3
@@ -389,11 +386,11 @@ $ make
 $ ./bwa
 ```
 
-> Then, append `-addpath /path/to/your/bwa` to your command line.
+Then, append `-addpath /path/to/your/bwa` to your command line.
 
-> Solution2: [Upgrade zlib to 1.2.8](https://github.com/MikkelSchubert/paleomix/wiki/BAM-pipeline-specific-troubleshooting#4.3.)
+Solution2: [Upgrade zlib to 1.2.8](https://github.com/MikkelSchubert/paleomix/wiki/BAM-pipeline-specific-troubleshooting#4.3.)
 
->```
+```
 $ BWA_VER=0.7.3
 $ git clone https://github.com/lh3/bwa
 $ cd bwa
@@ -410,17 +407,16 @@ $ make -f Makefile.zlib
 $ ./bwa
 ```
 
-> Tested bwa versions (with zlib 1.2.8)
+Tested bwa versions (with zlib 1.2.8)
 
->* successful: 0.6.2 0.7.1 0.7.2 0.7.3
->* failed: 0.7.4 0.7.5 0.7.7 0.7.8 0.7.11 0.7.12
+* successful: 0.6.2 0.7.1 0.7.2 0.7.3
+* failed: 0.7.4 0.7.5 0.7.7 0.7.8 0.7.11 0.7.12
 
+### Cannot allocate memory (bwa fails due to lack of memory)
 
-* Cannot allocate memory (bwa fails due to lack of memory)
+An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):
 
-> An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB of memory):
-
-> ```
+```
 [bam_header_read] EOF marker is absent. The input is probably truncated.
 [bwa_read_seq] 0.0% bases are trimmed.
 [bwa_aln_core] convert to sequence coordinate... [bwt_restore_sa] Failed to allocate 1547846992 bytes at bwt.c line 404: Cannot allocate memory
@@ -430,30 +426,29 @@ $ ./bwa
 [main_samview] truncated file.
 ```
 
-> Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par')
+Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par')
 
->```
+```
 $ bds chipseq.bds -no_par ...
 ```
 
-* [samopen] no @SQ lines in the header. ( bwa sam failure )
+### [samopen] no @SQ lines in the header. ( bwa sam failure )
 
->For computers with limited memory, bwa samse/sampe fails without non-zero exit value. This leads to a failure of a pipeline or corruption of outputs.
+For computers with limited memory, bwa samse/sampe fails without non-zero exit value. This leads to a failure of a pipeline or corruption of outputs.
 
->Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par')
+Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par')
 
->```
+```
 $ bds chipseq.bds -no_par ...
 ```
 
-* Error: could not find environment: aquas_chipseq
+### Error: could not find environment: aquas_chipseq
 
-> Unload any Anaconda Python modules. Remove locally installed Anaconda Python from your `$PATH`
+Unload any Anaconda Python modules. Remove locally installed Anaconda Python from your `$PATH`
 
+### SPP error: `In min(npld$y[npld$fdr <= fdr])`
 
-* SPP error: `In min(npld$y[npld$fdr <= fdr])`
-
-> ```
+```
 Warning message:
 In min(npld$y[npld$fdr <= fdr]) :
   no non-missing arguments to min; returning Inf
@@ -462,8 +457,10 @@ calculating statistical thresholds
 FDR 0.99 threshold= Inf
 Detected 0 peaks
 ```
+
 Check if number of reads in your control tagalign is too high, and then reduce it with `-subsample_ctl [NO_READ_TO_SUBSAMPLE_CONTROL]`.
 Try with half of the original number of reads in control.
+
 
 # Contributors
 
