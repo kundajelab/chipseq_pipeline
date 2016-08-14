@@ -18,7 +18,7 @@ bam2bw 		:= false	help (BETA) Create bigwig from filtered bam (using bamCoverage
 tag2bw 		:= false 	help (BETA) Create bigwig from tagalign (using align2rawsignal).
 make_wig 	:= false	help (BETA) Create wig (works with '-tag2bw' only).
 macs2_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pooled replicate only.
-idr_rank 	:= "signal.value"  	help Scoring column in narrow peak files for IDR. Use signal.value for SPP peaks, and p.value for MACS2 peaks (default: signal.value).
+//idr_rank 	:= "signal.value"  	help Scoring column in narrow peak files for IDR. Use signal.value for SPP peaks, and p.value for MACS2 peaks (default: signal.value).
 use_macs2_gapped_peak := false	help Use gapped peak instead of narrow peak (MACS2 only) (defaut: false)
 
 
@@ -114,7 +114,7 @@ void read_conf_chipseq() {
 	tag2bw 		= get_conf_val_bool( tag2bw, 		["tag2bw"])
 	make_wig	= get_conf_val_bool( make_wig, 		["make_wig"])
 	macs2_for_pooled_rep_only = get_conf_val_bool( macs2_for_pooled_rep_only, 	["macs2_for_pooled_rep_only"] )
-	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
+	//idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
 	use_macs2_gapped_peak = get_conf_val_bool( use_macs2_gapped_peak, 		["use_macs2_gapped_peak"] )
 
 	if ( histone ) type = "histone"
@@ -137,7 +137,7 @@ void print_chipseq() {
 	print( "Create bigwig from tagalign\t\t: $tag2bw\n")
 	print( "Create wig\t\t\t\t: $make_wig\n" )
 	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")
-	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
+	//print( "Scoring column for IDR\t\t\t: $idr_rank\n")
 	print( "Use gapped peak (MACS2)\t\t: $use_macs2_gapped_peak\n")
 }
 
@@ -902,6 +902,8 @@ void do_idr() {
 	if ( !is_final_stage_idr() ) return
 	if ( is_histone_chipseq() ) return
 	if ( !peak_exists() ) return // if no peaks from peak caller exit
+
+	idr_rank := is_histone_chipseq() ? "p.value" : "signal.value"
 
 	// peak caller
 	pc := get_peak_caller()
