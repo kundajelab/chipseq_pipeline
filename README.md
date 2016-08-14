@@ -19,7 +19,7 @@ The AQUAS pipeline is based off the ENCODE (phase-3) transcription factor ChIP-s
   * [Genome data](#genome-data)
 
 * Kundaje lab's clusters
-  * [AQUAS Pipeline](#aquaspipeline)
+  * [AQUAS Pipeline](#aquas-pipeline)
 
 * Stanford SCG cluster
   * [Conda](#conda)
@@ -340,7 +340,7 @@ If you stop a BDS pipeline with `Ctrl+C` while calling peaks with `spp`. Tempora
 
 # Troubleshooting
 
-See [more troubleshootings](README_PIPELINE.md/#trougleshooting).
+See [more troubleshootings](README_PIPELINE.md/#troubleshooting).
 
 ### "[gzclose] buffer error" during bwa aln
 
