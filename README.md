@@ -35,17 +35,16 @@ Install Java 8 (jdk >= 1.8 or jre >= 1.8) on your system. If you don't have supe
 
 
 * For Debian/Ubuntu (>14.10) based Linux:
->```$ sudo apt-get install git openjdk-8-jre```.
+>```$ sudo apt-get install git openjdk-8-jre```
 
 * For Fedora/Red-Hat based Linux: 
->```$ sudo yum install git java-1.8.0-openjdk```.
+>```$ sudo yum install git java-1.8.0-openjdk```
 
 * For Ubuntu 14.04 (trusty):
 >```
 $ sudo add-apt-repository ppa:webupd8team/java -y
 $ sudo apt-get update
-$ sudo apt-get install oracle-java8-installer
-```
+$ sudo apt-get install oracle-java8-installer```
 
 ## Conda
 
@@ -197,25 +196,21 @@ You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_
 * Starting from bams: 
 
 >```
-$ bds chipseq.bds -species hg19 -pe -bam1 /DATA/REP1.bam -bam2 /DATA/REP2.bam -ctl_bam /DATA/CTL.bam ...
-```
+$ bds chipseq.bds -species hg19 -pe -bam1 /DATA/REP1.bam -bam2 /DATA/REP2.bam -ctl_bam /DATA/CTL.bam ...```
 
 * Starting from deduped / filtered bams:
 
 >```
-$ bds chipseq.bds -species hg19 -se -filt_bam1 /DATA/REP1.filt.bam -filt_bam2 /DATA/REP2.filt.bam -ctl_filt_bam /DATA/CTL.filt.bam ...
-```
+$ bds chipseq.bds -species hg19 -se -filt_bam1 /DATA/REP1.filt.bam -filt_bam2 /DATA/REP2.filt.bam -ctl_filt_bam /DATA/CTL.filt.bam ...```
 
 * Starting from tagaligns:
 
->```$ bds chipseq.bds -species mm9 -pe -tag1 /DATA/REP1.tagAlign.gz -tag2 /DATA/REP2.tagAlign.gz -ctl_tag /DATA/CTL.tagAlign.gz
-```
+>```$ bds chipseq.bds -species mm9 -pe -tag1 /DATA/REP1.tagAlign.gz -tag2 /DATA/REP2.tagAlign.gz -ctl_tag /DATA/CTL.tagAlign.gz```
 
 * Starting from narrow peak / region peak files:
 
 >```
-$ bds chipseq.bds -species hg19 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz -peak_pooled /DATA/Example.pooled.regionPeak.gz ...
-```
+$ bds chipseq.bds -species hg19 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz -peak_pooled /DATA/Example.pooled.regionPeak.gz ...```
 
 > If you want do perform full IDR including pseudo-replicates and pooled pseudo-replicates, add the following to the command line.
 For IDR on pseduro replicates of replicate 1: `-peak1_pr1 [PEAK1_PR1] -peak1_pr2 [PEAK1_PR2]`
@@ -225,8 +220,8 @@ For IDR on pooled pseduro replicates: `-peak_ppr1 [PEAK_PPR1] -peak_ppr2 [PEAK_P
 
 * Mixing up input types: 
 
->```$ bds chipseq.bds -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz
-```
+>```
+$ bds chipseq.bds -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz```
 
 ## Endedness (SE/PE)
 
@@ -250,21 +245,18 @@ For fastqs, you do not need to add '-pe' since the pipeline will automatically d
 * Example: 2 replicates and 1 control replicate (all SE)
 
 >```
-$ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -fastq2 /DATA/REP2.fastq.gz -ctl_fastq1 /DATA/CTL.fastq.gz
-```
+$ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -fastq2 /DATA/REP2.fastq.gz -ctl_fastq1 /DATA/CTL.fastq.gz```
 * Example: 2 replicates and 2 control replicates (all PE)
 
 >```
 $ bds chipseq.bds -species hg19 -fastq1_1 /DATA/REP1_1.fastq.gz -fastq1_2 /DATA/REP1_2.fastq.gz -fastq2_1 /DATA/REP2_1.fastq.gz -fastq2_2 /DATA/REP2_2.fastq.gz \
--ctl_fastq1_1 /DATA/Ctl/CTL_1_1.fastq.gz -ctl_fastq1_2 /DATA/Ctl/CTL_1_2.fastq.gz -ctl_fastq2_1 /DATA/Ctl/CTL_2_1.fastq.gz -ctl_fastq2_2 /DATA/Ctl/CTL_2_1.fastq.gz
-```
+-ctl_fastq1_1 /DATA/Ctl/CTL_1_1.fastq.gz -ctl_fastq1_2 /DATA/Ctl/CTL_1_2.fastq.gz -ctl_fastq2_1 /DATA/Ctl/CTL_2_1.fastq.gz -ctl_fastq2_2 /DATA/Ctl/CTL_2_1.fastq.gz```
 
 You can mix up not only data types but also endedness.
 
 * Example: 1 SE fastq, 1 PE bam and 1 PE control tagalign
 >```
-$ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -pe2 -bam2 /DATA/REP2.bam -pe_ctl -ctl_tag /DATA/CTL.tagAlign.gz
-```
+$ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -pe2 -bam2 /DATA/REP2.bam -pe_ctl -ctl_tag /DATA/CTL.tagAlign.gz```
 
 ## Pipeline steps
 
@@ -327,8 +319,7 @@ There are two kinds of HTML reports provided by the pipeline.
 * ChIP-Seq pipeline report for QC and result: The pipeline automatically generate a nice HTML report (Report.html) on its output directory (specified with -out_dir or just './out'). It summarizes files and directory structure, includes QC reports and show a workflow diagram and genome browser tracks for peaks and signals (bigwigs for pValue and fold change). Move your output directory to a web directory (for example, /var/www/somewhere) or make a softlink of it to a web directory. For genome browser tracks, specify your web directory root for your output  While keeping its structure. Make sure that you have bgzip and tabix installed on your system. Add the following to the command line:
 
 >```
--url_base http://your/url/to/output -title [PREFIX_FOR_YOUR_REPORT]
-```
+-url_base http://your/url/to/output -title [PREFIX_FOR_YOUR_REPORT]```
 
 ## Temporary files
 
