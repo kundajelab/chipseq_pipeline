@@ -26,14 +26,12 @@ The AQUAS pipeline is based off the ENCODE (phase-3) transcription factor ChIP-s
   * [BigDataScript](#bigdatascript)
   * [AQUAS Pipeline](#aquas-pipeline)
   * [Dependencies](#dependencies)
-  * [Genome data](#genome-data)
 
 * Stanford Sherlock cluster
   * [Conda](#conda)
   * [BigDataScript](#bigdatascript)
   * [AQUAS Pipeline](#aquas-pipeline)
   * [Dependencies](#dependencies)
-  * [Genome data](#genome-data)
 
 ## Java
 
@@ -61,7 +59,7 @@ Install Java 8 (jdk >= 1.8 or jre >= 1.8) on your system. If you don't have supe
 
 ## Conda
 
-Install Miniconda3 [4.0.5](https://repo.continuum.io/miniconda/Miniconda3-4.0.5-Linux-x86_64.sh) on your system. Recent versions of conda (>4.0.10) is buggy in parallel activation and do not work correctly with the pipeline. If you already have your own conda, downgrade it to 4.0.5 (`conda install conda=4.0.5`).
+Install Miniconda3 [4.0.5](https://repo.continuum.io/miniconda/Miniconda3-4.0.5-Linux-x86_64.sh) on your system. Recent versions of conda (>4.0.10) is buggy in parallel activation and do not work correctly with the pipeline. If you already have your own conda, downgrade it to 4.0.5 (`conda install conda==4.0.5`).
 
 ```
 $ wget https://repo.continuum.io/miniconda/Miniconda3-4.0.5-Linux-x86_64.sh
