@@ -9,6 +9,10 @@ help == IDR settings
 idr_suffix 	:= false 	help Append IDR threshold to IDR output directory.
 
 
+grp_color_idr 		:= "limegreen" 
+grp_color_idr_final	:= "pink" 
+
+
 init_idr()
 
 void init_idr() {
@@ -33,12 +37,11 @@ void chk_idr() {
 // A temporary 13th column bed should be generated due to bedtools intersect compatibility issue
 // use function _get_idr_peak_trk( idr_peak ) to find 12-col.bed.gz for browser tracks
 // rank: 'signal.value' for SPP peaks, 'p.value' for MACS2 peaks
-string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, string rank, string o_dir, string label, \
-		string graph_prefix, string[] graph_in, string hrchy ) {
+string[] idr2( string peak1, string peak2, string pooled, string idr_thresh, string rank, string o_dir, string group ) {
 
 	if ( idr_suffix ) o_dir = mkdir( o_dir + "_$idr_thresh" )
 
-	prefix 			:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + label	
+	prefix 			:= "$o_dir/" + (title=="" ? "" : (title+"_") ) + group	
 	peak_idr		:= "$prefix.IDR"+"$idr_thresh.narrowPeak.gz"
 	peak_idr_trk		:= "$prefix.IDR"+"$idr_thresh.12-col.bed.gz"
 	peak_idr_trk_tmp	:= "$prefix.IDR"+"$idr_thresh.13-col.bed.gz"
@@ -66,7 +69,7 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 	in 	:= [peak1, peak2, pooled]
 	out 	:= path_exists( blacklist ) ?  	[filt_peak_idr, png, idr_out_gz, filt_peak_idr_trk ] : \
 						[peak_idr, png, idr_out_gz, peak_idr_trk]
-	taskName:= "idr2 " + label
+	taskName:= "idr2 " + group
 
 	wait_par( cpus )
 
@@ -99,20 +102,15 @@ string[] _idr2( string peak1, string peak2, string pooled, string idr_thresh, st
 
 	register_par( tid, cpus )
 
-	for ( int i=0; i<graph_in.size(); i++) graph_in[i] = graph_prefix + "_(" + graph_in[i] + ")"
-	graph_out := ["idr_peak_($label)"]
-	hrchy_out := ["L1_peak/idr/$hrchy/idr_peak","","L1_peak/idr/$hrchy/unthsld_peak"]
-
-	_add_to_graphviz( graph_in, in, graph_out, out, "idr_($label)", grp_color_idr )
-	_add_to_filetable( hrchy_out, out )
+	add_task_to_graph( in, out, group, "IDR", grp_color_idr )
 
 	return out
 }
 
 // idr_tr: IDR peaks for true replicate (key:"rep_id1,rep_id2") e.g. "1,2" for rep1 and rep2
 // idr_pr: IDR peaks for pseudo replicates (key:"rep") e.g. "1" for pseudo replicates of replicate 1
-string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
-			string idr_o_dir, string qc_o_dir, string label ) {
+string[] idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
+			string idr_o_dir, string qc_o_dir, string group ) {
 
 	//// get # of lines in each IDR peak files
 
@@ -147,11 +145,11 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 	if ( Nt > 0 ) {
 
 		// optimal set
-		optimal_set 		= (Nt > Np) ? _get_label_from_key(key_tr_best) : "pooled_pseudo_rep"
+		optimal_set 		= (Nt > Np) ? _get_group_from_key(key_tr_best) : "pooled_pseudo_rep"
 		idr_opt_set 		= (Nt > Np) ? idr_tr_best : idr_ppr
 
 		// conservative set
-		conservative_set 	= _get_label_from_key(key_tr_best)
+		conservative_set 	= _get_group_from_key(key_tr_best)
 		idr_consv_set  	 	= idr_tr_best
 
 		// make copies of them
@@ -198,7 +196,7 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 	// Fraction of Reads in Peaks (FRiP) will be added later
 
 	// write on IDR FINAL QC file
-	prefix 	:= "$qc_o_dir/" + (title=="" ? "" : (title+"_") ) + label
+	prefix 	:= "$qc_o_dir/" + (title=="" ? "" : (title+"_") ) + group
 	qc 	:= prefix+"IDR_final.qc"
 
 	in 	:= map_to_array( idr_tr ) + map_to_array( idr_pr ); if (idr_ppr!="") in += [idr_ppr]
@@ -207,7 +205,7 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 	col_lbl := ""; for ( int rep=1; rep<=N.size(); rep++) col_lbl += "N$rep\t"
 	col_val := N.size() == 0 ? "" : (N.join("\t") + "\t")
 
-	taskName:= "idr final qc" + label
+	taskName:= "idr final qc" + group
 
 	wait_par( cpus )
 
@@ -223,20 +221,12 @@ string[] _idr_final_qc( string{} idr_tr, string{} idr_pr, string idr_ppr, \
 
 	register_par( tid, cpus )
 
-	string[] graph_in
-	for ( string key : idr_tr.keys() ) graph_in.add( "idr_peak_("+_get_label_from_key(key)+")" )	
-	for ( string key : idr_pr.keys() ) graph_in.add( "idr_peak_(rep$key-pr)" )
-	graph_in  += ["idr_peak_(ppr)"]
-	graph_out := ["idr_qc","idr_peak_(opt)","idr_peak_(consv)"]
-	hrchy_out := ["L1_qc/idr_qc","L1_peak/idr/opt_set/idr_peak","L1_peak/idr/consv_set/idr_peak"]
-
-	_add_to_graphviz( graph_in, in, graph_out, [qc, idr_opt_set_new, idr_consv_set_new], "idr\\nfinal\\nqc", grp_color_idr_final )
-	_add_to_filetable( hrchy_out, [qc, idr_opt_set_new, idr_consv_set_new] )
+	add_task_to_graph( in, out, group, "IDR QC", grp_color_idr_final )
 
 	return [qc, idr_opt_set_new, idr_consv_set_new]
 }
 
-string _get_label_from_key( string key ) { //parse "i,j" to "repi-repj"
+string _get_group_from_key( string key ) { //parse "i,j" to "repi-repj"
 
 	tmp := key.split(",")
 	i := tmp[0]

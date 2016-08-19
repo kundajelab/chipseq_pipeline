@@ -20,8 +20,7 @@ void init_callpeak_etc() {
 	print( "# of top peaks to pick up in peak files\t: $npeak_filt\n")
 }
 
-string _filt_top_peaks( string peakfile, string o_dir, string label, \
-			string label_peak, string hrchy ) {
+string filt_top_peaks( string peakfile, string o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_ext( peakfile, \
 						["narrowPeak","gappedPeak","broadPeak","regionPeak"] ), o_dir )
@@ -31,7 +30,7 @@ string _filt_top_peaks( string peakfile, string o_dir, string label, \
 	in 	:= [ peakfile ]
 	out 	:= peakfile_filt
 
-	taskName:= "filt_top_peaks " + label
+	taskName:= "filt_top_peaks " + group
 	timeout := 3600 // to get queued fast
 	system  := "local"
 
@@ -52,8 +51,7 @@ string _filt_top_peaks( string peakfile, string o_dir, string label, \
 	
 	register_par( tid, cpus )
 		
-	_add_to_graphviz( ["$label_peak"+"_($label)"], in, ["$label_peak"+"_filt_($label)"], [out] )
-	_add_to_filetable( ["L1_peak/$hrchy/$label_peak"+"_filt"], [out] )
+	add_task_to_graph( in, out, group )
 	
 	return out	
 }

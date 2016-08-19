@@ -1,6 +1,7 @@
 #!/usr/bin/env bds
 #vim: syntax=java
 
+include "species.bds"
 include "report_graphviz.bds"
 include "report_filetable.bds"
 
@@ -9,10 +10,10 @@ include "report_filetable.bds"
 help == report settings
 url_base 	:= "" 		help URL base for output directory.
 
-padding_left	:= 20
 
-report_file  	:= ""
-report_header 	:= ""
+_padding_left	:= 20
+_report_file  	:= ""
+_report_header 	:= ""
 
 
 
@@ -21,14 +22,14 @@ init_report()
 
 void init_report() {
 
-	url_base	= get_conf_val( url_base, 	["url_base"] )
+	url_base = get_conf_val( url_base, 	["url_base"] )
 
 	sys cp --remove-destination $script_dir/html/jquery.treetable.* $rpt_aux_dir    # move report js/css files to out_dir
 
-	prefix := title=="" ? "" : (title+"_")
+	prefix := (title=="") ? "" : (title+"_")
 
-	report_file 	= "$out_dir/$prefix"+"report.html"
-	report_header 	= "$script_dir/html/rpt_header.html"
+	_report_file = "$out_dir/$prefix"+"report.html"
+	_report_header = "$script_dir/html/rpt_header.html"
 
 	print_report()
 }
@@ -43,21 +44,29 @@ void report( string body ) { // HTML report
 
 	wait
 	
-	html := report_header.read()
+	html := _report_header.read()
 	html += body
 	html += "<br></body></html>"
 
-	report_file.write( html )
+	_report_file.write( html )
+}
+
+// filepath, node label, group, filetable hierachy
+void add_file_to_report( string file, string label, string group, string hrchy ) {
+
+	add_file_to_graph( file, label, group )
+
+	add_file_to_table( [file], [hrchy] )
 }
 
 // bwa logs (*.flagstat.qc): 1 table
-string _parse_flagstat_to_html( string id, string[] names, string[] logs, string[] header ) {
+string parse_flagstat_to_html( string id, string[] names, string[] logs, string[] header ) {
 
 	if ( logs.size() == 0 ) return ""
 
-	html := "<div id='flagstat_$id'><b>Flagstat QC ($id)</b><div style='padding-left: "+padding_left+"px'>"
+	html := "<div id='flagstat_$id'><b>Flagstat QC ($id)</b><div style='padding-left: "+_padding_left+"px'>"
 
-	html += _html_table_header( ["&nbsp","Reads (QC-passed)","Reads (QC-failed)","Dupes (QC-passed)","Dupes (QC-failed)","Mapped Reads","% Mapped"] )
+	html += html_table_header( ["&nbsp","Reads (QC-passed)","Reads (QC-failed)","Dupes (QC-passed)","Dupes (QC-failed)","Mapped Reads","% Mapped"] )
 
 	// parse dup.qc
 	for ( int i=0; i<logs.size(); i++ ) {
@@ -101,7 +110,7 @@ string _parse_flagstat_to_html( string id, string[] names, string[] logs, string
 			}
 		}
 
-		html += "<tr><td>"+_html_link( log, name )+"</td><td>$read1</td><td>$read2</td><td>$dupe1</td><td>$dupe2</td><td>$mapped</td><td>$percent</td></tr>"
+		html += "<tr><td>"+html_link( log, name )+"</td><td>$read1</td><td>$read2</td><td>$dupe1</td><td>$dupe2</td><td>$mapped</td><td>$percent</td></tr>"
 	}
 
 	html += "</table>"
@@ -112,13 +121,13 @@ string _parse_flagstat_to_html( string id, string[] names, string[] logs, string
 
 
 // bowtie2 logs (*.align.log): 1 table
-string _parse_align_log_to_html( string id, string[] names, string[] logs, string[] header ) {
+string parse_align_log_to_html( string id, string[] names, string[] logs, string[] header ) {
 
 	if ( logs.size() == 0 ) return ""
 
-	html := "<div id='bwt2_log_$id'><b>Bowtie2 QC ($id)</b><div style='padding-left: "+padding_left+"px'>"
+	html := "<div id='bwt2_log_$id'><b>Bowtie2 QC ($id)</b><div style='padding-left: "+_padding_left+"px'>"
 
-	html += _html_table_header( ["&nbsp","Total Reads","% Aligned"] )
+	html += html_table_header( ["&nbsp","Total Reads","% Aligned"] )
 
 	// parse dup.qc
 	for ( int i=0; i<logs.size(); i++ ) {
@@ -145,7 +154,7 @@ string _parse_align_log_to_html( string id, string[] names, string[] logs, strin
 			}
 		}
 
-		html += "<tr><td>"+_html_link( log, name )+"</td><td>$read1</td><td>$percent</td></tr>"
+		html += "<tr><td>"+html_link( log, name )+"</td><td>$read1</td><td>$percent</td></tr>"
 	}
 
 	html += "</table>"
@@ -155,13 +164,13 @@ string _parse_align_log_to_html( string id, string[] names, string[] logs, strin
 }
 
 // MarkDuplicate (post-align) logs (*.dup.qc): 1 table
-string _parse_dup_to_html( string id, string[] names, string[] logs, string[] headers ) {
+string parse_dup_to_html( string id, string[] names, string[] logs, string[] headers ) {
 
 	if ( logs.size() == 0 ) return ""
 
-	html := "<div id='dup_$id'><b>Dup QC ($id)</b><div style='padding-left: "+padding_left+"px'>"
+	html := "<div id='dup_$id'><b>Dup QC ($id)</b><div style='padding-left: "+_padding_left+"px'>"
 
-	html += _html_table_header( ["&nbsp","Unpaired Reads", "Paired Reads", "Unmapped Reads", "Unpaired Dupes", "Paired Dupes", "Paired Opt. Dupes", "% Dupes"] )
+	html += html_table_header( ["&nbsp","Unpaired Reads", "Paired Reads", "Unmapped Reads", "Unpaired Dupes", "Paired Dupes", "Paired Opt. Dupes", "% Dupes"] )
 
 	// parse dup.qc
 	for ( int i=0; i<logs.size(); i++ ) {
@@ -170,7 +179,7 @@ string _parse_dup_to_html( string id, string[] names, string[] logs, string[] he
 		name := names[i]
 		line := get_stdout( "cat $log | grep 'Unknown Library' | awk '{ print $3,$4,$5,$6,$7,$8,$9; }'" )	
 
-		html += "<tr><td>"+_html_link( log, name )+"</td><td>" + line.replace(" ","</td><td>") + "</td></tr>"
+		html += "<tr><td>"+html_link( log, name )+"</td><td>" + line.replace(" ","</td><td>") + "</td></tr>"
 	}
 
 	html += "</table>"
@@ -180,13 +189,13 @@ string _parse_dup_to_html( string id, string[] names, string[] logs, string[] he
 }
 
 // Library complexcity (post-align) logs (*.pbc.qc) : 1 table
-string _parse_pbc_to_html( string id, string[] names, string[] logs, string[] header ) {
+string parse_pbc_to_html( string id, string[] names, string[] logs, string[] header ) {
 
 	if ( logs.size() == 0 ) return ""
 
-	html := "<div id='pbc_$id'><b>PBC QC ($id)</b><div style='padding-left: "+padding_left+"px'>"
+	html := "<div id='pbc_$id'><b>PBC QC ($id)</b><div style='padding-left: "+_padding_left+"px'>"
 
-	html += _html_table_header( ["&nbsp","Total Read Pairs","Distinct Read Pairs","One Read Pair","Two Read Pairs","NRF = Distinct/Total","PBC1 = OnePair/Distinct","PBC2 = OnePair/TwoPair"] )
+	html += html_table_header( ["&nbsp","Total Read Pairs","Distinct Read Pairs","One Read Pair","Two Read Pairs","NRF = Distinct/Total","PBC1 = OnePair/Distinct","PBC2 = OnePair/TwoPair"] )
 
 	// parse pbc.qc
 	for ( int i=0; i<logs.size(); i++ ) {
@@ -195,7 +204,7 @@ string _parse_pbc_to_html( string id, string[] names, string[] logs, string[] he
 		name := names[i]
 		line := log.read()
 
-		html += "<tr><td>"+_html_link( log, name )+"</td><td>" + line.replace("\t","</td><td>") + "</td></tr>"
+		html += "<tr><td>"+html_link( log, name )+"</td><td>" + line.replace("\t","</td><td>") + "</td></tr>"
 	}
 
 	html += "</table>"
@@ -219,13 +228,13 @@ string _parse_pbc_to_html( string id, string[] names, string[] logs, string[] he
 }
 
 // Cross correlation analysis log (*.cc.qc): 1 table + img (png converted from pdf)
-string _parse_xcor_to_html( string id, string[] names, string[] logs, string[] pdfs, string[] header ) {
+string parse_xcor_to_html( string id, string[] names, string[] logs, string[] pdfs, string[] header ) {
 
 	if ( logs.size() == 0 ) return ""
 
-	html := "<div id='xcor_$id'><b>Cross-correlation QC ($id)</b><div style='padding-left: "+padding_left+"px'>"
+	html := "<div id='xcor_$id'><b>Cross-correlation QC ($id)</b><div style='padding-left: "+_padding_left+"px'>"
 
-	html += _html_table_header( ["&nbsp","numReads","estFragLen","corr_estFragLen","PhantomPeak","corr_phantomPeak","argmin_corr","min_corr","NSC","RSC"] )
+	html += html_table_header( ["&nbsp","numReads","estFragLen","corr_estFragLen","PhantomPeak","corr_phantomPeak","argmin_corr","min_corr","NSC","RSC"] )
 
 	// parse cc.qc
 	for ( int i=0; i<logs.size(); i++ ) {
@@ -238,7 +247,7 @@ string _parse_xcor_to_html( string id, string[] names, string[] logs, string[] p
 		items.removeIdx(0) // remove file name
 		items.removeIdx(items.size()-1) // remove quality tag
 		
-		html += "<tr><td>"+_html_link( log, name )+"</td><td>" + items.join("\t").replace("\t","</td><td>") + "</td></tr>"
+		html += "<tr><td>"+html_link( log, name )+"</td><td>" + items.join("\t").replace("\t","</td><td>") + "</td></tr>"
 	}
 
 	html += "</table>"
@@ -253,9 +262,9 @@ string _parse_xcor_to_html( string id, string[] names, string[] logs, string[] p
 	// images
 	for ( int i=0; i<pdfs.size(); i++ ) {
 
-		png := _pdf_to_png( pdfs[i] )
+		png := pdf_to_png( pdfs[i] )
 
-		html += _html_img( png, 500, header[i] ) + "&nbsp"
+		html += html_img( png, 500, header[i] ) + "&nbsp"
 	}	
 
 	html += "</div></div><br>"
@@ -264,13 +273,13 @@ string _parse_xcor_to_html( string id, string[] names, string[] logs, string[] p
 }
 
 // IDR logs : 1 table
-string _parse_idr_to_html( string id, string log ) {
+string parse_idr_to_html( string id, string log ) {
 
 	if ( log == "" ) return ""
 
-	html := "<div id='$id'><b>IDR QC ($id)</b><div style='padding-left: "+padding_left+"px'>"
+	html := "<div id='$id'><b>IDR QC ($id)</b><div style='padding-left: "+_padding_left+"px'>"
 
-	html += _html_link( log, get_basename( log ) )
+	html += html_link( log, get_basename( log ) )
 
 	html += "<table border='1'><tr>"
 
@@ -286,13 +295,13 @@ string _parse_idr_to_html( string id, string log ) {
 }
 
 // WashU Epigenome browser datahub (json format)
-string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
+string html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 
 	if ( files.size() == 0 ) return ""
 
 	warn := (url_base=="") ? "(add <i>-url_base [URL_ROOT_DIR_FOR_OUT_DIR]</i> to the command line.)" : ""
 
-	html := "<div id='viz'><b>Visualization $warn </b><div style='padding-left: "+padding_left+"px'>"
+	html := "<div id='viz'><b>Visualization $warn </b><div style='padding-left: "+_padding_left+"px'>"
 
 	json := "[ " // json array starts here
 
@@ -303,7 +312,7 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 		trackname := names[i].trim()
 
 		// add url_base
-		url 	:= get_url( file )
+		url 	:= _get_url( file )
 
 		if ( type == "bigwig") {
 			// deep pink
@@ -337,7 +346,7 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 	json_file := "$out_dir/$prefix"+"tracks.json"
 	json_file.write( json )
 
-	json_url := get_url( json_file )
+	json_url := _get_url( json_file )
 	viz_url	 := "http://epigenomegateway.wustl.edu/browser/?genome=" + species + "&tknamewidth=275&datahub=" + json_url
 
 	json_rel_path := get_rel_path( json_file )
@@ -349,7 +358,7 @@ string _html_epg_browser_viz( string[] files, string[] types, string[] names ) {
 	return html
 }
 
-string _html_table_header( string[] head ) {
+string html_table_header( string[] head ) {
 
 	html := "<table border='1'><tr>"
 
@@ -360,22 +369,17 @@ string _html_table_header( string[] head ) {
 	return html + "</tr>"
 }
 
-string _html_link( string path, string name ) {
+string html_link( string path, string name ) {
 
 	return "<a href='" + get_rel_path( path ) + "' target='_blank'>$name</a><br>"
 }
 
-string _html_link_url( string path ) {
-
-	return "<a href='" + get_rel_path( path ) + "' target='_blank'>" + get_rel_path( path ) + "</a><br>"
-}
-
-string _html_img( string path, int width, string cap ) {
+string html_img( string path, int width, string cap ) {
 
 	return "<figure style='display: inline-block;'><img src='" + get_rel_path( path ) + "' width='$width'><figcaption style='text-align: center;'><b>$cap</b></figcaption></figure>"
 }
 
-string _pdf_to_png( string pdf ) { 
+string pdf_to_png( string pdf ) { 
 
 	png 	:= rm_ext( pdf, "pdf" ) + ".png"
 
@@ -395,7 +399,7 @@ string _pdf_to_png( string pdf ) {
 	return png
 }
 
-string _peak_to_hammock( string peak ) {
+string peak_to_hammock( string peak ) {
 
 	prefix 	:= rm_ext( peak, ["gz"] )
 
@@ -434,7 +438,7 @@ string _peak_to_hammock( string peak ) {
 	return out
 }
 
-string get_url( string path ) {
+string _get_url( string path ) {
 
 	rel_path := get_rel_path( path )
 

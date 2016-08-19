@@ -4,7 +4,6 @@
 include "general.bds"
 
 
-grp_shape_subgraph	:= "box"
 grp_shape_box 		:= "box"
 grp_shape_node 		:= "ellipse"
 grp_fontsize_box 	:= 12
@@ -15,93 +14,105 @@ grp_color_edge		:= "gray"
 grp_style_subgraph 	:= "filled,rounded"
 grp_style_node 		:= "filled,rounded"
 
-grp_color_trim_adapter 	:= "darkorange"
-grp_color_bwa 		:= "salmon"
-grp_color_bwt2		:= "salmon"
-grp_color_dedup_bam 	:= "lightcoral"
-grp_color_xcor 		:= "yellowgreen"
-grp_color_sigtrk 	:= "yellow"
-grp_color_spp		:= "skyblue"
-grp_color_macs2		:= "lightgreen"
-grp_color_idr 		:= "limegreen" 
-grp_color_ataqc 	:= "pink"
-grp_color_naive_overlap := "skyblue"
-grp_color_idr_final	:= "pink" 
 
-string{} nodes // key: file type, contents: 1 line node definition
-string{} boxes // key: box name, contents: 1 line node definition
-string{} links // key: replicate/control id (rep1, ctl1, ...), contents: multiple links for replicate
-
-string[] tmp_labels // for thready safety
-string[] tmp_links
 
 rpt_aux_dir 	:= ""
 
 
-init_report_graphviz()
+string{} _group_name // key: group, val: long group name
+string{} _file_label // key: file path, val: label
+string{} _file_group // key: file path, val: group
+
+string[] _tmp_in
+string[] _tmp_out
+string[] _tmp_etc
+
+_tmp_delim 	:= ";;"
 
 
-void init_report_graphviz() {
+
+init_report_graph()
+
+
+void init_report_graph() {
 
 	rpt_aux_dir 	= mkdir_path( "$out_dir/report" )
 }
 
-string _html_graphviz() { // graphviz diagram
+void add_label_to_graph( string short_label, string long_label ) {
+
+	_group_name{short_label} = long_label
+}
+
+void add_file_to_graph( string file, string label, string group ) {
+
+	path := file.path()
+	_file_label{ path } = label
+	_file_group{ path } = group
+}
+
+// add graph element (in -> box -> out)
+void add_task_to_graph( string[] in, string[] out, string box_group, string box_name, string box_color ) {
+
+	// save [in,out,etc(box_group,box_name,box_color)] info to temporary arrays and process them later at the end of the pipeline (in _make_dot() ).
+
+	in_str := array_to_str( in, _tmp_delim )
+	out_str := array_to_str( out, _tmp_delim )
+	etc_str := "$box_group$_tmp_delim$box_name$_tmp_delim$box_color"
+
+	_tmp_in.add( in_str )
+	_tmp_out.add( out_str )
+	_tmp_etc.add( etc_str )
+}
+
+void add_task_to_graph( string in, string out, string box_group ) {
+
+	add_task_to_graph( [in], [out], box_group )
+}
+
+void add_task_to_graph( string[] in, string out, string box_group ) {
+
+	add_task_to_graph( in, [out], box_group )
+}
+
+void add_task_to_graph( string in, string[] out, string box_group ) {
+
+	add_task_to_graph( [in], out, box_group )
+}
+
+void add_task_to_graph( string[] in, string[] out, string box_group ) {
+
+	add_task_to_graph( in, out, box_group, "", "" )
+}
+
+void add_task_to_graph( string in, string out, string box_group, string box_name, string box_color ) {
+
+	add_task_to_graph( [in], [out], box_group, box_name, box_color )
+}
+
+void add_task_to_graph( string[] in, string out, string box_group, string box_name, string box_color ) {
+
+	add_task_to_graph( in, [out], box_group, box_name, box_color )
+}
+
+void add_task_to_graph( string in, string[] out, string box_group, string box_name, string box_color ) {
+
+	add_task_to_graph( [in], out, box_group, box_name, box_color )	
+}
+
+string html_graph() { // graph diagram
 
 	wait // for thread safety
 
-	html := "<div id='graphviz'><b>Workflow diagram</b>&nbsp<small>(rep : Replicate, ctl : Control, pr : Pseudo-replicate, ppr : Pooled pseudo-replicate)</small><br>"
+	//html := "<div id='graph'><b>Workflow diagram</b>&nbsp<small>(rep : Replicate, ctl : Control, pr : Pseudo-replicate, ppr : Pooled pseudo-replicate)</small><br>"
+	html := "<div id='graph'><b>Workflow diagram</b>&nbsp<small>(g. peak : gapped peak (MACS2), n. peak : narrow peak (MACS2), r. peak : region peak (SPP) )</small><br>"
 
 	prefix := title=="" ? "" : (title+"_")
 
-	dot 	:= "$rpt_aux_dir/$prefix"+"workflow.dot"
-	svg 	:= "$rpt_aux_dir/$prefix"+"workflow.svg"
+	dot := _make_dot("$rpt_aux_dir/$prefix"+"workflow.dot")
+	svg := "$rpt_aux_dir/$prefix"+"workflow.svg"
 
-	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,style=\"$grp_style_node\",margin=0,fontsize=$grp_fontsize_node];" + \
-			"\nedge [color=$grp_color_edge,fontsize=$grp_fontsize_node];\n\n";
-
-	for ( string node : nodes ) dot_contents += (node + "\n")
-	for ( string box : boxes ) dot_contents += (box + "\n")
-
-	for ( int i=0; i<tmp_labels.size(); i++) {
-		label := tmp_labels[i]
-		link := tmp_links[i]
-
-		if ( links.hasKey(label) ) {
-			links{label} += link
-		}
-		else {
-			links{label} = link
-		}
-	}
-
-	for ( string key : links.keys() ) {
-
-		if ( key == "" ) continue
-			
-		link := links{key}
-
-		if ( key == "outside" ) {
-
-			dot_contents += link+"\n\n";
-		}
-		else {
-			subgraph := "subgraph cluster_"+key.replace("-","_")+" {\n\n"
-			subgraph += link+"\n"
-			subgraph += "color=\"$grp_color_subgraph\";"
-			subgraph += "style=\"$grp_style_subgraph\";"
-			subgraph += "label=\"$key\";"
-			subgraph += "}\n\n"
-
-			dot_contents += subgraph
-		}	
-	}
-
-	dot_contents += "\n\n}"
-
-	dot.write( dot_contents )
-
-	// run graphviz
+	// run graph
 	taskName := "report"
 	system := "local" // do not use cluster engine for this task
 	
@@ -116,118 +127,199 @@ string _html_graphviz() { // graphviz diagram
 	return html
 }
 
-// add graphviz element (in -> box -> out)
-void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string[] out_path, string box, string box_color ) {
+string _make_dot( string file ) {
 
-	// {in1, in2, ...} -> box -> {out1, out2, ...}		
+	dot_contents := "digraph {\n\nrankdir=LR\n\nnode [shape=$grp_shape_node,style=\"$grp_style_node\",margin=0,fontsize=$grp_fontsize_node];" + \
+			"\nedge [color=$grp_color_edge,fontsize=$grp_fontsize_node,arrowsize=0.5];\n\n";
 
-	if ( box == "" ) {
+	string{} nodes // key: file type, val: 1 line node definition
+	string{} boxes // key: box name, val: 1 line node definition
+	string{} links // key: group (rep1, ctl1, ...), val: multiple links for replicate
 
-		for ( int i=0; i< min(in_id.size(),in_path.size()); i++ )  {
+	string[] groups 
+	string[] _tmp_links
 
-			if ( in_id[i] == "" || in_path[i] == "" ) continue
+	for ( int k=0; k<_tmp_in.size(); k++ ) {
 
-			in 	:= in_id[i]
-			in 	= in.replace("_","\\n")
-			path 	:= "../" + get_rel_path( in_path[i] ) // ../ is because .svg is located at $out_dir/report/
+		string[] in = _tmp_in[k].split(_tmp_delim)
+		string[] out = _tmp_out[k].split(_tmp_delim)
+		string[] etc = _tmp_etc[k].split(_tmp_delim)
 
-			in_label	:= _get_label( in )
-			in_id_wo_label	:= _rm_label( in )
+		box_group := etc[0]
+		box_name := etc[1]
+		box_color := etc[2]
 
-			nodes{in} = "\t\"$in\" [label=\"$in\",id=\"$in\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];"
+		// {in1, in2, ...} -> box -> {out1, out2, ...} : with a box
+		// {in1, in2, ...} -> {out1, out2, ...} : without a box
 
-			for ( int j=0; j<min(out_id.size(),out_path.size()); j++ ) {
+		// to prevent duplicate arrows
+		//    ->     ->
+		// IN -> box -> OUT
+		//    ->     -> 
+		bool{} added_in_to_box
+		bool{} added_box_to_out
 
-				if ( out_id[j] == "" || out_path[j] == "" ) continue
+		for ( int i=0; i< in.size(); i++ )  {
+			if ( in[i] == "" ) continue
 
-				out 	:= out_id[j]
-				out 	= out.replace("_","\\n") //.substr( out_.lastIndexOf("/")+1 ).replace("_","\\n")
-				path 	:= "../" + get_rel_path( out_path[j] )
+			in_label := _find_label( in[i] ) 
 
-				out_label 	:= _get_label( out )
-				out_id_wo_label	:= _rm_label( out )
+			for ( int j=0; j<out.size(); j++ ) {
+				if ( out[j] == "" ) continue
 
-				nodes{out} = "\t\"$out\" [label=\"$out\",id=\"$out\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];"
+				out_label := _find_label( out[j] ) 
 
-				if ( in_label == out_label ) 	tmp_labels.add(in_label)
-				else 				tmp_labels.add("outside")
-				tmp_links.add("\t\"$in\" -> \"$out\";\n")
+				if ( in_label == "" && out_label == "" || in_label != "" && out_label == "" ) { 
+					continue
+				}
+
+				string new_in_path, new_box_name
+
+				if ( in_label == "" && out_label != "" ) { // node w/o label -> node w. label
+					
+					in_parent := _find_parent_path_with_label( in[i] )
+
+					if ( in_parent == "" ) continue
+
+					new_in_path = in_parent
+				}
+				else {
+					new_in_path = in[i]
+				}
+
+				new_in_label := _find_label( new_in_path )
+				in_group := _find_group( new_in_path )
+				in_full := "$new_in_label-$in_group"
+				in_rel_path:= "../" + get_rel_path( new_in_path )
+
+				nodes{in_full} = "\t\"$in_full\" [label=\"$new_in_label\",id=\"$in_full\"style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$in_rel_path\",href=\"$in_rel_path\"];"
+
+				out_group := _find_group( out[j] )
+				out_full  := "$out_label-$out_group"
+				out_rel_path := "../" + get_rel_path( out[j] )
+
+				nodes{out_full} = "\t\"$out_full\" [label=\"$out_label\",id=\"$out_full\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$out_rel_path\",href=\"$out_rel_path\"];"
+
+				if ( box_name != "" ) { // if box exists (a->box->b)
+
+					box_full := "$box_name-$box_group"
+					boxes{box_full} = "\t\"$box_full\" [label=\"$box_name\",id=\"$box_full\",fontsize=$grp_fontsize_box,shape=$grp_shape_box,style=\"$grp_style_node\",fillcolor=$box_color];"
+
+					in_to_box := "\t\"$in_full\" -> \"$box_full\";\n"
+					box_to_out := "\t\"$box_full\" -> \"$out_full\";\n"
+
+					if ( !added_in_to_box.hasKey(in_to_box) ) { // to prevent duplicate arrows
+						if ( in_group == box_group && box_group != "" ) groups.add(in_group)
+						else 						groups.add("outside")
+						_tmp_links.add(in_to_box)
+						added_in_to_box{in_to_box} = true 
+					}
+
+					if ( !added_box_to_out.hasKey(box_to_out) ) {// to prevent duplicate arrows
+						if ( out_group == box_group && box_group != "" )	groups.add(out_group)
+						else 							groups.add("outside")
+						_tmp_links.add(box_to_out)
+						added_box_to_out{box_to_out} = true
+					}
+				}
+				else {
+					if ( in_group == out_group ) 	groups.add(in_group)
+					else 				groups.add("outside")
+					
+					_tmp_links.add("\t\"$in_full\" -> \"$out_full\";\n")					
+				}
 			}
 		}
 	}
-	else {
-		box = box.replace("_","\\n")
 
-		box_label 	:= _get_label( box )
-		box_id_wo_label := _rm_label( box ).toUpper().replace("\\N","\\n")
+	for ( string node : nodes ) dot_contents += (node + "\n")
+	for ( string box : boxes ) dot_contents += (box + "\n")
 
-		boxes{box} = "\t\"$box\" [label=\"$box_id_wo_label\",fontsize=$grp_fontsize_box,shape=$grp_shape_box,style=\"$grp_style_node\",fillcolor=$box_color];"
+	for ( int i=0; i<groups.size(); i++) {
+		group := groups[i]
+		link := _tmp_links[i]
 
-		for ( int i=0; i< min(in_id.size(),in_path.size()); i++ )  {
-
-			if ( in_id[i] == "" || in_path[i] == "" ) continue
-
-			in 	:= in_id[i]
-			in 	= in.replace("_","\\n")
-			path 	:= "../" + get_rel_path( in_path[i] ) // ../ is because .svg is located at $out_dir/report/
-
-			in_label	:= _get_label( in )
-			in_id_wo_label	:= _rm_label( in )
-
-			nodes{in} = "\t\"$in\" [label=\"$in\",id=\"$in\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];"
-
-			if ( in_label == box_label && box_label != "" ) tmp_labels.add(in_label)
-			else 						tmp_labels.add("outside")
-			tmp_links.add("\t\"$in\" -> \"$box\";\n")
+		if ( links.hasKey(group) ) {
+			links{group} += link
 		}
-
-		for ( int j=0; j<min(out_id.size(),out_path.size()); j++ ) {
-
-			if ( out_id[j] == "" || out_path[j] == "" ) continue
-
-			out 	:= out_id[j]
-			out 	= out.replace("_","\\n") //.substr( out_.lastIndexOf("/")+1 ).replace("_","\\n")
-			path 	:= "../" + get_rel_path( out_path[j] )
-
-			out_label 	:= _get_label( out )
-			out_id_wo_label	:= _rm_label( out )
-
-			nodes{out} = "\t\"$out\" [label=\"$out\",id=\"$out\",style=\"$grp_style_node\",fillcolor=$grp_color_node,tooltip=\"$path\",href=\"$path\"];"
-
-			if ( out_label == box_label && box_label != "" )	tmp_labels.add(out_label)
-			else 							tmp_labels.add("outside")
-			tmp_links.add("\t\"$box\" -> \"$out\";\n")
+		else {
+			links{group} = link
 		}
 	}
+
+	for ( string key : links.keys() ) {
+
+		if ( key == "" ) continue
+			
+		link := links{key}
+
+		if ( key == "outside" ) {
+
+			dot_contents += link+"\n\n";
+		}
+		else {
+			group_label := _group_name.hasKey( key ) ? _group_name{key} : key
+
+			subgraph := "subgraph cluster_"+key.replace("-","_")+" {\n\n"
+			subgraph += link+"\n"
+			subgraph += "color=\"$grp_color_subgraph\";"
+			subgraph += "style=\"$grp_style_subgraph\";"
+			subgraph += "label=\"$group_label\";"
+			subgraph += "}\n\n"
+
+			dot_contents += subgraph
+		}	
+	}
+
+	dot_contents += "\n\n}"
+
+	file.write( dot_contents )
+
+	return file.path()
 }
 
-void _add_to_graphviz( string[] in_id, string[] in_path, string[] out_id, string[] out_path ) {
+string _find_label( string path ) {
 
-	_add_to_graphviz( in_id, in_path, out_id, out_path, "", "" )
+	return _file_label.hasKey( path.path() ) ? _file_label{ path.path() } : ""
 }
 
-string _get_label( string id ) { // get (rep?), (ctl?) in id
+string _find_group( string path ) {
 
-	a := id.lastIndexOf("(")
-	b := id.lastIndexOf(")")
-
-	if ( a > -1 && b > -1 && a < b ) {
-		id.substr(a+1,b)
-	}
-	else {
-		return ""
-	}
+	return _file_group.hasKey( path.path() ) ? _file_group{ path.path() } : ""
 }
 
-string _rm_label( string id ) {
+string _find_parent_path_with_label( string path ) {
 
-	a := id.lastIndexOf("(")
-	b := id.lastIndexOf(")")
+	path = path.path() // get absolue path
 
-	if ( a > -1 && b > -1 && a < b ) {
-		return rm_str_at_end( rm_str_at_end( id.substr(0,a), "\\n" ), "_" )
+	for ( int k=0; k< _tmp_in.size(); k++) {
+
+		string[] in = _tmp_in[k].split(_tmp_delim)
+		string[] out = _tmp_out[k].split(_tmp_delim)
+		string[] etc = _tmp_etc[k].split(_tmp_delim)
+
+		for ( int j=0; j<out.size(); j++ ) {
+			if ( out[j] == "" ) continue
+			if ( out[j].path() != path ) continue
+
+			for ( int i=0; i< in.size(); i++ )  {
+				if ( in[i] == "" ) continue
+
+				in_label := _find_label( in[i] )
+
+				if ( in_label == "" ) {
+
+					in_parent := _find_parent_path_with_label( in[i] )
+
+					if ( in_parent == "" ) continue
+					else return in_parent
+				}
+				else {
+					return in[i]
+				}
+			}
+		}
 	}
-	else {
-		return id
-	}	
+
+	return ""
 }

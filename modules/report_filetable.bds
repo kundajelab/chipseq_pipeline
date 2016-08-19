@@ -4,167 +4,52 @@
 include "general.bds"
 
 
-string{} map_label 	// for label of filetable entry (L1_ is to distinguish the grandest parent)
-int{} map_rank 		// for sorting filetable
 
-// level1
-map_label{"L1_align"}		= "Alignment"
-map_label{"L1_signal"} 		= "Signal tracks"
-map_label{"L1_peak"} 		= "Peaks"
-map_label{"L1_qc"} 		= "QC and logs"
+int{} _label_rank
 
-for (int i=1; i<=100; i++) \
-	map_label{"rep$i"} 	= "Replicate $i"
-for (int i=1; i<=100; i++) \
-	map_label{"ctl$i"} 	= "Control $i"
+string{} _filetable_label // key: hierarchy
+string{} _filetable_path
+int{} _filetable_rank
 
-map_label{"pooled_rep"} 	= "Pooled replicate"
-map_label{"pooled_ctl"} 	= "Pooled control"
-map_label{"pooled_reps"}	= "Pooled replicates"
-map_label{"true_reps"}		= "True replicates"
-map_label{"pseudo_reps"}	= "Pseudo-replicates"
-map_label{"pooled_pseudo_reps"} = "Pooled pseudo-replicate"
-map_label{"opt_set"} 		= "Optimal set"
-map_label{"consv_set"} 		= "Conservative set"
-map_label{"overlap"} 		= "Naive overlap"
-map_label{"idr"} 		= "IDR"
-map_label{"spp"} 		= "SPP"
-map_label{"macs2"} 		= "MACS2"
-
-map_label{"pr1"} 		= "Pseudo-replicate 1"
-map_label{"pr2"} 		= "Pseudo-replicate 2"
-map_label{"ppr1"} 		= "Pooled pseudo-replicate 1"
-map_label{"ppr2"} 		= "Pooled pseudo-replicate 2"
-for (int i=1; i<=20; i++) \
- for (int j=i+1; j<=20; j++) \
-  map_label{"rep$i-rep$j"}	= "Rep. $i vs Rep. $j"
-
-map_label{"idr_qc"} 		= "IDR QC"
-map_label{"fastq"} 		= "fastq"
-map_label{"fastq1"} 		= "fastq1"
-map_label{"fastq2"} 		= "fastq2"
-map_label{"trimmed_fastq"} 	= "trimmed fastq"
-map_label{"trimmed_fastq1"} 	= "trimmed fastq1"
-map_label{"trimmed_fastq2"} 	= "trimmed fastq2"
-map_label{"bwt2_qc"} 		= "bowtie2 QC"
-map_label{"bwa_qc"} 		= "bwa QC"
-map_label{"bam"} 		= "bam"
-map_label{"filt_bam"} 		= "filtered bam"
-map_label{"srt_bam"} 		= "sorted bam"
-map_label{"dup_qc"} 		= "dup. QC"
-map_label{"map_qc"} 		= "map QC"
-map_label{"pbc_qc"} 		= "PBC QC"
-map_label{"bedpe"} 		= "bedpe"
-map_label{"subsampled_bedpe"} 	= "subsampled bedpe"
-map_label{"tagalign"} 		= "tagalign"
-map_label{"subsampled_tagalign"}= "subsampled tagalign"
-map_label{"xcor_qc"}		= "cross-corr. QC"
-map_label{"pval"} 		= "p-value"
-map_label{"pval,0.01"} 		= "p-value"
-map_label{"fc"} 		= "fold enrichment"
-map_label{"fc,0.01"} 		= "fold enrichment"
-map_label{"npeak"} 		= "narrow peak"
-map_label{"rpeak"} 		= "region peak"
-map_label{"bpeak"} 		= "broad peak"
-map_label{"gpeak"} 		= "gapped peak"
-map_label{"idr_peak"} 		= "IDR peak"
-map_label{"peak"} 		= "peak"
-map_label{"peak,0.01"} 		= "peak (p-val thld: 0.01)"
-map_label{"peak_filt"} 		= "filtered peak"
-map_label{"peak_macs2_filt"} 	= "filtered peak"
-map_label{"gpeak,0.01"} 	= "gapped peak (p-val thld: 0.01)"
-map_label{"gpeak_filt"} 	= "filtered gapped peak"
-map_label{"gpeak_macs2_filt"} 	= "filtered gapped peak"
-map_label{"peak_overlap"} 	= "peak"
-map_label{"gpeak_overlap"} 	= "gapped peak"
-map_label{"ataqc"} 		= "ATAQC"
-map_label{"idr_plot"} 		= "IDR plot"
-map_label{"unthsld_peak"} 	= "Unthresholded IDR peak"
-
-map_rank{"L1_align"} 		= 1
-map_rank{"L1_signal"} 		= 2
-map_rank{"L1_peak"} 		= 3
-map_rank{"L1_qc"} 		= 4
-
-_rank := 0
-for (int i=1; i<=100; i++) \
-	map_rank{"rep$i"} 	= ++_rank
-for (int i=1; i<=100; i++) \
-	map_rank{"ctl$i"} 	= ++_rank
-
-map_rank{"pooled_rep"} 		= ++_rank
-map_rank{"pooled_ctl"} 		= ++_rank
-map_rank{"pooled_reps"}		= ++_rank
-map_rank{"pseudo_reps"}		= ++_rank
-map_rank{"pooled_pseudo_reps"} 	= ++_rank
-map_rank{"opt_set"} 		= ++_rank
-map_rank{"consv_set"} 		= ++_rank
-map_rank{"overlap"} 		= ++_rank
-map_rank{"idr"} 		= ++_rank
-map_rank{"spp"} 		= ++_rank
-map_rank{"macs2"} 		= ++_rank
-
-_rank = 0
-map_rank{"pr1"} 		= ++_rank
-map_rank{"pr2"} 		= ++_rank
-map_rank{"ppr1"} 		= ++_rank
-map_rank{"ppr2"} 		= ++_rank
-for (int i=1; i<=20; i++) \
- for (int j=i+1; j<=20; j++) \
-  map_rank{"rep$i-rep$j"}	= ++_rank
-
-map_rank{"idr_qc"} 		= ++_rank
-map_rank{"fastq"} 		= ++_rank
-map_rank{"fastq1"} 		= ++_rank
-map_rank{"fastq2"} 		= ++_rank
-map_rank{"trimmed_fastq"} 	= ++_rank
-map_rank{"trimmed_fastq1"} 	= ++_rank
-map_rank{"trimmed_fastq2"} 	= ++_rank
-map_rank{"bwt2_qc"} 		= ++_rank
-map_rank{"bwa_qc"} 		= ++_rank
-map_rank{"map_qc"} 		= ++_rank
-map_rank{"bam"} 		= ++_rank
-map_rank{"filt_bam"} 		= ++_rank
-map_rank{"srt_bam"} 		= ++_rank
-map_rank{"dup_qc"} 		= ++_rank
-map_rank{"map_qc"} 		= ++_rank
-map_rank{"pbc_qc"} 		= ++_rank
-map_rank{"bedpe"} 		= ++_rank
-map_rank{"subsampled_bedpe"} 	= ++_rank
-map_rank{"tagalign"} 		= ++_rank
-map_rank{"subsampled_tagalign"}	= ++_rank
-map_rank{"xcor_qc"}		= ++_rank
-map_rank{"pval"} 		= ++_rank
-map_rank{"pval,0.01"} 		= ++_rank
-map_rank{"fc"} 			= ++_rank
-map_rank{"fc,0.01"} 		= ++_rank
-map_rank{"npeak"} 		= ++_rank
-map_rank{"rpeak"} 		= ++_rank
-map_rank{"bpeak"} 		= ++_rank
-map_rank{"gpeak"} 		= ++_rank
-map_rank{"idr_peak"} 		= ++_rank
-map_rank{"peak"} 		= ++_rank
-map_rank{"peak,0.01"} 		= ++_rank
-map_rank{"peak_filt"} 		= ++_rank
-map_rank{"peak_macs2_filt"} 	= ++_rank
-map_rank{"geak,0.01"} 		= ++_rank
-map_rank{"gpeak_filt"} 		= ++_rank
-map_rank{"gpeak_macs2_filt"} 	= ++_rank
-map_rank{"peak_overlap"} 	= ++_rank
-map_rank{"gpeak_overlap"} 	= ++_rank
-map_rank{"ataqc"} 		= ++_rank
-map_rank{"idr_plot"} 		= ++_rank
-map_rank{"unthsld_peak"} 	= ++_rank
-
-string{} filetable_input
-
-string{} filetable_label // key: hierarchy
-string{} filetable_path
-int{} filetable_rank
+string{} _filetable_input
+int _curr_rank = 0
 
 
 
-string _html_filetable() { // graphviz diagram
+void add_label_to_table( string label ) {
+
+	_label_rank{ label } = _curr_rank++
+}
+
+void add_file_to_table( string[] paths, string[] hrchys ) {
+
+	for ( int i=0; i<min(hrchys.size(),paths.size()); i++ )  {
+
+		hrchy 	:= hrchys[i]
+		path 	:= paths[i]
+
+		if ( hrchy == "" || path == "" ) continue
+
+		_filetable_input{ hrchy } = path
+	}
+}
+
+void add_file_to_table( string[] paths, string hrchy ) {
+
+	add_file_to_table( paths, [hrchy] )
+}
+
+void add_file_to_table( string path, string[] hrchys ) {
+
+	add_file_to_table( [path], hrchys )
+}
+
+void add_file_to_table( string path, string hrchy ) {
+
+	add_file_to_table( [path], [hrchy] )
+}
+
+string html_filetable() { // graphviz diagram
 
 	wait // for thread safety
 
@@ -182,13 +67,13 @@ string _html_filetable() { // graphviz diagram
 	for ( string hrchy : sorted_hrchy ) {
 
 		parent 	:= _get_parent( hrchy )
-		label 	:= filetable_label{ hrchy }
-		path 	:= filetable_path.hasKey( hrchy ) ? filetable_path{ hrchy } : ""
+		label 	:= _filetable_label{ hrchy }
+		path 	:= _filetable_path.hasKey( hrchy ) ? _filetable_path{ hrchy } : ""
 
 		if ( parent == "" ) \
-			html += "<tr data-tt-id='$hrchy'><td> $label </td><td>"+ _html_link_url( path ) +"</td></tr>"
+			html += "<tr data-tt-id='$hrchy'><td> $label </td><td>"+ html_link_url( path ) +"</td></tr>"
 		else \
-			html += "<tr data-tt-id='$hrchy' data-tt-parent-id='$parent'><td> $label </td><td>"+ _html_link_url( path ) +"</td></tr>"
+			html += "<tr data-tt-id='$hrchy' data-tt-parent-id='$parent'><td> $label </td><td>"+ html_link_url( path ) +"</td></tr>"
 	}
 
 	html += "</tbody></table>"
@@ -197,24 +82,16 @@ string _html_filetable() { // graphviz diagram
 	return html
 }
 
-void _add_to_filetable( string[] out_hrchy, string[] out_path ) {
+string html_link_url( string path ) {
 
-	for ( int i=0; i<min(out_hrchy.size(),out_path.size()); i++ )  {
-
-		hrchy 	:= out_hrchy[i]
-		path 	:= out_path[i]
-
-		if ( hrchy == "" || path == "" ) continue
-
-		filetable_input{ hrchy } = path
-	}
+	return "<a href='" + get_rel_path( path ) + "' target='_blank'>" + get_rel_path( path ) + "</a><br>"
 }
 
 void _construct_filetable() {
 
-	for( string hrchy : filetable_input.keys() ) {
+	for( string hrchy : _filetable_input.keys() ) {
 
-		_construct_filetable( hrchy, filetable_input{ hrchy } )
+		_construct_filetable( hrchy, _filetable_input{ hrchy } )
 	}
 }
 
@@ -223,13 +100,13 @@ void _construct_filetable( string hrchy, string path ) {
 
 	if ( hrchy == "" ) return
 
-	if ( filetable_label.hasKey( hrchy ) ) return
+	if ( _filetable_label.hasKey( hrchy ) ) return
 
 	curr 	:= _get_curr( hrchy )
 	parent 	:= _get_parent( hrchy )
 
-	filetable_label{hrchy} 	= map_label.hasKey(curr) ? map_label{curr} : curr
-	filetable_path{hrchy} 	= path
+	_filetable_label{hrchy} 	= curr //map_label.hasKey(curr) ? map_label{curr} : curr
+	_filetable_path{hrchy} 	= path
 
 	if ( parent != "" ) _construct_filetable( parent, "" )
 }
@@ -238,7 +115,7 @@ string[] _get_children( string hrchy ) { // not including grand ones
 
 	string[] children
 
-	for ( string hrchy_ : filetable_label.keys() ) {
+	for ( string hrchy_ : _filetable_label.keys() ) {
 
 		if ( hrchy == "" ) {
 			if ( hrchy_.indexOf("/") < 0 ) \
@@ -268,7 +145,7 @@ string[] _find_children_and_sort( string hrchy ) {
 	for ( string child : children ) {
 
 		curr := _get_curr( child )
-		ranks.add( map_rank.hasKey(curr) ? map_rank{curr} : 0 )
+		ranks.add( _label_rank.hasKey(curr) ? _label_rank{curr} : 0 )
 	}
 
 	sorted := _bubble_sort( ranks, children )

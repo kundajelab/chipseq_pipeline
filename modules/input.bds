@@ -294,16 +294,6 @@ bool ctl_exists() {
 	return input_file_exists( 1, 1 )
 }
 
-string get_info_str( int ctl, int rep ) {
-
-	return ( (ctl>0) ? "ctl" : "rep") + rep
-}
-
-string get_info_str( int rep ) {
-
-	return rep
-}
-
 /*
 // correct if user skipped replicate id like (-fastq[PAIR]) instead of (-fastq[REP]_[PAIR])
 // this is only for 1 PE replicate

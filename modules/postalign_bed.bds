@@ -10,6 +10,8 @@ include "report.bds"
 help == postalign bed/tagalign settings
 fraglen0        := false        help Set predefined fragment length as zero for cross corr. analysis (add -speak=0 to run_spp.R).
 
+grp_color_xcor 		:= "yellowgreen"
+
 
 init_postalign_bed()
 
@@ -22,7 +24,7 @@ void init_postalign_bed() {
 	print( "Set initial fraglen. to 0 for cross-corr. (-speak=0)\t: $fraglen0\n")
 }
 
-string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
+string subsample_tag( string tag, int nlines, string o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	nreads_per_mill := number_with_metric_prefix( nlines )
@@ -32,7 +34,7 @@ string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 	in 	:= [ tag ]
 	out 	:= subsampled_tag
 
-	taskName:= "_subsample_tag " + label
+	taskName:= "_subsample_tag " + group
 
 	wait_par( cpus )
 
@@ -49,12 +51,14 @@ string _subsample_tag( string tag, int nlines, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
-string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string label ) {
+string subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","bed"] ), o_dir )
 	nreads_per_mill := number_with_metric_prefix( nlines )
@@ -64,7 +68,7 @@ string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string labe
 	in 	:= [ tag ]
 	out 	:= subsampled_tag
 
-	taskName:= "_subsample_tag_PE " + label
+	taskName:= "_subsample_tag_PE " + group
 
 	wait_par( cpus )
 
@@ -82,12 +86,14 @@ string _subsample_tag_PE_xcor( string tag, int nlines, string o_dir, string labe
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
 // This function is for cross correlation analysis in chipseq pipeline only for paired end data set
 // Output (subsampled) tagalign will restricted to one read end per pair
-string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, string label ) {
+string subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, string group ) {
 	
 	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
 	nreads_per_mill := number_with_metric_prefix( nlines )
@@ -96,7 +102,7 @@ string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, str
 
 	in 	:= [ bedpe ]
 	out 	:= subsampled_tag
-	taskName:= "subsample_bedpe2tag" + label
+	taskName:= "subsample_bedpe2tag" + group
 
 	wait_par( cpus )
 
@@ -115,10 +121,12 @@ string _subsample_bedpe_to_tag_xcor( string bedpe, int nlines, string o_dir, str
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
-string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) {
+string subsample_bedpe( string bedpe, int nlines, string o_dir, string group ) {
 	
 	prefix 		:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
 	nreads_per_mill := number_with_metric_prefix( nlines )
@@ -128,7 +136,7 @@ string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) 
 	in 	:= [ bedpe ]
 	out 	:= subsampled_bedpe
 
-	taskName:= "subsample_bedpe " + label
+	taskName:= "subsample_bedpe " + group
 
 	wait_par( cpus )
 
@@ -143,11 +151,13 @@ string _subsample_bedpe( string bedpe, int nlines, string o_dir, string label ) 
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
 // Adjusts the read-ends in a read BED by Tn5 offsets
-string _tn5_shift_tag( string tag, string o_dir, string label ) {
+string tn5_shift_tag( string tag, string o_dir, string group ) {
 	
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	//shifted_tag 	:= "$prefix.shifted.tagAlign.gz"
@@ -156,7 +166,7 @@ string _tn5_shift_tag( string tag, string o_dir, string label ) {
 	in 	:= [ tag ]
 	out 	:= shifted_tag
 
-	taskName:= "shift_tag " + label
+	taskName:= "shift_tag " + group
 
 	wait_par( cpus )
 
@@ -171,10 +181,12 @@ string _tn5_shift_tag( string tag, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
-string[] _xcor( string tag, string o_dir, string label, int nth_xcor, string hrchy ) {
+string[] xcor( string tag, string o_dir, string group, int nth_xcor ) {
 
 	// misc.
 	prefix 		:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
@@ -185,7 +197,7 @@ string[] _xcor( string tag, string o_dir, string label, int nth_xcor, string hrc
 	in 	:= [ tag ]
 	out 	:= [ xcor_score, xcor_plot ]
 
-	taskName:= "xcor " + label
+	taskName:= "xcor " + group
 	cpus 	:= nth_xcor; 	mem := get_res_mem(memory,nth_xcor);
 
 	wait_par( cpus )
@@ -207,14 +219,13 @@ string[] _xcor( string tag, string o_dir, string label, int nth_xcor, string hrc
 
 	register_par( tid, cpus )
 
-	//_add_to_graphviz( ["subsampled_tagalign_($label)"], in, ["xcor_qc_($label)"], out, "cross-corr.\\n($label)", grp_color_xcor )
-	_add_to_filetable( ["L1_qc/$hrchy/xcor_qc"], out )
+	add_task_to_graph( in, out, group, "XCOR", grp_color_xcor )
 
 	return out
 }
 
 // make spr(self_pseudo_replicate)
-string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
+string[] spr( string tag, string pr1_o_dir, string pr2_o_dir, string group ) {
 	
 	prefix_pr1 	:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), pr1_o_dir )
 	prefix_pr2	:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), pr2_o_dir )
@@ -224,7 +235,7 @@ string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
 	in 	:= [ tag ]
 	out 	:= [ tag_pr1, tag_pr2 ]
 
-	taskName:= "spr " + label
+	taskName:= "spr " + group
 
 	wait_par( cpus )
 
@@ -251,13 +262,12 @@ string[] _spr( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
 
 	register_par( tid, cpus )
 
-	_add_to_graphviz( ["tagalign_($label)"], in, ["tagalign_($label-pr1)", "tagalign_($label-pr2)"], out )
-	_add_to_filetable( ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"], out )
+	add_task_to_graph( in, out, ["$group PR 1", "$group PR 2"] )
 
 	return out
 }
 
-string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label ) {
+string[] spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string group ) {
 	
 	prefix_pr1 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed","tagAlign"] ), pr1_o_dir )
 	prefix_pr2 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed","tagAlign"] ), pr2_o_dir )
@@ -268,7 +278,7 @@ string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label
 	in 	:= [ bedpe ]
 	out 	:= [ tag_pr1, tag_pr2 ]
 
-	taskName:= "spr_PE " + label
+	taskName:= "spr_PE " + group
 
 	wait_par( cpus )
 
@@ -297,13 +307,12 @@ string[] _spr_PE( string bedpe, string pr1_o_dir, string pr2_o_dir, string label
 	
 	register_par( tid, cpus )
 
-	_add_to_graphviz( ["bedpe_($label)"], in, ["tagalign_($label-pr1)", "tagalign_($label-pr2)"], out )
-	_add_to_filetable( ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"], out )
+	add_task_to_graph( in, out, ["$group PR 1", "$group PR 2"] )
 
 	return out
 }
 
-string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string label ) {
+string[] spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string group ) {
 	
 	prefix_pr1 	:= replace_dir( rm_ext( tag, ["bed","tagAlign"] ), pr1_o_dir )
 	prefix_pr2 	:= replace_dir( rm_ext( tag, ["bed","tagAlign"] ), pr2_o_dir )
@@ -316,7 +325,7 @@ string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string lab
 	in 	:= [ tag ]
 	out 	:= [ tag_pr1, tag_pr2 ]
 
-	taskName:= "spr_tag_PE " + label
+	taskName:= "spr_tag_PE " + group
 
 	wait_par( cpus )
 
@@ -350,37 +359,12 @@ string[] _spr_tag_PE( string tag, string pr1_o_dir, string pr2_o_dir, string lab
 	
 	register_par( tid, cpus )
 
-	_add_to_graphviz( ["tagalign_($label)"], in, ["tagalign_($label-pr1)", "tagalign_($label-pr2)"], out )
-	_add_to_filetable( ["L1_align/pseudo_reps/$label/pr1/tagalign", "L1_align/pseudo_reps/$label/pr2/tagalign"], out )
+	add_task_to_graph( in, out, ["$group PR 1", "$group PR 2"] )
 
 	return out
 }
 
-// make ppr(pooled pseudo replicate)
-string[] _ppr( string tag1, string tag1_pr1, string tag1_pr2, string tag2, string tag2_pr1, string tag2_pr2, \
-		string pooled_o_dir, string ppr1_o_dir, string ppr2_o_dir, string label ) {
-	
-	tag_pooled 	:= _pool_tag( tag1, tag2, pooled_o_dir, label )
-	tag_ppr1 	:= _pool_tag( tag1_pr1, tag2_pr1, ppr1_o_dir, label+"_ppr1" )
-	tag_ppr2 	:= _pool_tag( tag1_pr2, tag2_pr2, ppr2_o_dir, label+"_ppr2" )
-
-	out 	:= [ tag_pooled, tag_ppr1, tag_ppr2 ]
-
-	_add_to_graphviz( ["tagalign_(rep1)","tagalign_(rep2)"], [tag1,tag2], \
-			  ["tagalign_(pooled)"], [tag_pooled] )
-	_add_to_graphviz( ["tagalign_(rep1-pr1)","tagalign_(rep2-pr1)"], [tag1_pr1,tag2_pr1], \
-			  ["tagalign_(ppr1)"], [tag_ppr1] )
-	_add_to_graphviz( ["tagalign_(rep1-pr2)","tagalign_(rep2-pr2)"], [tag1_pr2,tag2_pr2], \
-			  ["tagalign_(ppr2)"], [tag_ppr2] )
-
-	_add_to_filetable(["L1_align/pooled_rep/tagalign"], [tag_pooled] )
-	_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr1/tagalign"], [tag_ppr1] )
-	_add_to_filetable(["L1_align/pooled_pseudo_reps/ppr2/tagalign"], [tag_ppr2] )
-
-	return out
-}
-
-string _pool_tag( string tag1, string tag2, string o_dir, string label ) {
+string pool_tag( string tag1, string tag2, string o_dir, string group ) {
 
 // LINUX has limit on filename length (255), make it as shorter as possible
 //	prefix 		:= "$o_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )	
@@ -391,7 +375,7 @@ string _pool_tag( string tag1, string tag2, string o_dir, string label ) {
 	in 	:= [ tag1, tag2 ]
 	out 	:= tag_pooled
 
-	taskName:= "pool_tag " + label
+	taskName:= "pool_tag " + group
 
 	wait_par( cpus )
 
@@ -405,10 +389,12 @@ string _pool_tag( string tag1, string tag2, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
-string _pool_tag( string[] tags, string o_dir, string label ) {
+string pool_tag( string[] tags, string o_dir, string group ) {
 
 // LINUX has limit on filename length (255), make it as short as possible
 //	prefix 		:= "$o_dir/" + concat_basename_wo_ext( tag1, tag2, ["tagAlign","tag","bed"] )
@@ -420,7 +406,7 @@ string _pool_tag( string[] tags, string o_dir, string label ) {
 	in 		:= tags
 	out 		:= tag_pooled
 
-	taskName:= "pool_tag " + label
+	taskName:= "pool_tag " + group
 
 	wait_par( cpus )
 
@@ -434,6 +420,8 @@ string _pool_tag( string[] tags, string o_dir, string label ) {
 	}
 
 	register_par( tid, cpus )
+
+	add_task_to_graph( in, out, group )
 
 	return out
 }

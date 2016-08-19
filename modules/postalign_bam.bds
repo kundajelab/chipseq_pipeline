@@ -16,6 +16,11 @@ mem_dedup	:= "12G" 	help Max. memory for post-alignment filtering (default: 12G)
 
 use_sambamba_markdup	:= false	help Use sambamba markdup instead of Picard MarkDuplicates (default: false).
 
+
+grp_color_dedup_bam 	:= "lightcoral"
+grp_color_align 	:= "orange"
+
+
 /*
 IMPORTANT!: legacy softwares compatibility (make the code work with legacy samtools, picard-tools)
 
@@ -52,7 +57,7 @@ void init_postalign_bam() {
 	print( "Use sambamba markdup (instead of picard)\t: $use_sambamba_markdup\n")
 }
 
-string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, int nth_dedup ) {
+string[] dedup_bam( string bam, string o_dir, string log_o_dir, string group, int nth_dedup ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
@@ -75,7 +80,7 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 		tmp_filt_bam 	:= "$prefix.dupmark.bam"
 		qname_sort_bam 	:= "$prefix.qnmsrt.bam" // multimapping
 
-		taskName:= "dedup_bam_1 " + label
+		taskName:= "dedup_bam_1 " + group
 		in1 	:= in
 		out1 	:= [ filt_bam ]
 
@@ -114,17 +119,17 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 		string dupmark_bam, dup_qc
 
 		if ( use_sambamba_markdup ) {
-			(dupmark_bam, dup_qc) = _markdup_bam_sambamba( filt_bam, o_dir, log_o_dir, label, nth_dedup )
+			(dupmark_bam, dup_qc) = markdup_bam_sambamba( filt_bam, o_dir, log_o_dir, group, nth_dedup )
 		} 
 		else {
-			(dupmark_bam, dup_qc) = _markdup_bam_picard( filt_bam, o_dir, log_o_dir, label )
+			(dupmark_bam, dup_qc) = markdup_bam_picard( filt_bam, o_dir, log_o_dir, group )
 		}
 
 		wait // wait for dupmark_bam and dup_qc
 
 		//////////// step 3
 
-		taskName= "dedup_bam_2 " + label
+		taskName= "dedup_bam_2 " + group
 		in2  := [ dupmark_bam ]
 		out2 := [ nodup_bam, map_qc, pbc_qc ]
 
@@ -170,17 +175,12 @@ string[] _dedup_bam( string bam, string o_dir, string log_o_dir, string label, i
 		"$filt_bam.bai".rm()
 	}
 
-	graph_in  := ["bam_($label)"]
-	graph_out := ["filt_bam_($label)"]
-	hrchy_out := ["L1_align/$label/filt_bam","L1_qc/$label/dup_qc","L1_qc/$label/map_qc","L1_qc/$label/pbc_qc"]
-
-	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
-	_add_to_filetable( hrchy_out, out )
+	add_task_to_graph( in, out, group, "FILTER", grp_color_dedup_bam )
 
 	return out
 }
 
-string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label, int nth_dedup ) {
+string[] dedup_bam_PE( string bam, string o_dir, string log_o_dir, string group, int nth_dedup ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
@@ -202,7 +202,7 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		filt_bam 	:= "$prefix.filt.bam"
 		tmp_filt_bam 	:= "$prefix.dupmark.bam"
 
-		taskName:= "dedup_bam_PE_1 " + label
+		taskName:= "dedup_bam_PE_1 " + group
 		in1 	:= in
 		out1 	:= [ filt_bam ]
 
@@ -255,17 +255,17 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		string dupmark_bam, dup_qc
 
 		if ( use_sambamba_markdup ) {
-			(dupmark_bam, dup_qc) = _markdup_bam_sambamba( filt_bam, o_dir, log_o_dir, label, nth_dedup )
+			(dupmark_bam, dup_qc) = markdup_bam_sambamba( filt_bam, o_dir, log_o_dir, group, nth_dedup )
 		}
 		else {
-			(dupmark_bam, dup_qc) = _markdup_bam_picard( filt_bam, o_dir, log_o_dir, label )
+			(dupmark_bam, dup_qc) = markdup_bam_picard( filt_bam, o_dir, log_o_dir, group )
 		}
 
 		wait
 
 		/////// step 3
 
-		taskName= "dedup_bam_PE_2 " + label
+		taskName= "dedup_bam_PE_2 " + group
 		in2  := [ dupmark_bam ]
 		out2 := [ nodup_bam, map_qc, pbc_qc ]
 
@@ -318,17 +318,12 @@ string[] _dedup_bam_PE( string bam, string o_dir, string log_o_dir, string label
 		"$filt_bam.bai".rm()
 	}
 
-	graph_in  := ["bam_($label)"]
-	graph_out := ["filt_bam_($label)"]
-	hrchy_out := ["L1_align/$label/filt_bam","L1_qc/$label/dup_qc","L1_qc/$label/map_qc","L1_qc/$label/pbc_qc"]
-
-	_add_to_graphviz( graph_in, in, graph_out, out, "filter_($label)", grp_color_dedup_bam )
-	_add_to_filetable( hrchy_out, out )
+	add_task_to_graph( in, out, group, "filter", grp_color_dedup_bam )
 
 	return out
 }
 
-string[] _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string label ) {
+string[] markdup_bam_picard( string bam, string o_dir, string log_o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_str_at_end( rm_ext( bam, "bam" ), ".filt"), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
@@ -338,7 +333,7 @@ string[] _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string
 	in 		:= [ bam ]
 	out 		:= [ dupmark_bam, dup_qc ]
 
-	taskName:= "markdup_bam_picard " + label
+	taskName:= "markdup_bam_picard " + group
 	cpus := 1; 	mem := get_res_mem(mem_dedup,1);	timeout := get_res_wt(wt_dedup)
 
 	wait_par( cpus )
@@ -373,7 +368,7 @@ string[] _markdup_bam_picard( string bam, string o_dir, string log_o_dir, string
 	return out
 }
 
-string[] _markdup_bam_sambamba( string bam, string o_dir, string log_o_dir, string label, int nth_markdup ) {
+string[] markdup_bam_sambamba( string bam, string o_dir, string log_o_dir, string group, int nth_markdup ) {
 
 	prefix 		:= replace_dir( rm_str_at_end( rm_ext( bam, "bam" ), ".filt"), o_dir )
 	prefix2 	:= replace_dir( prefix, log_o_dir )
@@ -383,7 +378,7 @@ string[] _markdup_bam_sambamba( string bam, string o_dir, string log_o_dir, stri
 	in 		:= [ bam ]
 	out 		:= [ dupmark_bam, dup_qc ]
 
-	taskName:= "markdup_bam_sambamba " + label
+	taskName:= "markdup_bam_sambamba " + group
 	cpus 	:= nth_markdup; 	mem := get_res_mem(mem_dedup,nth_markdup);	timeout := get_res_wt(wt_dedup)
 
 	wait_par( cpus )
@@ -406,7 +401,7 @@ string[] _markdup_bam_sambamba( string bam, string o_dir, string log_o_dir, stri
 	return out
 }
 
-string _nmsrt_bam( string bam, string o_dir, string label ) {
+string nmsrt_bam( string bam, string o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	nmsrt_bam 	:= "$prefix.nmsrt.bam"
@@ -415,7 +410,7 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 	in 	:= [ bam ]
 	out 	:= nmsrt_bam
 
-	taskName:= "nmsrt_bam " + label
+	taskName:= "nmsrt_bam " + group
 
 	wait_par( cpus )
 
@@ -434,7 +429,7 @@ string _nmsrt_bam( string bam, string o_dir, string label ) {
 	return out
 }
 
-string _srt_bam( string bam, string o_dir, string label ) {
+string srt_bam( string bam, string o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	srt_bam 	:= "$prefix.srt.bam"
@@ -444,7 +439,7 @@ string _srt_bam( string bam, string o_dir, string label ) {
 	in 	:= [ bam ]
 	out 	:= srt_bam
 
-	taskName:= "srt_bam " + label
+	taskName:= "srt_bam " + group
 
 	wait_par( cpus )
 
@@ -470,13 +465,12 @@ string _srt_bam( string bam, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
-	_add_to_graphviz(  ["bam_($label)"], in, ["srt_bam_($label)"], [out] )
-	_add_to_filetable( ["L1_align/$label/srt_bam"], [out] )
+	add_task_to_graph( in, out, group )
 
 	return out
 }
 
-string _bam_to_tag( string bam, string o_dir, string label ) {
+string bam_to_tag( string bam, string o_dir, string group ) {
 
 	prefix 	:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	tag 	:= "$prefix.tagAlign.gz"
@@ -486,7 +480,7 @@ string _bam_to_tag( string bam, string o_dir, string label ) {
 	in 	:= [ bam ]
 	out 	:= tag
 
-	taskName:= "bam_to_tag " + label
+	taskName:= "bam_to_tag " + group
 
 	wait_par( cpus )
 
@@ -504,13 +498,12 @@ string _bam_to_tag( string bam, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
-	_add_to_graphviz( ["filt_bam_($label)"], in, ["tagalign_($label)"], [out], "align\\n($label)", "orange" )
-	_add_to_filetable( ["L1_align/$label/tagalign"], [out] )
+	add_task_to_graph( in, out, group, "ALIGN", grp_color_align )
 
 	return out
 }
 
-string _bam_to_bedpe( string bam, string o_dir, string label ) {
+string bam_to_bedpe( string bam, string o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
 	nmsrt_bam 	:= "$prefix.nmsrt.bam"
@@ -521,10 +514,10 @@ string _bam_to_bedpe( string bam, string o_dir, string label ) {
 
 	if ( out <- in ) {
 
-		nmsrt_bam = _nmsrt_bam( bam, o_dir, label )
+		nmsrt_bam = nmsrt_bam( bam, o_dir, group )
 		wait
 
-		taskName:= "bam_to_bedpe " + label
+		taskName:= "bam_to_bedpe " + group
 
 		wait_par( cpus )
 
@@ -545,13 +538,12 @@ string _bam_to_bedpe( string bam, string o_dir, string label ) {
 		nmsrt_bam.rm()
 	}
 
-	_add_to_graphviz(  ["filt_bam_($label)"], in, ["bedpe_($label)"], [out] )
-	_add_to_filetable( ["L1_align/$label/bedpe"], [out] )
+	add_task_to_graph( in, out, group )
 
 	return out
 }
 
-string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
+string bedpe_to_tag( string bedpe, string o_dir, string group ) {
 
 	prefix 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
 	tag 	:= "$prefix.tagAlign.gz"
@@ -563,7 +555,7 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 	in 	:= [ bedpe ]
 	out 	:= tag
 
-	taskName:= "bedpe_to_tag " + label
+	taskName:= "bedpe_to_tag " + group
 
 	wait_par( cpus )
 
@@ -581,121 +573,7 @@ string _bedpe_to_tag( string bedpe, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
-	_add_to_graphviz( ["bedpe_($label)"], in, ["tagalign_($label)"], [out], "align\\n($label)", "orange" )
-	_add_to_filetable( ["L1_align/$label/tagalign"], [out] )
-
-	return out
-}
-
-string _bam_to_tn5_shift_bed_atac( string filt_bam, string o_dir, string label ) {
-
-	prefix 		:= replace_dir( rm_ext( filt_bam, "bam" ), o_dir )
-	mito_bam 	:= "$prefix.chrM.bam"
-	non_mito_bam 	:= "$prefix.nonchrM.bam"
-	non_mito_bam_hist_grp := "$non_mito_bam.hist_graph.pdf"
-	non_mito_bam_hist_log := "$non_mito_bam.hist_data.log"
-	bed 		:= "$prefix.tn5.bed.gz"
-
-	in 	:= [filt_bam]
-	out 	:= bed //, mito_bam, non_mito_bam, non_mito_bam_hist_grp ]
-
-	taskName:= "bam_to_bed_atac " + label
-
-	wait_par( cpus )
-
-	tid := task( out<-in ) {
-
-		sys $shcmd_init
-
-		sys nonMitoChromosomes=$(samtools view -H "$filt_bam" | \
-					grep chr | cut -f2 | sed 's/SN://g' | grep -v chrM)
-
-		sys samtools view -b "$filt_bam" ${nonMitoChromosomes} > "$non_mito_bam"
-		sys samtools view -b "$filt_bam" chrM > "$mito_bam"
-
-		//# Process only non chrM reads
-		// embedded adjustBedTn5.sh
-		sys bamToBed -i "$non_mito_bam" | \
-			awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' | \
-			gzip -c > "$bed"
-
-		//# Set Java environment variable with Xmx, because JVM will ignore our
-		//# runtime flag and use this if it has been set.
-		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
-
-		sys if [ -f ${PICARDROOT}/CollectInsertSizeMetrics.jar ]; then \
-				java -Xmx4G -Xms256M -jar ${PICARDROOT}/CollectInsertSizeMetrics.jar \
-				INPUT="$non_mito_bam" OUTPUT="$non_mito_bam_hist_log" \
-				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
-			else \
-				java -Xmx4G -Xms256M -jar ${PICARDROOT}/picard.jar CollectInsertSizeMetrics \
-				INPUT="$non_mito_bam" OUTPUT="$non_mito_bam_hist_log" \
-				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
-			fi
-		sys rm -f $non_mito_bam $mito_bam
-
-		sys $shcmd_finalize
-	}
-
-	register_par( tid, cpus )
-
-	_add_to_graphviz(  ["filt_bam_($label)"], in, ["tagalign_($label)"], [out] )
-	_add_to_filetable( ["L1_align/$label/tagalign"], [out] )
-
-	return out
-}
-
-string _bam_to_bed_atac( string filt_bam, string o_dir, string label ) {
-
-	prefix 		:= replace_dir( rm_ext( filt_bam, "bam" ), o_dir )
-	mito_bam 	:= "$prefix.chrM.bam"
-	non_mito_bam 	:= "$prefix.nonchrM.bam"
-	non_mito_bam_hist_grp := "$non_mito_bam.hist_graph.pdf"
-	non_mito_bam_hist_log := "$non_mito_bam.hist_data.log"
-	bed 		:= "$prefix.bed.gz"
-
-	in 	:= [filt_bam]
-	out 	:= bed //, mito_bam, non_mito_bam, non_mito_bam_hist_grp ]
-
-	taskName:= "bam_to_bed_atac " + label
-
-	wait_par( cpus )
-
-	tid := task( out<-in ) {
-
-		sys $shcmd_init
-
-		sys nonMitoChromosomes=$(samtools view -H "$filt_bam" | \
-					grep chr | cut -f2 | sed 's/SN://g' | grep -v chrM)
-
-		sys samtools view -b "$filt_bam" ${nonMitoChromosomes} > "$non_mito_bam"
-		sys samtools view -b "$filt_bam" chrM > "$mito_bam"
-
-		//# Process only non chrM reads
-		sys bamToBed -i "$non_mito_bam" | gzip -c > "$bed"
-
-		//# Set Java environment variable with Xmx, because JVM will ignore our
-		//# runtime flag and use this if it has been set.
-		sys export _JAVA_OPTIONS="-Xms256M -Xmx4G -XX:ParallelGCThreads=1"
-
-		sys if [ -f ${PICARDROOT}/CollectInsertSizeMetrics.jar ]; then \
-				java -Xmx4G -Xms256M -jar ${PICARDROOT}/CollectInsertSizeMetrics.jar \
-				INPUT="$non_mito_bam" OUTPUT="$non_mito_bam_hist_log" \
-				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
-			else \
-				java -Xmx4G -Xms256M -jar ${PICARDROOT}/picard.jar CollectInsertSizeMetrics \
-				INPUT="$non_mito_bam" OUTPUT="$non_mito_bam_hist_log" \
-				H="$non_mito_bam_hist_grp" W=1000 STOP_AFTER=5000000; \
-			fi
-		sys rm -f $non_mito_bam $mito_bam
-
-		sys $shcmd_finalize
-	}
-
-	register_par( tid, cpus )
-
-	_add_to_graphviz( ["filt_bam_($label)"], in, ["tagalign_($label)"], [out] )
-	_add_to_filetable( ["L1_align/$label/tagalign"], [out] )
+	add_task_to_graph( in, out, group, "align", "orange" )
 
 	return out
 }

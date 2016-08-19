@@ -11,6 +11,9 @@ wt_macs2		:= "23h"	help Walltime for MACS2 (default: 23h, 23:00:00).
 mem_macs2		:= "15G" 	help Max. memory for MACS2 (default: 15G).
 
 
+grp_color_macs2	:= "lightgreen"
+
+
 init_callpeak_macs2()
 
 
@@ -31,8 +34,8 @@ void chk_callpeak_macs2() {
 }
 
 
-string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
-		string peak_o_dir, string sig_o_dir, string label, string label_ctl, string hrchy ) {
+string[] macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
+		string peak_o_dir, string sig_o_dir, string group ) {
 
 	prefix 		:= (ctl_tag != "") ? 	("$peak_o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
 						: replace_dir( rm_ext( tag, "tagAlign" ), peak_o_dir )
@@ -56,7 +59,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 	in 	:= (ctl_tag != "") ? [ tag, ctl_tag ] : [ tag ]
  	out 	:= make_sig ? [ npeakfile, gpeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile, gpeakfile ]
 
- 	taskName:= "macs2 " + label
+ 	taskName:= "macs2 " + group
 	mem := get_res_mem(mem_macs2,1);	timeout := get_res_wt(wt_macs2)
 
 	wait_par( cpus )
@@ -142,18 +145,7 @@ string[] _macs2( string tag, string ctl_tag, string fraglen, bool make_sig, \
 
 	register_par( tid, cpus )
 
-	graph_in  := [ "tagalign_($label)","tagalign_($label_ctl)"]
-	graph_out := [	"peak_macs2_($label)",\
-			"gpeak_macs2_($label)",\
-		      	"p-val_sig._($label)",\
-		      	"fc_sig._($label)" ]
-	hrchy_out := [	"L1_peak/macs2/$hrchy/peak",\
-			"L1_peak/macs2/$hrchy/gpeak",\
-		   	"L1_signal/macs2/$hrchy/pval", \
-		   	"L1_signal/macs2/$hrchy/fc" ]
-
-	_add_to_graphviz( graph_in, in, graph_out, out, "macs2_($label)", grp_color_macs2 )
-	_add_to_filetable( hrchy_out, out )
+	add_task_to_graph( in, out, group, "MACS2", grp_color_macs2 )
 
 	return out
 }

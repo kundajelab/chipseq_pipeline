@@ -12,6 +12,9 @@ wt_bam_cvrg	:= "23h"	help Walltime for bamCoverage (deepTools) (default: 23h, 23
 mem_bam_cvrg	:= "16G" 	help Max. memory for bamCoverage (deepTools) (default: 16G).
 
 
+grp_color_sigtrk 	:= "yellow"
+
+
 init_signal()
 
 
@@ -34,7 +37,7 @@ void chk_signal_aln2rawsig() {
 	if ( !path_exists( "$seq/chr1.fa") ) error("\nReference genome sequence directory doesn't exists! (file: $seq/chr1.fa)\n")
 }
 
-string _tag_to_bw( string tag, string fraglen, string o_dir, string label ) {
+string tag_to_bw( string tag, string fraglen, string o_dir, string group ) {
 	
 	prefix 	:= replace_dir( rm_ext( tag, ["tagAlign","tag","bed"] ), o_dir )
 	bigwig 	:= "$prefix.bigwig"
@@ -44,23 +47,21 @@ string _tag_to_bw( string tag, string fraglen, string o_dir, string label ) {
 
 	if ( out <- in ) { // if bigwig is newer than tag
 
-		bedgraph := _tag_to_bdg( tag, fraglen, o_dir, label )
+		bedgraph := tag_to_bdg( tag, fraglen, o_dir, group )
 		wait
 
-		bigwig  = _bdg_to_bw( bedgraph, o_dir, label )
+		bigwig  = bdg_to_bw( bedgraph, o_dir, group )
 		wait
 
 		bedgraph.rm()
 	}
 
-	_add_to_graphviz( ["tagalign_($label)"], [tag], ["signal_tag2bw_($label)"], [out], \
-			"align2rawsignal\\n($label)", grp_color_sigtrk )
-	_add_to_filetable( ["L1_signal/tag2bw/$label/signal_tag2bw"], [bigwig] )
+	add_task_to_graph( in, out, group, "align2rawsignal", grp_color_sigtrk )
 
 	return out
 }
 
-string _tag_to_bdg( string tag, string fraglen, string o_dir, string label ) {
+string tag_to_bdg( string tag, string fraglen, string o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_ext( tag, ["tag", "tagAlign", "bed"] ), o_dir )
 	bedgraph 	:= "$prefix.bedgraph"
@@ -68,7 +69,7 @@ string _tag_to_bdg( string tag, string fraglen, string o_dir, string label ) {
 	in 	:= [ tag ]
 	out 	:= bedgraph
 
-	taskName:= "tag to bdg a2rs "+label
+	taskName:= "tag to bdg a2rs "+group
 
 	wait_par( cpus )
 
@@ -83,10 +84,12 @@ string _tag_to_bdg( string tag, string fraglen, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
-string _bdg_to_bw( string bedgraph, string o_dir, string label ) {
+string bdg_to_bw( string bedgraph, string o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_ext( bedgraph, ["bed", "bedgraph", "bg"] ), o_dir )
 	bedgraph 	:= "$prefix.bedgraph"
@@ -96,7 +99,7 @@ string _bdg_to_bw( string bedgraph, string o_dir, string label ) {
 	in 	:= [ bedgraph ]
 	out 	:= bigwig
 
-	taskName:= "bdg to bw "+label
+	taskName:= "bdg to bw "+group
 
 	wait_par( cpus )
 
@@ -114,10 +117,12 @@ string _bdg_to_bw( string bedgraph, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
-string _tag_to_wig( string tag, string fraglen, string o_dir, string label ) {
+string tag_to_wig( string tag, string fraglen, string o_dir, string group ) {
 
 	prefix 	:= replace_dir( rm_ext( tag, ["tag", "tagAlign", "bed"] ), o_dir )
 	wig 	:= "$prefix.wig"
@@ -125,7 +130,7 @@ string _tag_to_wig( string tag, string fraglen, string o_dir, string label ) {
 	in 	:= [ tag ]
 	out 	:= wig
 
-	taskName:= "tag to wig a2rs "+label
+	taskName:= "tag to wig a2rs "+group
 
 	wait_par( cpus )
 
@@ -140,10 +145,12 @@ string _tag_to_wig( string tag, string fraglen, string o_dir, string label ) {
 
 	register_par( tid, cpus )
 
+	add_task_to_graph( in, out, group )
+
 	return out
 }
 
-string _bam_to_bw( string filt_bam, string o_dir, string label, int nth_bam_cvrg ) { // deeptools
+string bam_to_bw( string filt_bam, string o_dir, string group, int nth_bam_cvrg ) { // deeptools
 
 	prefix 	:= replace_dir( rm_ext( filt_bam, ["bam"] ), o_dir )
 	bigwig 	:= "$prefix.bam2bw.bigwig"
@@ -151,7 +158,7 @@ string _bam_to_bw( string filt_bam, string o_dir, string label, int nth_bam_cvrg
 	in 	:= [ filt_bam ]
 	out 	:= bigwig
 
-	taskName:= "bam cvrg " + label
+	taskName:= "bam cvrg " + group
 	cpus 	:= nth_bam_cvrg;	mem := get_res_mem(mem_bam_cvrg,nth_bam_cvrg);	timeout := get_res_wt(wt_bam_cvrg)
 
 	wait_par( cpus )
@@ -167,9 +174,7 @@ string _bam_to_bw( string filt_bam, string o_dir, string label, int nth_bam_cvrg
 
 	register_par( tid, cpus )
 
-	_add_to_graphviz( ["filt_bam_($label)"], [filt_bam], ["signal_bam2bw_($label)"], [bigwig], \
-			"deepTools\\n bamCoverage\\n($label)", grp_color_sigtrk )
-	_add_to_filetable( ["L1_signal/bam2bw/$label/signal_bam2bw"], [bigwig] );
+	add_task_to_graph( in, out, group, "bamCoverage", grp_color_sigtrk )
 
 	return out
 }

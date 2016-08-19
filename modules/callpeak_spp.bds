@@ -12,6 +12,9 @@ wt_spp		:= "47h"	help Walltime for spp (default: 47h, 47:00:00).
 mem_spp		:= "12G" 	help Max. memory for spp (default: 12G).
 
 
+grp_color_spp		:= "skyblue"
+
+
 init_callpeak_spp()
 
 
@@ -27,8 +30,7 @@ void init_callpeak_spp() {
 	print( "Max. memory (spp)\t\t: $mem_spp\n")
 }
 
-string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string label, string label_ctl, \
-		int nth_spp, string hrchy ) {
+string[] spp( string tag, string ctl_tag, string fraglen, string o_dir, string group, int nth_spp ) {
 
 	if ( fraglen == "" ) error("fraglen is missing!")
 	if ( ctl_tag == "" ) error("Control tagalign is missing!")
@@ -44,7 +46,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 	in 	:= [ tag, ctl_tag ]
 	out 	:= [ rpeakfile, ccscore, pdf ]
 
-	taskName:= "spp " + label
+	taskName:= "spp " + group
 	cpus 	:= nth_spp;	mem := get_res_mem(mem_spp,nth_spp);	timeout := get_res_wt(wt_spp)
 
 	wait_par( cpus )
@@ -74,10 +76,7 @@ string[] _spp( string tag, string ctl_tag, string fraglen, string o_dir, string 
 
 	register_par( tid, cpus )
 
-	_add_to_graphviz( [ "tagalign_($label)","tagalign_($label_ctl)"], in, \
-			[ "peak_spp_($label)" ], out, \
-			"spp_($label)", grp_color_spp )
-	_add_to_filetable( [ "L1_peak/spp/$hrchy/peak" ], out )
+	add_task_to_graph( in, out, group, "SPP", grp_color_spp )
 
 	return out
 }

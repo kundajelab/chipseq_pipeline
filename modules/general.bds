@@ -32,9 +32,9 @@ shcmd_init 	:= "" 	// Shell command executed prior to all BigDataScript tasks (u
 shcmd_init_py3	:= "" 	// for softwares using python3
 shcmd_finalize 	:= ""
 
-string[] tids_all 	// array of task ids currently running
-string[] tids_done
-int{} nth_tasks 	// key: task id, value: # of threads for the task
+string[] _tids_all 	// array of task ids currently running
+string[] _tids_done
+int{} _nth_tasks 	// key: task id, value: # of threads for the task
 
 
 init_general()
@@ -236,7 +236,7 @@ int get_res_mem( string str, int n ) {
 void wait_clear_tids() { // DO NOT USE THIS in par function/scope!
 
 	wait
-	tids_all = []
+	_tids_all = []
 }
 
 void wait_par( int nth_task ) {
@@ -247,24 +247,24 @@ void wait_par( int nth_task ) {
 
 		//print("\nIn wait_par loop\n")
 		
-		tids_all_  := tids_all // make dummy for thread safety
-		tids_done_ := tids_done
+		_tids_all_  := _tids_all // make dummy for thread safety
+		_tids_done_ := _tids_done
 
 		string[] tids_running
 		int nth_running 
 
 		// get total # threads for currently running tasks, and find the oldest task
-		for ( string tid : tids_all_ ) {
+		for ( string tid : _tids_all_ ) {
 
-			if ( is_in_array( tid, tids_done_ ) ) continue
+			if ( is_in_array( tid, _tids_done_ ) ) continue
 
 			if ( !tid.isDone() ) {
 				tids_running.add( tid )
-				nth_running = nth_running + nth_tasks{tid}
-				//print("\t$tid : $nth_running, "+tids_done_.size()+"\n")
+				nth_running = nth_running + _nth_tasks{tid}
+				//print("\t$tid : $nth_running, "+_tids_done_.size()+"\n")
 			}
-			else if ( !is_in_array( tid, tids_done_ ) ) {
-				tids_done.add( tid )
+			else if ( !is_in_array( tid, _tids_done_ ) ) {
+				_tids_done.add( tid )
 			}			
 		}
 
@@ -281,17 +281,17 @@ void wait_par( int nth_task ) {
 			while( true ) {
 
 				if ( ++loop_cnt%40 == 0 ) { // update every 20 iteration
-					tids_all_  = tids_all
-					tids_done_ = tids_done
+					_tids_all_  = _tids_all
+					_tids_done_ = _tids_done
 				}
 
 				break_loop := false
 
 				for ( string tid : tids_running ) {
 
-					if ( is_in_array( tid, tids_done_ ) || tid.isDone() ) {
+					if ( is_in_array( tid, _tids_done_ ) || tid.isDone() ) {
 						break_loop = true
-						if ( !is_in_array( tid, tids_done_ ) ) tids_done.add( tid )
+						if ( !is_in_array( tid, _tids_done_ ) ) _tids_done.add( tid )
 						break
 					}
 				}
@@ -315,8 +315,8 @@ void register_par( string tid, int nth_task ) {
 
 	//print("\nRegistering a task : "+ tid.isDone()+ " $tid, $nth_task \n")
 
-	tids_all.add(tid)
-	nth_tasks{tid} = nth_task
+	_tids_all.add(tid)
+	_nth_tasks{tid} = nth_task
 }
 
 void monitor_par() {
@@ -324,16 +324,16 @@ void monitor_par() {
 	// wait until one of running tasks finishes
 	while( true ) {
 
-		tids_all_  := tids_all // make dummy for thread safety
-		tids_done_ := tids_done
+		_tids_all_  := _tids_all // make dummy for thread safety
+		_tids_done_ := _tids_done
 
 		all_done := true
 
-		for ( string tid : tids_all_ ) {
+		for ( string tid : _tids_all_ ) {
 			
-			if ( is_in_array( tid, tids_done_ ) || tid.isDone() ) {
+			if ( is_in_array( tid, _tids_done_ ) || tid.isDone() ) {
 				
-				if ( !is_in_array( tid, tids_done_ ) ) tids_done.add( tid )
+				if ( !is_in_array( tid, _tids_done_ ) ) _tids_done.add( tid )
 			}
 			else {
 				all_done = false
@@ -389,6 +389,10 @@ int{} distribute_nth( int n, int{} list ) {
 		}
 	}
 
+	print("Distributed $n threads to ... \n")
+	print(ret)
+	print("\n")
+
 	return ret
 }
 
@@ -435,5 +439,39 @@ int[] distribute_nth( int n, int[] list ) {
 		}
 	}
 
+	print("Distributed $n threads to ... \n")
+	print(ret)
+	print("\n")
+
 	return ret
+}
+
+string get_long_group_name( int ctl, int rep ) {
+
+	return ( (ctl>0) ? "Control " : "Replicate ") + rep
+}
+
+string get_long_group_name( int rep ) {
+
+	return "Replicate "+ rep
+}
+
+string get_group_name( int ctl, int rep ) {
+
+	return ( (ctl>0) ? "ctl" : "rep") + rep
+}
+
+string get_group_name( int rep ) {
+
+	return "rep" + rep
+}
+
+string get_long_name( int ctl, int rep ) {
+
+	return ( (ctl>0) ? "Control " : "Replicate ") + rep
+}
+
+string get_long_name( int rep ) {
+
+	return "Replicate " + rep
 }
