@@ -101,7 +101,7 @@ string bwa_aln( string fastq, string o_dir, string group, int nth_bwa ) {
 	out 	:= sai
 
 	taskName:= "bwa_aln " + group
-	cpus 	:= nth_bwa;	mem := get_res_mem(mem_bwa,nth_bwa); timeout := get_res_wt(wt_bwa)
+	cpus 	:= (nth_bwa==1) ? -1 : nth_bwa;	mem := get_res_mem(mem_bwa,nth_bwa); timeout := get_res_wt(wt_bwa)
 
 	wait_par( cpus )
 

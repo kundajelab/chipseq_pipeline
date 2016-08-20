@@ -47,7 +47,7 @@ string[] spp( string tag, string ctl_tag, string fraglen, string o_dir, string g
 	out 	:= [ rpeakfile, ccscore, pdf ]
 
 	taskName:= "spp " + group
-	cpus 	:= nth_spp;	mem := get_res_mem(mem_spp,nth_spp);	timeout := get_res_wt(wt_spp)
+	cpus 	:= (nth_spp==1) ? -1 : nth_spp;	mem := get_res_mem(mem_spp,nth_spp);	timeout := get_res_wt(wt_spp)
 
 	wait_par( cpus )
 

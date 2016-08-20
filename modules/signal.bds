@@ -159,7 +159,7 @@ string bam_to_bw( string filt_bam, string o_dir, string group, int nth_bam_cvrg 
 	out 	:= bigwig
 
 	taskName:= "bam cvrg " + group
-	cpus 	:= nth_bam_cvrg;	mem := get_res_mem(mem_bam_cvrg,nth_bam_cvrg);	timeout := get_res_wt(wt_bam_cvrg)
+	cpus 	:= (nth_bam_cvrg==1) ? -1 : nth_bam_cvrg;	mem := get_res_mem(mem_bam_cvrg,nth_bam_cvrg);	timeout := get_res_wt(wt_bam_cvrg)
 
 	wait_par( cpus )
 
