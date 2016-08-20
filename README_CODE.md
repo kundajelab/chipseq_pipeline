@@ -104,7 +104,7 @@ You can also specify computer resources settings (# thread, max. memory and wall
 // Note that system variables are not defined with ':='.
 // Defining them with ':=' or 'int cpus' will result in a redefinition error.
 
-cpus 	= 1 	// set default # threads for all tasks as 1.
+cpus 	= -1 	// if you want to use a single processor set it as -1, BDS will not pass number of threads to cluster engline (SGE, SLURM), so -1 is better than 1.
 timeout = 3600 	// set default walltime for all tasks as 3600 seconds.
 
 func()
