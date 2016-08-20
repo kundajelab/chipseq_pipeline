@@ -11,7 +11,7 @@ BigDataScript is a scripting language specialized for NGS pipelines/workflows. B
 You have basic variable types such as `int`, `real`, `string` and `bool`. You can omit declaration of those variables using `:=`. For example, `int n = 10` is equivalent to `n := 10`. Also, if you add a help context for a variable with `help`, it automatically becomes a command line parameter with a help context. For example, `bds pipeline.bds -num_rep 3 -callpeak macs2` and `bds pipeline.bds -h` shows help for all parameter variables.
 ```
 int num_rep = 2		help # replicates (default: 2).
-callpeak := "spp" 	help Peak caller definition (default: spp).
+type 	:= "TF" 	help Type of chipseq pipeline; TF or histone (default: TF).
 ```
 
 BDS also provides list types such as map `{}` and array `[]`. You can iterate over those variables with the following code:
@@ -475,6 +475,8 @@ void main() {
 	init_filetable()
 
 	align()
+
+	report()
 }
 
 void init_filetable() {
@@ -527,6 +529,17 @@ void align() {
 	add_file_to_table( bam, "Alignment/Replicate 1/Bam" )
 
 	...
+}
+
+void report() {
+
+	html := html_filetable() 	// treeview for directory and file structure 
+
+	html += ... 			// add more contents for your report (format=HTML; <div> ... </div>)
+
+	html += html_graph()		// Graphviz workflow diagram
+
+	report( html )	
 }
 
 ```
@@ -609,9 +622,9 @@ void callpeak_OKAY() {
 
 ### `tid.isDone()` not working
 
-** Do not use `wait` in a global scope where there are `par` functions before it.** Use `wait_clear_tids()` instead. `wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear `tids_all` manually when all `par` functions finish. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. **You can still use `wait` in a `par` function scope.**
+**Do not use `wait` in a global scope where there are `par` functions before it.** Use `wait_clear_tids()` instead. `wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear `tids_all` manually when all `par` functions finish. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. **You can still use `wait` in a `par` function scope.**
 
-This bug is fixed in the latest BDS (06/06/2016).
+This bug (issue #131)[https://github.com/pcingola/BigDataScript/issues/131] still persists in the latest BDS (06/06/2016).
 
 
 ### `goal` and `dep`
