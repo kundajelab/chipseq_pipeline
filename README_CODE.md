@@ -11,7 +11,7 @@ BigDataScript is a scripting language specialized for NGS pipelines/workflows. B
 You have basic variable types such as `int`, `real`, `string` and `bool`. You can omit declaration of those variables using `:=`. For example, `int n = 10` is equivalent to `n := 10`. Also, if you add a help context for a variable with `help`, it automatically becomes a command line parameter with a help context. For example, `bds pipeline.bds -num_rep 3 -callpeak macs2` and `bds pipeline.bds -h` shows help for all parameter variables.
 ```
 int num_rep = 2		help # replicates (default: 2).
-callpeak := "spp" 	help Peak caller definition (default: spp).
+type 	:= "TF" 	help Type of chipseq pipeline; TF or histone (default: TF).
 ```
 
 BDS also provides list types such as map `{}` and array `[]`. You can iterate over those variables with the following code:
@@ -453,16 +453,17 @@ void call_peaks() {
 }
 ```
 
-## Report and file table
+## HTML Report (Graphviz diagram and file table)
 
-For all functions defined in `.bds` in `./modules/`, a graph (using Graphviz) with nodes (files) and edges (arrows) is automatically constructed.
-But they will not be shown in the report until a node is explicitly registered by `add_file_to_report()` or `add_file_to_graph()`.
-`add_file_to_report()` registers a node (file) to both the Graphviz diagram and the file table. `add_file_to_table()` registers a node to the file table only.
-`add_file_to_graph()` registers a node to the graphviz diagram only.
+AQUAS pipeline modules provide a module for a nice HTML report (`./modules/report.bds`).
+All functions with a task block (`task {...}`) defined in `./modules/*.bds` are designed to automatically construct a graph with nodes (files) and arrows (data flow).
+However, a node (file) is hidden unless it is explicitly registered to the report by `add_file_to_report()` or `add_file_to_graph()`.
+`add_file_to_report()` registers a node to both the Graphviz diagram and the file table. `add_file_to_table()` registers a node to the file table only.
+`add_file_to_graph()` registers a node to the Graphviz diagram only.
 
-For all functions defined in `.bds` in `./modules/` have `group` as their last parameter. `group` is an additional information used for Graphviz diagram.
-`Group` is equivalent to `cluster {}` in Graphviz, nodes (files) with the same group are clustered together and labeled with `group`.
-Use `add_label_to_graph( string group, string long_name )` to show a long group name instead of `group` on the Graphviz diagram.
+All functions with a task block (`task {...}`) defined in `./modules/*.bds` have `group` in their last parameter.
+`group` is an additional parameter for the Graphviz diagram and it's equivalent to `cluster {}` in Graphviz, nodes (files) with the same group are clustered together and the group is labeled as `group`.
+Use `add_label_to_graph( string group, string long_name )` to show a full group name instead of `group`.
 
 ```
 include "modules/report.bds"
@@ -474,12 +475,14 @@ void main() {
 	init_filetable()
 
 	align()
+
+	report()
 }
 
 void init_filetable() {
 
-	// the hierachy of the item is explictly defined in one string, e.g. "Alignment/Replicate 1/Fastq", for the file table.
-	// but ordering of items are not defined yet.
+	// the hierachy of an item must be explictly defined in a string, e.g. "Alignment/Replicate 1/Fastq", for the file table.
+	// how to order items?
 	// for example, you may want to put "Alignment", "Replicate 1" and "Fastq" first.
 	// Alignment
 	// ├ Replicate 1
@@ -488,7 +491,7 @@ void init_filetable() {
 	// └ Replicate 2
 	// Peaks
 
-	// items added first will be put first
+	// first added first shown
 
 	// for level 1
 	add_label_to_table("Alignment")
@@ -514,18 +517,29 @@ void align() {
 	// "Replicate 1" : group of the node
 	// "Alignment/Replicate 1/Fastq" : hierachy in file table, 
 
-	// if you want to show fastq node on Graphviz diagram only (not on a table)
+	// if you want to show fastq node on Graphviz diagram only (not on the file table)
 	// add_file_to_graph( fastq, "fastq", "Replicate 1" )
 
-	// if you want to show fastq item on file table only (not on a Graphviz diagram)
-	// add_file_to_filetable( fastq, "Alignment/Replicate 1/Fastq" )
+	// if you want to show fastq item on the file table only (not on the Graphviz diagram)
+	// add_file_to_table( fastq, "Alignment/Replicate 1/Fastq" )
 
 	bam := bwa( fastq )
 
 	// bam will not be shown on the graph but on the filetable
-	add_file_to_filetable( bam, "Alignment/Replicate 1/Bam" )
+	add_file_to_table( bam, "Alignment/Replicate 1/Bam" )
 
 	...
+}
+
+void report() {
+
+	html := html_filetable() 	// treeview for directory and file structure 
+
+	html += ... 			// add more contents for your report (format=HTML; <div> ... </div>)
+
+	html += html_graph()		// Graphviz workflow diagram
+
+	report( html )	
 }
 
 ```
@@ -608,9 +622,9 @@ void callpeak_OKAY() {
 
 ### `tid.isDone()` not working
 
-** Do not use `wait` in a global scope where there are `par` functions before it.** Use `wait_clear_tids()` instead. `wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear `tids_all` manually when all `par` functions finish. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. **You can still use `wait` in a `par` function scope.**
+**Do not use `wait` in a global scope where there are `par` functions before it.** Use `wait_clear_tids()` instead. `wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear `tids_all` manually when all `par` functions finish. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. **You can still use `wait` in a `par` function scope.**
 
-This bug is fixed in the latest BDS (06/06/2016).
+This bug (issue #131)[https://github.com/pcingola/BigDataScript/issues/131] still persists in the latest BDS (06/06/2016).
 
 
 ### `goal` and `dep`
