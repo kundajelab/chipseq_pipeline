@@ -453,16 +453,17 @@ void call_peaks() {
 }
 ```
 
-## Report and file table
+## HTML Report (Graphviz diagram and file table)
 
-For all functions defined in `.bds` in `./modules/`, a graph (using Graphviz) with nodes (files) and edges (arrows) is automatically constructed.
-But they will not be shown in the report until a node is explicitly registered by `add_file_to_report()` or `add_file_to_graph()`.
-`add_file_to_report()` registers a node (file) to both the Graphviz diagram and the file table. `add_file_to_table()` registers a node to the file table only.
-`add_file_to_graph()` registers a node to the graphviz diagram only.
+AQUAS pipeline modules provide a module for a nice HTML report (`./modules/report.bds`).
+All functions with a task block (`task {...}`) defined in `./modules/*.bds` are designed to automatically construct a graph with nodes (files) and arrows (data flow).
+However, a node (file) is hidden unless it is explicitly registered to the report by `add_file_to_report()` or `add_file_to_graph()`.
+`add_file_to_report()` registers a node to both the Graphviz diagram and the file table. `add_file_to_table()` registers a node to the file table only.
+`add_file_to_graph()` registers a node to the Graphviz diagram only.
 
-For all functions defined in `.bds` in `./modules/` have `group` as their last parameter. `group` is an additional information used for Graphviz diagram.
-`Group` is equivalent to `cluster {}` in Graphviz, nodes (files) with the same group are clustered together and labeled with `group`.
-Use `add_label_to_graph( string group, string long_name )` to show a long group name instead of `group` on the Graphviz diagram.
+All functions with a task block (`task {...}`) defined in `./modules/*.bds` have `group` in their last parameter.
+`group` is an additional parameter for the Graphviz diagram and it's equivalent to `cluster {}` in Graphviz, nodes (files) with the same group are clustered together and the group is labeled as `group`.
+Use `add_label_to_graph( string group, string long_name )` to show a full group name instead of `group`.
 
 ```
 include "modules/report.bds"
@@ -478,8 +479,8 @@ void main() {
 
 void init_filetable() {
 
-	// the hierachy of the item is explictly defined in one string, e.g. "Alignment/Replicate 1/Fastq", for the file table.
-	// but ordering of items are not defined yet.
+	// the hierachy of an item must be explictly defined in a string, e.g. "Alignment/Replicate 1/Fastq", for the file table.
+	// how to order items?
 	// for example, you may want to put "Alignment", "Replicate 1" and "Fastq" first.
 	// Alignment
 	// ├ Replicate 1
@@ -488,7 +489,7 @@ void init_filetable() {
 	// └ Replicate 2
 	// Peaks
 
-	// items added first will be put first
+	// first added first shown
 
 	// for level 1
 	add_label_to_table("Alignment")
@@ -514,16 +515,16 @@ void align() {
 	// "Replicate 1" : group of the node
 	// "Alignment/Replicate 1/Fastq" : hierachy in file table, 
 
-	// if you want to show fastq node on Graphviz diagram only (not on a table)
+	// if you want to show fastq node on Graphviz diagram only (not on the file table)
 	// add_file_to_graph( fastq, "fastq", "Replicate 1" )
 
-	// if you want to show fastq item on file table only (not on a Graphviz diagram)
-	// add_file_to_filetable( fastq, "Alignment/Replicate 1/Fastq" )
+	// if you want to show fastq item on the file table only (not on the Graphviz diagram)
+	// add_file_to_table( fastq, "Alignment/Replicate 1/Fastq" )
 
 	bam := bwa( fastq )
 
 	// bam will not be shown on the graph but on the filetable
-	add_file_to_filetable( bam, "Alignment/Replicate 1/Bam" )
+	add_file_to_table( bam, "Alignment/Replicate 1/Bam" )
 
 	...
 }
