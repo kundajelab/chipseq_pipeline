@@ -518,7 +518,7 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 		bedpe = bam_to_bedpe( filt_bam_, aln_o_dir, group )
 		wait
 
-		add_file_to_report( bedpe, "bedpe", group, "" )
+		add_file_to_graph( bedpe, "bedpe", group )
 
 		if ( ctl == 0 && parse_number( subsample ) > 0 ) {
 			bedpe = subsample_bedpe( bedpe, parse_number( subsample ), aln_o_dir, group )
@@ -537,7 +537,7 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 		if ( is_input_tag( ctl, rep ) ) tag_ = get_tag( ctl, rep )
 
-		add_file_to_report( tag, "tag-align", group, "Alignment/$long/Tag-align" )
+		add_file_to_report( tag_, "tag-align", group, "Alignment/$long/Tag-align" )
 
 		tag{group} = tag_
 
