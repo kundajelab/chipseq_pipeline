@@ -1217,7 +1217,8 @@ void report() {
 
 	wait_clear_tids()
 
-	html := html_filetable() 	// treeview for directory and file structure 
+	html := html_pipeline_version( "https://github.com/kundajelab/TF_chipseq_pipeline/commit" ) // pipeline version info
+	html += html_filetable() 	// treeview for directory and file structure 
 	html += html_chipseq_tracks() 	// epigenome browser tracks
 	html += html_graph()		// graphviz workflow diagram
 	html += html_chipseq_QC()	// show QC tables and images
