@@ -78,7 +78,9 @@ Remove any other Anaconda from your `$PATH`. Check your loaded modules with `$ m
 
 ## BigDataScript
 
-Install BigDataScript v0.99999e ([forked](https://github.com/leepc12/BigDataScript), [original](https://github.com/pcingola/BigDataScript)) on your system.
+Install BigDataScript v0.99999e ([forked](https://github.com/leepc12/BigDataScript)) on your system.
+The original [BDS v0.99999e](https://github.com/pcingola/BigDataScript)) does not work correctly with the pipeline 
+(see [PR #142](https://github.com/pcingola/BigDataScript/pull/142) and [issue #131](https://github.com/pcingola/BigDataScript/issues/131)).
 
 ```
 $ wget https://github.com/leepc12/BigDataScript/blob/master/distro/bds_Linux.tgz?raw=true -O bds_Linux.tgz
