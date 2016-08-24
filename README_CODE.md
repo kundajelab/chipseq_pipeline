@@ -400,7 +400,6 @@ void func3() {
 
 ## Pipeline template
 
-** Do not use `wait` in a global scope (or in a global function scope) where there are `par` functions before it.** Use `wait_clear_tids()` instead. See more details in the following `Bugs in BDS` sections.
 ```
 include "modules/any_module_you_want_to_include.bds"
 ...
@@ -433,23 +432,18 @@ void align() {
 	par align(2) 		// aligning for replicate 2
 	...
 
-	wait_clear_tids() 	// because there are `par` functions before this line, `wait_clear_tids()` must be used instead of `wait`
-				// tasks in `par` cannot be dealt with without this line
+	wait				
 }
 
 void align( int rep_id ) {
 
 	...
-
-	monitor_par() 		// INPORTANT! all `par` function should have this at the end of the function block.
 }
 
 void call_peaks() {
 
 	...
 	wait 			// `wait` is okay because no `par` functions before it.
-
-	// we don't need `monitor_par()` here since it's not a `par` function
 }
 ```
 
@@ -549,7 +543,7 @@ void report() {
 
 ### Thread safety issue for global variables
 
-Remember that all tasks (task{}) in a `par` function go in parallel. It is already explained that we need global variables (typically map of string to store output file names; map's key is typically replicate id here) for parallelized BDS pipelines. There is a bug in handling global variables (locking/unlocking them).Reading (as r-value) and writing (as l-value) on a global variable in a `par` function will result in a crash of a pipeline. A hacky way to prevent this problem is **not to read global variables** in a `par` function. It's safe to read gloval variables in a `par` function only when all parallel tasks are finished (`wait` or `wait_clear_tids()` in a global scope). Also, add `monitor_par()` at the end of all `par` function. This function is sort of a barrier marking jobs as done when they finish.
+Remember that all tasks (task{}) in a `par` function go in parallel. It is already explained that we need global variables (typically map of string to store output file names; map's key is typically replicate id here) for parallelized BDS pipelines. There is a bug in handling global variables (locking/unlocking them).Reading (as r-value) and writing (as l-value) on a global variable in a `par` function will result in a crash of a pipeline. A hacky way to prevent this problem is **not to read global variables** in a `par` function.
 ```
 string{} bam, filt_bam, tagalign, peak	// global variables to store pipeline outputs (filenames)
 
@@ -559,7 +553,7 @@ par align_OKAY( 2 )
 par align_OKAY( 3 )
 ...
 
-wait_clear_tids() 	// 'wait' alone is NOT okay because of `par` functions before it
+wait
 
 callpeak_OKAY()
 
@@ -580,8 +574,6 @@ void align_ERROR( int replicate_id ) {
 	wait 
 
 	tagalign{key} = _bam_to_tag( filt_bam{key} ) // it's NOT OKAY to read filt_bam{key}
-
-	// we need `monitor_par()` here
 }
 
 void align_OKAY( int replicate_id ) {
@@ -602,30 +594,19 @@ void align_OKAY( int replicate_id ) {
 
 	tagalign_ := _bam_to_tag( filt_bam ) // it's SAFE
 	tagalign{key} = tagalign_
-
-	monitor_par() 		// IMPORTANT: all `par` functions must have this at the end of it
 }
 
 void callpeak_OKAY() {
 	
-	// we can safely read tagalign{} since all 'par' tasks finished due to `wait_clear_tids()` or `wait` in the global scope.
+	// we can safely read tagalign{} since all 'par' tasks finished due to `wait` in the global scope.
 
 	tagalign{1}
 	
 	peak_ := macs2( tagalign{1} )	// this is safe. you don't need to make a temporary variable for thread safety.
 
 	...
-
-	// we don't need `monitor_par()` here
 }
 ```
-
-### `tid.isDone()` not working
-
-**Do not use `wait` in a global scope where there are `par` functions before it.** Use `wait_clear_tids()` instead. `wait` itself works fine but the pipeline uses its own monitoring thread to count # thread running (and limit it by `-nth`). This monitoring thread is based on the global array `string[] tids_all` and iterate over task ids with `tid.isDone()` to check if each task is done. `tid.isDone()` does not work in a global scope (it only works in a `par` function scope). Therefore, it is necessary to clear `tids_all` manually when all `par` functions finish. This is due to a BDS bug that does not mark finished jobs as done in a member function `tid.isDone()`. This issues has been reported to the BDS github repo. **You can still use `wait` in a `par` function scope.**
-
-This bug (issue #131)[https://github.com/pcingola/BigDataScript/issues/131] still persists in the latest BDS (06/06/2016).
-
 
 ### `goal` and `dep`
 

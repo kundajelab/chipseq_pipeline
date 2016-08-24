@@ -317,7 +317,7 @@ void align() {
 		}
 	}
 
-	wait_clear_tids()
+	wait
 
 	print( "\n== Done align()\n" )
 }
@@ -326,8 +326,6 @@ void align( int ctl, int rep, int nth_rep ) {
 
 	if ( is_se( ctl, rep ) ) 	align_SE( ctl, rep, nth_rep )
 	else 				align_PE( ctl, rep, nth_rep )
-
-	if ( !no_par ) monitor_par()
 }
 
 void align_SE( int ctl, int rep, int nth_rep ) {
@@ -660,7 +658,7 @@ void pool_tags() {
 		add_file_to_report( tag_pooled, "tagalign", "Pooled control", "Alignment/Pooled control/Tag-align" )
 	}
 
-	wait_clear_tids()
+	wait
 
 	print( "\n== Done pool_tags()\n" )
 }
@@ -768,7 +766,7 @@ void call_peaks() {
 		}
 	}
 
-	wait_clear_tids()
+	wait
 
 	// get fragment length (required for SPP and MACS2)
 	string fraglen_ppr1, fraglen_ppr2, fraglen_mean
@@ -972,9 +970,7 @@ void call_peaks() {
 		}
 	}
 
-	if ( !no_par ) monitor_par()
-
-	wait_clear_tids()
+	wait
 
 	print( "\n== Done call_peaks()\n" )	
 }
@@ -1090,7 +1086,7 @@ void naive_overlap() {
 		add_file_to_report( peak_overlap, "peak\\noverlap", "", "Peaks/$pc/Naive overlap/Peak" )
 	}
 
-	wait_clear_tids()
+	wait
 
 	print( "\n== Done naive_overlap()\n" )
 }
@@ -1147,7 +1143,7 @@ void do_idr() {
 		add_file_to_table( idr_ppr_png, "QC and logs/IDR/Pooled pseudo-replicates/IDR plot" )
 	}
 
-	wait_clear_tids()
+	wait
 
 	qc_o_dir := mkdir( "$out_dir/qc" ) // create qc output dir.
 
@@ -1158,7 +1154,7 @@ void do_idr() {
 	add_file_to_report( idr_opt, "opt. IDR peak", "", "Peaks/IDR/Optimal set/IDR peak" )
 	add_file_to_report( idr_consv, "consv. IDR peak", "", "Peaks/IDR/Conservative set/IDR peak" )
 
-	wait_clear_tids()
+	wait
 
 	print( "\n== Done do_idr()\n" )	
 }
@@ -1173,7 +1169,7 @@ void create_sig_trk() {
 		else	  par create_sig_trk( rep )
 	}
 
-	wait_clear_tids()
+	wait
 
 	print( "\n== Done create_sig_trk()\n" )	
 }
@@ -1209,13 +1205,11 @@ void create_sig_trk( int rep ) {
 			add_file_to_report( wig, "signal", "rep$rep", "Signal tracks/align2rawsignal/Wig" )
 		}
 	}
-
-	if ( !no_par ) monitor_par()
 }
 
 void report() {
 
-	wait_clear_tids()
+	wait
 
 	html := html_pipeline_version( "https://github.com/kundajelab/TF_chipseq_pipeline/commit" ) // pipeline version info
 	html += html_filetable() 	// treeview for directory and file structure 
