@@ -33,7 +33,6 @@ include "modules/postalign_bed.bds"
 include "modules/callpeak_spp.bds"
 include "modules/callpeak_macs2.bds"
 include "modules/callpeak_naive_overlap.bds"
-include "modules/callpeak_etc.bds"
 include "modules/idr.bds"
 
 include "modules/signal.bds"
