@@ -361,7 +361,7 @@ If you stop a BDS pipeline with `Ctrl+C` while calling peaks with `spp`. Tempora
 
 ## Coding with BDS
 
-* [Using modules in AQUAS pipeline](https://github.com/kundajelab/TF_chipseq_pipeline/blob/master/README_CODE.md)
+* [Using genomic pipeline modules in Kundaje lab](https://github.com/kundajelab/bds_pipeline_modules/blob/master/README_CODE.md)
 
 * [BigDataScript github repo](https://github.com/pcingola/BigDataScript)
 
@@ -375,7 +375,7 @@ If you stop a BDS pipeline with `Ctrl+C` while calling peaks with `spp`. Tempora
 
 # Troubleshooting
 
-See [more troubleshootings](README_PIPELINE.md/#troubleshooting).
+See more [troubleshootings](https://github.com/kundajelab/bds_pipeline_modules/blob/master/README_PIPELINE.md/#troubleshooting).
 
 ### "[gzclose] buffer error" during bwa aln
 
