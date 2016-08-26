@@ -70,7 +70,7 @@ add_to_activate
 
 #### install run_spp.R (Anshul's phantompeakqualtool)
 cd $CONDA_EXTRA
-wget https://phantompeakqualtools.googlecode.com/files/ccQualityControl.v.1.1.tar.gz -N
+wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/phantompeakqualtools/ccQualityControl.v.1.1.tar.gz -N
 tar zxvf ccQualityControl.v.1.1.tar.gz
 rm -f ccQualityControl.v.1.1.tar.gz
 chmod 755 -R phantompeakqualtools
