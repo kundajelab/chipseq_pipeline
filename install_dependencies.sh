@@ -41,7 +41,7 @@ add_to_activate
 
 #### install Wiggler (for generating signal tracks)
 cd $CONDA_EXTRA
-wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz -N
+wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/align2rawsignal/align2rawsignal.2.0.tgz -N
 tar zxvf align2rawsignal.2.0.tgz
 rm -f align2rawsignal.2.0.tgz
 CONTENTS=("export PATH=\$PATH:$CONDA_EXTRA/align2rawsignal/bin")
@@ -49,7 +49,7 @@ add_to_activate
 
 #### install MCR (560MB)
 cd $CONDA_EXTRA
-wget http://www.broadinstitute.org/~anshul/softwareRepo/MCR2010b.bin -N
+wget https://personal.broadinstitute.org/anshul/softwareRepo/MCR2010b.bin -N
 chmod 755 MCR2010b.bin
 echo '-P installLocation="'${CONDA_EXTRA}'/MATLAB_Compiler_Runtime"' > tmp.stdin
 ./MCR2010b.bin -silent -options "tmp.stdin"
