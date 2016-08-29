@@ -139,7 +139,7 @@ void print_chipseq() {
 	print( "Create wig\t\t\t\t: $make_wig\n" )
 	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")
 	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
-	print( "Use gapped peak (MACS2)\t\t: $use_macs2_gapped_peak\n")
+	print( "Use gapped peak (MACS2)\t\t\t: $use_macs2_gapped_peak\n")
 }
 
 void init_filetable() { // init file table labels in HTML report
