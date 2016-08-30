@@ -55,7 +55,12 @@ string[] spp( string tag, string ctl_tag, string fraglen, string o_dir, string g
 
 		sys $shcmd_init
 
-		sys Rscript $(which run_spp_nodups.R) -c=$tag -p=$nth_spp -i=$ctl_tag \
+		// # if phantompeakqualtools is an old version, use run_spp_nodups.R. new version has run_spp.R only		
+		sys if [ $(which run_spp_nodups.R 2> /dev/null | wc -l || echo) == "1" ]; then RUN_SPP=$(which run_spp_nodups.R); \
+		    else RUN_SPP=$(which run_spp.R); \
+		    fi
+
+		sys Rscript ${RUN_SPP} -c=$tag -p=$nth_spp -i=$ctl_tag \
 			-npeak=$npeak -odir=$o_dir -speak=$fraglen -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
