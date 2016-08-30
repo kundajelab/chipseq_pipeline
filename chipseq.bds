@@ -653,7 +653,7 @@ void pool_tags() {
 
 		aln_pooled_ctl_o_dir := mkdir( "$out_dir/align/pooled_ctl" )
 
-		tag_pooled := pool_tag( tags_ctl, aln_pooled_ctl_o_dir, "Pooled control" )
+		tag_pooled := pool_tag( tags_ctl, aln_pooled_ctl_o_dir, "pooled_ctl" )
 		tag{"pooled_ctl"} = tag_pooled
 
 		add_file_to_report( tag_pooled, "tagalign", "Pooled control", "Alignment/Pooled control/Tag-align" )
