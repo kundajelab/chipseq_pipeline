@@ -33,9 +33,11 @@ include "modules/postalign_bed.bds"
 include "modules/callpeak_spp.bds"
 include "modules/callpeak_macs2.bds"
 include "modules/callpeak_naive_overlap.bds"
-include "modules/idr.bds"
+include "modules/callpeak_idr.bds"
 
 include "modules/signal.bds"
+
+include "modules/report.bds"
 
 
 
@@ -825,7 +827,7 @@ void call_peaks() {
 		macs2_pooled_sig_o_dir := mkdir( "$macs2_sig_o_dir/pooled_rep" )
 
 		( peak_pooled{"MACS2"}, gpeak_pooled{"MACS2"}, fc_bigwig{"pooled"}, pval_bigwig{"pooled"} ) = \
-			macs2( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, true, macs2_pooled_o_dir, macs2_pooled_sig_o_dir, "pooled_rep" )
+			macs2_chipseq( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, true, macs2_pooled_o_dir, macs2_pooled_sig_o_dir, "pooled_rep" )
 
 		if ( use_macs2_gapped_peak ) \
 			add_file_to_report( gpeak_pooled{"MACS2"}, "g. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Gapped peak" )
@@ -862,10 +864,10 @@ void call_peaks() {
 				macs2_ppr2_o_dir:= mkdir( "$macs2_o_dir/pooled_pseudo_reps/ppr2" )
 
 				( peak_ppr1{"MACS2"}, gpeak_ppr1{"MACS2"} ) = \
-					macs2( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, false, macs2_ppr1_o_dir, "", "ppr1" )
+					macs2_chipseq( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, false, macs2_ppr1_o_dir, "", "ppr1" )
 
 				( peak_ppr2{"MACS2"}, gpeak_ppr2{"MACS2"} ) = \
-					macs2( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, false, macs2_ppr2_o_dir, "", "ppr2" )
+					macs2_chipseq( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, false, macs2_ppr2_o_dir, "", "ppr2" )
 
 				if ( use_macs2_gapped_peak ) {
 
@@ -906,7 +908,7 @@ void call_peaks() {
 			macs2_true_sig_dir 	:= mkdir( "$macs2_sig_o_dir/rep$rep" )
 
 			( peak{"MACS2,$rep"}, gpeak{"MACS2,$rep"}, fc_bigwig{rep}, pval_bigwig{rep} ) = \
-				macs2( tag{"rep$rep"}, tag_ctl{rep}, fraglen{rep}, true, macs2_true_o_dir, macs2_true_sig_dir, "rep$rep" )
+				macs2_chipseq( tag{"rep$rep"}, tag_ctl{rep}, fraglen{rep}, true, macs2_true_o_dir, macs2_true_sig_dir, "rep$rep" )
 
 			if ( use_macs2_gapped_peak ) \
 				add_file_to_report( gpeak{"MACS2,$rep"}, "g. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Gapped peak" )
@@ -947,10 +949,10 @@ void call_peaks() {
 					macs2_pr2_o_dir := mkdir( "$macs2_o_dir/pseudo_reps/rep$rep/pr2" )
 
 					( peak_pr1{"MACS2,$rep"}, gpeak_pr1{"MACS2,$rep"} ) = \
-						macs2( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, macs2_pr1_o_dir, "", "rep$rep-pr1" )
+						macs2_chipseq( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, macs2_pr1_o_dir, "", "rep$rep-pr1" )
 
 					( peak_pr2{"MACS2,$rep"}, gpeak_pr2{"MACS2,$rep"} ) = \
-						macs2( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, macs2_pr2_o_dir, "", "rep$rep-pr2" )
+						macs2_chipseq( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, macs2_pr2_o_dir, "", "rep$rep-pr2" )
 
 					if ( use_macs2_gapped_peak ) {
 						add_file_to_report( gpeak_pr1{"MACS2,$rep"}, "g. peak", "rep$rep-pr1", \
