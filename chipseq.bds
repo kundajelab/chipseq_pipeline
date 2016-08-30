@@ -622,7 +622,7 @@ void pool_tags() {
 
 		tag_pooled := pool_tag( tags, aln_pooled_o_dir, "pooled_rep" )
 
-		add_file_to_report( tag_pooled, "tagalign", "pooled_rep", "Alignment/Pooled replicate/Tag-align" )
+		add_file_to_report( tag_pooled, "tag-align", "pooled_rep", "Alignment/Pooled replicate/Tag-align" )
 
 		tag{"pooled_rep"} = tag_pooled
 
@@ -639,9 +639,9 @@ void pool_tags() {
 			tag_ppr1 = tag_ppr1_ // for thread safety
 			tag_ppr2 = tag_ppr2_
 
-			add_file_to_report( tag_ppr1_, "tagalign", "ppr1", \
+			add_file_to_report( tag_ppr1_, "tag-align", "ppr1", \
 						"Alignment/Pooled pseudo-replicates/Pooled pseudo-replicate 1/Tag-align" )
-			add_file_to_report( tag_ppr2_, "tagalign", "ppr2", \
+			add_file_to_report( tag_ppr2_, "tag-align", "ppr2", \
 						"Alignment/Pooled pseudo-replicates/Pooled pseudo-replicate 2/Tag-align" )
 
 			wait
@@ -656,7 +656,7 @@ void pool_tags() {
 		tag_pooled := pool_tag( tags_ctl, aln_pooled_ctl_o_dir, "pooled_ctl" )
 		tag{"pooled_ctl"} = tag_pooled
 
-		add_file_to_report( tag_pooled, "tagalign", "Pooled control", "Alignment/Pooled control/Tag-align" )
+		add_file_to_report( tag_pooled, "tag-align\\n(pooled ctl.)", "pooled_ctl", "Alignment/Pooled control/Tag-align" )
 	}
 
 	wait
