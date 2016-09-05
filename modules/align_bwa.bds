@@ -2,7 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
-include "report.bds"
+include "module_template.bds"
 
 
 help == align bwa settings (requirements: -bwa_idx)
@@ -72,7 +72,7 @@ string[] bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, s
 
 	if ( out <- in ) { // compare file timestamps of in and out (to check if job is already done or not)
 
-		nth_bwa_aln := distribute_nth( nth_bwa, [1,1] )
+		nth_bwa_aln := distribute_nonzero( nth_bwa, [1,1] )
 
 		// parallel jobs
 		sai1 := bwa_aln( fastq1, o_dir, group+"_1", nth_bwa_aln[0] )

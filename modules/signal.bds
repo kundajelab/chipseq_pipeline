@@ -2,7 +2,7 @@
 #vim: syntax=java
 
 include "species.bds"
-include "report.bds"
+include "module_template.bds"
 
 
 help == signal track generation settings (requirements: -umap -chrsz -seq)

@@ -24,6 +24,8 @@ use_macs2_gapped_peak := false	help Use gapped peak instead of narrow peak (for 
 
 help() // print help and exit if no parameters are given
 
+include "modules/pipeline_template.bds"
+
 include "modules/input.bds"
 
 include "modules/align_bwa.bds"
@@ -36,8 +38,6 @@ include "modules/callpeak_naive_overlap.bds"
 include "modules/callpeak_idr.bds"
 
 include "modules/signal.bds"
-
-include "modules/report.bds"
 
 
 
@@ -96,8 +96,6 @@ void init_chipseq() {
 
 	read_conf_chipseq()
 
-	print_chipseq()
-
 	init_filetable()
 }
 
@@ -121,9 +119,7 @@ void read_conf_chipseq() {
 	use_macs2_gapped_peak = get_conf_val_bool( use_macs2_gapped_peak, 		["use_macs2_gapped_peak"] )
 
 	if ( histone ) type = "histone"
-}
-
-void print_chipseq() {
+	if ( idr_rank == "" ) idr_rank = is_TF_chipseq() ? "signal.value" : "p.value"
 
 	print( "\n\n== chipseq pipeline settings\n")
 	print( "Type of ChIP-Seq pipeline\t\t: $type\n")
@@ -282,7 +278,7 @@ void align() {
 		for ( int rep=1; rep <= get_num_rep( ctl ); rep++) {		
 			if ( !input_file_exists( ctl, rep ) ) continue
 
-			// check file size to distribute_nth nth to each nth_app
+			// check file size to distribute_nonzero nth to each nth_app
 			// determine # threads for each app related to alignment
 
 			group := get_group_name( ctl, rep )
@@ -300,7 +296,7 @@ void align() {
 		}
 	}
 
-	nth_rep := distribute_nth( nth, filesize )
+	nth_rep := distribute_nonzero( nth, filesize )
 
 	// align
 	
@@ -717,13 +713,13 @@ void call_peaks() {
 
 		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
 
-			nlines{"rep$rep"} = get_no_lines( tag{"rep$rep"} )
+			nlines{"rep$rep"} = get_num_lines( tag{"rep$rep"} )
 
 			//print("DEBUG: # lines rep $rep tag.: " + nlines{"rep$rep"} + ", " + tag{"rep$rep"} + "\n")
 
 			if ( input_file_exists( 1, rep ) ) { // if control exists
 
-				nlines{"ctl$rep"} = get_no_lines( tag{"ctl$rep"} )
+				nlines{"ctl$rep"} = get_num_lines( tag{"ctl$rep"} )
 				nlines_ctl.add( nlines{"ctl$rep"} )
 
 				//print("DEBUG: # lines ctl $rep tag.: " + nlines{"ctl$rep"} + ", " + tag{"ctl$rep"} + "\n")
@@ -799,7 +795,7 @@ void call_peaks() {
 
 	// distribute # of threads for each peak calling
 	int nth_pooled, nth_other
-	( nth_pooled, nth_other ) = distribute_nth( nth, [ get_num_rep(), 1, 1, 1 ] )
+	( nth_pooled, nth_other ) = distribute_nonzero( nth, [ get_num_rep(), 1, 1, 1 ] )
 
 	// create directories for peaks (spp, macs2), signal tracks (macs2)
 	spp_o_dir 	:= mkdir( "$out_dir/peak/spp") 
@@ -1096,10 +1092,7 @@ void do_idr() {
 
 	if ( !is_final_stage_idr() ) return
 	if ( is_histone_chipseq() ) return
-
 	if ( !peak_exists() ) return // if no peaks from peak caller exit
-
-	if ( idr_rank == "" ) idr_rank = is_TF_chipseq() ? "signal.value" : "p.value"
 
 	// peak caller
 	pc := get_peak_caller()
@@ -1308,7 +1301,7 @@ string html_chipseq_tracks() {
 		if ( idr_pr.hasKey(rep) ) {trk_types += "hammock"; trk_names += "$title peak idr (rep$rep-pr)"; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_pr{rep} ) ) }
 	}
 
-	html := html_epg_browser_viz( trk_files, trk_types, trk_names )
+	html := html_epg_browser_viz( trk_files, trk_types, trk_names, species )
 
 	return html
 }
