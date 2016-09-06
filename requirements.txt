@@ -10,7 +10,7 @@ ucsc-bigwiginfo
 ucsc-bedclip
 picard ==1.126 # 1.97 in bioconda has corrupted .jar
 deeptools ==2.2.3
-numpy ==1.10.4 # 1.9.3 (conflict)
+numpy ==1.10.2 # 1.9.3 (conflict)
 matplotlib ==1.5.1
 macs2 ==2.1.0
 boost ==1.57.0
