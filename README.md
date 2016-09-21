@@ -1,4 +1,4 @@
-AQUAS ChIP-Seq pipeline
+AQUAS Transcription Factor and Histone ChIP-Seq processing pipeline
 ==============
 
 * Go to [Genomic pipelines in Kundaje lab](https://kundajelab.github.io/bds_pipeline_modules)
@@ -502,4 +502,5 @@ Try with half of the original number of reads in control.
 # Contributors
 
 * Jin wook Lee - PhD Student, Mechanical Engineering Dept., Stanford University
+* Nathan Boley - Postdoc, Dept. of Genetics, Stanford University
 * Anshul Kundaje - Assistant Professor, Dept. of Genetics, Stanford University
