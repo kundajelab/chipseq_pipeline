@@ -20,7 +20,7 @@ libtool
 ghostscript
 pigz
 zlib
-sambamba ==0.6.1
+sambamba ==0.6.5
 r ==3.2.2
 r-snow
 r-snowfall
