@@ -247,8 +247,8 @@ void chk_param() {
 	if ( multimapping > 0 ) \
 		error("Multimapping is not available for chipseq pipeline!\n")
 
-	if ( is_input_peak() && true_rep && get_num_rep() == 1 ) \
-		error("Cannot perform IDR with only one replicate!")
+	if ( is_input_peak() && true_rep && get_num_rep() == 1 && is_TF_chipseq() ) \
+		error("Cannot perform IDR on with only one replicate when '-true_rep' is turned on!")
 
 	if ( is_histone_chipseq() && macs2_for_pooled_rep_only ) \
 		macs2_for_pooled_rep_only = false
