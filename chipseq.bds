@@ -1029,7 +1029,7 @@ void naive_overlap() {
 
 	// naive overlap peak
 
-	overlap_o_dir := mkdir( "$out_dir/peak/$pc/overlap" )
+	overlap_o_dir := mkdir( "$out_dir/peak/"+pc.toLower()+"/overlap" )
 
 	if ( get_num_rep() == 1 ) {
 
