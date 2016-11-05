@@ -341,9 +341,20 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 
 		fastqs := get_fastqs( ctl, rep )
 
-		add_file_to_report( fastqs[0], "fastq", group, "Alignment/$long/Fastq" )
+		// pool if multiple fastqs
+		for ( int i=0; i<fastqs.size(); i++) {
+			id := i+1
+			suffix := fastqs.size()==1 ? "" : ":$id"
+			add_file_to_report( fastqs[i], "fastq$suffix", group, "Alignment/$long/Fastq$suffix" )
+		}
+		string pooled_fastq
+		if ( fastqs.size()==1 ) pooled_fastq = fastqs[0]
+		else {
+			pooled_fastq = pool_fastq( fastqs, aln_o_dir, group )
+			wait
+		}
 
-		( bam, flagstat_qc_ ) = bwa( fastqs[0], aln_o_dir, qc_o_dir, group, nth_rep )
+		( bam, flagstat_qc_ ) = bwa( pooled_fastq, aln_o_dir, qc_o_dir, group, nth_rep )
 		flagstat_qc{group} = flagstat_qc_
 
 		add_file_to_table( flagstat_qc_, "QC and logs/$long/BWA map. flagstat log")
@@ -464,12 +475,32 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 	if ( is_input_fastq( ctl, rep ) ) {
 
-		fastqs := get_fastqs( ctl, rep )
+		fastqs_pair1 := get_fastq( ctl, rep, 1 )
+		fastqs_pair2 := get_fastq( ctl, rep, 2 )
 
-		add_file_to_report( fastqs[0], "fastq1", group, "Alignment/$long/Fastq 1" )
-		add_file_to_report( fastqs[1], "fastq2", group, "Alignment/$long/Fastq 2" )
+		if ( fastqs_pair1.size() != fastqs_pair2.size() ) {
+			error("Number of fastqs to be pooled for pair 1 and pair 2 do not match!\n")
+		}
+		for ( int i=0; i<fastqs_pair1.size(); i++) {
+			id := i+1
+			suffix := fastqs_pair1.size()==1 ? "" : ":$id"
 
-		( bam, flagstat_qc_ ) = bwa_PE( fastqs[0], fastqs[1], aln_o_dir, qc_o_dir, group, nth_rep )
+			add_file_to_report( fastqs_pair1[i], "fastq$suffix", group, "Alignment/$long/Fastq 1$suffix" )
+			add_file_to_report( fastqs_pair2[i], "fastq$suffix", group, "Alignment/$long/Fastq 2$suffix" )
+		}
+
+		string pooled_fastq_pair1, pooled_fastq_pair2
+		if ( fastqs_pair1.size()==1 ) {
+			pooled_fastq_pair1 = fastqs_pair1[0]
+			pooled_fastq_pair2 = fastqs_pair2[0]
+		}
+		else {
+			pooled_fastq_pair1 = pool_fastq( fastqs_pair1, aln_o_dir, group )
+			pooled_fastq_pair2 = pool_fastq( fastqs_pair2, aln_o_dir, group )
+			wait
+		}
+
+		( bam, flagstat_qc_ ) = bwa_PE( pooled_fastq_pair1, pooled_fastq_pair2, aln_o_dir, qc_o_dir, group, nth_rep )
 		flagstat_qc{group} = flagstat_qc_
 
 		add_file_to_table( flagstat_qc_, "QC and logs/$long/BWA map. flagstat log")
