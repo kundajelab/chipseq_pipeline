@@ -16,8 +16,6 @@ INSTALL_WIGGLER_AND_MCR=1
 conda create -n ${ENV_NAME} --file requirements.txt -y -c defaults -c bioconda -c r
 conda create -n ${ENV_NAME_PY3} --file requirements_py3.txt -y -c defaults -c bioconda -c r
 
-conda uninstall graphviz -y # graphviz in bioconda has segmentation fault bug
-conda install graphviz -c anaconda -y
 
 ### bash function definition
 
@@ -41,6 +39,9 @@ cp --remove-destination -rf ./utils/clusterGeneric/ $HOME/.bds/
 ## install additional packages
 
 source activate ${ENV_NAME}
+
+conda uninstall graphviz -y # graphviz in bioconda has segmentation fault bug
+conda install graphviz -c anaconda -y
 
 CONDA_BIN=$(dirname $(which activate))
 CONDA_EXTRA="$CONDA_BIN/../extra"
