@@ -16,6 +16,9 @@ INSTALL_WIGGLER_AND_MCR=1
 conda create -n ${ENV_NAME} --file requirements.txt -y -c defaults -c bioconda -c r
 conda create -n ${ENV_NAME_PY3} --file requirements_py3.txt -y -c defaults -c bioconda -c r
 
+conda uninstall graphviz -y # graphviz in bioconda has segmentation fault bug
+conda install graphviz -c anaconda -y
+
 ### bash function definition
 
 function add_to_activate {
