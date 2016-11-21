@@ -1337,7 +1337,7 @@ string html_chipseq_tracks() {
 		if ( idr_pr.hasKey(rep) ) {trk_types += "hammock"; trk_names += "$title peak idr (rep$rep-pr)"; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_pr{rep} ) ) }
 	}
 
-	html := html_epg_browser_viz( trk_files, trk_types, trk_names, species )
+	html := html_epg_browser_viz( trk_files, trk_types, trk_names, species_browser )
 
 	return html
 }
