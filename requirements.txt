@@ -21,6 +21,7 @@ ghostscript
 pigz
 zlib
 sambamba ==0.6.5
+pyfaidx ==0.4.7.1
 r ==3.2.2
 r-snow
 r-snowfall
