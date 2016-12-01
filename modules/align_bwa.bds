@@ -7,9 +7,10 @@ include "module_template.bds"
 
 help == align bwa settings (requirements: -bwa_idx)
 param_bwa_aln	:= "-q 5 -l 32 -k 2" 	help Parameters for bwa aln (default: "-q 5 -l 32 -k 2").
-
+bwa_idx 	:= ""			help BWA index (full path prefix of *.bwt file) .
 wt_bwa		:= "23h"		help Walltime for bwa (default: 23, 23:00:00).
 mem_bwa		:= "10G"	 	help Max. memory for bwa (default: 10G).
+
 
 grp_color_bwa	:= "salmon"
 
@@ -20,11 +21,13 @@ init_align_bwa()
 void init_align_bwa() {
 
 	param_bwa_aln 	= get_conf_val( param_bwa_aln, 	["param_bwa_aln"] )
+	bwa_idx 	= get_conf_val( bwa_idx, 	["bwa_idx"] )
 	wt_bwa 		= get_conf_val( wt_bwa, 	["wt_bwa"] )
 	mem_bwa 	= get_conf_val( mem_bwa, 	["mem_bwa"] )
 
 	print("\n\n== align bwa settings\n")
 	print( "Param. for bwa\t\t\t: $param_bwa_aln\n")
+	print( "BWA index\t\t\t: $bwa_idx\n" )
 	print( "Walltime (bwa)\t\t\t: $wt_bwa\n")
 	print( "Max. memory (bwa)\t\t: $mem_bwa\n")
 }
