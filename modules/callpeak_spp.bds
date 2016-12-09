@@ -39,9 +39,12 @@ string[] spp( string tag, string ctl_tag, string fraglen, string o_dir, string g
 	prefix_x	:= "$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
 	rpeakfile_vs 	:= "$prefix_vs.regionPeak.gz"	
 	rpeakfile 	:= "$prefix_x.regionPeak.gz"
+	filt_rpeakfile	:= "$prefix_x.filt.regionPeak.gz"
 	ccscore		:= "$prefix_x.ccscore"
 	pdf_tmp		:= replace_dir( rm_ext( tag, ["gz"] ), o_dir ) + ".pdf"
 	pdf 		:= "$prefix_x.pdf"
+
+	blacklist_exists := path_exists(blacklist)
 
 	in 	:= [ tag, ctl_tag ]
 	out 	:= [ rpeakfile, ccscore, pdf ]
@@ -75,6 +78,10 @@ string[] spp( string tag, string ctl_tag, string fraglen, string o_dir, string g
 
 		// if no rpeak file, do something to return non-zero exit code
 		sys if [ ! -f $rpeakfile ]; then error_in_spp_output_peak_does_not_exist; fi
+
+		sys if [[ $blacklist_exists == "true" ]]; then \
+			bedtools intersect -v -a $rpeakfile -b $blacklist | gzip -nc > $filt_rpeakfile; \
+		fi
 
 		sys $shcmd_finalize
 	}
