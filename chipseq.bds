@@ -838,7 +838,7 @@ void call_peaks() {
 	if ( get_num_rep() > 1 ) {
 
 		// spp
-		if ( ctl_exists() ) {
+		if ( is_TF_chipseq() && ctl_exists() ) {
 
 			spp_pooled_o_dir := mkdir( "$spp_o_dir/pooled_rep" )
 
@@ -864,7 +864,7 @@ void call_peaks() {
 		if ( !true_rep ) {
 
 			// spp
-			if ( ctl_exists() ) {
+			if ( is_TF_chipseq() && ctl_exists() ) {
 				spp_ppr1_o_dir 	:= mkdir( "$spp_o_dir/pooled_pseudo_reps/ppr1" )
 				spp_ppr2_o_dir 	:= mkdir( "$spp_o_dir/pooled_pseudo_reps/ppr2" )
 
@@ -912,7 +912,7 @@ void call_peaks() {
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 
 		// spp
-		if ( ctl_exists() ) {
+		if ( is_TF_chipseq() && ctl_exists() ) {
 			spp_true_o_dir		:= mkdir( "$spp_o_dir/rep$rep" )
 
 			( peak{"spp,$rep"}, tmp ) = \
@@ -942,7 +942,7 @@ void call_peaks() {
 
 			if ( !no_pseudo_rep ) {
 
-				if ( ctl_exists() ) {
+				if ( is_TF_chipseq() && ctl_exists() ) {
 
 					spp_pr1_o_dir 	:= mkdir( "$spp_o_dir/pseudo_reps/rep$rep/pr1" )
 					spp_pr2_o_dir 	:= mkdir( "$spp_o_dir/pseudo_reps/rep$rep/pr2" )
@@ -1326,6 +1326,7 @@ string html_chipseq_tracks() {
 	if ( fc_bigwig.hasKey( "pooled" ) )   { trk_types += "bigwig"; trk_names += "$title fc (pooled)";   trk_files += fc_bigwig{"pooled"}   }
 
 	if ( peak_overlap != "" ) { trk_types += "hammock"; trk_names += "$title peak overlap"; trk_files += peak_to_hammock( peak_overlap ) }
+	if ( gpeak_overlap != "" ) { trk_types += "hammock"; trk_names += "$title gpeak overlap"; trk_files += peak_to_hammock( gpeak_overlap ) }
 
 	if ( idr_opt != "" ) {	trk_types += "hammock"; trk_names += "$title peak idr (opt. set)"; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_opt ) ) }
 	if ( idr_consv != "" ) {trk_types += "hammock"; trk_names += "$title peak idr (cons. set)"; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_consv ) ) }
