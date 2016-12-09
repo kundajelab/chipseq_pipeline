@@ -8,6 +8,7 @@ ucsc-wigtobigwig
 ucsc-bedgraphtobigwig
 ucsc-bigwiginfo
 ucsc-bedclip
+ucsc-bedtobigbed
 picard ==1.126 # 1.97 in bioconda has corrupted .jar
 deeptools ==2.2.3
 numpy ==1.10.2 # 1.9.3 (conflict)
