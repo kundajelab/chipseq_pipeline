@@ -35,6 +35,7 @@ include "modules/callpeak_spp.bds"
 include "modules/callpeak_macs2.bds"
 include "modules/callpeak_naive_overlap.bds"
 include "modules/callpeak_idr.bds"
+include "modules/callpeak_blacklist_filter.bds"
 
 include "modules/signal.bds"
 
@@ -88,6 +89,9 @@ void main() { // chipseq pipeline starts here
 	do_idr() // IDR
 
 	create_sig_trk() // (BETA)
+
+	// blacklist-filter peaks
+	filter_peak() 
 
 	report()
 }
@@ -1237,6 +1241,27 @@ void create_sig_trk( int rep ) {
 	}
 }
 
+// black list filter and then convert to bigbed (for true replicates only)
+void filter_peak() {
+
+	// peaks for true replicates
+	pc := get_peak_caller()
+	if ( get_num_rep() > 1 && peak_pooled.hasKey(pc) ) {
+		filt_peak_pooled := \
+			blacklist_filter_peak( "narrowPeak", peak_pooled{pc}, (peak_pooled{pc}).dirName(), "peak_pooled" )
+	}
+
+	for (int rep=1; rep<=get_num_rep(); rep++) {
+		if ( !peak.hasKey(pc+",$rep") ) continue
+		filt_peak := \
+			blacklist_filter_peak( "narrowPeak", peak{pc+",$rep"}, (peak{pc+",$rep"}).dirName(), "peak $rep" )
+	}
+
+	wait
+
+	print( "\n== Done filter_peak_and_convert_to_bigbed()\n" )	
+}
+
 void report() {
 
 	wait
@@ -1248,6 +1273,7 @@ void report() {
 	html += html_chipseq_QC()	// show QC tables and images
 
 	report( html )
+	write_summary_json()
 
 	print( "\n== Done report()\n" )		
 }
@@ -1292,9 +1318,9 @@ string html_chipseq_QC() {
 
 	html := "<div id='chipseq_qc'>"
 	
-	html += parse_flagstat_to_html( "all", 	flagstat_headers, flagstat_qcs, flagstat_headers )
+	html += parse_flagstat_to_html( "all", 	flagstat_headers, flagstat_qcs, flagstat_headers, false )
 	html += parse_dup_to_html( "all", 		dup_headers, dup_qcs, dup_headers )
-	html += parse_flagstat_to_html( "all, filtered",flagstat_nodup_headers, flagstat_nodup_qcs, flagstat_nodup_headers )
+	html += parse_flagstat_to_html( "all, filtered",flagstat_nodup_headers, flagstat_nodup_qcs, flagstat_nodup_headers, true )
 	html += parse_pbc_to_html( "all", 		pbc_headers, pbc_qcs, pbc_headers )
 	html += parse_xcor_to_html( "all", 		xcor_headers, xcor_qcs, xcor_plots, xcor_headers )
 

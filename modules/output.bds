@@ -16,11 +16,18 @@ void init_output() {
 	out_dir = get_conf_val( out_dir, 	["out_dir"] )		
 	title 	= get_conf_val( title, 		["title"] )		
 
+	if ( title == "" ) { // if title is empty, use directory name as a title
+		dirname := get_basename( get_path(out_dir) )
+		if ( dirname == "out" ) { // if output folder is default one (out), then use parent dir. name
+			dirname = get_basename( rm_str_at_end( get_path(out_dir), "/out" ) )
+		}
+		title = dirname
+	}
+	if ( !is_cmd_line_arg_empty() ) out_dir = mkdir( out_dir ) // create output directory and get absolute path for it	
+
 	print("\n\n== output directory/title info\n")
 	print( "Output dir.\t\t\t: $out_dir\n" )
 	print( "Title (prefix)\t\t\t: $title\n" )
-
-	if ( !is_cmd_line_arg_empty() ) out_dir = mkdir( out_dir ) // create output directory and get absolute path for it	
 }
 
 string get_rel_path( string path ) { // get relative path according to $out_dir
