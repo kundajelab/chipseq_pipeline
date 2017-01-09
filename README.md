@@ -347,6 +347,105 @@ $ screen -X -S [SCR_NAME] quit
 $ kill_scr [SCR_NAME]
 ```
 
+## Usage cheat sheet
+
+For general use, use the following command line: (for SE data set)
+```
+$ bds chipseq.bds -species [SPECIES; hg19, mm9, ... ] -nth [NUM_THREADS] -fastq1 [READ_REP1] -fastq2 [READ_REP2] ...
+```
+For Histone ChIP-Seq:
+```
+-histone
+```
+<b>IMPORTANT!</b> If your data set is <b>PAIRED END</b> add the following to the command line, otherwise the pipeline works for SE by default.
+```
+-pe
+```
+You can also individually specify endedness for each replicate.
+```
+-se[REPLICATE_ID]   # for exp. replicates, 
+```
+```
+-se1 -pe2 -se3 ...
+```
+You can specify the ending stage for the pipeline. It will not proceed after the stage.
+```
+-final_stage [FINAL_STAGE; bam, filt_bam, tag, xcor, peak, idr (default)]
+```
+
+If you have just one replicate (PE), define fastqs with `-fastq[REP_ID]_[PAIR_ID]`.
+```
+-fastq1_1 [READ_PAIR1] -fastq1_2 [READ_PAIR2] \
+```
+For multiple replicates (PE), define fastqs with `-fastq[REP_ID]_[PAIR_ID]`. Add `-fastq[]_[]` for each replicate and pair to the command line:replicates.
+```
+-fastq1_1 [READ_REP1_PAIR1] -fastq1_2 [READ_REP1_PAIR2] -fastq2_1 [READ_REP2_PAIR1] -fastq2_2 [READ_REP2_PAIR2] ...
+```
+For multiple replicates (SE), define fastqs with `-fastq[REP_ID]`:
+```
+-se -fastq1 [READ_REP1] -fastq2 [READ_REP2] ...
+```
+You can start from bam files. There are two kinds of bam files (raw or deduped) and you need to explicitly choose between raw bam (bam) and deduped one (filt_bam). Don't forget to add `-pe` if they are paired end (PE). For raw bams,
+```
+-bam1 [RAW_BAM_REP1] -bam2 [RWA_BAM_REP1] ...
+```
+For deduped (filtered) bams:
+```
+-filt_bam1 [FILT_BAM_REP1] -filt_bam2 [FILT_BAM_REP1] ...
+```
+For tagaligns (non-tn5-shifted):
+```
+-tag1 [TAGALIGN_REP1] -tag2 [TAGALIGN_REP2] ...
+```
+You can also mix up any data types.
+```
+-bam1 [RAW_BAM_REP1] -tag2 [TAGALIGN_REP2] ...
+```
+For controls, simply add a prefix `ctl_` to the parameters. This rule applies to the endedness of controls too. You can also have multiple sets of controls. For example of 2 PE controls,
+```
+-ctl_pe -ctl_fastq1_1 [FASTQ_CTL1_PAIR1] -ctl_fastq1_2 [FASTQ_CTL1_PAIR2] -ctl_fastq2_1 [FASTQ_CTL1_PAIR1] -ctl_fastq2_2 [FASTQ_CTL1_PAIR2] ...
+```
+If your control is raw bam (paired end).
+```
+-ctl_pe -ctl_bam1 [BAM_CTL1] ...
+```
+To subsample beds (tagaligns) add the following to the command line. This is different from subsampling for cross-corr. analysis. Peaks will be called with subsampled tagaligns.
+```
+-subsample [NO_READS_TO_SUBSAMPLE]
+```
+To subsample control beds (tagaligns) add the following to the command line.
+```
+-subsample_ctl [NO_READS_TO_SUBSAMPLE]
+```
+To change # of lines to subsample for cross-corr. analysis. This will not affect tasks downstream (peak calling and IDR).
+```
+-subsample_xcor [NO_READS_TO_SUBSAMPLE]
+```
+To disable pseudo replicate generation, add the following. By default, peak calling and IDR will be done for true replicates and pseudo replicates, but if you have `-true_rep` in the command line, you will also get IDR on true replicates only.
+```
+-true_rep
+```
+`-true_rep` disables peak calling for pooled replicates as well as self pseudo replicates. If you want to call peaks on true/pooled replicates:
+```
+-no_pseudo_rep
+```
+You can change the IDR threshold.
+```
+-idr_thresh [IDR_THRESHOLD]
+```
+You can also define parameters in a configuration file. Key names in a configruation file are identical to parameter names on command line. 
+```
+$ bds chipseq.bds [CONF_FILE]
+
+$ cat [CONF_FILE]
+species = [SPECIES; hg19, mm9, ...]
+nth   = [NUM_THREADS]
+fastq1= [READ_REP1]
+fastq2= [READ_REP2]
+...
+```
+
+
 ## Useful HTML reports
 
 There are two kinds of HTML reports provided by the pipeline.
