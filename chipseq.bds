@@ -832,7 +832,8 @@ void call_peaks() {
 	( nth_pooled, nth_other ) = distribute_nonzero( nth, [ get_num_rep(), 1, 1, 1 ] )
 
 	// create directories for peaks (spp, macs2), signal tracks (macs2)
-	spp_o_dir 	:= mkdir( "$out_dir/peak/spp") 
+	string spp_o_dir
+	if ( is_TF_chipseq() && ctl_exists() ) spp_o_dir = mkdir( "$out_dir/peak/spp")
 	macs2_o_dir 	:= mkdir( "$out_dir/peak/macs2") 
 	macs2_sig_o_dir	:= mkdir( "$out_dir/signal/macs2") 
 
