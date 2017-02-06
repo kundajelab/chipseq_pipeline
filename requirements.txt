@@ -30,7 +30,7 @@ r-bitops
 r-catools
 bioconductor-rsamtools
 r-spp ==1.13
-glibc
+#glibc #segmentation fault in conda with openssl
 
 ### packages not available in official channels, run install_dependencies.sh to install these packages
 # align2rawsignal ==2.0
