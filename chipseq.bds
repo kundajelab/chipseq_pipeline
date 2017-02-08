@@ -375,14 +375,19 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 
 		if ( is_final_stage_bam() ) return
 
-		( filt_bam_, dup_qc_, flagstat_nodup_qc{group}, pbc_qc_ ) \
-			= dedup_bam( bam, aln_o_dir, qc_o_dir, group, nth_rep )
-		dup_qc{group} = dup_qc_
-		pbc_qc{group} = pbc_qc_
-
-		add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
-		add_file_to_table( pbc_qc_, "QC and logs/$long/PBC log")
-
+		if ( no_dup_removal ) {
+			string tmp
+			( filt_bam_, tmp ) \
+				= dedup_bam( bam, aln_o_dir, qc_o_dir, group, nth_rep )
+		}
+		else {
+			( filt_bam_, dup_qc_, flagstat_nodup_qc{group}, pbc_qc_ ) \
+				= dedup_bam( bam, aln_o_dir, qc_o_dir, group, nth_rep )			
+			dup_qc{group} = dup_qc_
+			pbc_qc{group} = pbc_qc_
+			add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
+			add_file_to_table( pbc_qc_, "QC and logs/$long/PBC log")
+		}
 		wait
 	}
 
@@ -521,10 +526,17 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 		if ( is_final_stage_bam() ) return
 
-		( filt_bam_, dup_qc_, flagstat_nodup_qc{group}, pbc_qc_ ) \
-			= dedup_bam_PE( bam, aln_o_dir, qc_o_dir, group, nth_rep )
-		dup_qc{group} = dup_qc_
-		pbc_qc{group} = pbc_qc_
+		if ( no_dup_removal ) {
+			string tmp
+			( filt_bam_, tmp ) \
+				= dedup_bam_PE( bam, aln_o_dir, qc_o_dir, group, nth_rep )			
+		}
+		else {
+			( filt_bam_, dup_qc_, flagstat_nodup_qc{group}, pbc_qc_ ) \
+				= dedup_bam_PE( bam, aln_o_dir, qc_o_dir, group, nth_rep )
+			dup_qc{group} = dup_qc_
+			pbc_qc{group} = pbc_qc_
+		}
 
 		add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
 		add_file_to_table( pbc_qc_, "QC and logs/$long/PBC log")
