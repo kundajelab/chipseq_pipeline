@@ -536,10 +536,9 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 				= dedup_bam_PE( bam, aln_o_dir, qc_o_dir, group, nth_rep )
 			dup_qc{group} = dup_qc_
 			pbc_qc{group} = pbc_qc_
+			add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
+			add_file_to_table( pbc_qc_, "QC and logs/$long/PBC log")
 		}
-
-		add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
-		add_file_to_table( pbc_qc_, "QC and logs/$long/PBC log")
 
 		wait
 	}
