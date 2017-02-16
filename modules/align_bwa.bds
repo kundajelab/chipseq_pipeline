@@ -148,8 +148,8 @@ string[] bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, stri
 		//sys samtools index $bam
 		//sys samtools flagstat $bam > $qc
 		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su /dev/stdin \
-			| sambamba sort -t $nth_bwa /dev/stdin -o $bam
-		sys sambamba flagstat -t $nth_bwa $bam > $qc
+			| sambamba sort -t 1 /dev/stdin -o $bam
+		sys sambamba flagstat -t 1 $bam > $qc
 
 		sys $shcmd_finalize
 	}
@@ -203,15 +203,15 @@ string[] bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, str
 		//	fi
 		sys if [ $(cat $badcigar | wc -l) -gt 0 ]; then \
 				pigz -p $nth_bwa -cd $sam | grep -v -F -f $badcigar | samtools view -Su /dev/stdin \
-				| sambamba sort -t $nth_bwa /dev/stdin -o $bam; \
+				| sambamba sort -t 1 /dev/stdin -o $bam; \
 			else \
-				pigz -p $nth_bwa -cd $sam | samtools view -Su /dev/stdin | sambamba sort -t $nth_bwa /dev/stdin -o $bam; \
+				pigz -p $nth_bwa -cd $sam | samtools view -Su /dev/stdin | sambamba sort -t 1 /dev/stdin -o $bam; \
 			fi
 
 		//sys samtools flagstat $bam > $qc
 		//sys samtools index $bam
 
-		sys sambamba flagstat -t $nth_bwa $bam > $qc
+		sys sambamba flagstat -t 1 > $qc
 		
 		sys rm -f $badcigar $sam
 
