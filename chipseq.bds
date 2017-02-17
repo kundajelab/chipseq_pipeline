@@ -1256,6 +1256,8 @@ void create_sig_trk( int rep ) {
 // black list filter and then convert to bigbed (for true replicates only)
 void filter_peak() {
 
+	if ( !path_exists( blacklist ) ) return
+
 	// peaks for true replicates
 	pc := get_peak_caller()
 	if ( get_num_rep() > 1 && peak_pooled.hasKey(pc) ) {
