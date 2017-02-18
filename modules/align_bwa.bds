@@ -8,8 +8,8 @@ include "module_template.bds"
 help == align bwa settings (requirements: -bwa_idx)
 param_bwa_aln	:= "-q 5 -l 32 -k 2" 	help Parameters for bwa aln (default: "-q 5 -l 32 -k 2").
 bwa_idx 	:= ""			help BWA index (full path prefix of *.bwt file) .
-wt_bwa		:= "23h"		help Walltime for bwa (default: 23, 23:00:00).
-mem_bwa		:= "10G"	 	help Max. memory for bwa (default: 10G).
+wt_bwa		:= "47h"		help Walltime for bwa (default: 47, 47:00:00).
+mem_bwa		:= "12G"	 	help Max. memory for bwa (default: 12G).
 
 
 grp_color_bwa	:= "salmon"
@@ -144,12 +144,12 @@ string[] bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, stri
 
 		sys $shcmd_init
 
-		//sys bwa samse $bwa_idx $sai $fastq | samtools view -Su - | samtools sort - $prefix
-		//sys samtools index $bam
-		//sys samtools flagstat $bam > $qc
-		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su /dev/stdin \
-			| sambamba sort -t 1 /dev/stdin -o $bam
-		sys sambamba flagstat -t 1 $bam > $qc
+		sys bwa samse $bwa_idx $sai $fastq | samtools view -Su - | samtools sort - $prefix
+		sys samtools index $bam
+		sys samtools flagstat $bam > $qc
+		//sys bwa samse $bwa_idx $sai $fastq | samtools view -Su /dev/stdin \
+		//	| sambamba sort -t 1 /dev/stdin -o $bam
+		//sys sambamba flagstat -t 1 $bam > $qc
 
 		sys $shcmd_finalize
 	}
@@ -182,7 +182,7 @@ string[] bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, str
 
 		sys $shcmd_init
 		
-		sys bwa sampe $bwa_idx $sai1 $sai2 $fastq1 $fastq2 | pigz -p $nth_bwa -c > $sam
+		sys bwa sampe $bwa_idx $sai1 $sai2 $fastq1 $fastq2 | pigz -p $nth_bwa -nc > $sam
 
 		//# Remove read pairs with bad CIGAR strings and sort by position
 
@@ -196,22 +196,22 @@ string[] bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, str
 			| sort | uniq > $badcigar
 
 		//# Remove bad CIGAR read pairs
-		//sys if [ $(cat $badcigar | wc -l) -gt 0 ]; then \
-		//		zcat $sam | grep -v -F -f $badcigar | samtools view -Su - | samtools sort - $prefix; \
-		//	else \
-		//		samtools view -Su $sam | samtools sort - $prefix; \
-		//	fi
 		sys if [ $(cat $badcigar | wc -l) -gt 0 ]; then \
-				pigz -p $nth_bwa -cd $sam | grep -v -F -f $badcigar | samtools view -Su /dev/stdin \
-				| sambamba sort -t 1 /dev/stdin -o $bam; \
+				zcat $sam | grep -v -F -f $badcigar | samtools view -Su - | samtools sort - $prefix; \
 			else \
-				pigz -p $nth_bwa -cd $sam | samtools view -Su /dev/stdin | sambamba sort -t 1 /dev/stdin -o $bam; \
+				samtools view -Su $sam | samtools sort - $prefix; \
 			fi
+		//sys if [ $(cat $badcigar | wc -l) -gt 0 ]; then \
+		//		pigz -p $nth_bwa -cd $sam | grep -v -F -f $badcigar | samtools view -Su /dev/stdin \
+		//		| sambamba sort -t 1 /dev/stdin -o $bam; \
+		//	else \
+		//		pigz -p $nth_bwa -cd $sam | samtools view -Su /dev/stdin | sambamba sort -t 1 /dev/stdin -o $bam; \
+		//	fi
 
-		//sys samtools flagstat $bam > $qc
-		//sys samtools index $bam
+		sys samtools flagstat $bam > $qc
+		sys samtools index $bam
 
-		sys sambamba flagstat -t 1 > $qc
+		//sys sambamba flagstat -t 1 > $qc
 		
 		sys rm -f $badcigar $sam
 
