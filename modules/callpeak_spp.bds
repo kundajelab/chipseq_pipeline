@@ -7,7 +7,7 @@ include "module_template.bds"
 
 help == callpeak spp settings
 npeak 		:= 300000 	help Threshold on # peaks (-npeak in spp) (default: 300000).
-
+fraglen 	:= 0 		help Manually specify fragment length (default: 0, 0 means parsing fraglen from cross-corr analysis log file).
 wt_spp		:= "47h"	help Walltime for spp (default: 47h, 47:00:00).
 mem_spp		:= "12G" 	help Max. memory for spp (default: 12G).
 
@@ -21,19 +21,29 @@ init_callpeak_spp()
 void init_callpeak_spp() {
 
 	npeak 		= get_conf_val_int( npeak,		["npeak"] )
+	fraglen 	= get_conf_val_int( fraglen, 		["fraglen"] )
 	wt_spp 		= get_conf_val( wt_spp, 		["walltime_spp", "wt_spp", "timeout_spp"] )
 	mem_spp 	= get_conf_val( mem_spp, 		["memory_spp", "mem_spp"] )
 
 	print("\n\n== callpeak spp settings\n")
 	print( "Threshold for # peak\t\t: $npeak\n")
+	print( "Specified fraglen (0:auto)\t: $fraglen\n")
 	print( "Walltime (spp)\t\t\t: $wt_spp\n")
 	print( "Max. memory (spp)\t\t: $mem_spp\n")
 }
 
-string[] spp( string tag, string ctl_tag, string fraglen, string o_dir, string group, int nth_spp ) {
+string[] spp( string tag, string ctl_tag, string fraglen_from_xcor, string o_dir, string group, int nth_spp ) {
 
-	if ( fraglen == "" ) error("fraglen is missing!")
 	if ( ctl_tag == "" ) error("Control tagalign is missing!")
+
+	string fraglen_tmp
+	if ( fraglen == 0 ) {
+		if ( fraglen_from_xcor == "" ) error("fraglen is missing!")
+		fraglen_tmp = fraglen_from_xcor
+	}
+	else {
+		fraglen_tmp = fraglen
+	}
 
 	prefix_vs	:= "$o_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
 	prefix_x	:= "$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
@@ -64,7 +74,7 @@ string[] spp( string tag, string ctl_tag, string fraglen, string o_dir, string g
 		    fi
 
 		sys Rscript ${RUN_SPP} -c=$tag -p=$nth_spp -i=$ctl_tag \
-			-npeak=$npeak -odir=$o_dir -speak=$fraglen -savr -savp -rf -out=$ccscore
+			-npeak=$npeak -odir=$o_dir -speak=$fraglen_tmp -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
 		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{ if ($2<0) $2=0; print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -c > $rpeakfile
