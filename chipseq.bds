@@ -19,6 +19,7 @@ tag2bw 		:= false 	help (BETA) Create bigwig from tagalign (using align2rawsigna
 make_wig 	:= false	help (BETA) Create wig (works with '-tag2bw' only).
 macs2_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pooled replicate only.
 idr_rank 	:= ""  		help Scoring column in narrow peak files for IDR. If not specified, signal.value for SPP peaks (TF) and p.value for MACS2 peaks (histone) are used.
+fraglen 	:= 0 		help Manually specify fragment length (default: 0, 0 means parsing fraglen from cross-corr analysis log file).
 
 
 help() // print help and exit if no parameters are given
@@ -120,6 +121,7 @@ void read_conf_chipseq() {
 	make_wig	= get_conf_val_bool( make_wig, 		["make_wig"])
 	macs2_for_pooled_rep_only = get_conf_val_bool( macs2_for_pooled_rep_only, 	["macs2_for_pooled_rep_only"] )
 	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
+	fraglen 	= get_conf_val_int( fraglen, 		["fraglen"] )
 
 	if ( histone ) type = "histone"
 	if ( idr_rank == "" ) idr_rank = is_TF_chipseq() ? "signal.value" : "p.value"
@@ -140,6 +142,7 @@ void read_conf_chipseq() {
 	print( "Create wig\t\t\t\t: $make_wig\n" )
 	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")
 	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
+	print( "Specified fraglen (0:auto)\t\t: $fraglen\n")
 }
 
 void init_filetable() { // init file table labels in HTML report
@@ -812,21 +815,26 @@ void call_peaks() {
 
 	// get fragment length (required for SPP and MACS2)
 	string fraglen_ppr1, fraglen_ppr2, fraglen_mean
-	string{} fraglen, fraglen_pr1, fraglen_pr2 // key = replicate id
+	string{} fraglen_true, fraglen_pr1, fraglen_pr2 // key = replicate id
 
 	real fraglen_sum = 0.0 // temp var.
 
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 
-		fraglen{rep} = get_fraglen( xcor_qc{"rep$rep"} ) // get fragment length of replicate 1
-
-		if ( !true_rep ) {
-
-			fraglen_pr1{rep} = fraglen{rep}
-			fraglen_pr2{rep} = fraglen{rep}
+		if ( fraglen == 0 ) {
+			fraglen_true{rep} = get_fraglen( xcor_qc{"rep$rep"} ) // get fragment length of replicate 1			
+		}
+		else {
+			print("DEBUG: fraglen=$fraglen\n")
+			fraglen_true{rep} = fraglen
 		}
 
-		fraglen_sum += fraglen{rep}.parseReal()
+		if ( !true_rep ) {
+			fraglen_pr1{rep} = fraglen_true{rep}
+			fraglen_pr2{rep} = fraglen_true{rep}
+		}
+
+		fraglen_sum += fraglen_true{rep}.parseReal()
 	}
 
 	real num_rep_real = get_num_rep()
@@ -932,7 +940,7 @@ void call_peaks() {
 			spp_true_o_dir		:= mkdir( "$spp_o_dir/rep$rep" )
 
 			( peak{"spp,$rep"}, tmp ) = \
-				spp( tag{"rep$rep"}, tag_ctl{rep}, fraglen{rep}, spp_true_o_dir, "rep$rep", nth_other )
+				spp( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, spp_true_o_dir, "rep$rep", nth_other )
 
 			add_file_to_report( peak{"spp,$rep"}, "r. peak", "rep$rep", "Peaks/SPP/Replicate $rep/Region peak" )
 		}
@@ -944,7 +952,7 @@ void call_peaks() {
 			macs2_true_sig_dir 	:= mkdir( "$macs2_sig_o_dir/rep$rep" )
 
 			( peak{"macs2,$rep"}, gpeak{"macs2,$rep"}, bpeak{"macs2,$rep"}, fc_bigwig{rep}, pval_bigwig{rep} ) = \
-				macs2_chipseq( tag{"rep$rep"}, tag_ctl{rep}, fraglen{rep}, true, macs2_true_o_dir, macs2_true_sig_dir, "rep$rep" )
+				macs2_chipseq( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, true, macs2_true_o_dir, macs2_true_sig_dir, "rep$rep" )
 
 			add_file_to_report( gpeak{"macs2,$rep"}, "g. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Gapped peak" )
 			add_file_to_report( bpeak{"macs2,$rep"}, "b. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Broad peak" )
