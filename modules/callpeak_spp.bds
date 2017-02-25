@@ -80,6 +80,7 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 
 		sys if [[ $blacklist_exists == "true" ]]; then \
 			bedtools intersect -v -a <(zcat -f $rpeakfile) -b <(zcat -f $blacklist) \
+			| awk 'BEGIN{OFS="\t"} {if ($5>1000) $5=1000; print $0}' | grep -P 'chr[\dXY]+[ \t]' \
 			| gzip -nc > $filt_rpeakfile; \
 		fi
 
