@@ -79,7 +79,8 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 		sys if [ ! -f $rpeakfile ]; then error_in_spp_output_peak_does_not_exist; fi
 
 		sys if [[ $blacklist_exists == "true" ]]; then \
-			bedtools intersect -v -a $rpeakfile -b $blacklist | gzip -nc > $filt_rpeakfile; \
+			bedtools intersect -v -a <(zcat -f $rpeakfile) -b <(zcat -f $blacklist) \
+			| gzip -nc > $filt_rpeakfile; \
 		fi
 
 		sys $shcmd_finalize
