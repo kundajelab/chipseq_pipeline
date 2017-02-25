@@ -66,7 +66,7 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 			-npeak=$npeak -odir=$o_dir -speak=$frag_len -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
-		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{ if ($2<0) $2=0; print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -c > $rpeakfile
+		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{ if ($2<0) $2=0; print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -nc > $rpeakfile
 		
 		sys rm -f $rpeakfile_vs
 
