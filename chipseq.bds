@@ -20,7 +20,7 @@ make_wig 	:= false	help (BETA) Create wig (works with '-tag2bw' only).
 macs2_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pooled replicate only.
 idr_rank 	:= ""  		help Scoring column in narrow peak files for IDR. If not specified, signal.value for SPP peaks (TF) and p.value for MACS2 peaks (histone) are used.
 fraglen 	:= 0 		help Manually specify fragment length (default: 0, 0 means parsing fraglen from cross-corr analysis log file).
-annon_filt_bam 	:= false 	help Generate an annomymized filtered bam. This will not affect tasks downsteam.
+anon_filt_bam 	:= false 	help Generate an annomymized filtered bam. This will not affect tasks downsteam.
 
 help() // print help and exit if no parameters are given
 
@@ -122,7 +122,7 @@ void read_conf_chipseq() {
 	macs2_for_pooled_rep_only = get_conf_val_bool( macs2_for_pooled_rep_only, 	["macs2_for_pooled_rep_only"] )
 	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
 	fraglen 	= get_conf_val_int( fraglen, 		["fraglen"] )
-	annon_filt_bam 	= get_conf_val_bool( annon_filt_bam, 	["annon_filt_bam"] )
+	anon_filt_bam 	= get_conf_val_bool( anon_filt_bam, 	["anon_filt_bam"] )
 
 	if ( histone ) type = "histone"
 	if ( idr_rank == "" ) idr_rank = is_TF_chipseq() ? "signal.value" : "p.value"
@@ -144,7 +144,7 @@ void read_conf_chipseq() {
 	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")
 	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
 	print( "Specified fraglen (0:auto)\t\t: $fraglen\n")
-	print( "Generate annonymized filt. bam\t\t: $annon_filt_bam\n")
+	print( "Generate anonymized filt. bam\t\t: $anon_filt_bam\n")
 }
 
 void init_filetable() { // init file table labels in HTML report
@@ -406,7 +406,7 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 
 		filt_bam{group} = filt_bam_
 
-		if ( annon_filt_bam ) annonymize_filt_bam( filt_bam_, aln_o_dir, group )
+		if ( anon_filt_bam ) anonymize_filt_bam( filt_bam_, aln_o_dir, group )
 
 		if ( is_final_stage_filt_bam() ) return
 
@@ -560,7 +560,7 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 		filt_bam{group} = filt_bam_
 
-		if ( annon_filt_bam ) annonymize_filt_bam( filt_bam_, aln_o_dir, group )
+		if ( anon_filt_bam ) anonymize_filt_bam( filt_bam_, aln_o_dir, group )
 
 		if ( is_final_stage_filt_bam() ) return
 
