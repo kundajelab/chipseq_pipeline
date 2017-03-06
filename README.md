@@ -347,6 +347,11 @@ $ screen -X -S [SCR_NAME] quit
 $ kill_scr [SCR_NAME]
 ```
 
+## How to customize genome data installer?
+
+Please refer to the section `Installer for genome data` on [BDS pipeline programming](https://kundajelab.github.io/bds_pipeline_modules/programming.html).
+
+
 ## Usage cheat sheet
 
 For general use, use the following command line: (for SE data set)
