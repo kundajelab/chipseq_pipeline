@@ -1274,20 +1274,25 @@ void filter_peak() {
 
 	// peaks for true replicates
 	pc := get_peak_caller()
+	string file_type
+	if ( pc == "macs2" ) {
+		file_type = "narrowPeak"
+	}
+	else if ( pc == "spp" ) {
+		file_type = "regionPeak"
+	}
 	if ( get_num_rep() > 1 && peak_pooled.hasKey(pc) ) {
 		filt_peak_pooled := \
-			blacklist_filter_peak( "narrowPeak", peak_pooled{pc}, (peak_pooled{pc}).dirName(), "peak_pooled" )
+			blacklist_filter_peak( file_type, peak_pooled{pc}, (peak_pooled{pc}).dirName(), "peak_pooled" )
 	}
-
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 		if ( !peak.hasKey(pc+",$rep") ) continue
 		filt_peak := \
-			blacklist_filter_peak( "narrowPeak", peak{pc+",$rep"}, (peak{pc+",$rep"}).dirName(), "peak $rep" )
+			blacklist_filter_peak( file_type, peak{pc+",$rep"}, (peak{pc+",$rep"}).dirName(), "peak $rep" )
 	}
-
 	wait
 
-	print( "\n== Done filter_peak_and_convert_to_bigbed()\n" )	
+	print( "\n== Done filter_peak()\n" )	
 }
 
 void report() {
