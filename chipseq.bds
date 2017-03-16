@@ -21,6 +21,7 @@ macs2_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pooled
 idr_rank 	:= ""  		help Scoring column in narrow peak files for IDR. If not specified, signal.value for SPP peaks (TF) and p.value for MACS2 peaks (histone) are used.
 fraglen 	:= 0 		help Manually specify fragment length (default: 0, 0 means parsing fraglen from cross-corr analysis log file).
 anon_filt_bam 	:= false 	help Generate an annomymized filtered bam. This will not affect tasks downsteam.
+use_pooled_ctl 	:= false 	help Force to use pooled control (ignoring criteria to choose control for each replicate).
 
 help() // print help and exit if no parameters are given
 
@@ -39,8 +40,6 @@ include "modules/callpeak_idr.bds"
 include "modules/callpeak_blacklist_filter.bds"
 
 include "modules/signal.bds"
-
-
 
 // Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
 // e.g. filt_bam{"Replicate 1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
@@ -123,6 +122,7 @@ void read_conf_chipseq() {
 	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
 	fraglen 	= get_conf_val_int( fraglen, 		["fraglen"] )
 	anon_filt_bam 	= get_conf_val_bool( anon_filt_bam, 	["anon_filt_bam"] )
+	use_pooled_ctl 	= get_conf_val_bool( use_pooled_ctl, 	["use_pooled_ctl"] )
 
 	if ( histone ) type = "histone"
 	if ( idr_rank == "" ) idr_rank = is_TF_chipseq() ? "signal.value" : "p.value"
@@ -145,6 +145,7 @@ void read_conf_chipseq() {
 	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
 	print( "Specified fraglen (0:auto)\t\t: $fraglen\n")
 	print( "Generate anonymized filt. bam\t\t: $anon_filt_bam\n")
+	print( "Force to use pooled ctl\t\t\t: $use_pooled_ctl\n")
 }
 
 void init_filetable() { // init file table labels in HTML report
@@ -780,7 +781,7 @@ void call_peaks() {
 			}
 		}
 
-		use_pooled_ctl := false
+		use_pooled_ctl_ := use_pooled_ctl
 
 		for ( int i=0; i<nlines_ctl.size(); i++ ) { // check every # lines in every pair of control tagaligns
 			for ( int j=i+1; j<nlines_ctl.size(); j++ ) {
@@ -788,7 +789,7 @@ void call_peaks() {
 				if ( 	nlines_ctl[i] / nlines_ctl[j] > ctl_depth_ratio || \
 					nlines_ctl[j] / nlines_ctl[i] > ctl_depth_ratio ) {
 
-					use_pooled_ctl = true
+					use_pooled_ctl_ = true
 
 					print("\nNumber of reads in controls differ by a factor of $ctl_depth_ratio. Using pooled controls.\n" )
 
@@ -799,7 +800,7 @@ void call_peaks() {
 
 		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
 
-			if ( !use_pooled_ctl && input_file_exists( 1, rep ) ) {
+			if ( !use_pooled_ctl_ && input_file_exists( 1, rep ) ) {
 			
 				if ( nlines{"ctl$rep"} < nlines{"rep$rep"} ) {
 
