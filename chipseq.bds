@@ -59,6 +59,7 @@ string peak_overlap, gpeak_overlap, bpeak_overlap
 string{} idr_tr, idr_pr, idr_tr_png, idr_pr_png
 string idr_ppr, idr_opt, idr_consv, idr_ppr_png
 string idr_qc
+string{} idr_qc_FRiP
 
 string{} sig_trk 	 	// signal tracks from deepTools or bamCoverage: map with key ("$ctl,$rep")
 string{} pval_bigwig, fc_bigwig // signal track from macs2
@@ -829,7 +830,7 @@ void call_peaks() {
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 
 		if ( fraglen == 0 ) {
-			fraglen_true{rep} = get_fraglen( xcor_qc{"rep$rep"} ) // get fragment length of replicate 1			
+			fraglen_true{rep} = get_fraglen( xcor_qc{"rep$rep"} ) // get fragment length of replicate 1
 		}
 		else {
 			print("DEBUG: fraglen=$fraglen\n")
@@ -1215,6 +1216,27 @@ void do_idr() {
 	add_file_to_report( idr_opt, "opt. IDR peak", "", "Peaks/IDR/Optimal set/IDR peak" )
 	add_file_to_report( idr_consv, "consv. IDR peak", "", "Peaks/IDR/Conservative set/IDR peak" )
 
+	// FRiP (fraction of reads in peak)
+	if ( !is_input_peak() ) {
+		string{} fraglen_true
+		real fraglen_sum = 0.0 // temp var.
+		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+			group := get_group_name( 0, rep ) // for each experiment replicate
+			fraglen_true{rep} = get_fraglen( xcor_qc{group} )
+			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$rep" )
+			idr_qc_FRiP{"rep$rep-pr"} = \
+				FRiP_shifted( tag{group}, idr_pr{rep}, parse_int(fraglen_true{rep}), idr_pr_o_dir, "rep$rep-pr" )
+
+			fraglen_sum += fraglen_true{rep}.parseReal()
+		}
+		if ( get_num_rep()>1 ) {
+			real num_rep_real = get_num_rep()
+			fraglen_mean := round( fraglen_sum / num_rep_real ) // compute fraglen mean for pooled
+			idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
+			idr_qc_FRiP{"ppr"} = \
+				FRiP_shifted( tag{"pooled_rep"}, idr_ppr, parse_int(fraglen_mean), idr_ppr_o_dir, "ppr" )
+		}
+	}
 	wait
 
 	print( "\n== Done do_idr()\n" )	
@@ -1315,64 +1337,60 @@ void report() {
 string html_chipseq_QC() {
 
 	string[] flagstat_qcs, dup_qcs, flagstat_nodup_qcs, pbc_qcs, xcor_qcs, xcor_plots
-	string[] flagstat_headers, dup_headers, flagstat_nodup_headers, pbc_headers, xcor_headers
+	string[] idr_qc_FRiPs
+	string[] groups
 
-	for ( int ctl=0; ctl <= 1; ctl++) { // iterate through inputs (ctl==0 : exp. replicate, ctl==1 : control)	
-		if ( ctl==1 && !ctl_exists() ) continue		
-	
-		for ( int rep=1; rep <= get_num_rep( ctl ); rep++) {
+	for ( int rep=1; rep <= get_num_rep(); rep++) {
 
-			if ( !input_file_exists( ctl, rep ) ) continue
+		group := "rep$rep"
+		groups.add( group )
 
-			group := get_group_name( ctl, rep )
-
-			if ( ctl == 0 ) {
-				//html_rep_by_id += html_xcor( group, 	[ group ], [ xcor_qc{group} ], [ xcor_plot{group} ], [ group ] )
-
-				if ( xcor_qc.hasKey( group ) ) {
-					xcor_qcs 		+= xcor_qc{group}
-					xcor_plots 		+= xcor_plot{group}
-
-					xcor_headers 		+= group
-				}
-			}
-
-			if ( flagstat_qc.hasKey( group ) ) 	flagstat_qcs 		+= flagstat_qc{group}
-			if ( dup_qc.hasKey( group ) ) 		dup_qcs 		+= dup_qc{group}
-			if ( flagstat_nodup_qc.hasKey( group ) )flagstat_nodup_qcs 	+= flagstat_nodup_qc{group}
-			if ( pbc_qc.hasKey( group ) ) 		pbc_qcs			+= pbc_qc{group}
-
-			if ( flagstat_qc.hasKey( group ) ) 	flagstat_headers 	+= group
-			if ( dup_qc.hasKey( group ) ) 		dup_headers 		+= group
-			if ( flagstat_nodup_qc.hasKey( group ) )flagstat_nodup_headers 	+= group
-			if ( pbc_qc.hasKey( group ) ) 		pbc_headers		+= group
-
+		if ( xcor_qc.hasKey( group ) )	{
+			xcor_qcs 		+= xcor_qc{group}
+			xcor_plots 		+= xcor_plot{group}
 		}
-	}	
+		if ( flagstat_qc.hasKey( group ) )	flagstat_qcs 		+= flagstat_qc{group}
+		if ( dup_qc.hasKey( group ) ) 		dup_qcs 		+= dup_qc{group}
+		if ( flagstat_nodup_qc.hasKey( group ) )	flagstat_nodup_qcs 	+= flagstat_nodup_qc{group}
+		if ( pbc_qc.hasKey( group ) ) 		pbc_qcs			+= pbc_qc{group}
+	}
 
 	html := "<div id='chipseq_qc'>"
-	
-	html += parse_flagstat_to_html( "all", 	flagstat_headers, flagstat_qcs, flagstat_headers, false )
-	html += parse_dup_to_html( "all", 		dup_headers, dup_qcs, dup_headers )
-	html += parse_flagstat_to_html( "all, filtered",flagstat_nodup_headers, flagstat_nodup_qcs, flagstat_nodup_headers, true )
-	html += parse_pbc_to_html( "all", 		pbc_headers, pbc_qcs, pbc_headers )
-	html += parse_xcor_to_html( "all", 		xcor_headers, xcor_qcs, xcor_plots, xcor_headers )
+	html += html_table_multiple_logs( "Flagstat (raw) QC", true, "flagstat", groups, flagstat_qcs )
+	html += html_table_multiple_logs( "Dup. QC", true, "dup", groups, dup_qcs )
+	html += html_table_multiple_logs( "Flagstat (filtered) QC", true, "flagstat_filt", groups, flagstat_nodup_qcs )
+	html += html_table_multiple_logs( "PBC QC", true, "pbc", groups, pbc_qcs )
+	if ( pbc_qcs.size()>0 ) html += html_help_pbc()
+	html += html_table_multiple_logs( "Cross-corr. QC", true, "xcor", groups, xcor_qcs )
+	if ( xcor_qcs.size()>0 ) html += html_help_xcor()
+
+	// xcor images
+	for ( int i=0; i<xcor_plots.size(); i++ ) {
+		png := pdf_to_png( xcor_plots[i] )
+		html += html_img( png, 500, groups[i] ) + "&nbsp"
+	}
 
 	// if idr qc's exists, add them to html
-	if ( idr_qc != "" ) 		html += parse_idr_to_html( "idr", idr_qc )
+	if ( idr_qc != "" ) \
+		html += html_table_multiple_logs( "IDR QC", true, "idr", idr_qc )
+
+	// IDR FRiP
+	if ( idr_qc_FRiP.size()>0 ) {
+		html += html_table_multiple_logs( "IDR FRiP", true, "idr_FRiP", idr_qc_FRiP )
+		html += html_help_idr_FRiP()
+	}	
 
 	for ( int i=1; i<=get_num_rep(); i++ ) {
-		
 		for ( int j=i+1; j<=get_num_rep(); j++ ) {
-			if ( idr_tr_png.hasKey("$i,$j") ) html += html_img( idr_tr_png{"$i,$j"}, 800, "true reps (rep$i-rep$j)" ) + "&nbsp"
+			if ( idr_tr_png.hasKey("$i,$j") ) \
+				html += html_img( idr_tr_png{"$i,$j"}, 800, "true reps (rep$i-rep$j)" ) + "&nbsp"
 		}
-
 		if ( !true_rep ) {
-			if ( idr_pr_png.hasKey(i) ) html += html_img( idr_pr_png{i}, 800, "rep$i pseudo-reps" ) + "&nbsp"
+			if ( idr_pr_png.hasKey(i) ) \
+				html += html_img( idr_pr_png{i}, 800, "rep$i pseudo-reps" ) + "&nbsp"
 		}
-	}		
-
-	if ( idr_ppr_png != "" ) 	html += html_img( idr_ppr_png, 800, "pooled pseudo-reps" ) + "&nbsp"
+	}
+	if ( idr_ppr_png != "" ) html += html_img( idr_ppr_png, 800, "pooled pseudo-reps" ) + "&nbsp"
 
 	html += "</div><br>"
 	return html
