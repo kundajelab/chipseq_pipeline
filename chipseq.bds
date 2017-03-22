@@ -1226,6 +1226,7 @@ void do_idr() {
 			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$rep" )
 			idr_qc_FRiP{"rep$rep-pr"} = \
 				FRiP_shifted( tag{group}, idr_pr{rep}, parse_int(fraglen_true{rep}), idr_pr_o_dir, "rep$rep-pr" )
+			add_file_to_table( idr_qc_FRiP{"rep$rep-pr"}, "QC and logs/IDR/Pseudo-replicates/Replicate $rep/FRiP" )
 
 			fraglen_sum += fraglen_true{rep}.parseReal()
 		}
@@ -1235,6 +1236,7 @@ void do_idr() {
 			idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
 			idr_qc_FRiP{"ppr"} = \
 				FRiP_shifted( tag{"pooled_rep"}, idr_ppr, parse_int(fraglen_mean), idr_ppr_o_dir, "ppr" )
+			add_file_to_table( idr_qc_FRiP{"ppr"}, "QC and logs/IDR/Pooled pseudo-replicates/FRiP" )
 		}
 	}
 	wait
