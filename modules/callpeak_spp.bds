@@ -9,7 +9,7 @@ help == callpeak spp settings
 npeak 		:= 300000 	help Threshold on # peaks (-npeak in spp) (default: 300000).
 wt_spp		:= "47h"	help Walltime for spp (default: 47h, 47:00:00).
 mem_spp		:= "12G" 	help Max. memory for spp (default: 12G).
-
+max_ppsize_spp 	:= ""		help Set R stack size (R parameter --max-ppsize=) for SPP.
 
 grp_color_spp		:= "skyblue"
 
@@ -22,11 +22,13 @@ void init_callpeak_spp() {
 	npeak 		= get_conf_val_int( npeak,		["npeak"] )
 	wt_spp 		= get_conf_val( wt_spp, 		["walltime_spp", "wt_spp", "timeout_spp"] )
 	mem_spp 	= get_conf_val( mem_spp, 		["memory_spp", "mem_spp"] )
+	max_ppsize_spp 	= get_conf_val( max_ppsize_spp, 	["max_ppsize_spp"] )
 
 	print("\n\n== callpeak spp settings\n")
 	print( "Threshold for # peak\t\t: $npeak\n")
 	print( "Walltime (spp)\t\t\t: $wt_spp\n")
 	print( "Max. memory (spp)\t\t: $mem_spp\n")
+	print( "Stack size for SPP\t\t:$max_ppsize_spp\n")
 }
 
 string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string group, int nth_spp ) {
@@ -42,6 +44,7 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 	ccscore		:= "$prefix_x.ccscore"
 	pdf_tmp		:= replace_dir( rm_ext( tag, ["gz"] ), o_dir ) + ".pdf"
 	pdf 		:= "$prefix_x.pdf"
+	extra_param 	:= max_ppsize_spp ? "--max-ppsize=$max_ppsize_spp" : ""
 
 	blacklist_exists := path_exists(blacklist)
 
@@ -62,7 +65,7 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 		    else RUN_SPP=$(which run_spp.R); \
 		    fi
 
-		sys Rscript ${RUN_SPP} -c=$tag -p=$nth_spp -i=$ctl_tag \
+		sys Rscript $extra_param ${RUN_SPP} -c=$tag -p=$nth_spp -i=$ctl_tag \
 			-npeak=$npeak -odir=$o_dir -speak=$frag_len -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
