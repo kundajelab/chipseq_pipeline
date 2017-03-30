@@ -1238,7 +1238,22 @@ void do_idr() {
 
 	// peak caller
 	pc := get_peak_caller()
-	idr_o_dir := mkdir( "$out_dir/peak/idr" )
+
+	peak_o_dir := "$out_dir/peak/$pc"
+	idr_o_dir_old_version := "$peak_o_dir/../idr"
+	idr_o_dir := "$peak_o_dir/idr"
+	// for backward compatility (old version has idr on out/peak), make symlink for old dir. to new dir. 
+	if ( path_exists( idr_o_dir_old_version ) ) { 
+		system := "local"
+		task {
+			sys cd $peak_o_dir
+			sys rm -f idr
+			sys ln -s ../idr
+		}
+	}
+	else {
+		idr_o_dir = mkdir( idr_o_dir )
+	}
 
 	// IDR on true replicates (on every pair of peaks from replicates)
 
@@ -1588,4 +1603,3 @@ bool need_macs2() {
 
 	return true
 }
-    
