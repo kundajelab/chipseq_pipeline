@@ -35,8 +35,7 @@ void chk_callpeak_macs2() {
 	if ( !path_exists( chrsz ) ) error("Chromosome size file (-chrsz) is missing! (file: $chrsz)")
 }
 
-
-string[] macs2_chipseq( string tag, string ctl_tag, string fraglen, bool make_sig, \
+string[] macs2_chipseq_npeak_and_signal( string tag, string ctl_tag, string fraglen, bool make_sig, \
 		string peak_o_dir, string sig_o_dir, string group ) {
 
 	prefix 		:= (ctl_tag != "") ? 	("$peak_o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
@@ -44,8 +43,6 @@ string[] macs2_chipseq( string tag, string ctl_tag, string fraglen, bool make_si
 	prefix_sig 	:= replace_dir( prefix, sig_o_dir )
 
 	npeakfile	:= "$prefix.narrowPeak.gz"
-	bpeakfile	:= "$prefix.broadPeak.gz"
-	gpeakfile	:= "$prefix.gappedPeak.gz"
 	fc_bedgraph 	:= "$prefix.fc.signal.bedgraph"
 	fc_bedgraph_srt	:= "$prefix.fc.signal.srt.bedgraph"
 	fc_bigwig 	:= "$prefix_sig.fc.signal.bw"
@@ -58,12 +55,10 @@ string[] macs2_chipseq( string tag, string ctl_tag, string fraglen, bool make_si
 	sval_line := (ctl_tag != "") ?	"controlReads=$(zcat $ctl_tag | wc -l | awk '{printf \"%f\", $1/1000000}'); sval=$(echo \"${chipReads} ${controlReads}\" | awk '$1>$2{printf \"%f\",$2} $1<=$2{printf \"%f\",$1}')" : \
 					"sval=$(echo \"${chipReads}\" | awk '{printf \"%f\",$1}')"
 
-	blacklist_exists := path_exists(blacklist)
-
 	in 	:= (ctl_tag != "") ? [ tag, ctl_tag ] : [ tag ]
- 	out 	:= make_sig ? [ npeakfile, gpeakfile, bpeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile, gpeakfile, bpeakfile ]
+	out 	:= make_sig ? [ npeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile ]
 
- 	taskName:= "macs2 " + group
+	taskName:= "macs2 n/s " + group
 	mem := get_res_mem(mem_macs2,1);	timeout := get_res_wt(wt_macs2)
 
 	wait_par( cpus )
@@ -86,27 +81,6 @@ string[] macs2_chipseq( string tag, string ctl_tag, string fraglen, bool make_si
 			"$prefix"_peaks.narrowPeak \
 			"$prefix"_summits.bed
 
-		//===========================================
-		//# Generate Broad and Gapped Peaks
-		//============================================
-		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p 0.01 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
-
-		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr "$prefix"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $bpeakfile
-		sys sort -k 14gr,14gr "$prefix"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $gpeakfile
-
-		//# remove additional files
-		sys rm -f "$prefix"_peaks.xls \
-		  "$prefix"_peaks.broadPeak \
-		  "$prefix"_peaks.gappedPeak \
-		  "$prefix"_summits.bed
-
-		// sys if [[ $blacklist_exists == "true" ]]; then \
-		// 	bedtools intersect -v -a $npeakfile -b $blacklist | gzip -nc > $filt_npeakfile; \
-		// 	bedtools intersect -v -a $gpeakfile -b $blacklist | gzip -nc > $filt_gpeakfile; \
-		// 	bedtools intersect -v -a $bpeakfile -b $blacklist | gzip -nc > $filt_bpeakfile; \
-		// fi
-
 		sys if [[ $make_sig == "false" ]]; then \
 			rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg; \
 			$shcmd_finalize; \
@@ -117,7 +91,6 @@ string[] macs2_chipseq( string tag, string ctl_tag, string fraglen, bool make_si
 		//# For Fold enrichment signal tracks
 		//============================================
 		//# This file is a tab delimited file with 2 columns Col1 (chromosome name), Col2 (chromosome size in bp).
-
 		sys macs2 bdgcmp -t "$prefix"_treat_pileup.bdg -c "$prefix"_control_lambda.bdg --outdir $peak_o_dir -o "$prefix_basename"_FE.bdg -m FE
 
 		//# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
@@ -149,6 +122,55 @@ string[] macs2_chipseq( string tag, string ctl_tag, string fraglen, bool make_si
 		sys rm -f $pval_bedgraph $pval_bedgraph_srt
 
 		sys rm -f "$prefix"_treat_pileup.bdg "$prefix"_control_lambda.bdg
+
+		sys $shcmd_finalize
+	}
+
+	register_par( tid, cpus )
+
+	add_task_to_graph( in, out, group, "MACS2", grp_color_macs2 )
+
+	return out
+}
+
+string[] macs2_chipseq_gpeak_and_bpeak( string tag, string ctl_tag, string fraglen, \
+		string peak_o_dir, string group ) {
+
+	prefix 		:= (ctl_tag != "") ? 	("$peak_o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
+						: replace_dir( rm_ext( tag, "tagAlign" ), peak_o_dir )
+	bpeakfile	:= "$prefix.broadPeak.gz"
+	gpeakfile	:= "$prefix.gappedPeak.gz"
+	prefix_basename	:= get_basename( prefix )
+	// macs2 params with or w/o control
+	ctl 	:= (ctl_tag != "") ? "-c $ctl_tag" : ""
+
+	in 	:= (ctl_tag != "") ? [ tag, ctl_tag ] : [ tag ]
+	out 	:= [ gpeakfile, bpeakfile ]
+
+	taskName:= "macs2 g/b " + group
+	mem := get_res_mem(mem_macs2,1);	timeout := get_res_wt(wt_macs2)
+
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
+
+		sys $shcmd_init
+		sys export LC_COLLATE=C
+
+		//===========================================
+		//# Generate Broad and Gapped Peaks
+		//============================================
+		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p 0.01 --broad --nomodel --shift 0 --extsize $fraglen --keep-dup all
+
+		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
+		sys sort -k 8gr,8gr "$prefix"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $bpeakfile
+		sys sort -k 14gr,14gr "$prefix"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $gpeakfile
+
+		//# remove additional files
+		sys rm -f "$prefix"_peaks.xls \
+		  "$prefix"_peaks.broadPeak \
+		  "$prefix"_peaks.gappedPeak \
+		  "$prefix"_summits.bed
 
 		sys $shcmd_finalize
 	}
