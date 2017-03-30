@@ -156,7 +156,7 @@ AQUAS pipeline does not need internet connection but installers (`install_depend
 * On your computer that has an internet access,
   * Follow [the installation instruction for general computers](#installation)
   * Move your Miniconda3 directory to `$HOME/miniconda3` on your internet-free computer.
-  * Move your genome database directory, which has `bds_atac_species.conf` and directories per species, to `$HOME/genome_data` on your internet-free computer. `$HOME/genome_data` on your internet-free computer should have `bds_atac_species.conf`.
+  * Move your genome database directory, which has `aquas_chipseq_species.conf` and directories per species, to `$HOME/genome_data` on your internet-free computer. `$HOME/genome_data` on your internet-free computer should have `aquas_chipseq_species.conf`.
   * Move your BDS directory `$HOME/.bds` to `$HOME/.bds` on your internet-free computer.
   * Move your pipeline directory `chipseq_pipelines/` to `$HOME/chipseq_pipelines/` on your internet-free computer.
 
@@ -173,10 +173,10 @@ AQUAS pipeline does not need internet connection but installers (`install_depend
      ```
      [default]
      conda_bin_dir=$HOME/miniconda3/bin
-     species_file=$HOME/genome_data/bds_atac_species.conf
+     species_file=$HOME/genome_data/aquas_chipseq_species.conf
      ```
 
-* Modify all paths in `$HOME/genome_data/bds_atac_species.conf` so that they correctly point to the right files.
+* Modify all paths in `$HOME/genome_data/aquas_chipseq_species.conf` so that they correctly point to the right files.
 * Check BDS version.
 
      ```
