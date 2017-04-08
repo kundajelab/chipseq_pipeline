@@ -474,6 +474,10 @@ You can change the IDR threshold.
 ```
 -idr_thresh [IDR_THRESHOLD]
 ```
+For TF ChIP-seq, you can choose a peak caller for IDR. It's SPP by default. To choose MACS2,
+```
+-macs2_for_idr
+```
 You can also define parameters in a configuration file. Key names in a configruation file are identical to parameter names on command line. 
 ```
 $ bds chipseq.bds [CONF_FILE]
