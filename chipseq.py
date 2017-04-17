@@ -556,7 +556,6 @@ def main():
     # print example JSON
     # recur_dict_to_print_example( d )
     # print help table
-    recur_dict_to_print_help( d )
-
+    # recur_dict_to_print_help( d )
 if __name__ == '__main__':
     main()
