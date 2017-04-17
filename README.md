@@ -203,7 +203,7 @@ We recommend using BASH to run pipelines.
 
 There are two ways to define parameters for ChIP-Seq pipelines. Default values for most of those parameters are already given. Take a look at example commands and configuration files in [examples](examples). AQUAS pipeline is multi-threaded. Set up maximum number of processors with `-nth`.
 
-1. Parameters from command line arguments: Any of three positional arguments can be skipped. Then default values will be used for skipped ones. Choose `[CHIPSEQ_TYPE]` between `TF` (default) and `histone`. You can also specify it with `-type [CHIPSEQ_TYPE]`. You can stop the pipeline at the end of any stage. Choose `[FINAL_STAGE]` among `bam`, `filt_bam`, `tag`, `xcor`, `peak` and `idr` (default). You can also specify it with `-final_stage [FINAL_STAGE]`. See [Pipeline steps](#pipeline-steps) for details about `[FINAL_STAGE]`.
+1. Parameters from command line arguments: Any of three positional arguments can be skipped. Then default values will be used for skipped ones. Choose `[CHIPSEQ_TYPE]` between `TF` (default) and `histone`. You can also specify it with `-type [CHIPSEQ_TYPE]`. You can stop the pipeline at the end of any stage. Choose `[FINAL_STAGE]` among `bam`, `filt_bam`, `tag`, `xcor`, `peak` and `idr` (default). You can also specify it with `-final_stage [FINAL_STAGE]`. See [Pipeline steps](#pipeline-steps) for details about pipeline stages.
 
       ```
       $ python chipseq.py [CHIPSEQ_TYPE] [FINAL_STAGE] [CONF_JSON_FILE] -species [SPECIES] -nth [NUM_THREADS] -fastq1 ... -fastq2 ... -ctl_fastq1 ...
@@ -229,7 +229,7 @@ There are two ways to define parameters for ChIP-Seq pipelines. Default values f
 
 3. You can mix up method 1 and 2. Parameters specied in command line arguments will override the other.
 
-To list all parameters: `$ python chipseq.py`
+To list all parameters: `$ python chipseq.py -h`
 
 ## Stopping / Resuming pipeline
 
@@ -237,7 +237,7 @@ Press Ctrl + C on a terminal or send any kind of kill signals to it. Please note
 
 ## Running pipelines with a cluster engine
 
-**IMPORTANT!** On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose [CLUSTER_ENGINE] between `sge` (default on Kundaje clusters and SCG4), `slurm` (default on Sherlock) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
+**IMPORTANT!** On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose `[CLUSTER_ENGINE]` between `sge` (default on Kundaje clusters and SCG4), `slurm` (default on Sherlock) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
 
 ```
 $ python chipseq.py -use_system [CLUSTER_ENGINE] ...

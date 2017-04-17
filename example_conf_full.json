@@ -7,6 +7,8 @@
 		"title" : ""
 	},
 	"input_endedness" : {
+		"se" : false,
+		"pe" : false
 	},
 	"input_files" : {
 	},
@@ -27,7 +29,7 @@
 	},
 	"resource" : {
 		"nth" : 8,
-		"no_par" : true,
+		"no_par" : false,
 		"wt" : "5h50m",
 		"memory" : "7G",
 		"unlimited_mem_wt" : false,

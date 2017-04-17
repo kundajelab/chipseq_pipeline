@@ -296,7 +296,7 @@ def parse_input_files_key( key ):
     file_type = ''
     rep = 0
     pair = 0
-    m_endedness = re.findall(r'^\-*(ctl[\-_]se|se|ctl[\-_]pe|pe)(\d*)$',key)
+    m_endedness = re.findall(r'^\-*(ctl[\-_]se|se|ctl[\-_]pe|pe)(\d+)$',key)
     m_fastq_pe = re.findall(r'^\-*(ctl[\-_]fastq|fastq)(\d*)[\-_](\d+):*(\d*)$',key)
     m_fastq_se = re.findall(r'^\-*(ctl[\-_]fastq|fastq)(\d*):*(\d*)$',key)
     m_peak_pr = re.findall(r'^\-*peak(\d*)[\-_]pr(\d+)$',key)
@@ -348,6 +348,8 @@ def parse_input_files_in_cmd_line( args_input_files ):
         else:
             if not file_type:
                 raise ValueError('Invalid command line arguments ({})!'.format(a))
+            if not os.path.exists(a):
+                raise ValueError('File not found! (file_type: {}, path:{})'.format(file_type, a))
             elif file_type in ['fastq','ctl_fastq']:
                 input_files[(file_type,rep,pair)].append(a)
                 pool_idx = len(input_files[(file_type,rep,pair)])               
@@ -363,7 +365,7 @@ def parse_input_files_in_cmd_line( args_input_files ):
                     bds_cmd['{}{}'.format(file_type,rep)]=(a,file_type,rep,pair,0)        
             else:
                 input_files[(file_type,rep,pair)].append(a)
-                bds_cmd['{}{}'.format(file_type,rep)]=(a,file_type,rep,pair,0)
+                bds_cmd['{}{}'.format(file_type,rep)]=(a,file_type,rep,pair,0)            
     return bds_cmd
 
 def parse_input_files_in_json( json_d ):
@@ -378,24 +380,27 @@ def parse_input_files_in_json( json_d ):
         if not type(arr)==list:
             arr = [arr]
         for val in arr:
-            if file_type in ['fastq','ctl_fastq']:
-                input_files[(file_type,rep,pair)].append(val)
-                pool_idx = len(input_files[(file_type,rep,pair)])               
-                if pair:
-                    bds_cmd['{}{}_{}:{}'.format(file_type,rep,pair,pool_idx)]=(val,file_type,rep,pair,pool_idx)
-                else:
-                    bds_cmd['{}{}:{}'.format(file_type,rep,pool_idx)]=(val,file_type,rep,pair,pool_idx)
-            elif file_type in ['se','ctl_se','pe','ctl_pe']:                
-                bds_cmd['{}{}'.format(file_type,rep)] = 'True'
-            elif file_type in ['peak']:
-                input_files[(file_type,rep,pair)].append(val)
-                if pair:
-                    bds_cmd['{}{}_pr{}'.format(file_type,rep,pair)]=(val,file_type,rep,pair,0)
-                else:
-                    bds_cmd['{}{}'.format(file_type,rep)]=(val,file_type,rep,pair,0)
+            if file_type in ['se','ctl_se','pe','ctl_pe']:                
+                bds_cmd['{}{}'.format(file_type,rep)] = 'True'                
             else:
-                input_files[(file_type,rep,pair)].append(val)
-                bds_cmd['{}{}'.format(file_type,rep)]=(val,file_type,rep,pair,0)
+                if not os.path.exists(val):
+                    raise ValueError('File not found! (key: {}, path:{})'.format(key,val))
+                if file_type in ['fastq','ctl_fastq']:
+                    input_files[(file_type,rep,pair)].append(val)
+                    pool_idx = len(input_files[(file_type,rep,pair)])               
+                    if pair:
+                        bds_cmd['{}{}_{}:{}'.format(file_type,rep,pair,pool_idx)]=(val,file_type,rep,pair,pool_idx)
+                    else:
+                        bds_cmd['{}{}:{}'.format(file_type,rep,pool_idx)]=(val,file_type,rep,pair,pool_idx)
+                elif file_type in ['peak']:
+                    input_files[(file_type,rep,pair)].append(val)
+                    if pair:
+                        bds_cmd['{}{}_pr{}'.format(file_type,rep,pair)]=(val,file_type,rep,pair,0)
+                    else:
+                        bds_cmd['{}{}'.format(file_type,rep)]=(val,file_type,rep,pair,0)
+                else:
+                    input_files[(file_type,rep,pair)].append(val)
+                    bds_cmd['{}{}'.format(file_type,rep)]=(val,file_type,rep,pair,0)
     return bds_cmd
 
 def validate_bds_params( bds_params ):
@@ -489,9 +494,6 @@ def init_parser():
     default_param_dict = get_default_param_dict()
     ordered_dict = order_dict( default_param_dict )
     recur_dict_to_add_arguments( parser, ordered_dict )
-    if len(sys.argv)==1:
-        parser.print_help()
-        sys.exit(1)    
     return parser, ordered_dict
 
 def main():
@@ -551,6 +553,10 @@ def main():
             raise ValueError('Invalid command line arguments (key: {})!'.format(args_input_files[0]))
         bds_params.update( parse_input_files_in_cmd_line( args_input_files ) )
     validate_bds_params( bds_params )
+    if not len(bds_params):
+        # parser.print_help()
+        print('Warning: no parameter specied for the pipeline! For help, add -h to the command line.')
+        sys.exit(1)    
     # run bds command
     run_bds( bds_params, args.screen )
     # print example JSON
