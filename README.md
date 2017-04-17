@@ -131,7 +131,7 @@ $ echo 'export PATH=$PATH:/opt/miniconda3/bin' >> /etc/profile.d/conda_init.sh
 
 ## Genome data
 
-Install genome data for a specific genome `[GENOME]`. Currently `hg19`, `mm9`, `hg38`(BETA), `mm10`(BETA), `hg38_ENCODE`(BETA) and `mm10_ENCODE`(BETA) are available. Specify a directory `[DATA_DIR]` to download genome data. A species file generated on `[DATA_DIR]` will be automatically added to your `./default.env` so that the pipeline knows that you have installed genome data using `install_genome_data.sh`. If you want to install multiple genomes make sure that you use the same directory `[DATA_DIR]` for them. Each genome data will be installed on `[DATA_DIR]/[GENOME]`. If you use other BDS pipelines, it is recommended to use the same directory `[DATA_DIR]` to save disk space.
+Install genome data for a specific genome `[GENOME]`. Currently `hg19`, `mm9`, `hg38`, `mm10`, `hg38_ENCODE` and `mm10_ENCODE` are available. Specify a directory `[DATA_DIR]` to download genome data. A species file generated on `[DATA_DIR]` will be automatically added to your `./default.env` so that the pipeline knows that you have installed genome data using `install_genome_data.sh`. If you want to install multiple genomes make sure that you use the same directory `[DATA_DIR]` for them. Each genome data will be installed on `[DATA_DIR]/[GENOME]`. If you use other BDS pipelines, it is recommended to use the same directory `[DATA_DIR]` to save disk space.
 
 **IMPORTANT**: `install_genome_data.sh` can take longer than an hour for downloading data and building index. **DO NOT** run the script on a login node, use `qlogin` for SGE and `sdev` for SLURM.
 
@@ -197,31 +197,39 @@ AQUAS pipeline does not need internet connection but installers (`install_depend
 
 We recommend using BASH to run pipelines. 
 
-## Command line / configuration file
+## Command line arguments / configuration JSON file
 
-There are two ways to define parameters for ChIP-Seq pipelines. Default values are already given for most of them. Take a look at example commands and configuration files (`./examples`). Two methods share the same key names. AQUAS pipeline is multi-threaded. Set up maximum number of processors with `-nth`.
+**IMPORTANT!** The latest version of the pipeline includes a Python wrapper `chipseq.py` to parse command line arguments and JSON configuration file. `python chipseq.py` takes the same command line arguments as in the original `bds chipseq.bds`. However, `chipseq.py` takes in JSON configuration file instead of the original INI one.
 
-1. Parameters from command line arguments: 
+There are two ways to define parameters for ChIP-Seq pipelines. Default values for most of those parameters are already given. Take a look at example commands and configuration files in [examples](examples). AQUAS pipeline is multi-threaded. Set up maximum number of processors with `-nth`.
 
-      ```
-      $ bds chipseq.bds -species [SPECIES] -nth [NUM_THREADS] -fastq1 ... -fastq2 ... -ctl_fastq ...
-      ```
-
-2. Parameters from a configuration file: 
+1. Parameters from command line arguments: Any of three positional arguments can be skipped. Then default values will be used for skipped ones. Choose `[CHIPSEQ_TYPE]` between `TF` (default) and `histone`. You can also specify it with `-type [CHIPSEQ_TYPE]`. You can stop the pipeline at the end of any stage. Choose `[FINAL_STAGE]` among `bam`, `filt_bam`, `tag`, `xcor`, `peak` and `idr` (default). You can also specify it with `-final_stage [FINAL_STAGE]`. See [Pipeline steps](#pipeline-steps) for details about `[FINAL_STAGE]`.
 
       ```
-      $ bds chipseq.bds [CONF_FILE]
-
-      # configuration file
-      species= hg19
-      fastq1= /DATA/ENCFF000YLW.fastq.gz
-      fastq2= /DATA/ENCFF000YLY.fastq.gz
-      ctl_fastq1= /DATA/Ctl/ENCFF000YRB.fastq.gz
+      $ python chipseq.py [CHIPSEQ_TYPE] [FINAL_STAGE] [CONF_JSON_FILE] -species [SPECIES] -nth [NUM_THREADS] -fastq1 ... -fastq2 ... -ctl_fastq1 ...
       ```
 
-You can override any parameters defined in a configuration file by adding them to the command line.
+2. Parameters from a configuration JSON file: Note that both command line arguments and a configruation JSON share the same key name. In a configuration JSON, only the deepest keys and values are taken. Any JSON structure/hierachy to group those keys is allowed. See [full example JSON](example_conf_full.json) and [reduced example JSON](example_conf.json) how to group keys.
 
-To list all parameters: `$ bds chipseq.bds`
+      ```
+      $ python chipseq.py [CONF_JSON_FILE]
+
+      # CONF_JSON_FILE (can work without group hierachy)
+      {
+        "type" : "[CHIPSEQ_TYPE]",
+        "final_stage" : "[FINAL_STAGE]"
+        "fastq1" : "...",
+        "fastq2" : "...",
+        "ctl_fastq1" : "...",
+        ...
+        "species" : "hg19",
+        "nth" : [NUM_THREADS]
+      }
+      ```
+
+3. You can mix up method 1 and 2. Parameters specied in command line arguments will override the other.
+
+To list all parameters: `$ python chipseq.py`
 
 ## Stopping / Resuming pipeline
 
@@ -229,11 +237,12 @@ Press Ctrl + C on a terminal or send any kind of kill signals to it. Please note
 
 ## Running pipelines with a cluster engine
 
-**IMPORTANT!** On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks.
+**IMPORTANT!** On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose [CLUSTER_ENGINE] between `sge` (default on Kundaje clusters and SCG4), `slurm` (default on Sherlock) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
 
-## Histone ChIP-Seq
-
-Simply add `-histone` or `-type histone` to the command line. Peaks will be called with MACS2 only and those peaks will be used for naive overlap thresholding. No IDR for histone ChIP-Seq.
+```
+$ python chipseq.py -use_system [CLUSTER_ENGINE] ...
+$ python chipseq.py -use_system [CLUSTER_ENGINE] -q [QUEUE_NAME] ...
+```
 
 ## Input data type
 
@@ -246,28 +255,28 @@ You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_
 
 * Starting from fastqs: see the example in the previous section
 
-* Starting from bams: 
+* Starting from paired end bams: 
 
      ```
-     $ bds chipseq.bds -species hg19 -pe -bam1 /DATA/REP1.bam -bam2 /DATA/REP2.bam -ctl_bam /DATA/CTL.bam ...
+     $ python chipseq.py -species hg19 -pe -bam1 /DATA/REP1.bam -bam2 /DATA/REP2.bam -ctl_bam /DATA/CTL.bam ...
      ```
 
-* Starting from deduped / filtered bams:
+* Starting from singled-ended deduped / filtered bams:
 
      ```
-     $ bds chipseq.bds -species hg19 -se -filt_bam1 /DATA/REP1.filt.bam -filt_bam2 /DATA/REP2.filt.bam -ctl_filt_bam /DATA/CTL.filt.bam ...
+     $ python chipseq.py -species hg19 -se -filt_bam1 /DATA/REP1.filt.bam -filt_bam2 /DATA/REP2.filt.bam -ctl_filt_bam /DATA/CTL.filt.bam ...
      ```
 
-* Starting from tagaligns:
+* Starting from paired end tagaligns:
 
      ```
-     $ bds chipseq.bds -species mm9 -pe -tag1 /DATA/REP1.tagAlign.gz -tag2 /DATA/REP2.tagAlign.gz -ctl_tag /DATA/CTL.tagAlign.gz
+     $ python chipseq.py -species mm9 -pe -tag1 /DATA/REP1.tagAlign.gz -tag2 /DATA/REP2.tagAlign.gz -ctl_tag /DATA/CTL.tagAlign.gz
      ```
 
-* Starting from narrow peak / region peak files:
+* Starting from narrow/relaxed(region) peak files:
 
      ```
-     $ bds chipseq.bds -species hg19 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz -peak_pooled /DATA/Example.pooled.regionPeak.gz ...
+     $ python chipseq.py -species hg19 -peak1 /DATA/Example1.regionPeak.gz -peak2 /DATA/Example2.regionPeak.gz -peak_pooled /DATA/Example.pooled.regionPeak.gz ...
      ```
 
   If you want do perform full IDR including pseudo-replicates and pooled pseudo-replicates, add the following to the command line.
@@ -279,7 +288,7 @@ You can skip `[REPLICATE_ID]` or `[CONTROL_ID]` if it's 1. (eg. `-fastq`, `-ctl_
 * Mixing up input types: 
 
      ```
-     $ bds chipseq.bds -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz
+     $ python chipseq.py -species mm9 -se -fastq1 /DATA/REP1.fastq.gz -bam2 /DATA/ENCSR000EGM/REP2.bam -ctl_tag /DATA/CTL.tagAlign.gz
      ```
 
 ## Endedness (SE/PE)
@@ -304,13 +313,13 @@ For fastqs, you do not need to add '-pe' since the pipeline will automatically d
 * Example: 2 replicates and 1 control replicate (all SE)
 
      ```
-     $ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -fastq2 /DATA/REP2.fastq.gz -ctl_fastq1 /DATA/CTL.fastq.gz
+     $ python chipseq.py -species hg19 -fastq1 /DATA/REP1.fastq.gz -fastq2 /DATA/REP2.fastq.gz -ctl_fastq1 /DATA/CTL.fastq.gz
      ```
       
 * Example: 2 replicates and 2 control replicates (all PE)
 
      ```
-     $ bds chipseq.bds -species hg19 -fastq1_1 /DATA/REP1_1.fastq.gz -fastq1_2 /DATA/REP1_2.fastq.gz -fastq2_1 /DATA/REP2_1.fastq.gz -fastq2_2 /DATA/REP2_2.fastq.gz -ctl_fastq1_1 /DATA/Ctl/CTL_1_1.fastq.gz -ctl_fastq1_2 /DATA/Ctl/CTL_1_2.fastq.gz -ctl_fastq2_1 /DATA/Ctl/CTL_2_1.fastq.gz -ctl_fastq2_2 /DATA/Ctl/CTL_2_1.fastq.gz
+     $ python chipseq.py -species hg19 -fastq1_1 /DATA/REP1_1.fastq.gz -fastq1_2 /DATA/REP1_2.fastq.gz -fastq2_1 /DATA/REP2_1.fastq.gz -fastq2_2 /DATA/REP2_2.fastq.gz -ctl_fastq1_1 /DATA/Ctl/CTL_1_1.fastq.gz -ctl_fastq1_2 /DATA/Ctl/CTL_1_2.fastq.gz -ctl_fastq2_1 /DATA/Ctl/CTL_2_1.fastq.gz -ctl_fastq2_2 /DATA/Ctl/CTL_2_1.fastq.gz
      ```
 
 You can mix up not only data types but also endedness.
@@ -318,7 +327,7 @@ You can mix up not only data types but also endedness.
 * Example: 1 SE fastq, 1 PE bam and 1 PE control tagalign
 
      ```
-     $ bds chipseq.bds -species hg19 -fastq1 /DATA/REP1.fastq.gz -pe2 -bam2 /DATA/REP2.bam -pe_ctl -ctl_tag /DATA/CTL.tagAlign.gz
+     $ python chipseq.py -species hg19 -fastq1 /DATA/REP1.fastq.gz -pe2 -bam2 /DATA/REP2.bam -pe_ctl -ctl_tag /DATA/CTL.tagAlign.gz
      ```
 
 ## Pipeline steps
@@ -332,7 +341,7 @@ AQUAS pipeline goes through the following stages:
 * peak         : peak calling (tagalign -> peak)
 * idr          : IDR (peaks -> IDR score and peaks)
 
-AQUAS pipeline stops right after `-final_stage [STAGE]`. It is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL.
+AQUAS pipeline stops right after `-final_stage [STAGE]` (`idr` by default). It is useful if you are not interested in peak calling and want to map/align lots of genome data (fastq, bam or filt_bam) IN PARALLEL.
 
 ## Parallelization
 
@@ -352,35 +361,21 @@ qsub -V -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP
 
 This ensures that total memory reserved for a cluster job equals to `[MEM_APP]`. The same policy applies to SLURM.
 
-## Specifying cluster queue
+## Changing peak caller
 
-You can let BDS submit its subtasks to a specific queue `[QUEUE_NAME]` on Sun Grid Engine.
-```
-bds -q [QUEUE_NAME] -s sge chipseq.bds ...
-bds -s sge chipseq.bds -q [QUEUE_NAME] ...
-```
+There are two peak callers (`spp` and `macs2`) supported by the pipeline. `spp` and `macs2` are by default for TF ChIP-seq and histone ChIP-seq, respectively. But you can specify a peak caller regardless of the [CHIPSEQ_TYPE]. Simply add `-peak_caller [PEAK_CALLER_FOR_IDR]` to the command line.
+
+## Changing dup marker
+
+There are two dup markers (`picard` and `sambamba`) supported by the pipeline. `picard` is by default. `picard` is based on Java so there can be a lot Java-related issues (e.g. Java heap error). To change the dup marker to `sambamba`, simply add `-dup_marker sambamba` to the command line.
 
 ## Managing multiple pipelines
 
-`./utils/bds_scr` is a BASH script to create a detached screen for a BDS script and redirect stdout/stderr to a log file `[LOG_FILE_NAME]`. If a log file already exists, stdout/stderr will be appended to it.
-
-Monitor the pipeline with `tail -f [LOG_FILE_NAME]`. The only difference between `bds_scr` and `bds` is that you have `[SCR_NAME] [LOG_FILE_NAME]` between `bds` command and its parameters (or a BDS script name).
-
-You can skip `[LOG_FILE_NAME]` then a log file `[SCR_NAME].log` will be generated on the working directory.
-
-You can also add any BDS parameters (like `-dryRun`, `-d` and `-s`). The following example is for running a pipeline on Sun Grid Engine.
+Simply add `-screen [SCREEN_NAME]` to create a detached screen for a pipeline and then stdout/stderr will be redirected to a log file `[SCREEN_NAME].log`. If a log file already exists, stdout/stderr will be appended to it. Monitor the pipeline with `tail -f [SCREEN_NAME].log`. A screen will be automatically closed once the pipeline run is done. To kill a pipeline manually while it's running, use `./utils/kill_scr` or `screen -X quit`:
 
 ```
-$ bds_scr [SCR_NAME] [LOG_FILE_NAME] chipseq.bds ...
-$ bds_scr [SCR_NAME] chipseq.bds ...
-$ bds_scr [SCR_NAME] -s sge chipseq.bds ...
-```
-
-Once the pipeline run is done, the screen will be automatically closed. To kill a pipeline manually while it's running, use `./utils/kill_scr` or `screen -X quit`:
-
-```
-$ screen -X -S [SCR_NAME] quit
-$ kill_scr [SCR_NAME]
+$ screen -X -S [SCREEN_NAME] quit
+$ kill_scr [SCREEN_NAME]
 ```
 
 ## How to customize genome data installer?
@@ -390,15 +385,11 @@ Please refer to the section `Installer for genome data` on [BDS pipeline program
 
 ## Usage cheat sheet
 
-For general use, use the following command line: (for SE data set)
+For general use, use the following command line. You can skip first three positional arguments to use default values.
 ```
-$ bds chipseq.bds -species [SPECIES; hg19, mm9, ... ] -nth [NUM_THREADS] -fastq1 [READ_REP1] -fastq2 [READ_REP2] ...
+$ python chipseq.py [CHIPSEQ_TYPE; TF(default), histone] [FINAL_STAGE: bam, filt_bam, tag, xcor, peak, idr(default)] [CONF_JSON_FILE] -species [SPECIES; hg19, mm9, ... ] -nth [NUM_THREADS] -fastq1 [READ_REP1] -fastq2 [READ_REP2] ...
 ```
-For Histone ChIP-Seq:
-```
--histone
-```
-<b>IMPORTANT!</b> If your data set is <b>PAIRED END</b> add the following to the command line, otherwise the pipeline works for SE by default.
+**IMPORTANT!** If your data set is **PAIRED END** add the following to the command line, otherwise the pipeline works for SE by default.
 ```
 -pe
 ```
@@ -408,10 +399,6 @@ You can also individually specify endedness for each replicate.
 ```
 ```
 -se1 -pe2 -se3 ...
-```
-You can specify the ending stage for the pipeline. It will not proceed after the stage.
-```
--final_stage [FINAL_STAGE; bam, filt_bam, tag, xcor, peak, idr (default)]
 ```
 
 If you have just one replicate (PE), define fastqs with `-fastq[REP_ID]_[PAIR_ID]`.
@@ -474,22 +461,10 @@ You can change the IDR threshold.
 ```
 -idr_thresh [IDR_THRESHOLD]
 ```
-For TF ChIP-seq, you can choose a peak caller for IDR. It's SPP by default. To choose MACS2,
+You can specify a peak caller for IDR regardless of the type of ChIP-seq.
 ```
--macs2_for_idr
+-peak_caller [PEAK_CALLER; spp, macs2]
 ```
-You can also define parameters in a configuration file. Key names in a configruation file are identical to parameter names on command line. 
-```
-$ bds chipseq.bds [CONF_FILE]
-
-$ cat [CONF_FILE]
-species = [SPECIES; hg19, mm9, ...]
-nth   = [NUM_THREADS]
-fastq1= [READ_REP1]
-fastq2= [READ_REP2]
-...
-```
-
 
 ## Useful HTML reports
 
@@ -725,7 +700,7 @@ An example of a failed job due to lack of memory (desktop with 4 cores and 12 GB
 Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par')
 
 ```
-$ bds chipseq.bds -no_par ...
+$ python chipseq.py -no_par ...
 ```
 
 ### [samopen] no @SQ lines in the header. ( bwa sam failure )
@@ -735,7 +710,7 @@ For computers with limited memory, bwa samse/sampe fails without non-zero exit v
 Solution: balance memory usage between parallel jobs or disable parallel jobs (add '-no_par')
 
 ```
-$ bds chipseq.bds -no_par ...
+$ python chipseq.py -no_par ...
 ```
 
 ### Error: could not find environment: aquas_chipseq

@@ -1,0 +1,68 @@
+{
+	"general" : {
+		"screen" : "",
+		"type" : "TF",
+		"final_stage" : "idr",
+		"out_dir" : "out",
+		"title" : ""
+	},
+	"input_endedness" : {
+	},
+	"input_files" : {
+	},
+	"species" : {
+		"species" : ""
+	},
+	"cluster" : {
+		"use_system" : "local",
+		"q" : ""
+	},
+	"resource" : {
+		"nth" : 8,
+		"no_par" : true,
+		"wt" : "5h50m",
+		"memory" : "7G",
+		"wt_dedup" : "23h",
+		"mem_dedup" : "12G",
+		"mem_shuf" : "12G",
+		"wt_bwa" : "47h",
+		"mem_bwa" : "12G",
+		"wt_macs2" : "23h",
+		"mem_macs2" : "15G",
+		"wt_spp" : "47h",
+		"mem_spp" : "12G"
+	},
+	"align" : {
+		"aligner" : "bwa",
+		"bwa" : {
+			"param_bwa_aln" : "-q 5 -l 32 -k 2"
+		},
+		"filter" : {
+			"dup_marker" : "picard",
+			"anon_filt_bam" : false,
+			"mapq_thresh" : 30,
+			"no_dup_removal" : false
+		},
+		"subsample" : {
+			"subsample" : "0",
+			"subsample_ctl" : "0",
+			"subsample_xcor" : "15M"
+		}
+	},
+	"callpeak" : {
+		"peak_caller" : "spp",
+		"ctl_depth_ratio" : 1.2,
+		"use_pooled_ctl" : false,
+		"true_rep" : false,
+		"no_pseudo_rep" : false,
+		"spp" : {
+			"npeak" : 300000
+		},
+		"idr" : {
+			"idr_thresh" : "0.05"
+		}
+	},
+	"visualization" : {
+		"url_base" : ""
+	}
+}

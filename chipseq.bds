@@ -3,26 +3,28 @@
 
 
 help == chipseq pipeline settings
-
+// general
 type 		:= "TF" 	help Type of ChIP-Seq pipeline. TF or histone (default: TF).
-histone 	:= false	help Histone ChIP-Seq. Equivalent to '-type histone'
+histone 	:= false	help (LEGACY PARAM) Histone ChIP-Seq. Equivalent to '-type histone'
 final_stage	:= "" 		help Final stage for pipeline (bam, filt_bam, tag, xcor and peak).
-true_rep   	:= false	help Call peaks on true replicates only.
-no_pseudo_rep	:= false 	help Do not call peaks on self pseudo replicates.
-ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
-idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
+// signal track generation
+sig_trk_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pooled replicate only.
+// mapping/filtering/aligning
+aligner		:= "bwa" 	help Aligner to map raw reads in FASTQs (default: bwa).
 subsample_xcor 	:= "15M"	help # reads to be subsampled for cross corr. analysis (default: 15M).
 subsample 	:= "0" 		help # reads to subsample exp. replicate. Subsampled tagalign will be used for steps downstream (default: 0; no subsampling).
 subsample_ctl 	:= "0" 		help # reads to subsample control if non-zero (recommended: 40M or lower).
-bam2bw 		:= false	//DISABLED, help (BETA) Create bigwig from filtered bam (using bamCoverage in deepTools).
-tag2bw 		:= false 	help (BETA) Create bigwig from tagalign (using align2rawsignal).
-make_wig 	:= false	help (BETA) Create wig (works with '-tag2bw' only).
-macs2_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pooled replicate only.
-idr_rank 	:= ""  		help Scoring column in narrow peak files for IDR. If not specified, signal.value for SPP peaks (TF) and p.value for MACS2 peaks (histone) are used.
-fraglen 	:= 0 		help Manually specify fragment length (default: 0, 0 means parsing fraglen from cross-corr analysis log file).
 anon_filt_bam 	:= false 	help Generate an annomymized filtered bam. This will not affect tasks downsteam.
+// peak calling
+peak_caller 	:= "spp"  	help Peak caller for IDR analysis (default: spp for TF ChIP-seq and macs2 for Histone ChIP-seq ).
+ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
+fraglen 	:= 0 		help Manually specify fragment length (default: 0, 0 means parsing fraglen from cross-corr analysis log file).
+idr_rank 	:= ""  		help Scoring column in narrow peak files for IDR. If not specified, signal.value for SPP peaks (TF) and p.value for MACS2 peaks (histone) are used.
+idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
 use_pooled_ctl 	:= false 	help Force to use pooled control (ignoring criteria to choose control for each replicate).
-macs2_for_idr 	:= false 	help Force to use MACS2 narrow peaks instead of SPP relaxed peaks for IDR (TF ChIP-seq only).
+true_rep   	:= false	help Call peaks on true replicates only.
+no_pseudo_rep	:= false 	help Do not call peaks on self pseudo replicates.
+
 
 help() // print help and exit if no parameters are given
 
@@ -90,10 +92,9 @@ void main() { // chipseq pipeline starts here
 
 	do_idr() // IDR
 
-	create_sig_trk() // (BETA)
-
-	// blacklist-filter peaks
-	filter_peak() 
+	// create_sig_trk() // (BETA)
+	
+	filter_peak() // blacklist-filter peaks
 
 	report()
 }
@@ -109,47 +110,49 @@ void read_conf_chipseq() {
 
 	type		= get_conf_val( type,			["type"] )
 	histone 	= get_conf_val_bool( histone, 		["histone"] )
+	if ( histone ) type = "histone" // backward compatibility for LEGACY param
+	if ( type == "histone" && !cmd_line_arg_has_key("peak_caller") ) peak_caller = "macs2"
 	final_stage	= get_conf_val( final_stage, 		["final_stage"] )
-	true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
-	no_pseudo_rep	= get_conf_val_bool( no_pseudo_rep, 	["no_pseudo_rep"] )
-	ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])		
-	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
+	sig_trk_for_pooled_rep_only = get_conf_val_bool( sig_trk_for_pooled_rep_only, 	["sig_trk_for_pooled_rep_only"] )
+	aligner 	= get_conf_val( aligner, 		["aligner"] )
 	subsample_xcor 	= get_conf_val( subsample_xcor,		["subsample_xcor"] )
 	subsample 	= get_conf_val( subsample,		["subsample"] )
 	subsample_ctl 	= get_conf_val( subsample_ctl,		["subsample_ctl"] )
-	//bam2bw 		= get_conf_val_bool( bam2bw, 		["bam2bw"])
-	tag2bw 		= get_conf_val_bool( tag2bw, 		["tag2bw"])
-	make_wig	= get_conf_val_bool( make_wig, 		["make_wig"])
-	macs2_for_pooled_rep_only = get_conf_val_bool( macs2_for_pooled_rep_only, 	["macs2_for_pooled_rep_only"] )
-	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
-	fraglen 	= get_conf_val_int( fraglen, 		["fraglen"] )
 	anon_filt_bam 	= get_conf_val_bool( anon_filt_bam, 	["anon_filt_bam"] )
+	peak_caller	= get_conf_val( peak_caller, 		["peak_caller"] )
+	ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])		
+	fraglen 	= get_conf_val_int( fraglen, 		["fraglen"] )
+	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
+	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
 	use_pooled_ctl 	= get_conf_val_bool( use_pooled_ctl, 	["use_pooled_ctl"] )
-	macs2_for_idr 	= get_conf_val_bool( macs2_for_idr, 	["macs2_for_idr"] )
+	true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
+	no_pseudo_rep	= get_conf_val_bool( no_pseudo_rep, 	["no_pseudo_rep"] )
 
-	if ( histone ) type = "histone"
-	if ( idr_rank == "" ) idr_rank = is_TF_chipseq() ? "signal.value" : "p.value"
+	check_peak_caller_valid()		
+	check_aligner_valid()		
+	if ( idr_rank == "" ) idr_rank = (peak_caller == "spp" ? "signal.value" : "p.value")
 
 	print( "\n\n== chipseq pipeline settings\n")
+	print( "# replicates \t\t\t\t: "+get_num_rep()+"\n" )
 	print( "Type of ChIP-Seq pipeline\t\t: $type\n")
 	print( "Final stage for ChIP-Seq\t\t: $final_stage\n" )
-	print( "# replicates \t\t\t\t: "+get_num_rep()+"\n" )
-	print( "Peak calling for true reps only\t\t: $true_rep\n" )
-	print( "No peak calling for self pseudo reps\t: $no_pseudo_rep\n" )
-	print( "Control rep. depth ratio\t\t: $ctl_depth_ratio\n" )
-	print( "IDR threshold\t\t\t\t: $idr_thresh\n" )
+	print( "Signal tracks for pooled rep. only\t: $sig_trk_for_pooled_rep_only\n")
+	print( "Aligner to map raw reads\t\t\t: $aligner\n")
 	print( "# reads to subsample for cross-corr. analysis\t\t: "+parse_number( subsample_xcor)+"\n")
 	print( "# reads to subsample exp. replicates (0: no subsampling): "+parse_number( subsample )+"\n")
 	print( "# reads to subsample controls (0: no subsampling)\t: "+parse_number( subsample_ctl)+"\n")
 	//print( "Create bigwig from filt_bam\t\t: $bam2bw\n")
-	print( "Create bigwig from tagalign\t\t: $tag2bw\n")
-	print( "Create wig\t\t\t\t: $make_wig\n" )
-	print( "Signal tracks for pooled rep. only\t: $macs2_for_pooled_rep_only\n")
-	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
-	print( "Specified fraglen (0:auto)\t\t: $fraglen\n")
+	// print( "Create bigwig from tagalign\t\t: $tag2bw\n")
+	// print( "Create wig\t\t\t\t: $make_wig\n" )
 	print( "Generate anonymized filt. bam\t\t: $anon_filt_bam\n")
+	print( "Peak caller for IDR analysis\t\t: $peak_caller\n")
+	print( "Control rep. depth ratio\t\t: $ctl_depth_ratio\n" )
+	print( "Specified fraglen (0:auto)\t\t: $fraglen\n")
+	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
+	print( "IDR threshold\t\t\t\t: $idr_thresh\n" )
 	print( "Force to use pooled ctl\t\t\t: $use_pooled_ctl\n")
-	print( "Force to use MACS2 peaks for IDR\t: $macs2_for_idr\n")
+	print( "Peak calling for true reps only\t\t: $true_rep\n" )
+	print( "No peak calling for self pseudo reps\t: $no_pseudo_rep\n" )
 }
 
 void init_filetable() { // init file table labels in HTML report
@@ -250,12 +253,12 @@ void chk_param() {
 
 	print( "\n\n== checking chipseq parameters ...\n" );
 	if ( has_input_fastq() ) 	chk_align_bwa()
-	if ( tag2bw ) 			chk_signal_aln2rawsig()
+	// if ( tag2bw ) 			chk_signal_aln2rawsig()
 	if ( is_final_stage_idr() ) 	chk_idr()
 	if ( is_final_stage_idr() || is_final_stage_peak() ) chk_callpeak_macs2()
 
 	// errors
-	if ( !is_input_peak() && need_spp() && !ctl_exists() && !is_final_stage_before_peak() ) \
+	if ( !is_input_peak() && peak_caller == "spp" && !ctl_exists() && !is_final_stage_before_peak() ) \
 		error("Cannot call peaks (SPP) without controls!\n")
 
 	if ( multimapping > 0 ) \
@@ -264,8 +267,8 @@ void chk_param() {
 	if ( is_input_peak() && true_rep && get_num_rep() == 1 && is_TF_chipseq() ) \
 		error("Cannot perform IDR on with only one replicate when '-true_rep' is turned on!")
 
-	if ( is_histone_chipseq() && macs2_for_pooled_rep_only ) \
-		macs2_for_pooled_rep_only = false
+	// if ( is_histone_chipseq() && sig_trk_for_pooled_rep_only ) \
+	// 	sig_trk_for_pooled_rep_only = false
 
 	if ( has_pe_input_tag() && parse_number( subsample_xcor ) > 0 ) \
 		print("Warning: PE tagaligns cannot be subsampled for cross-corr. analysis.\n")
@@ -276,8 +279,8 @@ void chk_param() {
 	if ( has_pe_input_tag(1) && parse_number( subsample_ctl ) > 0 ) \
 		error("PE contol tagaligns cannot be subsampled!\n")
 
-	if ( macs2_for_pooled_rep_only && macs2_for_idr ) \
-		error("-macs2_for_pooled_rep_only and -macs2_for_idr are mutally exclusive parameters!\n")
+	// if ( sig_trk_for_pooled_rep_only && macs2_for_idr ) \
+	// 	error("-sig_trk_for_pooled_rep_only and -macs2_for_idr are mutally exclusive parameters!\n")
 }
 
 void align() {
@@ -366,8 +369,12 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 			pooled_fastq = pool_fastq( fastqs, aln_o_dir, group )
 			wait
 		}
-
-		( bam, flagstat_qc_ ) = bwa( pooled_fastq, aln_o_dir, qc_o_dir, group, nth_rep )
+		if ( aligner == "bwa" ) {
+			( bam, flagstat_qc_ ) = bwa( pooled_fastq, aln_o_dir, qc_o_dir, group, nth_rep )
+		}
+		else {
+			error("Unsupported aligner ($aligner)!")
+		}
 		flagstat_qc{group} = flagstat_qc_
 		add_file_to_table( flagstat_qc_, "QC and logs/$long/BWA map. flagstat log")
 		wait
@@ -536,7 +543,12 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 			wait
 		}
 
-		( bam, flagstat_qc_ ) = bwa_PE( pooled_fastq_pair1, pooled_fastq_pair2, aln_o_dir, qc_o_dir, group, nth_rep )
+		if ( aligner == "bwa" ) {
+			( bam, flagstat_qc_ ) = bwa_PE( pooled_fastq_pair1, pooled_fastq_pair2, aln_o_dir, qc_o_dir, group, nth_rep )
+		}
+		else {
+			error("Unsupported aligner ($aligner)!")
+		}
 		flagstat_qc{group} = flagstat_qc_
 		add_file_to_table( flagstat_qc_, "QC and logs/$long/BWA map. flagstat log")
 		wait
@@ -909,7 +921,7 @@ void call_peaks() {
 
 	// create directories for peaks (spp, macs2), signal tracks (macs2)
 	string spp_o_dir
-	if ( is_TF_chipseq() && ctl_exists() ) spp_o_dir = mkdir( "$out_dir/peak/spp")
+	if ( peak_caller == "spp" && ctl_exists() ) spp_o_dir = mkdir( "$out_dir/peak/spp")
 	macs2_o_dir 	:= mkdir( "$out_dir/peak/macs2") 
 	macs2_sig_o_dir	:= mkdir( "$out_dir/signal/macs2")
 
@@ -919,7 +931,7 @@ void call_peaks() {
 	if ( get_num_rep() > 1 ) {
 
 		// spp
-		if ( is_TF_chipseq() && ctl_exists() && !macs2_for_idr ) {
+		if ( peak_caller == "spp" && ctl_exists() ) {
 
 			spp_pooled_o_dir := mkdir( "$spp_o_dir/pooled_rep" )
 
@@ -936,7 +948,7 @@ void call_peaks() {
 		( peak_pooled{"macs2"}, fc_bigwig{"pooled"}, pval_bigwig{"pooled"} ) = \
 				macs2_chipseq_npeak_and_signal( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, \
 				true, macs2_pooled_o_dir, macs2_pooled_sig_o_dir, "pooled_rep" )
-		if ( is_histone_chipseq() ) {
+		if ( peak_caller == "macs2" ) {
 			( gpeak_pooled{"macs2"}, bpeak_pooled{"macs2"} ) = \
 				macs2_chipseq_gpeak_and_bpeak( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, \
 					macs2_pooled_o_dir, "pooled_rep" )
@@ -944,7 +956,7 @@ void call_peaks() {
 			add_file_to_report( bpeak_pooled{"macs2"}, "b. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Broad peak" )
 			add_file_to_report( peak_pooled{"macs2"}, "n. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Narrow peak" )
 		}
-		else if ( macs2_for_idr ) {
+		else if ( is_histone_chipseq() ) {
 			add_file_to_report( peak_pooled{"macs2"}, "n. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Narrow peak" )
 		}
 		else {
@@ -955,7 +967,7 @@ void call_peaks() {
 
 		if ( !true_rep ) {
 			// spp
-			if ( is_TF_chipseq() && ctl_exists() && !macs2_for_idr ) {
+			if ( peak_caller == "spp" && ctl_exists() ) {
 				spp_ppr1_o_dir 	:= mkdir( "$spp_o_dir/pooled_pseudo_reps/ppr1" )
 				spp_ppr2_o_dir 	:= mkdir( "$spp_o_dir/pooled_pseudo_reps/ppr2" )
 
@@ -971,7 +983,7 @@ void call_peaks() {
 				add_file_to_report( peak_ppr2{"spp"}, "r. peak", "ppr2", hrchy_ppr2 )
 			}
 			// macs2
-			if ( !macs2_for_pooled_rep_only ) {
+			if ( peak_caller == "macs2" || !sig_trk_for_pooled_rep_only ) {
 				macs2_ppr1_o_dir:= mkdir( "$macs2_o_dir/pooled_pseudo_reps/ppr1" )
 				macs2_ppr2_o_dir:= mkdir( "$macs2_o_dir/pooled_pseudo_reps/ppr2" )
 
@@ -980,7 +992,7 @@ void call_peaks() {
 				tmp2 := macs2_chipseq_npeak_and_signal( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, false, macs2_ppr2_o_dir, "", "ppr2" )
 				peak_ppr2{"macs2"} = tmp2[0]
 
-				if ( is_histone_chipseq() ) {
+				if ( peak_caller == "macs2" ) {
 					( gpeak_ppr1{"macs2"}, bpeak_ppr1{"macs2"} ) = \
 						macs2_chipseq_gpeak_and_bpeak( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, macs2_ppr1_o_dir, "ppr1" )
 					( gpeak_ppr2{"macs2"}, bpeak_ppr2{"macs2"} ) = \
@@ -998,7 +1010,7 @@ void call_peaks() {
 					add_file_to_report( peak_ppr2{"macs2"}, "n. peak", "ppr2", \
 						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Narrow peak" )
 				}
-				else if ( macs2_for_idr ) {
+				else if ( is_histone_chipseq() ) {
 					add_file_to_report( peak_ppr1{"macs2"}, "n. peak", "ppr1", \
 						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Narrow peak" )
 					add_file_to_report( peak_ppr2{"macs2"}, "n. peak", "ppr2", \
@@ -1018,7 +1030,7 @@ void call_peaks() {
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 
 		// spp
-		if ( is_TF_chipseq() && ctl_exists() && !macs2_for_idr ) {
+		if ( peak_caller == "spp" && ctl_exists() ) {
 			spp_true_o_dir		:= mkdir( "$spp_o_dir/rep$rep" )
 
 			( peak{"spp,$rep"}, tmp ) = \
@@ -1028,7 +1040,7 @@ void call_peaks() {
 		}
 
 		// macs2
-		if ( !macs2_for_pooled_rep_only ) {
+		if ( peak_caller == "macs2" || !sig_trk_for_pooled_rep_only ) {
 
 			macs2_true_o_dir	:= mkdir( "$macs2_o_dir/rep$rep" )
 			macs2_true_sig_dir 	:= mkdir( "$macs2_sig_o_dir/rep$rep" )
@@ -1036,14 +1048,14 @@ void call_peaks() {
 			( peak{"macs2,$rep"}, fc_bigwig{rep}, pval_bigwig{rep} ) = \
 				macs2_chipseq_npeak_and_signal( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, true, macs2_true_o_dir, macs2_true_sig_dir, "rep$rep" )
 
-			if ( is_histone_chipseq() ) {
+			if ( peak_caller == "macs2" ) {
 				( gpeak{"macs2,$rep"}, bpeak{"macs2,$rep"} ) = \
 					macs2_chipseq_gpeak_and_bpeak( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, macs2_true_o_dir, "rep$rep" )
 				add_file_to_report( gpeak{"macs2,$rep"}, "g. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Gapped peak" )
 				add_file_to_report( bpeak{"macs2,$rep"}, "b. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Broad peak" )
 				add_file_to_report( peak{"macs2,$rep"}, "n. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Narrow peak" )
 			}
-			else if ( macs2_for_idr ) {
+			else if ( is_histone_chipseq() ) {
 				add_file_to_report( peak{"macs2,$rep"}, "n. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Narrow peak" )
 			}
 			else {
@@ -1057,7 +1069,7 @@ void call_peaks() {
 
 			if ( !no_pseudo_rep ) {
 
-				if ( is_TF_chipseq() && ctl_exists() && !macs2_for_idr ) {
+				if ( peak_caller == "spp" && ctl_exists() ) {
 					spp_pr1_o_dir 	:= mkdir( "$spp_o_dir/pseudo_reps/rep$rep/pr1" )
 					spp_pr2_o_dir 	:= mkdir( "$spp_o_dir/pseudo_reps/rep$rep/pr2" )
 
@@ -1075,7 +1087,7 @@ void call_peaks() {
 								"Peaks/SPP/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Region peak" )
 				}
 
-				if ( !macs2_for_pooled_rep_only ) {
+				if ( peak_caller == "macs2" || !sig_trk_for_pooled_rep_only ) {
 
 					macs2_pr1_o_dir := mkdir( "$macs2_o_dir/pseudo_reps/rep$rep/pr1" )
 					macs2_pr2_o_dir := mkdir( "$macs2_o_dir/pseudo_reps/rep$rep/pr2" )
@@ -1084,7 +1096,7 @@ void call_peaks() {
 					peak_pr1{"macs2,$rep"} = tmp1[0]
 					tmp2 := macs2_chipseq_npeak_and_signal( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, macs2_pr2_o_dir, "", "rep$rep-pr2" )
 					peak_pr2{"macs2,$rep"} = tmp2[0]
-					if ( is_histone_chipseq() ) {
+					if ( peak_caller == "macs2" ) {
 						( gpeak_pr1{"macs2,$rep"}, bpeak_pr1{"macs2,$rep"} ) = \
 							macs2_chipseq_gpeak_and_bpeak( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, macs2_pr1_o_dir, "rep$rep-pr1" )
 						( gpeak_pr2{"macs2,$rep"}, bpeak_pr2{"macs2,$rep"} ) = \
@@ -1102,7 +1114,7 @@ void call_peaks() {
 						add_file_to_report( peak_pr2{"macs2,$rep"}, "n. peak", "rep$rep-pr2", \
 							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Narrow peak" )
 					}
-					else if ( macs2_for_idr ) {
+					else if ( is_histone_chipseq() ) {
 						add_file_to_report( peak_pr1{"macs2,$rep"}, "n. peak", "rep$rep-pr1", \
 							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Narrow peak" )
 						add_file_to_report( peak_pr2{"macs2,$rep"}, "n. peak", "rep$rep-pr2", \
@@ -1136,18 +1148,15 @@ void read_input_peak() {
 			if ( no_pseudo_rep && rep != 0 && pse > 0 ) continue
 
 			peak_ := get_peak(rep,pse)
-
-			pc := get_peak_caller()
-
 			if ( rep == 0 ) {
-				if ( pse == 0 )		peak_pooled{"$pc"} 	= peak_
-				else if ( pse == 1 )	peak_ppr1{"$pc"} 	= peak_
-				else if ( pse == 2 )	peak_ppr2{"$pc"} 	= peak_
+				if ( pse == 0 )		peak_pooled{"$peak_caller"} 	= peak_
+				else if ( pse == 1 )	peak_ppr1{"$peak_caller"} 	= peak_
+				else if ( pse == 2 )	peak_ppr2{"$peak_caller"} 	= peak_
 			}
 			else {
-				if ( pse == 0 )		peak{"$pc,$rep"} 	= peak_
-				else if ( pse == 1 )	peak_pr1{"$pc,$rep"} 	= peak_
-				else if ( pse == 2 )	peak_pr2{"$pc,$rep"} 	= peak_
+				if ( pse == 0 )		peak{"$peak_caller,$rep"} 	= peak_
+				else if ( pse == 1 )	peak_pr1{"$peak_caller,$rep"} 	= peak_
+				else if ( pse == 2 )	peak_pr2{"$peak_caller,$rep"} 	= peak_
 			}
 		}
 	}
@@ -1158,23 +1167,21 @@ void naive_overlap() {
 	if ( !(is_final_stage_peak() || is_final_stage_idr()) ) return
 	if ( !peak_exists() ) return // if no peaks from peak caller exit
 
-	// peak caller
-	pc := get_peak_caller() // macs2 for histone chipseq, spp for tf chipseq
-
 	string[] filetypes
-	if ( pc == "spp" ) {
+	if ( peak_caller == "spp" ) {
 		filetypes.add("regionPeak")
 	}
 	else {
 		filetypes.add("narrowPeak")
-		if ( !is_input_peak() && is_histone_chipseq() ) {
+		// if ( !is_input_peak() && is_histone_chipseq() ) {
+		if ( !is_input_peak() ) {
 			filetypes.add("gappedPeak")
 			filetypes.add("broadPeak")
 		}
 	}
 
 	// naive overlap peak
-	overlap_o_dir := mkdir( "$out_dir/peak/$pc/overlap" )
+	overlap_o_dir := mkdir( "$out_dir/peak/$peak_caller/overlap" )
 
 	for (int i=0;i<filetypes.size();i++) { // naive overlap per filetype
 		filetype := filetypes[i]
@@ -1184,21 +1191,21 @@ void naive_overlap() {
 
 				if ( filetype == "regionPeak" || filetype == "narrowPeak" ) {
 					peak_overlap = naive_overlap_peak( filetype, \
-							peak{"$pc,1"}, peak_pr1{"$pc,1"}, peak_pr2{"$pc,1"}, overlap_o_dir, "" )
+							peak{"$peak_caller,1"}, peak_pr1{"$peak_caller,1"}, peak_pr2{"$peak_caller,1"}, overlap_o_dir, "" )
 					add_file_to_report( peak_overlap, "peak\\noverlap", "", \
-							"Peaks/"+pc.toUpper()+"/Naive overlap/Peak" )
+							"Peaks/"+peak_caller.toUpper()+"/Naive overlap/Peak" )
 				}
 				else if ( filetype == "gappedPeak" ) {
 					gpeak_overlap = naive_overlap_peak( filetype, \
-							gpeak{"$pc,1"}, gpeak_pr1{"$pc,1"}, gpeak_pr2{"$pc,1"}, overlap_o_dir, "" )
+							gpeak{"$peak_caller,1"}, gpeak_pr1{"$peak_caller,1"}, gpeak_pr2{"$peak_caller,1"}, overlap_o_dir, "" )
 					add_file_to_report( gpeak_overlap, "g. peak\\noverlap", "", \
-							"Peaks/"+pc.toUpper()+"/Naive overlap/Gapped peak" )
+							"Peaks/"+peak_caller.toUpper()+"/Naive overlap/Gapped peak" )
 				}
 				else if ( filetype == "broadPeak" ) {
 					bpeak_overlap = naive_overlap_peak( filetype, \
-							bpeak{"$pc,1"}, bpeak_pr1{"$pc,1"}, bpeak_pr2{"$pc,1"}, overlap_o_dir, "" )
+							bpeak{"$peak_caller,1"}, bpeak_pr1{"$peak_caller,1"}, bpeak_pr2{"$peak_caller,1"}, overlap_o_dir, "" )
 					add_file_to_report( bpeak_overlap, "b. peak\\noverlap", "", \
-							"Peaks/"+pc.toUpper()+"/Naive overlap/Broad peak" )
+							"Peaks/"+peak_caller.toUpper()+"/Naive overlap/Broad peak" )
 				}
 				else {
 					error("wrong peak filetype!")
@@ -1209,39 +1216,39 @@ void naive_overlap() {
 			string[] peaks // make array of peaks from true replicates
 			for ( int rep=1; rep<=get_num_rep(); rep++ ) {
 				if ( filetype == "regionPeak" \
-					|| filetype == "narrowPeak" ) 	peaks.add( peak{"$pc,$rep"} )
-				else if ( filetype == "gappedPeak" )	peaks.add( gpeak{"$pc,$rep"} )
-				else if ( filetype == "broadPeak" ) 	peaks.add( bpeak{"$pc,$rep"} )
+					|| filetype == "narrowPeak" ) 	peaks.add( peak{"$peak_caller,$rep"} )
+				else if ( filetype == "gappedPeak" )	peaks.add( gpeak{"$peak_caller,$rep"} )
+				else if ( filetype == "broadPeak" ) 	peaks.add( bpeak{"$peak_caller,$rep"} )
 				else 					error("wrong peak filetype!")
 			}
 
 			string peak_ppr1_, peak_ppr2_, peak_pooled_
 			if ( filetype == "regionPeak" || filetype == "narrowPeak" ) {
-				peak_ppr1_ = true_rep ? "" : peak_ppr1{"$pc"}
-				peak_ppr2_ = true_rep ? "" : peak_ppr2{"$pc"}
-				peak_pooled_ = peak_pooled{"$pc"}
+				peak_ppr1_ = true_rep ? "" : peak_ppr1{"$peak_caller"}
+				peak_ppr2_ = true_rep ? "" : peak_ppr2{"$peak_caller"}
+				peak_pooled_ = peak_pooled{"$peak_caller"}
 				peak_overlap = naive_overlap_peak( filetype, peak_pooled_, peaks, peak_ppr1_, peak_ppr2_, \
 								overlap_o_dir, "" )
 				add_file_to_report( peak_overlap, "peak\\noverlap", "", \
-						"Peaks/"+pc.toUpper()+"/Naive overlap/Peak" )
+						"Peaks/"+peak_caller.toUpper()+"/Naive overlap/Peak" )
 			}
 			else if ( filetype == "gappedPeak" ) {
-				peak_ppr1_ = true_rep ? "" : gpeak_ppr1{"$pc"}
-				peak_ppr2_ = true_rep ? "" : gpeak_ppr2{"$pc"}
-				peak_pooled_ = gpeak_pooled{"$pc"}
+				peak_ppr1_ = true_rep ? "" : gpeak_ppr1{"$peak_caller"}
+				peak_ppr2_ = true_rep ? "" : gpeak_ppr2{"$peak_caller"}
+				peak_pooled_ = gpeak_pooled{"$peak_caller"}
 				gpeak_overlap = naive_overlap_peak( filetype, peak_pooled_, peaks, peak_ppr1_, peak_ppr2_, \
 								overlap_o_dir, "" )
 				add_file_to_report( gpeak_overlap, "g. peak\\noverlap", "", \
-						"Peaks/"+pc.toUpper()+"/Naive overlap/Gapped peak" )
+						"Peaks/"+peak_caller.toUpper()+"/Naive overlap/Gapped peak" )
 			}
 			else if ( filetype == "broadPeak" ) {
-				peak_ppr1_ = true_rep ? "" : bpeak_ppr1{"$pc"}
-				peak_ppr2_ = true_rep ? "" : bpeak_ppr2{"$pc"}
-				peak_pooled_ = bpeak_pooled{"$pc"}
+				peak_ppr1_ = true_rep ? "" : bpeak_ppr1{"$peak_caller"}
+				peak_ppr2_ = true_rep ? "" : bpeak_ppr2{"$peak_caller"}
+				peak_pooled_ = bpeak_pooled{"$peak_caller"}
 				bpeak_overlap = naive_overlap_peak( filetype, peak_pooled_, peaks, peak_ppr1_, peak_ppr2_, \
 								overlap_o_dir, "" )
 				add_file_to_report( bpeak_overlap, "b. peak\\noverlap", "", \
-						"Peaks/"+pc.toUpper()+"/Naive overlap/Broad peak" )
+						"Peaks/"+peak_caller.toUpper()+"/Naive overlap/Broad peak" )
 			}
 			else {
 				error("wrong peak filetype!")
@@ -1261,10 +1268,7 @@ void do_idr() {
 	if ( !peak_exists() ) return // if no peaks from peak caller exit
 
 	// peak caller
-	pc := get_peak_caller()
-	pc_upper_case := pc.toUpper()
-
-	peak_o_dir := "$out_dir/peak/$pc"
+	peak_o_dir := "$out_dir/peak/$peak_caller"
 	idr_o_dir_old_version := "$peak_o_dir/../idr"
 	idr_o_dir := "$peak_o_dir/idr"
 	// for backward compatility (old version has idr on out/peak), make symlink for old dir. to new dir. 
@@ -1289,9 +1293,10 @@ void do_idr() {
 			idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep$i-rep$j" )
 
 			(idr_tr{"$i,$j"}, idr_tr_png{"$i,$j"} ) = \
-				idr2( peak{"$pc,$i"}, peak{"$pc,$j"}, peak_pooled{"$pc"}, idr_thresh, idr_rank, idr_true_o_dir, "rep$i-rep$j" )
+				idr2( peak{"$peak_caller,$i"}, peak{"$peak_caller,$j"}, peak_pooled{"$peak_caller"}, idr_thresh, idr_rank, idr_true_o_dir, "rep$i-rep$j" )
 
-			add_file_to_report( idr_tr{"$i,$j"}, "IDR peak", "rep$i-rep$j", "Peaks/$pc_upper_case/IDR/True replicates/Rep. $i vs. Rep. $j/IDR peak" )			
+			add_file_to_report( idr_tr{"$i,$j"}, "IDR peak", "rep$i-rep$j", "Peaks/"+peak_caller.toUpper()+\
+				"/IDR/True replicates/Rep. $i vs. Rep. $j/IDR peak" )
 			add_file_to_table( idr_tr_png{"$i,$j"}, "QC and logs/IDR/True replicates/Rep. $i vs. Rep. $j/IDR plot" )			
 		}
 
@@ -1300,9 +1305,10 @@ void do_idr() {
 			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$i" )
 
 			(idr_pr{i}, idr_pr_png{i}) = \
-				idr2( peak_pr1{"$pc,$i"}, peak_pr2{"$pc,$i"}, peak{"$pc,$i"}, idr_thresh, idr_rank, idr_pr_o_dir, "rep$i-pr" )
+				idr2( peak_pr1{"$peak_caller,$i"}, peak_pr2{"$peak_caller,$i"}, peak{"$peak_caller,$i"}, idr_thresh, idr_rank, idr_pr_o_dir, "rep$i-pr" )
 
-			add_file_to_report( idr_pr{i}, "IDR peak", "rep$i-pr", "Peaks/$pc_upper_case/IDR/Pseudo-replicates/Replicate $i/IDR peak" )
+			add_file_to_report( idr_pr{i}, "IDR peak", "rep$i-pr", "Peaks/"+peak_caller.toUpper()+\
+				"/IDR/Pseudo-replicates/Replicate $i/IDR peak" )
 			add_file_to_table( idr_pr_png{i}, "QC and logs/IDR/Pseudo-replicates/Replicate $i/IDR plot" )
 		}
 	}
@@ -1312,9 +1318,9 @@ void do_idr() {
 		idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
 
 		(idr_ppr, idr_ppr_png) = \
-			idr2( peak_ppr1{"$pc"}, peak_ppr2{"$pc"}, peak_pooled{"$pc"}, idr_thresh, idr_rank, idr_ppr_o_dir, "ppr" )
+			idr2( peak_ppr1{"$peak_caller"}, peak_ppr2{"$peak_caller"}, peak_pooled{"$peak_caller"}, idr_thresh, idr_rank, idr_ppr_o_dir, "ppr" )
 
-		add_file_to_report( idr_ppr, "IDR peak", "ppr", "Peaks/$pc_upper_case/IDR/Pooled pseudo-replicates/IDR peak" )
+		add_file_to_report( idr_ppr, "IDR peak", "ppr", "Peaks/"+peak_caller.toUpper()+"/IDR/Pooled pseudo-replicates/IDR peak" )
 		add_file_to_table( idr_ppr_png, "QC and logs/IDR/Pooled pseudo-replicates/IDR plot" )
 	}
 
@@ -1326,8 +1332,8 @@ void do_idr() {
 	(idr_qc, idr_opt, idr_consv) = idr_final_qc( idr_tr, idr_pr, idr_ppr, idr_o_dir, qc_o_dir, "" )
 
 	add_file_to_report( idr_qc, "IDR QC log", "", "QC and logs/IDR/IDR QC log" )
-	add_file_to_report( idr_opt, "opt. IDR peak", "", "Peaks/$pc_upper_case/IDR/Optimal set/IDR peak" )
-	add_file_to_report( idr_consv, "consv. IDR peak", "", "Peaks/$pc_upper_case/IDR/Conservative set/IDR peak" )
+	add_file_to_report( idr_opt, "opt. IDR peak", "", "Peaks/"+peak_caller.toUpper()+"/IDR/Optimal set/IDR peak" )
+	add_file_to_report( idr_consv, "consv. IDR peak", "", "Peaks/"+peak_caller.toUpper()+"/IDR/Conservative set/IDR peak" )
 
 	// FRiP (fraction of reads in peak)
 	if ( !is_input_peak() ) {
@@ -1367,76 +1373,58 @@ void do_idr() {
 	print( "\n== Done do_idr()\n" )	
 }
 
-void create_sig_trk() {
+// void create_sig_trk() {
+// 	if ( !bam2bw && !tag2bw ) return
+// 	for ( int rep=1; rep <= get_num_rep(); rep++) {
+// 		if ( no_par ) create_sig_trk( rep )
+// 		else	  par create_sig_trk( rep )
+// 	}
+// 	wait
+// 	print( "\n== Done create_sig_trk()\n" )	
+// }
 
-	if ( !bam2bw && !tag2bw ) return
-
-	for ( int rep=1; rep <= get_num_rep(); rep++) {
-
-		if ( no_par ) create_sig_trk( rep )
-		else	  par create_sig_trk( rep )
-	}
-
-	wait
-
-	print( "\n== Done create_sig_trk()\n" )	
-}
-
-void create_sig_trk( int rep ) {
-
-	group := "rep$rep"  // key name for global output variable (map)
-
-	if ( bam2bw && filt_bam.hasKey(group) ) { // signal track generation (deeptools)
-
-		sig_o_dir := mkdir( "$out_dir/signal/bam2bw/$group" )
-
-		sig_trk_ := bam_to_bw( filt_bam{group}, sig_o_dir, group, 1 )
-		sig_trk{group} = sig_trk_
-
-		add_file_to_report( sig_trk_, "signal", "rep$rep", "Signal tracks/bam2Coverage/Signal track" )
-	}
-
-	if ( tag2bw && tag.hasKey(group) && xcor_qc.hasKey(group) ) {
-
-		sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$group" )
-
-		fraglen := get_fraglen( xcor_qc{group} )
-		sig_trk_ := tag_to_bw( tag{group}, fraglen, sig_o_dir, group )
-		sig_trk{group} = sig_trk_
-
-		add_file_to_report( sig_trk_, "signal", "rep$rep", "Signal tracks/align2rawsignal/Bigwig" )
-		
-		if ( make_wig ) {
-
-			wig := tag_to_wig( tag{group}, fraglen, sig_o_dir, group )
-
-			add_file_to_report( wig, "signal", "rep$rep", "Signal tracks/align2rawsignal/Wig" )
-		}
-	}
-}
+// void create_sig_trk( int rep ) {
+// 	group := "rep$rep"  // key name for global output variable (map)
+// 	if ( bam2bw && filt_bam.hasKey(group) ) { // signal track generation (deeptools)
+// 		sig_o_dir := mkdir( "$out_dir/signal/bam2bw/$group" )
+// 		sig_trk_ := bam_to_bw( filt_bam{group}, sig_o_dir, group, 1 )
+// 		sig_trk{group} = sig_trk_
+// 		add_file_to_report( sig_trk_, "signal", "rep$rep", "Signal tracks/bam2Coverage/Signal track" )
+// 	}
+// 	if ( tag2bw && tag.hasKey(group) && xcor_qc.hasKey(group) ) {
+// 		sig_o_dir := mkdir( "$out_dir/signal/tag2bw/$group" )
+// 		fraglen := get_fraglen( xcor_qc{group} )
+// 		sig_trk_ := tag_to_bw( tag{group}, fraglen, sig_o_dir, group )
+// 		sig_trk{group} = sig_trk_
+// 		add_file_to_report( sig_trk_, "signal", "rep$rep", "Signal tracks/align2rawsignal/Bigwig" )
+// 		if ( make_wig ) {
+// 			wig := tag_to_wig( tag{group}, fraglen, sig_o_dir, group )
+// 			add_file_to_report( wig, "signal", "rep$rep", "Signal tracks/align2rawsignal/Wig" )
+// 		}
+// 	}
+// }
 
 // black list filter and then convert to bigbed (for true replicates only)
 void filter_peak() {
-
+	if ( is_final_stage_before_peak() ) return
 	if ( !path_exists( blacklist ) ) return
 
-	// peaks for true replicates
-	pc := get_peak_caller()
 	string file_type
-	if ( pc == "macs2" ) {
+	// peaks for true replicates
+	if ( peak_caller == "macs2" ) {
 		file_type = "narrowPeak"
 	}
-	else if ( pc == "spp" ) {
+	else if ( peak_caller == "spp" ) {
 		file_type = "regionPeak"
 	}
-	if ( get_num_rep() > 1 && peak_pooled.hasKey(pc) ) {
+	if ( get_num_rep() > 1 && peak_pooled.hasKey(peak_caller) ) {
 		filt_peak_pooled := \
-			blacklist_filter_peak( file_type, peak_pooled{pc}, (peak_pooled{pc}).dirName(), "peak_pooled" )
+			blacklist_filter_peak( file_type, peak_pooled{peak_caller}, (peak_pooled{peak_caller}).dirName(), "peak_pooled" )
 	}
 	for (int rep=1; rep<=get_num_rep(); rep++) {
-		if ( !peak.hasKey(pc+",$rep") ) continue
+		if ( !peak.hasKey(peak_caller+",$rep") ) continue
 		filt_peak := \
-			blacklist_filter_peak( file_type, peak{pc+",$rep"}, (peak{pc+",$rep"}).dirName(), "peak $rep" )
+			blacklist_filter_peak( file_type, peak{peak_caller+",$rep"}, (peak{peak_caller+",$rep"}).dirName(), "peak $rep" )
 	}
 	wait
 
@@ -1605,25 +1593,18 @@ bool is_histone_chipseq() {
 	return type.toLower() == "histone"
 }
 
-string get_peak_caller() {
-
-	if ( is_TF_chipseq() && !macs2_for_idr )	return "spp"
-	else 						return "macs2"
-}
-
 bool peak_exists() {
-
-	pc := get_peak_caller()
-
-	return peak.hasKey("$pc,1")
+	return peak.hasKey("$peak_caller,1")
 }
 
-bool need_spp() {
-
-	return !is_histone_chipseq()
+void check_peak_caller_valid() {
+	peak_caller = peak_caller.toLower()
+	if ( peak_caller != "spp" && peak_caller != "macs2" ) \
+		error("Choose peak_caller between 'spp' and 'macs2'!")
 }
 
-bool need_macs2() {
-
-	return true
+void check_aligner_valid() {
+	aligner = aligner.toLower()
+	if ( aligner != "bwa" ) \
+		error("Choose aligner 'bwa'!")
 }
