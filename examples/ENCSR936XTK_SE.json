@@ -1,0 +1,11 @@
+{
+	"out_dir" : "ENCSR936XTK/SE",
+	"se" : true,
+	"fastq1" : "rep1.fastq.gz",
+	"fastq2" : "rep2.fastq.gz",
+	"ctl_fastq1" : "ctl1.fastq.gz",
+	"ctl_fastq2" : "ctl2.fastq.gz",
+	"species" : "hg38_ENCODE",
+	"nth" : 8,
+	"use_pooled_ctl" : true
+}
