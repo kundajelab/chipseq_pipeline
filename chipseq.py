@@ -24,12 +24,11 @@ def get_default_param_dict(): # this is not ordered
         _default_ : default value
         _choices_ : choices
         _help_ : help text
-        _non_bds_ : for non-bds keys only (boolean)
     * The hierachy is used to group parameters.
         _group_desc_ : for groups only
     '''
     return {
-        "screen"        : { "_order_" : -11, "_non_bds_" : True, "_default_" : "", "_help_" : "Create a screen with name [SCREEN].BDS and attach BDS pipeline to it. STDOUT/STDERR will be redirected to [SCREEN].log on the working directory." },
+        "screen"        : { "_order_" : -11, "_default_" : "", "_help_" : "Create a screen with name [SCREEN].BDS and attach BDS pipeline to it. STDOUT/STDERR will be redirected to [SCREEN].log on the working directory." },
         "type"          : { "_order_" : -10, "_default_" : "TF", "_choices_" : ["TF","histone"], "_help_" : "Type of ChIP-Seq pipeline. TF or histone" },
         "final_stage"   : { "_order_" : -9, "_default_" : "idr", "_choices_" : ["bam", "filt_bam", "tag", "xcor", "peak", "idr"], "_help_" : "Final stage for pipeline." },
         "out_dir"       : { "_order_" : -8, "_default_" : "out", "_help_" : "Output directory." },
@@ -536,6 +535,10 @@ def main():
             if json_d and key in json_d:
                 val = str(json_d[key])
                 if val != val_default:
+                    # if key is screen do not add to bds cmd line.
+                    if key=='screen':
+                        args.screen = val
+                        continue
                     bds_params[key] = val
             else:
                 if val_in_cmd_arg != val_default:
@@ -558,6 +561,7 @@ def main():
         print('Warning: no parameter specied for the pipeline! For help, add -h to the command line.')
         sys.exit(1)    
     # run bds command
+    # print(args, args.screen)
     run_bds( bds_params, args.screen )
     # print example JSON
     # recur_dict_to_print_example( d )
