@@ -30,6 +30,7 @@ fi
 
 GENOME=$1
 DATA_DIR=$(readlink -f $2)
+echo $DATA_DIR
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SPECIES_FILE=${DATA_DIR}/${SPECIES_FILE_BASENAME}
 echo 
@@ -52,13 +53,13 @@ if [ $GENOME == "hg19" ]; then
 
 elif [ $GENOME == "mm9" ]; then
 
-  REF_FA="http://hgdownload-test.cse.ucsc.edu/goldenPath/mm9/encodeDCC/referenceSequences/male.mm9.fa.gz"
+  REF_FA="http://hgdownload.cse.ucsc.edu/goldenPath/mm9/bigZips/mm9.2bit"
   UMAP="http://mitra.stanford.edu/kundaje/genome_data/mm9/globalmap_k20tok54.tgz"
   BLACKLIST="http://mitra.stanford.edu/kundaje/genome_data/mm9/mm9-blacklist.bed.gz"
 
   # data for ATAQC
   TSS_ENRICH="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_gencode_tss_unique.bed.gz"
-  DNASE="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_prep_v3/mm9_univ_dhs_ucsc.from_mm10.bed.gz"
+  DNASE="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_univ_dhs_ucsc.from_mm10.bed.gz"
   PROM="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/tss_mm9_master.from_mm10.bed.gz"
   ENH="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_enh_dhs_ucsc.from_mm10.bed.gz"
   REG2MAP="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/dnase_avgs_merged_named.fseq.vals.gz"
@@ -68,7 +69,6 @@ elif [ $GENOME == "hg38" ]; then
 
   REF_FA="https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz"
   BLACKLIST="http://mitra.stanford.edu/kundaje/genome_data/hg38/hg38.blacklist.bed.gz"
-  SPECIES_BROWSER="hg38" # species name in WashU browser track, if it's same as species name, skip it
 
   # data for ATAQC
   TSS_ENRICH="http://mitra.stanford.edu/kundaje/genome_data/hg38/ataqc/hg38_gencode_tss_unique.bed.gz"
@@ -83,7 +83,6 @@ elif [ $GENOME == "mm10" ]; then
 
   REF_FA="https://www.encodeproject.org/files/mm10_no_alt_analysis_set_ENCODE/@@download/mm10_no_alt_analysis_set_ENCODE.fasta.gz"
   BLACKLIST="http://mitra.stanford.edu/kundaje/genome_data/mm10/mm10.blacklist.bed.gz"
-  SPECIES_BROWSER="mm10" # species name in WashU browser track, if it's same as species name, skip it
 
   # data for ATAQC
   TSS_ENRICH="http://mitra.stanford.edu/kundaje/genome_data/mm10/ataqc/mm10_gencode_tss_unique.bed.gz"
@@ -102,6 +101,10 @@ elif [ $GENOME == "macam7" ]; then
 elif [ $GENOME == "dm3" ]; then
   
   REF_FA="http://hgdownload-test.cse.ucsc.edu/goldenPath/dm3/bigZips/dm3.2bit"
+
+elif [ $GENOME == "pantro5" ]; then
+
+  REF_FA="http://hgdownload.cse.ucsc.edu/goldenPath/panTro5/bigZips/panTro5.fa.gz"
 
 fi
 
