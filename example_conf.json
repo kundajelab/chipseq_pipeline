@@ -1,11 +1,10 @@
 {
-	"general" : {
-		"screen" : "",
-		"type" : "TF",
-		"final_stage" : "idr",
-		"out_dir" : "out",
-		"title" : ""
-	},
+	"screen" : "",
+	"dry_run" : false,
+	"type" : "TF",
+	"final_stage" : "idr",
+	"out_dir" : "out",
+	"title" : "",
 	"input_endedness" : {
 		"se" : false,
 		"pe" : false
@@ -34,7 +33,7 @@
 		"wt_spp" : "47h",
 		"mem_spp" : "12G"
 	},
-	"align" : {
+	"alignment" : {
 		"aligner" : "bwa",
 		"bwa" : {
 			"param_bwa_aln" : "-q 5 -l 32 -k 2"
@@ -46,10 +45,14 @@
 			"no_dup_removal" : false
 		},
 		"subsample" : {
-			"subsample" : "0",
-			"subsample_ctl" : "0",
-			"subsample_xcor" : "15M"
+			"subsample_chip" : "0",
+			"subsample_ctl" : "0"
 		}
+	},
+	"cross_corr_analysis" : {
+		"no_xcor" : false,
+		"subsample_xcor" : "15M",
+		"speak_xcor" : -1
 	},
 	"callpeak" : {
 		"peak_caller" : "spp",
@@ -58,10 +61,16 @@
 		"true_rep" : false,
 		"no_pseudo_rep" : false,
 		"spp" : {
-			"npeak" : 300000
+			"npeak_spp" : 300000
+		},
+		"macs2" : {
+			"pval_thresh_macs2" : 0.01
 		},
 		"idr" : {
-			"idr_thresh" : "0.05"
+			"idr_thresh" : 0.05
+		},
+		"naive_overlap" : {
+			"nonamecheck" : false
 		}
 	},
 	"visualization" : {

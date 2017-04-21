@@ -6,10 +6,13 @@ include "module_template.bds"
 
 
 help == callpeak spp settings
-npeak 		:= 300000 	help Threshold on # peaks (-npeak in spp) (default: 300000).
+npeak_spp 	:= 300000 	help Set threshold on # peaks (-npeak= in run_spp.R) (default: 300000).
+max_ppsize_spp 	:= ""		help Set R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP.
+speak_spp 	:= -1 		help Set user-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis (default: -1).
+extra_param_spp := ""		help Set extra parameters for run_spp.R (peak calling only).
 wt_spp		:= "47h"	help Walltime for spp (default: 47h, 47:00:00).
 mem_spp		:= "12G" 	help Max. memory for spp (default: 12G).
-max_ppsize_spp 	:= ""		help Set R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP.
+
 
 grp_color_spp		:= "skyblue"
 
@@ -19,16 +22,20 @@ init_callpeak_spp()
 
 void init_callpeak_spp() {
 
-	npeak 		= get_conf_val_int( npeak,		["npeak"] )
-	wt_spp 		= get_conf_val( wt_spp, 		["walltime_spp", "wt_spp", "timeout_spp"] )
-	mem_spp 	= get_conf_val( mem_spp, 		["memory_spp", "mem_spp"] )
-	max_ppsize_spp 	= get_conf_val( max_ppsize_spp, 	["max_ppsize_spp"] )
+	npeak_spp 	= get_conf_val_int( npeak_spp,	["npeak_spp"] )
+	wt_spp 		= get_conf_val( wt_spp, 	["walltime_spp", "wt_spp", "timeout_spp"] )
+	mem_spp 	= get_conf_val( mem_spp, 	["memory_spp", "mem_spp"] )
+	max_ppsize_spp 	= get_conf_val( max_ppsize_spp, ["max_ppsize_spp"] )
+	speak_spp 	= get_conf_val_int( speak_spp, 	["speak_spp"] )
+	extra_param_spp = get_conf_val( extra_param_spp,["extra_param_spp"] )
 
 	print("\n\n== callpeak spp settings\n")
-	print( "Threshold for # peak\t\t: $npeak\n")
+	print( "Threshold for # peak\t\t: $npeak_spp\n")
 	print( "Walltime (spp)\t\t\t: $wt_spp\n")
 	print( "Max. memory (spp)\t\t: $mem_spp\n")
-	print( "Stack size for SPP\t\t:$max_ppsize_spp\n")
+	print( "Stack size for run_spp.R\t\t:$max_ppsize_spp\n")
+	print( "Use-defined cross-corr. peak strandshift; if -1, use frag. len.\t:$speak_spp\n")
+	print( "Extra parameters for run_spp.R\t:$extra_param_spp\n")
 }
 
 string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string group, int nth_spp ) {
@@ -44,7 +51,9 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 	ccscore		:= "$prefix_x.ccscore"
 	pdf_tmp		:= replace_dir( rm_ext( tag, ["gz"] ), o_dir ) + ".pdf"
 	pdf 		:= "$prefix_x.pdf"
-	extra_param 	:= max_ppsize_spp ? "--max-ppsize=$max_ppsize_spp" : ""
+        param_speak     := speak_spp > -1 ? "-speak=$speak_spp" : "-speak=$frag_len"
+	extra_param 	:= max_ppsize_spp ? "--max-ppsize=$max_ppsize_spp " : ""
+	if ( extra_param_spp ) extra_param += extra_param_spp
 
 	blacklist_exists := path_exists(blacklist)
 
@@ -66,7 +75,7 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 		    fi
 
 		sys Rscript $extra_param ${RUN_SPP} -c=$tag -p=$nth_spp -i=$ctl_tag \
-			-npeak=$npeak -odir=$o_dir -speak=$frag_len -savr -savp -rf -out=$ccscore
+			-npeak=$npeak_spp -odir=$o_dir $param_speak -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
 		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{ if ($2<0) $2=0; print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -nc > $rpeakfile

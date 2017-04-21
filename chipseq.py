@@ -28,42 +28,43 @@ def get_default_param_dict(): # this is not ordered
         _group_desc_ : for groups only
     '''
     return {
-        "screen"        : { "_order_" : -11, "_default_" : "", "_help_" : "Create a screen with name [SCREEN].BDS and attach BDS pipeline to it. STDOUT/STDERR will be redirected to [SCREEN].log on the working directory." },
-        "type"          : { "_order_" : -10, "_default_" : "TF", "_choices_" : ["TF","histone"], "_help_" : "Type of ChIP-Seq pipeline. TF or histone" },
-        "final_stage"   : { "_order_" : -9, "_default_" : "idr", "_choices_" : ["bam", "filt_bam", "tag", "xcor", "peak", "idr"], "_help_" : "Final stage for pipeline." },
-        "out_dir"       : { "_order_" : -8, "_default_" : "out", "_help_" : "Output directory." },
-        "title"         : { "_order_" : -7,  "_default_" : "", "_help_" : "Prefix for HTML report and outputs without given prefix." },
+        "screen"        : { "_order_" : -13, "_default_" : "", "_help_" : "Create a screen with name [SCREEN].BDS and attach BDS pipeline to it. STDOUT/STDERR will be redirected to [SCREEN].log on the working directory." },
+        "type"          : { "_order_" : -12, "_default_" : "TF", "_choices_" : ["TF","histone"], "_help_" : "Type of ChIP-Seq pipeline. TF or histone" },
+        "final_stage"   : { "_order_" : -11, "_default_" : "idr", "_choices_" : ["bam", "filt_bam", "tag", "xcor", "peak", "idr"], "_help_" : "Final stage for pipeline." },
+        "out_dir"       : { "_order_" : -10, "_default_" : "out", "_help_" : "Output directory." },
+        "title"         : { "_order_" : -9,  "_default_" : "", "_help_" : "Prefix for HTML report and outputs without given prefix." },
+        "dry_run"       : { "_order_" : -8,  "_default_" : False, "_help_" : "Dry-run." },
 
-        "input_endedness" : { "_order_" : -6, "_group_desc_" : "Set endedness for all input files if all of them have the same endedness. \
+        "input_endedness" : { "_order_" : -7, "_group_desc_" : "Set endedness for all input files if all of them have the same endedness. \
                                                 You can also specify endedness per IP replicate or control: \
                                                 -se[REPLICATE_ID], -ctl_se[CONTROL_ID], -pe[REPLICATE_ID] and -ctl_pe[CONTROL_ID].",
             "se" : { "_order_" : 0, "_default_" : False, "_help_" : "Set endedness of all inputs as single-ended." },
             "pe" : { "_order_" : 1, "_default_" : False, "_help_" : "Set endedness of all inputs as paired-end." },
         },
 
-        "input_files" : { "_order_" : -5, "_group_desc_" : "Input file paths for each replicate or control. There are five types of input: \
+        "input_files" : { "_order_" : -6, "_group_desc_" : "Input file paths for each replicate or control. There are five types of input: \
                                                 fastq, bam, filtered bam (filt_bam), tagalign (tag) and narrow/relaxed peak (peak). \
                                                 You can also mix up different types for multiple replicates."
         },
 
-        "input_files_(fastq)" : { "_order_" : -4, "_group_desc_" : "Single-ended : For IP replicate '-fastq[REPLICATE_ID]', For control '-ctl_fastq[CONTROL_ID]', \
+        "input_files_(fastq)" : { "_order_" : -5, "_group_desc_" : "Single-ended : For IP replicate '-fastq[REPLICATE_ID]', For control '-ctl_fastq[CONTROL_ID]', \
                                                 Paired end : For IP replicate '-fastq[REPLICATE_ID]_[PAIR_ID]', For control '-ctl_fastq[CONTROL_ID]_[PAIR_ID]'"
         },
 
-        "input_files_(bam, filt_bam)" : { "_order_" : -3, "_group_desc_" : "Raw bam : For IP replicate '-bam[REPLICATE_ID]', For control '-ctl_bam[CONTROL_ID]'.\
+        "input_files_(bam, filt_bam)" : { "_order_" : -4, "_group_desc_" : "Raw bam : For IP replicate '-bam[REPLICATE_ID]', For control '-ctl_bam[CONTROL_ID]'.\
                                                 Filtered bam : For IP replicate '-filt_bam[REPLICATE_ID]', For control '-ctl_filt_bam[CONTROL_ID]'."
         },
 
-        "input_files_(tagalign)" : { "_order_" : -2, "_group_desc_" : "For IP replicate '-tag[REPLICATE_ID]', For control '-ctl_tag[CONTROL_ID]'"
+        "input_files_(tagalign)" : { "_order_" : -3, "_group_desc_" : "For IP replicate '-tag[REPLICATE_ID]', For control '-ctl_tag[CONTROL_ID]'"
         },
 
-        "input_files_(peak)" : { "_order_" : -1, "_group_desc_" : "For true replicates, use '-peak1' and '-peak2',\
+        "input_files_(peak)" : { "_order_" : -2, "_group_desc_" : "For true replicates, use '-peak1' and '-peak2',\
                                                 For pooled replicates, use '-peak_pooled',\
                                                 For two PR (self-pseudo-replicates), use '-peak[REPLICATE_ID]_pr1' and '-peak[REPLICATE_ID]_pr2'\
                                                 For two PPR (pooled pseudo-replicates), use '-peak_ppr1' and '-peak_ppr2'"
         },
 
-        "species" : { "_order_" : 0, "_group_desc_" : "Species-specific parameters or data files. If you have installed genome data of supported species with 'install_genome_data.sh'. \
+        "species" : { "_order_" : -1, "_group_desc_" : "Species-specific parameters or data files. If you have installed genome data of supported species with 'install_genome_data.sh'. \
                                                 '-species' alone works fine. Otherwise, all parameters below must be specified except '-species_file'. You can also use '-species_file' to specify an INI file\
                                                 that has all required parameters defined. See './species/kundaje.conf' for an example.",
 
@@ -76,14 +77,14 @@ def get_default_param_dict(): # this is not ordered
             "gensz"       : { "_order_" : 6, "_default_" : "", "_help_" : "Genome size; hs for human, mm for mouse. Or sum of numbers in the 2nd column in chr. sizes file." },
         },
 
-        "cluster" : { "_order_" : 1, "_group_desc_" : "Cluster and system settings. SLURM and Sun Grid Engine are supported cluster engines.",
+        "cluster" : { "_order_" : 0, "_group_desc_" : "Cluster and system settings. SLURM and Sun Grid Engine are supported cluster engines.",
             "use_system"  : { "_order_" : 0, "_default_" : "local", "_choices_": ["slurm","sge","local"], "_help_" : "Force to use a system." },
             "nice"        : { "_order_" : 1, "_default_" : 0, "_help_" : "Set process priority for all tasks; -20 (highest) ~ 19 (lowest)." },
             "retrial"     : { "_order_" : 2, "_default_" : 0, "_help_" : "Number of retrial for failed tasks." },
             "q"           : { "_order_" : 3, "_default_" : "", "_help_" : "Submit tasks to a specified cluster queue." },
         },
 
-        "resource" : { "_order_" : 2, "_group_desc_" : "System resource and parallelization settings. '-nth' is the most important parameter to parallelize a pipeline. You can specify \
+        "resource" : { "_order_" : 1, "_group_desc_" : "System resource and parallelization settings. '-nth' is the most important parameter to parallelize a pipeline. You can specify \
                                                         resource limit for the cluster engine for each task. '-wt' and '-memory' are for all other jobs not \
                                                         specified here ",
             "nth"         : { "_order_" : 0, "_default_" : 8, "_help_" : "Maximum number of threads for a pipeline." },
@@ -102,7 +103,7 @@ def get_default_param_dict(): # this is not ordered
             "mem_spp"     : { "_order_" : 13, "_default_" : "12G", "_help_" : "Max. memory for spp." },
         },
 
-        "align" : { "_order_" : 3, "_group_desc_" : "Read mapping and alignment settings. Currently bwa is the only available aligner.",
+        "alignment" : { "_order_" : 2, "_group_desc_" : "Read mapping and alignment settings. Currently bwa is the only available aligner.",
             "aligner"     : { "_order_" : 0, "_default_" : "bwa", "_help_" : "Aligner to map raw reads in FASTQs" },
             "bwa" : { "_order_" : 1,
                 "param_bwa_aln"   : { "_order_" : 0, "_default_" : "-q 5 -l 32 -k 2", "_help_" : "Parameters for bwa aln" },
@@ -116,30 +117,43 @@ def get_default_param_dict(): # this is not ordered
                 "no_dup_removal"  : { "_order_" : 4, "_default_" : False, "_help_" : "No dupe removal when filtering raw BAM." },
             },
             "subsample" : { "_order_" : 3,
-                "subsample"       : { "_order_" : 0, "_default_" : "0", "_help_" : "Number of reads to subsample IP replicate. Subsampled tagalign will be used for analysis (peak and idr) downstream (0: no subsampling)." },
+                "subsample_chip"  : { "_order_" : 0, "_default_" : "0", "_help_" : "Number of reads to subsample IP replicate. Subsampled tagalign will be used for analysis (peak and idr) downstream (0: no subsampling)." },
                 "subsample_ctl"   : { "_order_" : 1, "_default_" : "0", "_help_" : "Number of reads to subsample control if non-zero (recommended: 40M or lower)." },
-                "subsample_xcor"  : { "_order_" : 2, "_default_" : "15M", "_help_" : "Number of reads to be subsampled for cross corr. analysis only." },
             },
         },
- 
+
+        "cross_corr_analysis" : { "_order_" : 3, "_group_desc_" : "Cross-correlation analysis.",
+            "no_xcor"           : { "_order_" : 0, "_default_" : False, "_help_" : "Disable cross-correlation analaysis." },
+            "subsample_xcor"    : { "_order_" : 1, "_default_" : "15M", "_help_" : "Number of reads to be subsampled for cross corr. analysis only." },
+            "speak_xcor"        : { "_order_" : 2, "_default_" : -1, "_help_" : "Set user-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to disable." },
+            "extra_param_xcor"  : { "_order_" : 3, "_default_" : "", "_help_" : "Set extra parameters for run_spp.R" },
+        },
+
         "callpeak" : { "_order_" : 4, "_group_desc_" : "Peak-calling settings. spp and macs2 are available for calling peaks and IDR analysis on called peaks",
             "peak_caller"     : { "_order_" : 0, "_default_" : "spp", "_choices_" : ["spp","macs2"], "_help_" : "Peak caller for IDR analysis. spp for TF ChIP-seq and macs2 for Histone ChIP-seq )." },
             "ctl_depth_ratio" : { "_order_" : 1, "_default_" : 1.2, "_help_" : "Cut-off ratio of two control tagaligns for pooling."  },
-            "fraglen"         : { "_order_" : 2, "_default_" : 0, "_help_" : "Manually specify fragment length (0 means parsing fraglen from cross-corr analysis log file)." },
-            "use_pooled_ctl"  : { "_order_" : 3, "_default_" : False, "_help_" : "Force to use pooled control (ignoring criteria to choose control for each IP replicate)." },
-            "true_rep"        : { "_order_" : 4, "_default_" : False, "_help_" : "Call peaks on true replicates only." },
-            "no_pseudo_rep"   : { "_order_" : 5, "_default_" : False, "_help_" : "Do not call peaks on self pseudo replicates." },
-            "fraglen0"        : { "_order_" : 6, "_default_" : False, "_help_" : "Set predefined fragment length as zero for cross corr. analysis (this will add -speak=0 to run_spp.R)." },
-            "spp" : { "_order_" : 7,
-                "npeak"       : { "_order_" : 0, "_default_" : 300000, "_help_" : "Threshold on max. number of peaks (-npeak in run_spp.R)."  },
-                "max_ppsize_spp"  : { "_order_" : 1, "_default_" : "", "_help_" : "Set R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP."  },
+            "use_pooled_ctl"  : { "_order_" : 2, "_default_" : False, "_help_" : "Force to use pooled control (ignoring criteria to choose control for each IP replicate)." },
+            "true_rep"        : { "_order_" : 3, "_default_" : False, "_help_" : "Call peaks on true replicates only." },
+            "no_pseudo_rep"   : { "_order_" : 4, "_default_" : False, "_help_" : "Do not call peaks on self pseudo replicates." },
+            "spp" : { "_order_" : 5,
+                "npeak_spp"         : { "_order_" : 0, "_default_" : 300000, "_help_" : "Threshold on max. number of peaks (-npeak in run_spp.R)."  },
+                "max_ppsize_spp"    : { "_order_" : 1, "_default_" : "", "_help_" : "Set R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP."  },
+                "speak_spp"         : { "_order_" : 2, "_default_" : -1, "_help_" : "Set user-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis."  },
+                "extra_param_spp"   : { "_order_" : 3, "_default_" : "", "_help_" : "Set extra parameters for run_spp.R"  },
             },
-            "idr" : { "_order_" : 8,
+            "macs2" : { "_order_" : 6,
+                "pval_thresh_macs2" : { "_order_" : 0, "_default_" : 0.01, "_help_" : "--pvalue for macs2 callpeak (https://github.com/taoliu/MACS#-p--pvalue)."  },
+                "keep_dup_macs2"    : { "_order_" : 1, "_default_" : "all", "_help_" : "--keep-dup for macs2 callpeak (https://github.com/taoliu/MACS#--keep-dup)."  },
+                "extsize_macs2"     : { "_order_" : 2, "_default_" : -1, "_help_" : "--extsize for macs2 callpeak (https://github.com/taoliu/MACS#--extsize). Use -1 to get from upstream cross-corr. analysis."  },
+                "shift_macs2"       : { "_order_" : 3, "_default_" : 0, "_help_" : "--shift for macs2 callpeak (https://github.com/taoliu/MACS#--shift)."  },
+                "extra_param_macs2" : { "_order_" : 4, "_default_" : "", "_help_" : "Set extra parameters for macs2 callpeak."  },
+            },
+            "idr" : { "_order_" : 7,
                 "idr_suffix"  : { "_order_" : 0, "_default_" : False, "_help_" : "Append IDR threshold to IDR output directory." },
                 "idr_rank"    : { "_order_" : 1, "_default_" : "", "_help_" : "Scoring column in narrow peak files for IDR. If not specified, signal.value for SPP peaks (TF) and p.value for MACS2 peaks (histone) are used." },
-                "idr_thresh"  : { "_order_" : 2, "_default_" : "0.05", "_help_" : "IDR threshold : -log_10(score)." },
+                "idr_thresh"  : { "_order_" : 2, "_default_" : 0.05, "_help_" : "IDR threshold : -log_10(score)." },
             },
-            "naive_overlap" : { "_order_" : 9,
+            "naive_overlap" : { "_order_" : 8,
                 "nonamecheck" : { "_order_" : 0, "_default_" : False, "_help_" : "bedtools intersect -nonamecheck (bedtools>=2.24.0, use this if you get bedtools intersect naming convenction warnings/errors)." },
             },
         },
@@ -258,7 +272,6 @@ def recur_dict_to_get_defaults( d, dict_name='' ):
     if not '_help_' in d:
         for key in d:
             if key in ['_order_','_group_desc_']: continue
-            # print(key)
             result.update( recur_dict_to_get_defaults( d[key], key ) )
     else:
         result[dict_name] = d['_default_']
@@ -287,7 +300,7 @@ def is_in_cmd_line_args( key ):
         # print key, arg
         if arg.startswith('--') and arg==('--'+key.replace('_','-')):
             return True
-        elif arg.startswith('-') and arg==('-'+key.replace('_','-')):
+        elif arg.startswith('-') and arg==('-'+key.replace('-','_')):
             return True
     return False
 
@@ -301,7 +314,6 @@ def parse_input_files_key( key ):
     m_peak_pr = re.findall(r'^\-*peak(\d*)[\-_]pr(\d+)$',key)
     m_peak = re.findall(r'^\-*peak(\d*|[\-_]pooled|[\-_]ppr\d+)$',key)
     m_others = re.findall(r'^\-*(ctl[\-_]bam|bam|ctl[\-_]filt[\-_]bam|filt[\-_]bam|ctl[\-_]tag|tag)(\d*)$',key)
-    # print(m_endedness)
     if len(m_endedness):
         file_type = m_endedness[0][0]
         rep = m_endedness[0][1] if m_endedness[0][1] else 1
@@ -402,14 +414,14 @@ def parse_input_files_in_json( json_d ):
                     bds_cmd['{}{}'.format(file_type,rep)]=(val,file_type,rep,pair,0)
     return bds_cmd
 
-def validate_bds_params( bds_params ):
+def validate_pipeline_params( pipeline_params ):
     # per_rep = defaultdict(list)
     # type_per_rep = {}
     # all_vals = []
-    # for key in bds_params:
-    #     if type(bds_params[key])==tuple: # if param is for input_files
-    #         print key, bds_params[key]
-    #         val,file_type,rep,pair,pool_idx=bds_params[key]
+    # for key in pipeline_params:
+    #     if type(pipeline_params[key])==tuple: # if param is for input_files
+    #         print key, pipeline_params[key]
+    #         val,file_type,rep,pair,pool_idx=pipeline_params[key]
     #         if val in all_vals:
     #             raise ValueError('Duplicate file path in JSON or command line arguments (key: {}, val: {})!'.format(\
     #                 key,val))
@@ -425,7 +437,7 @@ def validate_bds_params( bds_params ):
     # print per_rep
     return
 
-def run_bds( args_dict, screen ):
+def run_bds( args_dict, dry_run, screen ):
     bds_script = os.path.dirname(os.path.abspath(__file__))+'/'+get_bds_script_name()    
     param = ''
     for key in args_dict:
@@ -450,15 +462,17 @@ def run_bds( args_dict, screen ):
             int(check_output('find {} -mmin -1 2>/dev/null | wc -l'.format(log_file_path), shell=True))
         if log_file_handle_is_open:
             raise Exception('Log file handle is already open! duplicate runs on the same sample? (file: {})'.format(log_file_path))        
-        cmd = 'screen -Sdm "{}" bash -c "bds -v &>>{} {} {} $>>{}"'.format(\
-            screen_dot_bds,log_file_path,bds_script,param,log_file_path)
+        cmd = 'screen -Sdm "{}" bash -c "bds -v {} &>>{} {} {} $>>{}"'.format(\
+            screen_dot_bds,
+            '-dryRun' if dry_run else '',
+            log_file_path,bds_script,param,log_file_path)
         # write basic info to log file
         os.system( 'echo "[DATE] : $(date)" >> {}'.format( log_file_path ) )
         os.system( 'echo "[HOST] : $(hostname -f)" >> {}'.format( log_file_path ) )
         os.system( 'echo "[SCR_NAME] : {}" >> {}'.format( screen, log_file_path ) )
         os.system( 'echo "[BDS_PARAM] : {}" >> {}'.format( param, log_file_path ) )
     else:
-        cmd = 'bds -v {} {}'.format(bds_script,param)
+        cmd = 'bds -v {} {} {}'.format('-dryRun' if dry_run else '', bds_script,param)
     print(cmd)
     os.system(cmd)
 
@@ -503,8 +517,10 @@ def main():
     # all args for input files will go to args_input_files
     # input files defined in json will be parsed later
     parser, d = init_parser()
+    # # print example JSON
+    # recur_dict_to_print_example( d )
+
     args, args_input_files = parser.parse_known_args()
-    # print(args, args_input_files)
     default_d = recur_dict_to_get_defaults( d )
     json_d = None
     json_input_files_d = None
@@ -515,22 +531,20 @@ def main():
             # input files defined in json are parsed here
             # they go to json_input_files_d
             # all other params go to json_d
-            json_d, json_input_files_d = recur_json_to_get_deepest( json.load(fp) )                
+            json_d, json_input_files_d = recur_json_to_get_deepest( json.load(fp) )
             for k in json_d: # check if json_d has invalid key
                 if not k in default_d: raise ValueError('invalid key {} in JSON!'.format(k) )
     if json_d:
         for key in json_d:
             if not key in args:
                 raise ValueError('invalid keyname {} in JSON file'.format(key))
-    bds_params = OrderedDict()
+    pipeline_params = OrderedDict()
     args_dict = vars(args)
-    for key in args_dict:                
+    for key in args_dict:
         val_in_cmd_arg = str(args_dict[key])
         if key in in_cmd_line_args or is_in_cmd_line_args(key):
-            # print(key)
-            bds_params[key] = val_in_cmd_arg
-        else:
-            # print(key, args_dict[key])
+            pipeline_params[key] = val_in_cmd_arg
+        else:            
             val_default = str(default_d[key])
             if json_d and key in json_d:
                 val = str(json_d[key])
@@ -539,32 +553,32 @@ def main():
                     if key=='screen':
                         args.screen = val
                         continue
-                    bds_params[key] = val
+                    elif key=='dry_run' and val=='True':
+                        args.dry_run = True
+                    pipeline_params[key] = val
             else:
                 if val_in_cmd_arg != val_default:
-                    bds_params[key] = val_in_cmd_arg
+                    pipeline_params[key] = val_in_cmd_arg
     # if type and final_stage are defined in position cmd line arguments, apply them to bds cmd
     if chipseq_type:
-        bds_params['type'] = chipseq_type
+        pipeline_params['type'] = chipseq_type
     if final_stage:
-        bds_params['final_stage'] = final_stage
+        pipeline_params['final_stage'] = final_stage
     # parse input files
     if json_input_files_d:
-        bds_params.update( parse_input_files_in_json( json_input_files_d ) )
+        pipeline_params.update( parse_input_files_in_json( json_input_files_d ) )
     if args_input_files:
         if not args_input_files[0].startswith('-'):
             raise ValueError('Invalid command line arguments (key: {})!'.format(args_input_files[0]))
-        bds_params.update( parse_input_files_in_cmd_line( args_input_files ) )
-    validate_bds_params( bds_params )
-    if not len(bds_params):
+        pipeline_params.update( parse_input_files_in_cmd_line( args_input_files ) )
+    validate_pipeline_params( pipeline_params )    
+    if not len(pipeline_params):
         # parser.print_help()
         print('Warning: no parameter specied for the pipeline! For help, add -h to the command line.')
         sys.exit(1)    
     # run bds command
     # print(args, args.screen)
-    run_bds( bds_params, args.screen )
-    # print example JSON
-    # recur_dict_to_print_example( d )
+    run_bds( pipeline_params, args.dry_run, args.screen )
     # print help table
     # recur_dict_to_print_help( d )
 if __name__ == '__main__':

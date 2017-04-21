@@ -439,7 +439,7 @@ If your control is raw bam (paired end).
 ```
 To subsample beds (tagaligns) add the following to the command line. This is different from subsampling for cross-corr. analysis. Peaks will be called with subsampled tagaligns.
 ```
--subsample [NO_READS_TO_SUBSAMPLE]
+-subsample_chip [NO_READS_TO_SUBSAMPLE]
 ```
 To subsample control beds (tagaligns) add the following to the command line.
 ```
@@ -465,6 +465,11 @@ You can specify a peak caller for IDR regardless of the type of ChIP-seq.
 ```
 -peak_caller [PEAK_CALLER; spp, macs2]
 ```
+To disable cross-corr. analysis.
+```
+-no_xcor
+```
+If you turn off cross-corr. analysis (`-no_xcor`) make sure to set both `-extsize_macs2 [EXTSIZE]` and `-speak_spp [SPEAK]`. Those two values are supposed to be taken from cross-corr. analysis.
 
 ## Useful HTML reports
 

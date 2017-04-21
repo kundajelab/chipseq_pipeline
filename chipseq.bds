@@ -12,19 +12,20 @@ sig_trk_for_pooled_rep_only := false 	help Generate MACS2 signal tracks for pool
 // mapping/filtering/aligning
 aligner		:= "bwa" 	help Aligner to map raw reads in FASTQs (default: bwa).
 subsample_xcor 	:= "15M"	help # reads to be subsampled for cross corr. analysis (default: 15M).
-subsample 	:= "0" 		help # reads to subsample exp. replicate. Subsampled tagalign will be used for steps downstream (default: 0; no subsampling).
+subsample_chip 	:= "0" 		help # reads to subsample exp. replicate. Subsampled tagalign will be used for steps downstream (default: 0; no subsampling).
+subsample 	:= "0" 		help (LEGACY PARAM) # reads to subsample exp. replicate. Subsampled tagalign will be used for steps downstream (default: 0; no subsampling).
 subsample_ctl 	:= "0" 		help # reads to subsample control if non-zero (recommended: 40M or lower).
 anon_filt_bam 	:= false 	help Generate an annomymized filtered bam. This will not affect tasks downsteam.
 // peak calling
 peak_caller 	:= "spp"  	help Peak caller for IDR analysis (default: spp for TF ChIP-seq and macs2 for Histone ChIP-seq ).
 ctl_depth_ratio := 1.2 		help Cut-off ratio of two control tagaligns for pooling (default: 1.2).
-fraglen 	:= 0 		help Manually specify fragment length (default: 0, 0 means parsing fraglen from cross-corr analysis log file).
+fraglen 	:= 0 		help (LEGACY PARAM) Manually specify fragment length (default: 0, 0 means parsing fraglen from cross-corr analysis log file).
 idr_rank 	:= ""  		help Scoring column in narrow peak files for IDR. If not specified, signal.value for SPP peaks (TF) and p.value for MACS2 peaks (histone) are used.
-idr_thresh 	:= "0.05"	help IDR threshold : -log_10(score) (default: 0.05).
+idr_thresh 	:= 0.05		help IDR threshold : -log_10(score) (default: 0.05).
 use_pooled_ctl 	:= false 	help Force to use pooled control (ignoring criteria to choose control for each replicate).
 true_rep   	:= false	help Call peaks on true replicates only.
 no_pseudo_rep	:= false 	help Do not call peaks on self pseudo replicates.
-
+no_xcor 	:= false 	help Disable cross-correlation analysis.
 
 help() // print help and exit if no parameters are given
 
@@ -35,9 +36,10 @@ include "modules/input.bds"
 include "modules/align_bwa.bds"
 include "modules/postalign_bam.bds"
 include "modules/postalign_bed.bds"
+include "modules/postalign_xcor.bds"
 
 include "modules/callpeak_spp.bds"
-include "modules/callpeak_macs2.bds"
+include "modules/callpeak_macs2_chipseq.bds"
 include "modules/callpeak_naive_overlap.bds"
 include "modules/callpeak_idr.bds"
 include "modules/callpeak_blacklist_filter.bds"
@@ -116,6 +118,7 @@ void read_conf_chipseq() {
 	sig_trk_for_pooled_rep_only = get_conf_val_bool( sig_trk_for_pooled_rep_only, 	["sig_trk_for_pooled_rep_only"] )
 	aligner 	= get_conf_val( aligner, 		["aligner"] )
 	subsample_xcor 	= get_conf_val( subsample_xcor,		["subsample_xcor"] )
+	subsample_chip 	= get_conf_val( subsample_chip,		["subsample_chip"] )
 	subsample 	= get_conf_val( subsample,		["subsample"] )
 	subsample_ctl 	= get_conf_val( subsample_ctl,		["subsample_ctl"] )
 	anon_filt_bam 	= get_conf_val_bool( anon_filt_bam, 	["anon_filt_bam"] )
@@ -123,14 +126,23 @@ void read_conf_chipseq() {
 	ctl_depth_ratio = get_conf_val_real( ctl_depth_ratio, 	["ctl_depth_ratio"])		
 	fraglen 	= get_conf_val_int( fraglen, 		["fraglen"] )
 	idr_rank 	= get_conf_val( idr_rank, 		["idr_rank"] )
-	idr_thresh 	= get_conf_val( idr_thresh, 		["idr_thresh"] )
+	idr_thresh 	= get_conf_val_real( idr_thresh, 	["idr_thresh"] )
 	use_pooled_ctl 	= get_conf_val_bool( use_pooled_ctl, 	["use_pooled_ctl"] )
 	true_rep 	= get_conf_val_bool( true_rep, 		["true_rep"] )
 	no_pseudo_rep	= get_conf_val_bool( no_pseudo_rep, 	["no_pseudo_rep"] )
+	no_xcor		= get_conf_val_bool( no_xcor, 		["no_xcor"] )
 
 	check_peak_caller_valid()		
 	check_aligner_valid()		
 	if ( idr_rank == "" ) idr_rank = (peak_caller == "spp" ? "signal.value" : "p.value")
+	// for backward compatibility for legacy params
+	if ( subsample_chip == "0" && subsample != "0" ) subsample_chip = subsample
+	if ( extsize_macs2 == -1 && fraglen > 0 ) extsize_macs2 = fraglen
+	if ( speak_spp == -1 && fraglen > 0 ) speak_spp = fraglen
+	if ( is_final_stage_after_xcor() && no_xcor ) {
+		if ( speak_spp == -1 ) error("For the case of no cross-corr. analysis (-no_xcor). You need to specify -speak_spp.")
+		if ( extsize_macs2 == -1 ) error("For the case of no cross-corr. analysis (-no_xcor). You need to specify -extsize_macs2.")
+	}
 
 	print( "\n\n== chipseq pipeline settings\n")
 	print( "# replicates \t\t\t\t: "+get_num_rep()+"\n" )
@@ -139,20 +151,18 @@ void read_conf_chipseq() {
 	print( "Signal tracks for pooled rep. only\t: $sig_trk_for_pooled_rep_only\n")
 	print( "Aligner to map raw reads\t\t\t: $aligner\n")
 	print( "# reads to subsample for cross-corr. analysis\t\t: "+parse_number( subsample_xcor)+"\n")
-	print( "# reads to subsample exp. replicates (0: no subsampling): "+parse_number( subsample )+"\n")
+	print( "# reads to subsample exp. replicates (0: no subsampling): "+parse_number( subsample_chip )+"\n")
 	print( "# reads to subsample controls (0: no subsampling)\t: "+parse_number( subsample_ctl)+"\n")
-	//print( "Create bigwig from filt_bam\t\t: $bam2bw\n")
-	// print( "Create bigwig from tagalign\t\t: $tag2bw\n")
-	// print( "Create wig\t\t\t\t: $make_wig\n" )
 	print( "Generate anonymized filt. bam\t\t: $anon_filt_bam\n")
 	print( "Peak caller for IDR analysis\t\t: $peak_caller\n")
 	print( "Control rep. depth ratio\t\t: $ctl_depth_ratio\n" )
-	print( "Specified fraglen (0:auto)\t\t: $fraglen\n")
+	// print( "Specified fraglen (0:auto)\t\t: $fraglen\n")
 	print( "Scoring column for IDR\t\t\t: $idr_rank\n")
 	print( "IDR threshold\t\t\t\t: $idr_thresh\n" )
 	print( "Force to use pooled ctl\t\t\t: $use_pooled_ctl\n")
 	print( "Peak calling for true reps only\t\t: $true_rep\n" )
 	print( "No peak calling for self pseudo reps\t: $no_pseudo_rep\n" )
+	print( "Disable cross-correlation analysis\t: $no_xcor\n" )
 }
 
 void init_filetable() { // init file table labels in HTML report
@@ -273,7 +283,7 @@ void chk_param() {
 	if ( has_pe_input_tag() && parse_number( subsample_xcor ) > 0 ) \
 		print("Warning: PE tagaligns cannot be subsampled for cross-corr. analysis.\n")
 
-	if ( has_pe_input_tag() && parse_number( subsample ) > 0 ) \
+	if ( has_pe_input_tag() && parse_number( subsample_chip ) > 0 ) \
 		print("Warning: PE tagaligns cannot be subsampled!\n")
 
 	if ( has_pe_input_tag(1) && parse_number( subsample_ctl ) > 0 ) \
@@ -455,8 +465,8 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 
 		add_file_to_report( tag_, "tag-align", group, "Alignment/$long/Tag-align" )
 
-		if ( ctl == 0 && parse_number( subsample ) > 0 ) {
-			tag_ = subsample_tag( tag_, parse_number( subsample ), aln_o_dir, group )
+		if ( ctl == 0 && parse_number( subsample_chip ) > 0 ) {
+			tag_ = subsample_tag( tag_, parse_number( subsample_chip ), aln_o_dir, group )
 			wait
 		}
 		else if ( ctl > 0 && parse_number( subsample_ctl ) > 0 ) {
@@ -496,15 +506,17 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 
 			wait
 
-			// xcor for true rep
-			string xcor_qc_, xcor_plot_
-			( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag, qc_o_dir, group, nth_rep )
+			if ( !no_xcor ) {
+				// xcor for true rep
+				string xcor_qc_, xcor_plot_
+				( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag, qc_o_dir, group, nth_rep )
 
-			xcor_qc{group} = xcor_qc_
-			xcor_plot{group} = xcor_plot_
+				xcor_qc{group} = xcor_qc_
+				xcor_plot{group} = xcor_plot_
 
-			add_file_to_report( xcor_qc_, "xcor log", group, "QC and logs/$long/Cross-corr. log" )
-			add_file_to_table( xcor_plot_, "QC and logs/$long/Cross-corr. plot" )
+				add_file_to_report( xcor_qc_, "xcor log", group, "QC and logs/$long/Cross-corr. log" )
+				add_file_to_table( xcor_plot_, "QC and logs/$long/Cross-corr. plot" )
+			}
 		}
 
 		if ( is_final_stage_xcor() ) return
@@ -632,8 +644,8 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 		add_file_to_graph( bedpe, "bedpe", group )
 
-		if ( ctl == 0 && parse_number( subsample ) > 0 ) {
-			bedpe = subsample_bedpe( bedpe, parse_number( subsample ), aln_o_dir, group )
+		if ( ctl == 0 && parse_number( subsample_chip ) > 0 ) {
+			bedpe = subsample_bedpe( bedpe, parse_number( subsample_chip ), aln_o_dir, group )
 			wait
 		}
 		else if ( ctl > 0 && parse_number( subsample_ctl ) > 0 ) {
@@ -689,14 +701,16 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 			wait
 
-			string xcor_qc_, xcor_plot_
-			( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag, qc_o_dir, group, nth_rep )
+			if ( !no_xcor ) {
+				string xcor_qc_, xcor_plot_
+				( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag, qc_o_dir, group, nth_rep )
 
-			xcor_qc{group} = xcor_qc_
-			xcor_plot{group} = xcor_plot_
+				xcor_qc{group} = xcor_qc_
+				xcor_plot{group} = xcor_plot_
 
-			add_file_to_report( xcor_qc_, "xcor log", group, "QC and logs/$long/Cross-corr. log" )
-			add_file_to_table( xcor_plot_, "QC and logs/$long/Cross-corr. plot" )
+				add_file_to_report( xcor_qc_, "xcor log", group, "QC and logs/$long/Cross-corr. log" )
+				add_file_to_table( xcor_plot_, "QC and logs/$long/Cross-corr. plot" )
+			}
 		}
 
 		if ( is_final_stage_xcor() ) return
@@ -890,13 +904,8 @@ void call_peaks() {
 
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 
-		if ( fraglen == 0 ) {
-			fraglen_true{rep} = get_fraglen( xcor_qc{"rep$rep"} ) // get fragment length of replicate 1
-		}
-		else {
-			print("DEBUG: fraglen=$fraglen\n")
-			fraglen_true{rep} = fraglen
-		}
+		if ( !no_xcor && xcor_qc.hasKey("rep$rep") ) fraglen_true{rep} = get_fraglen( xcor_qc{"rep$rep"} )
+		else fraglen_true{rep} = 0
 
 		if ( !true_rep ) {
 			fraglen_pr1{rep} = fraglen_true{rep}
@@ -1337,11 +1346,11 @@ void do_idr() {
 	add_file_to_report( idr_consv, "consv. IDR peak", "", "Peaks/"+peak_caller.toUpper()+"/IDR/Conservative set/IDR peak" )
 
 	// FRiP (fraction of reads in peak)
-	if ( !is_input_peak() ) {
+	if ( !is_input_peak() && xcor_qc ) {
 		string{} fraglen_true
 		real fraglen_sum = 0.0 // temp var.
 		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
-			group := get_group_name( 0, rep ) // for each experiment replicate
+			group := get_group_name( 0, rep ) // for each experiment replicate			
 			fraglen_true{rep} = get_fraglen( xcor_qc{group} )
 			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$rep" )
 			idr_qc_FRiP{"rep$rep-pr"} = \
@@ -1582,6 +1591,11 @@ bool is_final_stage_idr() {
 bool is_final_stage_before_peak() {
 
 	return is_final_stage_bam() || is_final_stage_filt_bam() || is_final_stage_tag() || is_final_stage_xcor()
+}
+
+bool is_final_stage_after_xcor() {
+
+	return is_final_stage_idr() || is_final_stage_peak()
 }
 
 bool is_TF_chipseq() {
