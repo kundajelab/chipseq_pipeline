@@ -438,6 +438,7 @@ def validate_pipeline_params( pipeline_params ):
     return
 
 def run_bds( args_dict, dry_run, screen ):
+    
     bds_script = os.path.dirname(os.path.abspath(__file__))+'/'+get_bds_script_name()    
     param = ''
     for key in args_dict:
@@ -450,6 +451,8 @@ def run_bds( args_dict, dry_run, screen ):
             pass
         else:
             param += "-{} {} ".format(key, val)
+    if dry_run == 'True': dry_run_param = '-dryRun'
+    else: dry_run_param = ''
     if screen:
         log_file_path = '{}/{}.log'.format(os.getcwd(),screen)
         screen_dot_bds = screen + '.BDS'
@@ -463,16 +466,14 @@ def run_bds( args_dict, dry_run, screen ):
         if log_file_handle_is_open:
             raise Exception('Log file handle is already open! duplicate runs on the same sample? (file: {})'.format(log_file_path))        
         cmd = 'screen -Sdm "{}" bash -c "bds -v {} &>>{} {} {} $>>{}"'.format(\
-            screen_dot_bds,
-            '-dryRun' if dry_run else '',
-            log_file_path,bds_script,param,log_file_path)
+            screen_dot_bds, dry_run_param, log_file_path,bds_script,param,log_file_path)
         # write basic info to log file
         os.system( 'echo "[DATE] : $(date)" >> {}'.format( log_file_path ) )
         os.system( 'echo "[HOST] : $(hostname -f)" >> {}'.format( log_file_path ) )
         os.system( 'echo "[SCR_NAME] : {}" >> {}'.format( screen, log_file_path ) )
         os.system( 'echo "[BDS_PARAM] : {}" >> {}'.format( param, log_file_path ) )
-    else:
-        cmd = 'bds -v {} {} {}'.format('-dryRun' if dry_run else '', bds_script,param)
+    else:        
+        cmd = 'bds -v {} {} {}'.format(dry_run_param, bds_script,param)
     print(cmd)
     os.system(cmd)
 
@@ -578,7 +579,7 @@ def main():
         sys.exit(1)    
     # run bds command
     # print(args, args.screen)
-    run_bds( pipeline_params, args.dry_run, args.screen )
+    run_bds( pipeline_params, str(args.dry_run), args.screen )
     # print help table
     # recur_dict_to_print_help( d )
 if __name__ == '__main__':
