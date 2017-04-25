@@ -50,8 +50,7 @@ include "modules/signal.bds"
 // e.g. filt_bam{"Replicate 1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
 
 string{} flagstat_qc, dup_qc, flagstat_nodup_qc, pbc_qc, xcor_qc, xcor_plot
-
-string{} filt_bam
+string{} bam, filt_bam
 
 string{} tag, tag_pr1, tag_pr2
 string tag_ppr1, tag_ppr2
@@ -365,7 +364,7 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 	aln_o_dir := mkdir( "$out_dir/align/$group" ) // create align output directory
 	qc_o_dir  := mkdir( "$out_dir/qc/$group" ) // create qc output dir.
 
-	string bam, flagstat_qc_
+	string bam_, flagstat_qc_
 	string mapped_reads // read count
 
 	if ( is_input_fastq( ctl, rep ) ) {
@@ -380,11 +379,12 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 			wait
 		}
 		if ( aligner == "bwa" ) {
-			( bam, flagstat_qc_ ) = bwa( pooled_fastq, aln_o_dir, qc_o_dir, group, nth_rep )
+			( bam_, flagstat_qc_ ) = bwa( pooled_fastq, aln_o_dir, qc_o_dir, group, nth_rep )
 		}
 		else {
 			error("Unsupported aligner ($aligner)!")
 		}
+		bam{group} = bam_
 		flagstat_qc{group} = flagstat_qc_
 		add_file_to_table( flagstat_qc_, "QC and logs/$long/BWA map. flagstat log")
 		wait
@@ -407,26 +407,27 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 						"Raw reads/$long/Pooled fastq ($raw_reads)" )
 		}
 	}
+	wait
 
 	string filt_bam_, dup_qc_, pbc_qc_, flagstat_nodup_qc_
 	string deduped_reads
 
 	if ( is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
 	
-		if ( is_input_bam( ctl, rep ) ) bam = get_bam( ctl, rep )
+		if ( is_input_bam( ctl, rep ) ) bam_ = get_bam( ctl, rep )
 		
-		add_file_to_report( bam, "bam" + (mapped_reads ? "\\n$mapped_reads" : ""), group, \
+		add_file_to_report( bam_, "bam" + (mapped_reads ? "\\n$mapped_reads" : ""), group, \
 			"Alignment/$long/Bam" + (mapped_reads ? " ($mapped_reads)" : "") )
 
 		if ( is_final_stage_bam() ) return
 
 		if ( no_dup_removal ) {
 			( filt_bam_, flagstat_nodup_qc_, pbc_qc_ ) \
-				= dedup_bam( bam, aln_o_dir, qc_o_dir, group, nth_rep )
+				= dedup_bam( bam_, aln_o_dir, qc_o_dir, group, nth_rep )
 		}
 		else {
 			( filt_bam_, dup_qc_, flagstat_nodup_qc_, pbc_qc_ ) \
-				= dedup_bam( bam, aln_o_dir, qc_o_dir, group, nth_rep )			
+				= dedup_bam( bam_, aln_o_dir, qc_o_dir, group, nth_rep )			
 			dup_qc{group} = dup_qc_
 			add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
 		}
@@ -533,7 +534,7 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 	aln_o_dir := mkdir( "$out_dir/align/$group" ) // create align output directory
 	qc_o_dir  := mkdir( "$out_dir/qc/$group" ) // create qc output dir.
 
-	string bam, flagstat_qc_
+	string bam_, flagstat_qc_
 	string mapped_reads // read count
 
 	if ( is_input_fastq( ctl, rep ) ) {
@@ -556,11 +557,12 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 		}
 
 		if ( aligner == "bwa" ) {
-			( bam, flagstat_qc_ ) = bwa_PE( pooled_fastq_pair1, pooled_fastq_pair2, aln_o_dir, qc_o_dir, group, nth_rep )
+			( bam_, flagstat_qc_ ) = bwa_PE( pooled_fastq_pair1, pooled_fastq_pair2, aln_o_dir, qc_o_dir, group, nth_rep )
 		}
 		else {
 			error("Unsupported aligner ($aligner)!")
 		}
+		bam{group} = bam_
 		flagstat_qc{group} = flagstat_qc_
 		add_file_to_table( flagstat_qc_, "QC and logs/$long/BWA map. flagstat log")
 		wait
@@ -591,26 +593,27 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 						"Raw reads/$long/Pooled fastq 2 ($raw_reads)" )			
 		}
 	}
+	wait
 
 	string filt_bam_, dup_qc_, pbc_qc_, flagstat_nodup_qc_
 	string deduped_reads
 
 	if ( is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
 
-		if ( is_input_bam( ctl, rep ) ) bam = get_bam( ctl, rep )
+		if ( is_input_bam( ctl, rep ) ) bam_ = get_bam( ctl, rep )
 
-		add_file_to_report( bam, "bam" + (mapped_reads ? "\\n$mapped_reads" : ""), group, \
+		add_file_to_report( bam_, "bam" + (mapped_reads ? "\\n$mapped_reads" : ""), group, \
 			"Alignment/$long/Bam" + (mapped_reads ? " ($mapped_reads)" : "") )
 
 		if ( is_final_stage_bam() ) return
 
 		if ( no_dup_removal ) {
 			( filt_bam_, flagstat_nodup_qc_, pbc_qc_ ) \
-				= dedup_bam_PE( bam, aln_o_dir, qc_o_dir, group, nth_rep )
+				= dedup_bam_PE( bam_, aln_o_dir, qc_o_dir, group, nth_rep )
 		}
 		else {
 			( filt_bam_, dup_qc_, flagstat_nodup_qc_, pbc_qc_ ) \
-				= dedup_bam_PE( bam, aln_o_dir, qc_o_dir, group, nth_rep )			
+				= dedup_bam_PE( bam_, aln_o_dir, qc_o_dir, group, nth_rep )			
 			dup_qc{group} = dup_qc_
 			add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
 		}
@@ -1483,29 +1486,43 @@ string html_chipseq_QC() {
 	}
 
 	html := "<div id='chipseq_qc'>"
+	html += "<div style='float:left'>"
 	html += html_table_multiple_logs( "Flagstat (raw) QC", false, "flagstat", groups, flagstat_qcs )
-	html += html_table_multiple_logs( "Dup. QC", false, "dup", groups, dup_qcs )
+	html += "</div>"
+	html += "<div style='float:left'>"
 	html += html_table_multiple_logs( "Flagstat (filtered) QC", false, "flagstat_filt", groups, flagstat_nodup_qcs )
+	html += "</div>"
+	html += "<div style='float:left'>"
+	html += html_table_multiple_logs( "Dup. QC", false, "dup", groups, dup_qcs )
+	html += "</div>"
+	html += "<div style='float:left'>"
 	html += html_table_multiple_logs( "Library Complexity QC", false, has_pe() ? "pbc_PE" : "pbc", groups, pbc_qcs )
 	if ( pbc_qcs.size()>0 ) html += html_help_pbc()
+	html += "</div>"
+	html += "<div style='float:left'>"
 	html += html_table_multiple_logs( "Enrichment QC (strand cross-correlation measures)", false, "xcor", groups, xcor_qcs )
 	if ( xcor_qcs.size()>0 ) html += html_help_xcor( subsample_xcor, has_se(), has_pe() )
+	html += "</div>"
 	// xcor images
 	for ( int i=0; i<xcor_plots.size(); i++ ) {
 		png := pdf_to_png( xcor_plots[i] )
 		html += html_img( png, 500, groups[i] ) + "&nbsp"
-	}
+	}	
 	// IDR FRiP
 	if ( idr_qc_FRiP.size()>0 ) {
+		html += "<div style='float:left'>"
 		html += html_table_multiple_logs( "Enrichment QC (Fraction of reads in peaks)", false, "idr_FRiP", idr_qc_FRiP )
 		html += html_help_idr_FRiP()
+		html += "</div>"
 	}	
 	// if idr qc's exists, add them to html
 	if ( idr_qc != "" ) {
+		html += "<div style='float:left'>"
 		html += html_table_multiple_logs( "Reproducibility QC and Peak Detection Statistics (Irreproducible Discovery Rate)", \
 						false, "idr", idr_qc )
 		html += html_help_idr( idr_thresh )
-	}
+		html += "</div>"
+	}	
 
 	for ( int i=1; i<=get_num_rep(); i++ ) {
 		for ( int j=i+1; j<=get_num_rep(); j++ ) {
@@ -1527,25 +1544,33 @@ string html_chipseq_QC() {
 
 string html_chipseq_tracks() {
 
-	string[] trk_files, trk_types, trk_names
-
-	if ( pval_bigwig.hasKey( "pooled" ) ) { trk_types += "bigwig"; trk_names += "$title pval (pooled)"; trk_files += pval_bigwig{"pooled"} }
-	if ( fc_bigwig.hasKey( "pooled" ) )   { trk_types += "bigwig"; trk_names += "$title fc (pooled)";   trk_files += fc_bigwig{"pooled"}   }
-
-	if ( peak_overlap != "" ) { trk_types += "hammock"; trk_names += "$title peak overlap"; trk_files += peak_to_hammock( peak_overlap ) }
-	if ( gpeak_overlap != "" ) { trk_types += "hammock"; trk_names += "$title gpeak overlap"; trk_files += peak_to_hammock( gpeak_overlap ) }
-
-	if ( idr_opt != "" ) {	trk_types += "hammock"; trk_names += "$title peak idr (opt. set)"; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_opt ) ) }
-	if ( idr_consv != "" ) {trk_types += "hammock"; trk_names += "$title peak idr (cons. set)"; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_consv ) ) }
+	string[] trk_files, trk_types, trk_names, trk_colors
+	string color
 
 	for (int rep=1; rep<=get_num_rep(); rep++) {
-
-		if ( pval_bigwig.hasKey( "rep$rep" ) ) { trk_types += "bigwig"; trk_names += "$title pval (rep$rep)"; trk_files += pval_bigwig{"rep$rep"} }
-		if ( fc_bigwig.hasKey( "rep$rep" ) )   { trk_types += "bigwig"; trk_names += "$title fc (rep$rep)";   trk_files += fc_bigwig{"rep$rep"}   }
-		if ( idr_pr.hasKey(rep) ) {trk_types += "hammock"; trk_names += "$title peak idr (rep$rep-pr)"; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_pr{rep} ) ) }
+		group := get_group_name( 0, rep )
+		color = get_predefined_rgb_str( rep )
+		if ( bam.hasKey(group) )      { trk_types += "bam"; trk_names += "$title bam ($group)"; trk_colors += color; trk_files += bam{group} }
+	}
+	color = get_predefined_rgb_str( 0 ) // color for pooled reps
+	if ( pval_bigwig.hasKey( "pooled" ) ) { trk_types += "bigwig"; trk_names += "$title pval (pooled)"; trk_colors += color; trk_files += pval_bigwig{"pooled"} }
+	if ( fc_bigwig.hasKey( "pooled" ) )   { trk_types += "bigwig"; trk_names += "$title fc (pooled)";   trk_colors += color; trk_files += fc_bigwig{"pooled"}   }
+	for (int rep=1; rep<=get_num_rep(); rep++) {
+		color = get_predefined_rgb_str( rep )
+		if ( pval_bigwig.hasKey( "rep$rep" ) ) { trk_types += "bigwig"; trk_names += "$title pval (rep$rep)"; trk_colors += color; trk_files += pval_bigwig{"rep$rep"} }
+		if ( fc_bigwig.hasKey( "rep$rep" ) )   { trk_types += "bigwig"; trk_names += "$title fc (rep$rep)"; trk_colors += color;   trk_files += fc_bigwig{"rep$rep"}   }
+	}
+	color = get_predefined_rgb_str( 0 ) // color for pooled reps
+	// if ( peak_overlap != "" ) { trk_types += "hammock"; trk_names += "$title peak overlap"; trk_files += peak_to_hammock( peak_overlap ) }
+	// if ( gpeak_overlap != "" ) { trk_types += "hammock"; trk_names += "$title gpeak overlap"; trk_files += peak_to_hammock( gpeak_overlap ) }
+	if ( idr_opt != "" ) {	trk_types += "hammock"; trk_names += "$title peak idr (opt. set)"; trk_colors += color; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_opt ) ) }
+	if ( idr_consv != "" ) {trk_types += "hammock"; trk_names += "$title peak idr (cons. set)"; trk_colors += color; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_consv ) ) }
+	for (int rep=1; rep<=get_num_rep(); rep++) {
+		color = get_predefined_rgb_str( rep )
+		if ( idr_pr.hasKey(rep) ) {trk_types += "hammock"; trk_names += "$title peak idr (rep$rep-pr)"; trk_colors += color; trk_files += peak_to_hammock( _get_idr_peak_trk( idr_pr{rep} ) ) }
 	}
 
-	html := html_epg_browser_viz( trk_files, trk_types, trk_names, species_browser )
+	html := html_epg_browser_viz( trk_files, trk_types, trk_names, trk_colors, species_browser )
 
 	return html
 }

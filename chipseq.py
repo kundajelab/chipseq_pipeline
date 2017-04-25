@@ -170,7 +170,8 @@ def get_default_param_dict(): # this is not ordered
         "visualization" : { "_order_" : 7, "_group_desc_" : "Visualiation by WashU genome browser. Note that the browser does not support a relative URL for \
                                         data files. A browser session JSON file must have absolute URLs when it's generated. Therefore, the pipeline needs to have \
                                         equivalent URL for the output directory ('-out_dir').",
-            "url_base" : { "_order_" : 0, "_default_" : "", "_help_" : "Equivalent URL address for your output directory (-out_dir)." },
+            "url_base" :        { "_order_" : 0, "_default_" : "", "_help_" : "Equivalent URL address for your output directory (-out_dir)." },
+            "viz_genome_coord" :{ "_order_" : 1, "_default_" : "", "_help_" : "WashU genome browser genome coordinate (e.g. chr7:27117661-27153380)." }
         },
 
         "ENCODE_accession" : { "_order_" : 8, "_group_desc_" : "Parameters needed to generate input spreadsheets for ENCODE accession.",
@@ -520,6 +521,8 @@ def main():
     parser, d = init_parser()
     # # print example JSON
     # recur_dict_to_print_example( d )
+    # # print help table
+    # recur_dict_to_print_help( d )
 
     args, args_input_files = parser.parse_known_args()
     default_d = recur_dict_to_get_defaults( d )
@@ -576,11 +579,9 @@ def main():
     if not len(pipeline_params):
         # parser.print_help()
         print('Warning: no parameter specied for the pipeline! For help, add -h to the command line.')
-        sys.exit(1)    
+        sys.exit(1)
     # run bds command
     # print(args, args.screen)
     run_bds( pipeline_params, str(args.dry_run), args.screen )
-    # print help table
-    # recur_dict_to_print_help( d )
 if __name__ == '__main__':
     main()
