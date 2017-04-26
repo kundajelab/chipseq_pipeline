@@ -78,7 +78,7 @@ def get_default_param_dict(): # this is not ordered
         },
 
         "cluster" : { "_order_" : 0, "_group_desc_" : "Cluster and system settings. SLURM and Sun Grid Engine are supported cluster engines.",
-            "use_system"  : { "_order_" : 0, "_default_" : "local", "_choices_": ["slurm","sge","local"], "_help_" : "Force to use a system." },
+            "system"      : { "_order_" : 0, "_default_" : "local", "_choices_": ["slurm","sge","local"], "_help_" : "Force to use a system." },
             "nice"        : { "_order_" : 1, "_default_" : 0, "_help_" : "Set process priority for all tasks; -20 (highest) ~ 19 (lowest)." },
             "retrial"     : { "_order_" : 2, "_default_" : 0, "_help_" : "Number of retrial for failed tasks." },
             "q"           : { "_order_" : 3, "_default_" : "", "_help_" : "Submit tasks to a specified cluster queue." },

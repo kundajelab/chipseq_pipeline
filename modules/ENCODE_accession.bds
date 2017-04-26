@@ -123,6 +123,7 @@ void add_ENCODE_metadata_to_summary_json( string file_format, string file_format
 	if ( file_format_type != "" ) \
 		json{"file_format_type"} = file_format_type
 	json{"output_type"} = output_type
+	json{"file_size"} = file.size()
 	if ( step_run != "" ) \
 		json{"step_run"} = step_run
 	_summary_ENCODE_accession.add( map_to_json_str(json) )
@@ -142,8 +143,8 @@ void add_ENCODE_quality_metrics_to_summary_json( string ENCODE_qc_type, string s
 	json{"award"} = ENCODE_award // ENCODE rfa
 	json{"lab"} = ENCODE_lab // lab
 	// json{"assembly"} = ENCODE_assembly
-	json{"quality_metric_of:array"} = _get_ENCODE_aliases( quality_metric_of )
-	json{"step_run"} = step_run
+	if ( quality_metric_of ) json{"quality_metric_of:array"} = _get_ENCODE_aliases( quality_metric_of )
+	if ( step_run ) json{"step_run"} = step_run
 	json{"ENCODE_qc_type"} = ENCODE_qc_type
 	
 	if ( ENCODE_qc_type == "samtools_flagstats_quality_metric" ) { // flagstat (raw)
@@ -211,9 +212,14 @@ void add_ENCODE_quality_metrics_to_summary_json( string ENCODE_qc_type, string s
 		if ( infos[6] ) json{"IDR_parameters_rep1_pr"} = infos[6]
 		if ( infos[7] ) json{"IDR_parameters_rep2_pr"} = infos[7]
 		if ( infos[8] ) json{"IDR_parameters_pool_pr"} = infos[8]
+		if ( logs[1] ) json{"Fp"} = (logs[1]).readLines()[0]
+		if ( logs[2] ) json{"Ft"} = (logs[2]).readLines()[0]
+		if ( logs[3] ) json{"F1"} = (logs[3]).readLines()[0]
+		if ( logs[4] ) json{"F2"} = (logs[4]).readLines()[0]
 	}
 	else if ( ENCODE_qc_type == "generic_quality_metric" ) {
-		json{"All calculated QC"} = logs[0]
+		json{"name"} = "$ENCODE_accession:All calculated QC"
+		json{"attachment"} = logs[0]
 	}
 	else {
 		error("Unsupported ENCODE_qc_type ($ENCODE_qc_type)!\n")
