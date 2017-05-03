@@ -6,10 +6,10 @@ include "module_template.bds"
 
 
 help == callpeak spp settings
-npeak_spp 	:= 300000 	help Set threshold on # peaks (-npeak= in run_spp.R) (default: 300000).
-max_ppsize_spp 	:= ""		help Set R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP.
-speak_spp 	:= -1 		help Set user-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis (default: -1).
-extra_param_spp := ""		help Set extra parameters for run_spp.R (peak calling only).
+npeak_spp 	:= 300000 	help Threshold on # peaks (-npeak= in run_spp.R) (default: 300000).
+max_ppsize_spp 	:= ""		help R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP.
+speak_spp 	:= -1 		help User-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis (default: -1).
+extra_param_spp := ""		help Extra parameters for SPP (run_spp.R, peak calling only).
 wt_spp		:= "47h"	help Walltime for spp (default: 47h, 47:00:00).
 mem_spp		:= "12G" 	help Max. memory for spp (default: 12G).
 

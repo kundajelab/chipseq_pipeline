@@ -14,7 +14,7 @@ pval_thresh_macs2 := 0.01 	help --pvalue for macs2 callpeak (https://github.com/
 keep_dup_macs2    := "all"	help --keep-dup for macs2 callpeak (https://github.com/taoliu/MACS#--keep-dup, default: all).
 extsize_macs2 	  := -1 	help --extsize for macs2 callpeak (https://github.com/taoliu/MACS#--extsize). Use -1 to get from upstream cross-corr. analysis (default: -1).
 shift_macs2 	  := 0		help --shift for macs2 callpeak (https://github.com/taoliu/MACS#--shift, default: 0).
-extra_param_macs2 := ""		help Set extra parameters for macs2 callpeak.
+extra_param_macs2 := ""		help Extra parameters for macs2 callpeak.
 
 grp_color_macs2	:= "lightgreen"
 
