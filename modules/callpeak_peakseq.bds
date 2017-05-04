@@ -1,0 +1,125 @@
+#!/usr/bin/env bds
+#vim: syntax=java
+
+include "species.bds"
+include "module_template.bds"
+
+
+help == callpeak PeakSeq settings
+target_fdr_peakseq		:= 0.05		help Target FDR for PeakSeq (default: 0.05).
+n_sim_peakseq			:= 10 		help Number of simulations for PeakSeq (default: 10).
+enrich_mapped_fraglen_peakseq 	:= -1 		help Enrichment mapped fragment length for PeakSeq. Use -1 to get from upstream cross-corr. analysis (default: -1).
+min_interpeak_dist_peakseq 	:= -1 		help Minimum interpeak distance for PeakSeq. Use -1 to get from upstream cross-corr. analysis (default: -1).
+mappability_map_peakseq		:= "" 		help Mappability map file for PeakSeq (http://archive.gersteinlab.org/proj/PeakSeq/Mappability_Map).
+max_qval_peakseq 		:= 0.1		help Maximum Q-value for PeakSeq (default: 0.1).
+bckgrnd_model_peakseq		:= "Simulated" 	help Background model for PeakSeq (default: Simulated).
+extra_param_peakseq	 	:= ""		help Extra parameters for PeakSeq.
+wt_peakseq			:= "47h"	help Walltime for PeakSeq (default: 47h, 47:00:00).
+mem_peakseq			:= "12G" 	help Max. memory for PeakSeq (default: 12G).
+
+
+grp_color_peakseq	:= "pink"
+
+
+init_callpeak_peakseq()
+
+
+void init_callpeak_peakseq() {
+
+	target_fdr_peakseq 		= get_conf_val_real( target_fdr_peakseq,	["target_fdr_peakseq"] )
+	n_sim_peakseq 			= get_conf_val_int( n_sim_peakseq,		["n_sim_peakseq"] )
+	enrich_mapped_fraglen_peakseq 	= get_conf_val_int( enrich_mapped_fraglen_peakseq,	["enrich_mapped_fraglen_peakseq"] )
+	min_interpeak_dist_peakseq 	= get_conf_val_int( min_interpeak_dist_peakseq,	["min_interpeak_dist_peakseq"] )
+	mappability_map_peakseq 	= get_conf_val( mappability_map_peakseq,	["mappability_map_peakseq"] )
+	max_qval_peakseq 	= get_conf_val_real( max_qval_peakseq,	["max_qval_peakseq"] )	
+	bckgrnd_model_peakseq 	= get_conf_val( bckgrnd_model_peakseq,	["bckgrnd_model_peakseq"] )
+	extra_param_peakseq 	= get_conf_val( extra_param_peakseq,	["extra_param_peakseq"] )
+	wt_peakseq 		= get_conf_val( wt_peakseq, 		["walltime_peakseq", "wt_peakseq", "timeout_peakseq"] )
+	mem_peakseq 		= get_conf_val( mem_peakseq, 		["memory_peakseq", "mem_peakseq"] )
+
+	print("\n\n== callpeak PeakSeq settings\n")
+	print( "Target FDR for PeakSeq\t\t\t:$target_fdr_peakseq\n")
+	print( "Number of simulations for PeakSeq\t:$n_sim_peakseq\n")
+	print( "Enrichment mapped frag. len. for PeakSeq\t:$enrich_mapped_fraglen_peakseq\n")
+	print( "Minimum interpeak distance for PeakSeq\t:$min_interpeak_dist_peakseq\n")
+	print( "Mappability map file for PeakSeq\t:$mappability_map_peakseq\n")
+	print( "Maximum Q-value for PeakSeq\t\t:$max_qval_peakseq\n")
+	print( "Background model for PeakSeq\t\t:$bckgrnd_model_peakseq\n")
+	print( "Extra parameters for PeakSeq\t\t:$extra_param_peakseq\n")
+	print( "Walltime (PeakSeq)\t\t\t: $wt_peakseq\n")
+	print( "Max. memory (PeakSeq)\t\t: $mem_peakseq\n")
+}
+
+void chk_callpeak_peakseq() {
+	if ( !path_exists( mappability_map_peakseq ) ) \
+		error("\nMappability map file for PeakSeq does not exists! (file: $mappability_map_peakseq)\n")
+}
+
+string[] peakseq( string tag, string ctl_tag, string frag_len, string o_dir, string group ) {
+	if ( frag_len == "" ) error("missing parameter: fragment length!")
+	prefix 		:= ctl_tag ? 	("$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
+					: replace_dir( rm_ext( tag, "tagAlign" ), o_dir )
+	tmp_chip_dir 	:= "$prefix.tmp_chip_dir"
+	tmp_ctl_dir 	:= ctl_tag ? "$prefix.tmp_ctl_dir" : ""
+	config_file 	:= get_peakseq_conf_dat( prefix, frag_len, tmp_chip_dir, tmp_ctl_dir )
+	rpeakfile 	:= "$prefix.regionPeak.gz"
+	make_tmp_ctl_dir := ctl_tag ? "zcat $ctl_tag | PeakSeq -preprocess tagAlign stdin $tmp_ctl_dir" : ""
+
+	in 	:= [ tag, ctl_tag ]
+	out 	:= [ rpeakfile ]
+
+	taskName:= "peakseq " + group
+	mem := get_res_mem(mem_peakseq,1);	timeout := get_res_wt(wt_peakseq)
+
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
+
+		sys $shcmd_init
+
+		// # =============================
+		// # The chip and input reads (chip.bam and input.bam) should be preprocessed before running:
+		// # =============================
+		sys cd $o_dir
+		sys mkdir -p $tmp_chip_dir
+		sys mkdir -p $tmp_ctl_dir
+		sys zcat $tag | PeakSeq -preprocess tagAlign stdin $tmp_chip_dir
+		sys $make_tmp_ctl_dir
+
+		// # =============================
+		// # Then it is necessary to setup the configuration file (config.dat). An example configuration file is included with the PeakSeq download. An example: 
+		// # =============================
+
+		// # =============================
+		// #Finally, the peaks are called using the configuration file:
+		// # =============================
+		sys PeakSeq -peak_select $config_file $extra_param_peakseq
+		sys rm -rf $tmp_chip_dir $tmp_ctl_dir
+		
+		sys $shcmd_finalize
+	}
+
+	register_par( tid, cpus )
+
+	add_task_to_graph( in, out, group, "PEAKSEQ", grp_color_peakseq )
+
+	return out
+}
+
+string get_peakseq_conf_dat( string prefix, string frag_len, string chipseq_dir, string ctl_dir ) {
+	out := "$prefix.peakseq.config.dat"
+	basename := prefix.baseName()
+	contents := ""
+	contents += "Experiment_id $basename\n"
+	contents += "Enrichment_mapped_fragment_length $frag_len\n"
+	contents += "target_FDR $target_fdr_peakseq\n"
+	contents += "N_Simulations $n_sim_peakseq\n"
+	contents += "Minimum_interpeak_distance $frag_len\n"
+	contents += "Mappability_map_file $mappability_map_peakseq\n"
+	contents += "ChIP_Seq_reads_data_dirs $chipseq_dir\n"
+	if ( ctl_dir ) contents += "Input_reads_data_dirs $ctl_dir\n"
+	contents += "max_Qvalue $max_qval_peakseq\n"
+	contents += "Background_model $bckgrnd_model_peakseq\n"
+	out.write(contents)
+	return out
+}

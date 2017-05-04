@@ -1,0 +1,101 @@
+#!/usr/bin/env bds
+#vim: syntax=java
+
+include "species.bds"
+include "module_template.bds"
+
+
+help == callpeak gem settings
+npeak_gem 	:= 300000 	help Threshold on # of peaks for GEM (default: 300000).
+k_min_gem 	:= 6 		help Minimum length of k-mers (--k_min in GEM, default: 6).
+k_max_gem 	:= 13		help Maximum length of k-mers (--k_max in GEM, default: 13).
+q_val_thresh_gem:= 0.0		help Q-value threshold (--q in GEM, default: 0).
+read_dist_gem	:= "$script_dir/etc/Read_Distribution_default.txt" 	help Read distribution txt file for GEM (default: $script_dir/etc/Read_Distribution_default.txt).
+extra_param_gem := ""		help Extra parameters for GEM.
+wt_gem		:= "47h"	help Walltime for GEM (default: 47h, 47:00:00).
+mem_gem		:= "15G" 	help Max. memory for GEM (default: 15G).
+
+grp_color_gem		:= "skyblue"
+
+
+init_callpeak_gem()
+
+
+void init_callpeak_gem() {
+
+	npeak_gem 	= get_conf_val_int( npeak_gem,		["npeak_gem"] )
+	k_min_gem 	= get_conf_val_int( k_min_gem,		["k_min_gem"] )
+	k_max_gem 	= get_conf_val_int( k_max_gem,		["k_max_gem"] )
+	q_val_thresh_gem= get_conf_val_real( q_val_thresh_gem,	["q_val_thresh_gem"] )
+	read_dist_gem 	= get_conf_val( read_dist_gem,		["read_dist_gem"] )
+	extra_param_gem = get_conf_val( extra_param_gem,	["extra_param_gem"] )
+	wt_gem 		= get_conf_val( wt_gem, 		["walltime_gem", "wt_gem", "timeout_gem"] )
+	mem_gem 	= get_conf_val( mem_gem, 		["memory_gem", "mem_gem"] )
+
+	print("\n\n== callpeak gem settings\n")
+	print( "Threshold for # peak in GEM\t\t: $npeak_gem\n")
+	print( "Min. length of k-mers in GEM\t\t: $k_min_gem\n")
+	print( "Max. length of k-mers in GEM\t\t: $k_max_gem\n")
+	print( "Q-value threshold for GEM\t\t: $q_val_thresh_gem\n")
+	print( "Read distribution txt for GEM\t\t: $read_dist_gem\n")
+	print( "Extra parameters for GEM\t:$extra_param_gem\n")
+	print( "Walltime (GEM)\t\t\t: $wt_gem\n")
+	print( "Max. memory (GEM)\t\t: $mem_gem\n")
+}
+
+void chk_callpeak_gem() {
+	if ( !path_exists( "$seq_dir/chr1.fa") && !path_exists( "$seq_dir/chr1.fasta") ) \
+		error("\nReference genome sequence directory doesn't exists! (file: $seq_dir/chr1.fa)\n")
+}
+
+string[] gem( string tag, string ctl_tag, string o_dir, string group, int nth_gem ) {
+	prefix 		:= ctl_tag ? 	("$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
+					: replace_dir( rm_ext( tag, "tagAlign" ), o_dir )
+	tag_tmp 	:= replace_dir( rm_ext( tag, "tagAlign" ), o_dir ) + ".tmp.bed"
+	ctl_tag_tmp 	:= replace_dir( rm_ext( ctl_tag, "tagAlign" ), o_dir ) + ".tmp.bed"
+	npeakfile 	:= "$prefix.narrowPeak.gz"
+	npeakfile_tmp 	:= "$prefix/"+prefix.baseName()+".GEM_events.narrowPeak"
+	ctl_cmd 	:= ctl_tag ? "zcat $ctl_tag > $ctl_tag_tmp" : "echo"
+ 	ctl_param 	:= ctl_tag ? "--ctrl $ctl_tag_tmp" : ""
+
+	in 	:= [ tag, ctl_tag ]
+	out 	:= [ npeakfile ]
+
+	max_java_heap 	:= binary_prefix( (mem==-1) ? parse_mem( mem_gem ) : (mem*4)/5 )
+	taskName:= "gem " + group
+	cpus 	:= (nth_gem==1) ? -1 : nth_gem;	mem := get_res_mem(mem_gem,nth_gem);	timeout := get_res_wt(wt_gem)
+
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
+
+		sys $shcmd_init_py3
+
+		sys zcat $tag > $tag_tmp
+		sys $ctl_cmd
+		// # =============================
+		// # See http://wiki.encodedcc.org/index.php/GPS/GEM of additional information
+		// # =============================
+		sys export _JAVA_OPTIONS="-Xms256M -Xmx$max_java_heap -XX:ParallelGCThreads=1"
+
+		// removed --s 2400000000 since, can guess from chrsz
+		sys java -jar $(which gem.jar) --g $chrsz --d $read_dist_gem \
+			--expt $tag_tmp $ctl_param --f BED --out $prefix \
+			--genome $seq_dir --k_min $k_min_gem --k_max $k_max_gem --outNP \
+			--t $nth_gem --q $q_val_thresh_gem $extra_param_gem
+
+		// # =============================
+		// # Sort peaks by signal value and truncate peaks to top 300K
+		// # =============================
+		sys sort -k7nr,7nr $npeakfile_tmp | head -n $npeak_gem | gzip -nc > $npeakfile
+		sys rm -f $tag_tmp $ctl_tag_tmp
+
+		sys $shcmd_finalize
+	}
+
+	register_par( tid, cpus )
+
+	add_task_to_graph( in, out, group, "GEM", grp_color_gem )
+
+	return out
+}

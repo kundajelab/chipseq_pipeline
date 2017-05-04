@@ -29,7 +29,7 @@ def get_default_param_dict(): # this is not ordered
     '''
     return {
         "screen"        : { "_order_" : -13, "_default_" : "", "_help_" : "Create a screen with name [SCREEN].BDS and attach BDS pipeline to it. STDOUT/STDERR will be redirected to [SCREEN].log on the working directory." },
-        "type"          : { "_order_" : -12, "_default_" : "TF", "_choices_" : ["TF","histone"], "_help_" : "Type of ChIP-Seq pipeline. TF or histone" },
+        "type"          : { "_order_" : -12, "_default_" : "TF", "_choices_" : ["TF","histone"], "_help_" : "Type of ChIP-Seq pipeline." },
         "final_stage"   : { "_order_" : -11, "_default_" : "idr", "_choices_" : ["bam", "filt_bam", "tag", "xcor", "peak", "idr"], "_help_" : "Final stage for pipeline." },
         "out_dir"       : { "_order_" : -10, "_default_" : "out", "_help_" : "Output directory." },
         "title"         : { "_order_" : -9,  "_default_" : "", "_help_" : "Prefix for HTML report and outputs without given prefix." },
@@ -48,7 +48,9 @@ def get_default_param_dict(): # this is not ordered
         },
 
         "input_files_(fastq)" : { "_order_" : -5, "_group_desc_" : "Single-ended : For IP replicate '-fastq[REPLICATE_ID]', For control '-ctl_fastq[CONTROL_ID]', \
-                                                Paired end : For IP replicate '-fastq[REPLICATE_ID]_[PAIR_ID]', For control '-ctl_fastq[CONTROL_ID]_[PAIR_ID]'"
+                                                Paired end : For IP replicate '-fastq[REPLICATE_ID]_[PAIR_ID]', For control '-ctl_fastq[CONTROL_ID]_[PAIR_ID]'. \
+                                                To merge fastqs from multiple technical replicates, Single-ended : For IP replicate '-fastq[REPLICATE_ID]:[TECH_REP_ID]', For control '-ctl_fastq[CONTROL_ID]:[TECH_REP_ID]', \
+                                                Paired end : For IP replicate '-fastq[REPLICATE_ID]_[PAIR_ID]:[TECH_REP_ID]', For control '-ctl_fastq[CONTROL_ID]_[PAIR_ID]:[TECH_REP_ID]'.",
         },
 
         "input_files_(bam, filt_bam)" : { "_order_" : -4, "_group_desc_" : "Raw bam : For IP replicate '-bam[REPLICATE_ID]', For control '-ctl_bam[CONTROL_ID]'.\
@@ -75,6 +77,7 @@ def get_default_param_dict(): # this is not ordered
             "chrsz"       : { "_order_" : 4, "_default_" : "", "_help_" : "Chromosome sizes file path (use fetchChromSizes from UCSC tools)." },
             "blacklist"   : { "_order_" : 5, "_default_" : "", "_help_" : "Blacklist bed." },
             "gensz"       : { "_order_" : 6, "_default_" : "", "_help_" : "Genome size; hs for human, mm for mouse. Or sum of numbers in the 2nd column in chr. sizes file." },
+            "seq_dir"     : { "_order_" : 7, "_default_" : "", "_help_" : "Reference genome sequence directory path (where chr*.fa or chr*.fasta exist)." },
         },
 
         "cluster" : { "_order_" : 0, "_group_desc_" : "Cluster and system settings. SLURM and Sun Grid Engine are supported cluster engines.",
@@ -101,22 +104,26 @@ def get_default_param_dict(): # this is not ordered
             "mem_macs2"   : { "_order_" : 11, "_default_" : "15G", "_help_" : "Max. memory for MACS2." },
             "wt_spp"      : { "_order_" : 12, "_default_" : "47h", "_help_" : "Walltime for spp." },
             "mem_spp"     : { "_order_" : 13, "_default_" : "12G", "_help_" : "Max. memory for spp." },
+            # "wt_gem"      : { "_order_" : 14, "_default_" : "47h", "_help_" : "Walltime for GEM." },
+            # "mem_gem"     : { "_order_" : 15, "_default_" : "12G", "_help_" : "Max. memory for GEM." },
+            "wt_peakseq"  : { "_order_" : 16, "_default_" : "47h", "_help_" : "Walltime for PeakSeq." },
+            "mem_peakseq" : { "_order_" : 17, "_default_" : "12G", "_help_" : "Max. memory for PeakSeq." },
         },
 
         "alignment" : { "_order_" : 2, "_group_desc_" : "Read mapping and alignment settings. Currently bwa is the only available aligner.",
             "aligner"     : { "_order_" : 0, "_default_" : "bwa", "_help_" : "Aligner to map raw reads in FASTQs" },
-            "bwa" : { "_order_" : 1,
+            "alignment_bwa" : { "_order_" : 1, "_group_desc_" : "",
                 "param_bwa_aln"   : { "_order_" : 0, "_default_" : "-q 5 -l 32 -k 2", "_help_" : "Parameters for bwa aln" },
                 "bwa_idx"         : { "_order_" : 1, "_default_" : "", "_help_" : "BWA index (full path prefix of *.bwt file)" },
             },
-            "filter" : { "_order_" : 2,
+            "alignment_filter" : { "_order_" : 2, "_group_desc_" : "",
                 "dup_marker"      : { "_order_" : 0, "_default_" : "picard", "_choices_":["picard", "sambamba"], "_help_" : "Dup marker for filtering mapped reads in BAMs." },
                 "anon_filt_bam"   : { "_order_" : 1, "_default_" : False, "_help_" : "Generate an annomymized filtered BAM. This will not affect tasks downsteam." },
                 "mapq_thresh"     : { "_order_" : 2, "_default_" : 30, "_help_" : "Threshold for low MAPQ reads removal." },
                 "rm_chr_from_tag" : { "_order_" : 3, "_default_" : "", "_help_" : "Perl style reg-ex to exclude reads from tag-aligns. (example: 'other|ribo|mito|_')." },
                 "no_dup_removal"  : { "_order_" : 4, "_default_" : False, "_help_" : "No dupe removal when filtering raw BAM." },
             },
-            "subsample" : { "_order_" : 3,
+            "alignment_subsample" : { "_order_" : 3, "_group_desc_" : "",
                 "subsample_chip"  : { "_order_" : 0, "_default_" : "0", "_help_" : "Number of reads to subsample IP replicate. Subsampled tagalign will be used for analysis (peak and idr) downstream (0: no subsampling)." },
                 "subsample_ctl"   : { "_order_" : 1, "_default_" : "0", "_help_" : "Number of reads to subsample control if non-zero (recommended: 40M or lower)." },
             },
@@ -129,32 +136,51 @@ def get_default_param_dict(): # this is not ordered
             "extra_param_xcor"  : { "_order_" : 3, "_default_" : "", "_help_" : "Set extra parameters for run_spp.R" },
         },
 
-        "callpeak" : { "_order_" : 4, "_group_desc_" : "Peak-calling settings. spp and macs2 are available for calling peaks and IDR analysis on called peaks",
+        "callpeak" : { "_order_" : 4, "_group_desc_" : "Peak-calling settings. spp and macs2 are stable for calling peaks and IDR analysis on called peaks. peakseq and gem are currently in BETA test.",
             "peak_caller"     : { "_order_" : 0, "_default_" : "spp", "_choices_" : ["spp","macs2"], "_help_" : "Peak caller for IDR analysis. spp for TF ChIP-seq and macs2 for Histone ChIP-seq )." },
             "ctl_depth_ratio" : { "_order_" : 1, "_default_" : 1.2, "_help_" : "Cut-off ratio of two control tagaligns for pooling."  },
             "use_pooled_ctl"  : { "_order_" : 2, "_default_" : False, "_help_" : "Force to use pooled control (ignoring criteria to choose control for each IP replicate)." },
             "true_rep"        : { "_order_" : 3, "_default_" : False, "_help_" : "Call peaks on true replicates only." },
             "no_pseudo_rep"   : { "_order_" : 4, "_default_" : False, "_help_" : "Do not call peaks on self pseudo replicates." },
-            "spp" : { "_order_" : 5,
+            "callpeak_spp" : { "_order_" : 5, "_group_desc_" : "",
                 "npeak_spp"         : { "_order_" : 0, "_default_" : 300000, "_help_" : "Threshold on max. number of peaks (-npeak in run_spp.R)."  },
-                "max_ppsize_spp"    : { "_order_" : 1, "_default_" : "", "_help_" : "Set R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP."  },
-                "speak_spp"         : { "_order_" : 2, "_default_" : -1, "_help_" : "Set user-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis."  },
-                "extra_param_spp"   : { "_order_" : 3, "_default_" : "", "_help_" : "Set extra parameters for run_spp.R"  },
+                "max_ppsize_spp"    : { "_order_" : 1, "_default_" : "", "_help_" : "R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP."  },
+                "speak_spp"         : { "_order_" : 2, "_default_" : -1, "_help_" : "User-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis."  },
+                "extra_param_spp"   : { "_order_" : 3, "_default_" : "", "_help_" : "Extra parameters for run_spp.R"  },
             },
-            "macs2" : { "_order_" : 6,
+            "callpeak_macs2" : { "_order_" : 6, "_group_desc_" : "",
                 "pval_thresh_macs2" : { "_order_" : 0, "_default_" : 0.01, "_help_" : "--pvalue for macs2 callpeak (https://github.com/taoliu/MACS#-p--pvalue)."  },
                 "keep_dup_macs2"    : { "_order_" : 1, "_default_" : "all", "_help_" : "--keep-dup for macs2 callpeak (https://github.com/taoliu/MACS#--keep-dup)."  },
                 "extsize_macs2"     : { "_order_" : 2, "_default_" : -1, "_help_" : "--extsize for macs2 callpeak (https://github.com/taoliu/MACS#--extsize). Use -1 to get from upstream cross-corr. analysis."  },
                 "shift_macs2"       : { "_order_" : 3, "_default_" : 0, "_help_" : "--shift for macs2 callpeak (https://github.com/taoliu/MACS#--shift)."  },
-                "extra_param_macs2" : { "_order_" : 4, "_default_" : "", "_help_" : "Set extra parameters for macs2 callpeak."  },
+                "extra_param_macs2" : { "_order_" : 4, "_default_" : "", "_help_" : "Extra parameters for macs2 callpeak."  },
             },
-            "idr" : { "_order_" : 7,
+            # "callpeak_gem" : { "_order_" : 7, "_group_desc_" : "",
+            #     "npeak_gem"     : { "_order_" : 0, "_default_" : 300000, "_help_" : "Threshold on # of peaks for GEM."  },
+            #     "k_min_gem"     : { "_order_" : 1, "_default_" : 6, "_help_" : "Minimum length of k-mers (--k_min in GEM)."  },
+            #     "k_max_gem"        : { "_order_" : 2, "_default_" : 13, "_help_" : "Maximum length of k-mers (--k_max in GEM)."  },
+            #     "q_val_thresh_gem" : { "_order_" : 3, "_default_" : 0.0, "_help_" : "Q-value threshold (--q in GEM)."  },
+            #     "read_dist_gem"    : { "_order_" : 4, "_default_" : "$script_dir/etc/Read_Distribution_default.txt", "_help_" : "Read distribution txt file for GEM."  },
+            #     "extra_param_gem"  : { "_order_" : 5, "_default_" : "", "_help_" : "Extra parameters for GEM."  },
+            # },
+            # "callpeak_peakseq" : { "_order_" : 8, "_group_desc_" : "",
+            #     "target_fdr_peakseq"            : { "_order_" : 0, "_default_" : 0.05, "_help_" : "Target FDR for PeakSeq."  },
+            #     "n_sim_peakseq"                 : { "_order_" : 1, "_default_" : 10, "_help_" : "Number of simulations for PeakSeq."  },
+            #     "enrich_mapped_fraglen_peakseq" : { "_order_" : 2, "_default_" : -1, "_help_" : "Enrichment mapped fragment length for PeakSeq. Use -1 to get from upstream cross-corr. analysis."  },
+            #     "min_interpeak_dist_peakseq"    : { "_order_" : 3, "_default_" : -1, "_help_" : "Minimum interpeak distance for PeakSeq. Use -1 to get from upstream cross-corr. analysis."  },
+            #     "mappability_map_peakseq"   : { "_order_" : 4, "_default_" : "", "_help_" : "Mappability map file for PeakSeq  (http://archive.gersteinlab.org/proj/PeakSeq/Mappability_Map)."  },
+            #     "max_qval_peakseq"          : { "_order_" : 5, "_default_" : 0.1, "_help_" : "Maximum Q-value for PeakSeq."  },
+            #     "bckgrnd_model_peakseq"     : { "_order_" : 6, "_default_" : "Simulated", "_help_" : "Background model for PeakSeq."  },
+            #     "extra_param_peakseq"       : { "_order_" : 7, "_default_" : "", "_help_" : "Extra parameters for PeakSeq."  },
+            # },
+            "callpeak_idr" : { "_order_" : 9, "_group_desc_" : "",
                 "idr_suffix"  : { "_order_" : 0, "_default_" : False, "_help_" : "Append IDR threshold to IDR output directory." },
                 "idr_rank"    : { "_order_" : 1, "_default_" : "", "_help_" : "Scoring column in narrow peak files for IDR. If not specified, signal.value for SPP peaks (TF) and p.value for MACS2 peaks (histone) are used." },
                 "idr_thresh"  : { "_order_" : 2, "_default_" : 0.05, "_help_" : "IDR threshold : -log_10(score)." },
             },
-            "naive_overlap" : { "_order_" : 8,
-                "nonamecheck" : { "_order_" : 0, "_default_" : False, "_help_" : "bedtools intersect -nonamecheck (bedtools>=2.24.0, use this if you get bedtools intersect naming convenction warnings/errors)." },
+            "callpeak_naive_overlap" : { "_order_" : 10, "_group_desc_" : "",
+                "nonamecheck"   : { "_order_" : 0, "_default_" : False, "_help_" : "bedtools intersect -nonamecheck (bedtools>=2.24.0, use this if you get bedtools intersect naming convenction warnings/errors)." },
+                "no_gpeak_filt" : { "_order_" : 1, "_default_" : False, "_help_" : "Disable gapped peak filtering through narrow peak (for histone ChIP-Seq only)." },
             },
         },
 
@@ -216,17 +242,18 @@ def order_dict( d ): # order dict by key '_order_'
     recur_dict( d, od )
     return od
 
-def recur_dict_to_add_arguments( parser, d, dict_name='', parent_name='root' ):    
+def recur_dict_to_add_arguments( parser, d, dict_name='', parent_name='root', root_parser = None ):    
+    if not root_parser: root_parser = parser
     # print d, dict_name
     if not '_help_' in d:
         for key in d:
             if key in ['_order_','_group_desc_']: continue
             if type(d[key]) in [dict,OrderedDict] and '_group_desc_' in d[key]:
                 # print d
-                p = parser.add_argument_group(title=key.replace('_',' '),description=d[key]['_group_desc_'])
+                p = root_parser.add_argument_group(title=key.replace('_',' '),description=d[key]['_group_desc_'])
             else:
                 p = parser
-            recur_dict_to_add_arguments( p, d[key], key, parent_name+'.'+key )
+            recur_dict_to_add_arguments( p, d[key], key, parent_name+'.'+key, root_parser )
     else:
         add_argument( parser, d, dict_name )
 

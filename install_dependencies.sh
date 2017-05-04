@@ -10,6 +10,8 @@ ENV_NAME_PY3=aquas_chipseq_py3
 ## install wiggler or not
 
 INSTALL_WIGGLER_AND_MCR=1
+INSTALL_GEM=1
+INSTALL_PEAKSEQ=1
 
 ## install packages from official channels (bioconda and r)
 
@@ -48,8 +50,8 @@ CONDA_EXTRA="$CONDA_BIN/../extra"
 CONDA_ACTIVATE_D="$CONDA_BIN/../etc/conda/activate.d"
 CONDA_INIT="$CONDA_ACTIVATE_D/init.sh"
 CONDA_LIB="$CONDA_BIN/../lib"
-if [[ $(find $CONDA_LIB -name 'PKG-INFO' -not -perm -o+r | wc -l ) > 0 ]]; then
-  find $CONDA_LIB -name 'PKG-INFO' -not -perm -o+r -exec dirname {} \; | xargs chmod o+r -R
+if [[ $(find $CONDA_LIB -name '*egg-info*' -not -perm -o+r | wc -l ) > 0 ]]; then
+  find $CONDA_LIB -name '*egg-info*' -not -perm -o+r -exec dirname {} \; | xargs chmod o+r -R
 fi
 
 
@@ -96,6 +98,19 @@ if [ ${INSTALL_WIGGLER_AND_MCR} == 1 ]; then
   add_to_activate
 fi
 
+# install PeakSeq
+if [ ${INSTALL_PEAKSEQ} == 1 ]; then
+  cd $CONDA_EXTRA
+  wget http://archive.gersteinlab.org/proj/PeakSeq/Scoring_ChIPSeq/Code/C/PeakSeq_1.31.zip -N --no-check-certificate
+  unzip PeakSeq_1.31.zip
+  rm -f PeakSeq_1.31.zip
+  cd PeakSeq
+  make
+  chmod 755 bin/PeakSeq
+  cd $CONDA_BIN
+  ln -s $CONDA_EXTRA/PeakSeq/bin/PeakSeq
+fi
+
 source deactivate
 
 
@@ -113,6 +128,18 @@ cd idr
 python3 setup.py install
 cd $CONDA_EXTRA
 rm -rf idr
+
+# install GEM
+if [ ${INSTALL_GEM} == 1 ]; then
+  cd $CONDA_EXTRA
+  wget http://groups.csail.mit.edu/cgs/gem/download/gem.v3.0.tar.gz -N --no-check-certificate
+  tar zxvf gem.v3.0.tar.gz  
+  rm -f gem.v3.0.tar.gz  
+  cd gem
+  chmod 755 gem.jar
+  cd $CONDA_BIN
+  ln -s $CONDA_EXTRA/gem/gem.jar
+fi
 
 source deactivate
 
