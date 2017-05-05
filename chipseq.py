@@ -13,6 +13,9 @@ from subprocess import check_output
 from collections import OrderedDict
 from collections import defaultdict
 
+def get_script_path():
+    return os.path.dirname( os.path.abspath(sys.argv[0]) )
+
 def get_bds_script_name():
     return 'chipseq.bds'
 
@@ -465,9 +468,9 @@ def validate_pipeline_params( pipeline_params ):
     # print per_rep
     return
 
-def run_bds( args_dict, dry_run, screen ):
-    
-    bds_script = os.path.dirname(os.path.abspath(__file__))+'/'+get_bds_script_name()    
+def run_bds( args_dict, dry_run, screen ):    
+    bds_script = os.path.join( get_script_path(), get_bds_script_name() )
+    bds_conf = os.path.join( get_script_path(), 'bds.config' )
     param = ''
     for key in args_dict:
         val = args_dict[key]
@@ -492,16 +495,18 @@ def run_bds( args_dict, dry_run, screen ):
         log_file_handle_is_open = \
             int(check_output('find {} -mmin -1 2>/dev/null | wc -l'.format(log_file_path), shell=True))
         if log_file_handle_is_open:
-            raise Exception('Log file handle is already open! duplicate runs on the same sample? (file: {})'.format(log_file_path))        
-        cmd = 'screen -Sdm "{}" bash -c "bds -v {} &>>{} {} {} $>>{}"'.format(\
-            screen_dot_bds, dry_run_param, log_file_path,bds_script,param,log_file_path)
+            raise Exception('Log file handle is already open or too fresh! duplicate runs on the same sample? (file: {})'.format(log_file_path))
+        cmd = 'screen -Sdm "{}" bash -c "bds -c {} -v {} &>>{} {} {} $>>{}"'.format(\
+            screen_dot_bds, bds_conf, dry_run_param, log_file_path,bds_script,param,log_file_path)
         # write basic info to log file
         os.system( 'echo "[DATE] : $(date)" >> {}'.format( log_file_path ) )
         os.system( 'echo "[HOST] : $(hostname -f)" >> {}'.format( log_file_path ) )
         os.system( 'echo "[SCR_NAME] : {}" >> {}'.format( screen, log_file_path ) )
         os.system( 'echo "[BDS_PARAM] : {}" >> {}'.format( param, log_file_path ) )
-    else:        
-        cmd = 'bds -v {} {} {}'.format(dry_run_param, bds_script,param)
+        print('* Created a detached screen [{}] for the pipeline. STDOUT/STDERR will be redirected to the log file [{}]'.format(\
+            screen, log_file_path))
+    else:
+        cmd = 'bds -c {} -v {} {} {}'.format(bds_conf, dry_run_param, bds_script,param)
     print(cmd)
     os.system(cmd)
 
