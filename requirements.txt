@@ -1,7 +1,7 @@
 # channels : defaults, r, bioconda
 
 bwa ==0.7.13
-samtools ==0.1.19
+samtools ==1.2 # 0.1.19
 htslib # bgzip and tabix not included in new samtools
 bedtools ==2.26.0 #2.19.1
 ucsc-fetchchromsizes
