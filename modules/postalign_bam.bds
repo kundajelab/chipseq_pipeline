@@ -372,6 +372,151 @@ string[] dedup_bam_PE( string bam, string o_dir, string log_o_dir, string group,
 	return out
 }
 
+string[] dedup_bam_PE_for_bwa_mm( string bam, string o_dir, string log_o_dir, string group, int nth_dedup ) {
+	if ( multimapping<1 ) error("This function is for multimapping reads!")
+	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
+	prefix2 	:= replace_dir( prefix, log_o_dir )
+	nodup_bam 	:= "$prefix.nodup.bam"
+	dup_qc 		:= "$prefix2.properpair.dup.qc"
+	map_qc 		:= "$prefix2.nodup.flagstat.qc"
+	pbc_qc 		:= "$prefix2.nodup.pbc.qc"	
+	properpair_bam 	:= "$prefix.properpair.bam"
+	properpair_bam_mapstats :="$prefix.properpair.flagstat.qc"
+
+	in 	:= [ bam ]
+	out 	:= no_dup_removal ? [ properpair_bam, properpair_bam_mapstats ] : [ nodup_bam, dup_qc, map_qc, pbc_qc ]
+	cpus 	:= (nth_dedup==1) ? -1 : nth_dedup; mem := get_res_mem(mem_dedup,nth_dedup);	timeout := get_res_wt(wt_dedup)
+
+	if ( out<-in ) {
+		/////// step 1, 2 and 3
+		raw_sam := "$prefix.raw.sam.gz"
+		filt_sam:="$prefix.cigarFilt.sam.gz"
+		badcigar_file:="$prefix.badReads.tmp"
+		sorting_temp_prefix:="$prefix.sortingFile.tmp"
+		filt_sam_mapstats:="$prefix2.cigarFilt.flagstat.qc" //# QC File
+		multimap_filt_sam:="$prefix.multiMapFilt.sam.gz"
+		qualfilt_sorting_temp_prefix:="$prefix.qualfilt.sortingFile.tmp"
+		qualfilt_bam:="$prefix.qualfilt.bam"
+		fixmate_bam:="$prefix.fixmate.bam"
+		properpair_sorting_temp_prefix:="$prefix.properpair.sortingFile.tmp"
+		properpair_bam:="$prefix.properpair.bam"
+		properpair_bam_mapstats:="$prefix2.properpair.flagstat.qc"
+
+		taskName:= "dedup_bam_PE_123 " + group
+		in1 	:= in
+		out1 	:= [ properpair_bam ]
+		wait_par( cpus )
+		tid := task( out1<-in1 ) {
+			sys $shcmd_init
+			//# ====================================================
+			//# Convert the BAM file into a gzipped SAM file (Step 0)
+			//# ====================================================
+			sys samtools view -h $bam | gzip -nc > $raw_sam
+			//# =========================================================================================================
+			//# Remove read pairs with bad CIGAR strings, where bad CIGAR strings included unspecified CIGARS (*) (Step 1)
+			//# =========================================================================================================
+			//# Find bad CIGAR read names
+			sys zcat $raw_sam | awk 'BEGIN {FS="\t" ; OFS="\t"} ! /^@/ && $6!="*" { cigar=$6; gsub("[0-9]+D","",cigar); n = split(cigar,vals,"[A-Z]"); s = 0; for (i=1;i<=n;i++) s=s+vals[i]; seqlen=length($10) ; if (s!=seqlen) print $1"\t" ; }' \
+				| sort | uniq > $badcigar_file
+			//# Remove bad CIGAR read pairs
+			sys if [[ $(cat $badcigar_file | wc -l) -gt 0 ]]; then \
+				    zcat $raw_sam | grep -v -F -f $badcigar_file | samtools sort -O sam -T $sorting_temp_prefix - -@ $nth_dedup \
+				    	| gzip -nc > $filt_sam; \
+				else \
+				    zcat $raw_sam | samtools sort -O sam -T $sorting_temp_prefix - -@ $nth_dedup \
+						| gzip -nc > $filt_sam; \
+				fi
+			sys rm -f $badcigar_file $raw_sam
+
+			sys zcat $filt_sam | samtools flagstat - > $filt_sam_mapstats
+			// # ========================================================================
+			// # Remove low MAPQ reads that have no multi-mappers
+			// # Remove all reads that have more than a specified number of multi-mappers
+			// # ========================================================================			
+			sys python $(which removeMultiMappers.py) --samFileName $filt_sam --MAPQThresh $mapq_thresh \
+					--MultiMapThresh $multimapping --outputFileName $multimap_filt_sam
+			sys rm -f $filt_sam
+
+			// # ======================================================
+			// # Remove  unmapped, mate unmapped
+			// # not primary alignment, reads failing platform (Step 3)
+			// # Remove low MAPQ reads
+			// # Only keep properly paired reads
+			// # Obtain name sorted BAM file
+			// # ======================================================
+			//# Will produce name sorted BAM                                                                                                                                    
+			sys samtools view -F 1804 -f 2 -u $multimap_filt_sam \
+				| samtools sort -n -o $qualfilt_bam -T $qualfilt_sorting_temp_prefix -@ $nth_dedup - 
+			// # Remove orphan reads (pair was removed)
+			// # and read pairs mapping to different chromosomes
+			// # Obtain position sorted BAM
+			sys samtools fixmate -r $qualfilt_bam -O 'bam' $fixmate_bam
+			// # Will produce coordinate sorted BAM                                                                                                                        
+			sys samtools view -F 1804 -f 2 -u $fixmate_bam \
+				| samtools sort -o $properpair_bam -T $properpair_sorting_temp_prefix -@ $nth_dedup -  
+			sys rm -f $multimap_filt_sam $qualfilt_bam $fixmate_bam
+			sys samtools flagstat $properpair_bam > $properpair_bam_mapstats
+
+			sys $shcmd_finalize
+		}
+		register_par( tid, cpus )
+		wait
+
+		if ( !no_dup_removal ) {
+			/////// step 4
+			string dupmark_bam, dup_qc
+			if ( dup_marker == "sambamba" ) {
+				(dupmark_bam, dup_qc) = markdup_bam_sambamba( properpair_bam, o_dir, log_o_dir, group, nth_dedup )
+			}
+			else {
+				(dupmark_bam, dup_qc) = markdup_bam_picard( properpair_bam, o_dir, log_o_dir, group )
+			}
+			wait
+
+			nodup_sorting_temp_prefix := "$prefix.nodup.sortingFile.tmp"
+
+			taskName= "dedup_bam_PE_5 " + group
+			in2  := [ dupmark_bam ]
+			out2 := [ nodup_bam, map_qc, pbc_qc ]
+			wait_par( cpus )
+			tid2 := task( out2<-in2 ) {
+				sys $shcmd_init
+				// # Remove duplicates
+				sys samtools view -F 1804 -f 2 -b $dupmark_bam > $nodup_bam
+				// # Index Final BAM file
+				sys samtools index -b $nodup_bam
+				sys rm -f $properpair_bam
+				sys samtools flagstat $nodup_bam > $map_qc
+				// # ==================================
+				// # Compute library complexity (Step 5)
+				// # ==================================
+				// # Sort by name
+				// # convert to bedPE and obtain fragment coordinates
+				// # sort by position and strand
+				// # Obtain unique count statistics
+				// # Create final name sorted BAM
+				sys samtools sort -n -o $nodup_bam.srt.bam -T $nodup_sorting_temp_prefix -@ $nth_dedup $nodup_bam
+				// # TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
+				sys bedtools bamtobed -bedpe -i $nodup_bam.srt.bam | awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}' \
+					| grep -v 'chrM' | sort | uniq -c \
+					| awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{m1_m2=-1.0; if(m2>0) m1_m2=m1/m2; printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1_m2}' \
+					> $pbc_qc
+				sys rm -f $nodup_bam.srt.bam
+				sys $shcmd_finalize
+			}
+			register_par( tid2, cpus )
+			wait
+			/////// remove all intermediate files
+			dupmark_bam.rm()
+			"$dupmark_bam.bai".rm()
+		}
+	}
+
+	add_task_to_graph( in, out, group, "FILTER", grp_color_dedup_bam )
+
+	return out
+}
+
 string[] markdup_bam_picard( string bam, string o_dir, string log_o_dir, string group ) {
 
 	prefix 		:= replace_dir( rm_str_at_end( rm_ext( bam, "bam" ), ".filt"), o_dir )

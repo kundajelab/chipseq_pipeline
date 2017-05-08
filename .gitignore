@@ -1,3 +1,5 @@
 *.chp
 .*.swp
 .nfs*
+test.bds
+test.bds.*
