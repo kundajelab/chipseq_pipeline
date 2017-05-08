@@ -89,6 +89,8 @@ def get_default_param_dict(): # this is not ordered
             "nice"        : { "_order_" : 1, "_default_" : 0, "_help_" : "Set process priority for all tasks; -20 (highest) ~ 19 (lowest)." },
             "retrial"     : { "_order_" : 2, "_default_" : 0, "_help_" : "Number of retrial for failed tasks." },
             "q"           : { "_order_" : 3, "_default_" : "", "_help_" : "Submit tasks to a specified cluster queue." },
+            "cluster_task_min_len": { "_order_" : 4, "_default_" : 60, "_help_" : "Minimum length for a cluster job in seconds (dealing with NFS delayed write)." },
+            "cluster_task_delay"  : { "_order_" : 5, "_default_" : 0, "_help_" : "Constant delay for every job in seconds (dealing with NFS delayed write)." },
         },
 
         "resource" : { "_order_" : 1, "_group_desc_" : "System resource and parallelization settings. '-nth' is the most important parameter to parallelize a pipeline. You can specify \
@@ -115,7 +117,8 @@ def get_default_param_dict(): # this is not ordered
         },
 
         "alignment" : { "_order_" : 2, "_group_desc_" : "Read mapping and alignment settings. Currently bwa is the only available aligner.",
-            "aligner"     : { "_order_" : 0, "_default_" : "bwa", "_help_" : "Aligner to map raw reads in FASTQs" },
+            "aligner"     : { "_order_" : -1, "_default_" : "bwa", "_help_" : "Aligner to map raw reads in FASTQs." },
+            "multimapping"  : { "_order_" : 0, "_default_" : 0, "_help_" : "Number of alignments reported for multimapping." },
             "alignment_bwa" : { "_order_" : 1, "_group_desc_" : "",
                 "param_bwa_aln"   : { "_order_" : 0, "_default_" : "-q 5 -l 32 -k 2", "_help_" : "Parameters for bwa aln" },
                 "bwa_idx"         : { "_order_" : 1, "_default_" : "", "_help_" : "BWA index (full path prefix of *.bwt file)" },
