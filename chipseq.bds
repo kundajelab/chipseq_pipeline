@@ -1525,25 +1525,26 @@ void do_idr() {
 		string{} fraglen_true
 		real fraglen_sum = 0.0 // temp var.
 		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
-			group := get_group_name( 0, rep ) // for each experiment replicate			
-			fraglen_true{rep} = get_fraglen( xcor_qc{group} )
-			idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$rep" )
-			idr_qc_FRiP{"rep$rep-pr"} = \
-				FRiP_shifted( tag{group}, idr_pr{rep}, parse_int(fraglen_true{rep}), idr_pr_o_dir, "rep$rep-pr" )
-			add_file_to_table( idr_qc_FRiP{"rep$rep-pr"}, "QC and logs/IDR/Pseudo-replicates/Replicate $rep/FRiP" )
-
+			if ( idr_pr.hasKey(rep) ) {
+				group := get_group_name( 0, rep ) // for each experiment replicate
+				fraglen_true{rep} = get_fraglen( xcor_qc{group} )
+				idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$rep" )
+				idr_qc_FRiP{"rep$rep-pr"} = \
+					FRiP_shifted( tag{group}, idr_pr{rep}, parse_int(fraglen_true{rep}), idr_pr_o_dir, "rep$rep-pr" )
+				add_file_to_table( idr_qc_FRiP{"rep$rep-pr"}, "QC and logs/IDR/Pseudo-replicates/Replicate $rep/FRiP" )
+			}
 			fraglen_sum += fraglen_true{rep}.parseReal()
 		}
 		real num_rep_real = get_num_rep()
 		fraglen_mean := round( fraglen_sum / num_rep_real ) // compute fraglen mean for pooled
-		if ( get_num_rep()>1 ) {
+		if ( get_num_rep()>1 && idr_qc_FRiP.hasKey("ppr") ) {
 			idr_ppr_o_dir := mkdir( "$idr_o_dir/pooled_pseudo_reps" )
 			idr_qc_FRiP{"ppr"} = \
 				FRiP_shifted( tag{"pooled_rep"}, idr_ppr, parse_int(fraglen_mean), idr_ppr_o_dir, "ppr" )
 			add_file_to_table( idr_qc_FRiP{"ppr"}, "QC and logs/IDR/Pooled pseudo-replicates/FRiP" )
 		}
 		for ( int i=1; i<=get_num_rep(); i++ ) {
-			for ( int j=i+1; j<=get_num_rep(); j++ ) {
+			for ( int j=i+1; j<=get_num_rep(); j++ ) {				
 				idr_true_o_dir 	:= mkdir( "$idr_o_dir/true_reps/rep$i-rep$j" )
 				idr_qc_FRiP{"rep$i-rep$j"} = \
 					FRiP_shifted( tag{"pooled_rep"}, idr_tr{"$i,$j"}, parse_int(fraglen_mean), \
@@ -1608,7 +1609,6 @@ void report() {
 string html_chipseq_QC() {
 
 	string[] flagstat_qcs, dup_qcs, flagstat_nodup_qcs, pbc_qcs, xcor_qcs, xcor_plots
-	string[] idr_qc_FRiPs
 	string[] groups
 
 	for ( int rep=1; rep <= get_num_rep(); rep++) {
