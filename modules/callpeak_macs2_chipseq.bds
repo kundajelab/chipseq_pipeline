@@ -88,7 +88,7 @@ string[] macs2_chipseq_npeak_and_signal( string tag, string ctl_tag, string frag
 		//==========================================
 		//# Generate narrow peaks and preliminary signal tracks
 		//============================================
-		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --nomodel --shift $shift_macs2 $extsize_param --keep-dup $keep_dup_macs2 -B --SPMR
+		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --nomodel --shift $shift_macs2 $extsize_param --keep-dup $keep_dup_macs2 -B --SPMR $extra_param_macs2
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $npeakfile
@@ -178,7 +178,7 @@ string[] macs2_chipseq_gpeak_and_bpeak( string tag, string ctl_tag, string frag_
 		//===========================================
 		//# Generate Broad and Gapped Peaks
 		//============================================
-		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --broad --nomodel --shift $shift_macs2 $extsize_param --keep-dup $keep_dup_macs2
+		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --broad --nomodel --shift $shift_macs2 $extsize_param --keep-dup $keep_dup_macs2 $extra_param_macs2
 
 		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
 		sys sort -k 8gr,8gr "$prefix"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $bpeakfile
