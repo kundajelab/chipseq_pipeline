@@ -1525,9 +1525,9 @@ void do_idr() {
 		string{} fraglen_true
 		real fraglen_sum = 0.0 // temp var.
 		for ( int rep=1; rep<=get_num_rep(); rep++ ) {
+			group := get_group_name( 0, rep ) // for each experiment replicate
+			fraglen_true{rep} = get_fraglen( xcor_qc{group} )
 			if ( idr_pr.hasKey(rep) ) {
-				group := get_group_name( 0, rep ) // for each experiment replicate
-				fraglen_true{rep} = get_fraglen( xcor_qc{group} )
 				idr_pr_o_dir := mkdir( "$idr_o_dir/pseudo_reps/rep$rep" )
 				idr_qc_FRiP{"rep$rep-pr"} = \
 					FRiP_shifted( tag{group}, idr_pr{rep}, parse_int(fraglen_true{rep}), idr_pr_o_dir, "rep$rep-pr" )
