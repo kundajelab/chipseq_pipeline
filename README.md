@@ -133,7 +133,7 @@ $ echo 'export PATH=$PATH:/opt/miniconda3/bin' >> /etc/profile.d/conda_init.sh
 
 Install genome data for a specific genome `[GENOME]`. Currently `hg19`, `mm9`, `hg38` and `mm10` are available. Specify a directory `[DATA_DIR]` to download genome data. A species file generated on `[DATA_DIR]` will be automatically added to your `./default.env` so that the pipeline knows that you have installed genome data using `install_genome_data.sh`. If you want to install multiple genomes make sure that you use the same directory `[DATA_DIR]` for them. Each genome data will be installed on `[DATA_DIR]/[GENOME]`. If you use other BDS pipelines, it is recommended to use the same directory `[DATA_DIR]` to save disk space.
 
-**IMPORTANT**: `install_genome_data.sh` can take longer than an hour for downloading data and building index. **DO NOT** run the script on a login node, use `qlogin` for SGE and `sdev` for SLURM.
+**IMPORTANT**: `install_genome_data.sh` can take longer than an hour for downloading data and building index. **DO NOT** run the script on a login node, use `qlogin` for SGE and `srun --pty bash` for SLURM.
 
 ```
 # DO NOT run this on a login node
@@ -237,12 +237,38 @@ Press Ctrl + C on a terminal or send any kind of kill signals to it. Please note
 
 ## Running pipelines with a cluster engine
 
-**IMPORTANT!** On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose `[CLUSTER_ENGINE]` between `sge` (default on Kundaje clusters and SCG4), `slurm` (default on Sherlock) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
+On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose `[CLUSTER_ENGINE]` between `sge` (default on Kundaje clusters and SCG4), `slurm` (default on Sherlock) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
 
 ```
 $ python chipseq.py -system [CLUSTER_ENGINE] ...
 $ python chipseq.py -system [CLUSTER_ENGINE] -q [QUEUE_NAME] ...
 ```
+
+**IMPORTANT!** Please read this section carefully if you run pipelines on Stanford SCG4 and Sherlock cluster.
+
+To run more than 50 pipelines, most clusters have a policy to limit number of threads and memory per user on a login node. One BDS process, as a Java-based task manager, takes up to 500MB of memory and 50 threads even though it just submits/monitors subtasks. So if you want to run more than 50 pipelines in parallel, your cluster will kill BDS processes due to resource limit on a login node (check resource limit per user with `ulimit -a`). For example of 50 pipelines, 25 GB of memory and 2500 threads will be taken by 50 BDS processes. So the Workaround for this is to make an interactive node to keep all BDS processes alive. Such interactive node must have long walltime enough to wait for all pipelines in it to finish. Recommended resource settings are 0.05 cpu and 0.5GB memory per pipeline.
+
+SGE example to make an interactive node for 100 pipelines: 5 cpus, 50GB memory, 3 days walltime. For SCG4, `[PARALLEL_ENV] = shm`.
+
+```
+$ qlogin -l h_rt=72:00:00 -l h_vmem=50G -pe [PARALLEL_ENV] 5
+```
+
+SLURM example to make an interactive node for 100 pipelines: 5 cpus, 50GB memory, 3 days walltime.
+
+```
+$ srun -n 5 -m 50G -t 3-0 -p [YOUR_PARTITON]
+```
+
+Once you get an interactive node, repeat the following commands per sample to run a pipeline.
+
+```
+$ cd [WORK_DIR]
+$ python chipseq.py -screen [SCREEN_NAME] -q [SGE_QUEUE_OR_SLURM_PARTITION] -nth [MAX_NUM_THREAD_PER_PIPELINE] ...
+$ sleep 2 # wait for 2 seconds for safety
+```
+
+Then you can monitor your pipelines with `screen -ls` and `tail -f [WORK_DIR]/[SCREEN_NAME].BSD.log`. If you want to run more than 200 pipelines, you would want to make multiple interactive nodes and distribute your samples to them.
 
 ## Input data type
 
