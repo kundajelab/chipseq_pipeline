@@ -285,8 +285,8 @@ void chk_param() {
 	if ( has_input_fastq() ) 	chk_align_bwa()
 	// if ( tag2bw ) 			chk_signal_aln2rawsig()
 	if ( is_final_stage_idr() ) 	chk_idr()
-	if ( is_final_stage_idr() || is_final_stage_peak() ) chk_callpeak_macs2()
-
+	if ( ( is_final_stage_idr() || is_final_stage_peak() ) && peak_caller == "macs2" \
+		|| is_final_stage_signal() ) chk_callpeak_macs2()
 	// errors
 	if ( peak_caller == "gem" ) chk_callpeak_gem()
 	if ( peak_caller == "peakseq" ) chk_callpeak_peakseq()
@@ -745,7 +745,7 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 void pool_tags() {
 
-	if ( !(is_final_stage_peak() || is_final_stage_idr()) ) return
+	if ( !(is_final_stage_signal() || is_final_stage_peak() || is_final_stage_idr()) ) return
 
 	if ( is_input_peak() ) return
 
@@ -819,7 +819,7 @@ void pool_tags() {
 
 void call_peaks() {
 
-	if ( !(is_final_stage_peak() || is_final_stage_idr()) ) return
+	if ( !(is_final_stage_signal() || is_final_stage_peak() || is_final_stage_idr()) ) return
 
 	if ( is_input_peak() ) return
 
@@ -956,9 +956,11 @@ void call_peaks() {
 
 	// create directories for peaks (spp, macs2), signal tracks (macs2)
 	string spp_o_dir, peakseq_o_dir, gem_o_dir
-	if ( peak_caller == "spp" ) spp_o_dir = mkdir( "$out_dir/peak/spp")
-	else if ( peak_caller == "peakseq" ) peakseq_o_dir = mkdir( "$out_dir/peak/peakseq")
-	else if ( peak_caller == "gem" ) gem_o_dir = mkdir( "$out_dir/peak/gem")
+	if ( !is_final_stage_signal() ) {
+		if ( peak_caller == "spp" ) spp_o_dir = mkdir( "$out_dir/peak/spp")
+		else if ( peak_caller == "peakseq" ) peakseq_o_dir = mkdir( "$out_dir/peak/peakseq")
+		else if ( peak_caller == "gem" ) gem_o_dir = mkdir( "$out_dir/peak/gem")
+	}
 	macs2_o_dir 	:= mkdir( "$out_dir/peak/macs2") 
 	macs2_sig_o_dir	:= mkdir( "$out_dir/signal/macs2")
 
@@ -967,24 +969,26 @@ void call_peaks() {
 	// call peaks on pooled replicates and pooled pseudo replicates
 	if ( get_num_rep() > 1 ) {
 
-		// spp
-		if ( peak_caller == "spp" ) {
-			spp_pooled_o_dir := mkdir( "$spp_o_dir/pooled_rep" )
-			( peak_pooled{"spp"}, tmp ) = \
-				spp( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, spp_pooled_o_dir, "pooled_rep", nth_pooled )
-			add_file_to_report( peak_pooled{"spp"}, "r. peak", "pooled_rep", "Peaks/SPP/Pooled Replicate/Region peak" )
-		}
-		else if ( peak_caller == "peakseq" ) {
-			peakseq_pooled_o_dir := mkdir( "$peakseq_o_dir/pooled_rep" )
-			( peak_pooled{"peakseq"}, tmp ) = \
-				peakseq( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, peakseq_pooled_o_dir, "pooled_rep" )
-			add_file_to_report( peak_pooled{"peakseq"}, "r. peak", "pooled_rep", "Peaks/PeakSeq/Pooled Replicate/Region peak" )
-		}
-		else if ( peak_caller == "gem" ) {
-			gem_pooled_o_dir := mkdir( "$gem_o_dir/pooled_rep" )
-			( peak_pooled{"gem"}, tmp ) = \
-				gem( tag{"pooled_rep"}, tag_ctl{"pooled"}, gem_pooled_o_dir, "pooled_rep", nth_pooled )
-			add_file_to_report( peak_pooled{"gem"}, "n. peak", "pooled_rep", "Peaks/Gem/Pooled Replicate/Region peak" )
+		if ( !is_final_stage_signal() ) {
+			// spp
+			if ( peak_caller == "spp" ) {
+				spp_pooled_o_dir := mkdir( "$spp_o_dir/pooled_rep" )
+				( peak_pooled{"spp"}, tmp ) = \
+					spp( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, spp_pooled_o_dir, "pooled_rep", nth_pooled )
+				add_file_to_report( peak_pooled{"spp"}, "r. peak", "pooled_rep", "Peaks/SPP/Pooled Replicate/Region peak" )
+			}
+			else if ( peak_caller == "peakseq" ) {
+				peakseq_pooled_o_dir := mkdir( "$peakseq_o_dir/pooled_rep" )
+				( peak_pooled{"peakseq"}, tmp ) = \
+					peakseq( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, peakseq_pooled_o_dir, "pooled_rep" )
+				add_file_to_report( peak_pooled{"peakseq"}, "r. peak", "pooled_rep", "Peaks/PeakSeq/Pooled Replicate/Region peak" )
+			}
+			else if ( peak_caller == "gem" ) {
+				gem_pooled_o_dir := mkdir( "$gem_o_dir/pooled_rep" )
+				( peak_pooled{"gem"}, tmp ) = \
+					gem( tag{"pooled_rep"}, tag_ctl{"pooled"}, gem_pooled_o_dir, "pooled_rep", nth_pooled )
+				add_file_to_report( peak_pooled{"gem"}, "n. peak", "pooled_rep", "Peaks/Gem/Pooled Replicate/Region peak" )
+			}
 		}
 
 		// macs2
@@ -994,101 +998,105 @@ void call_peaks() {
 		( peak_pooled{"macs2"}, fc_bigwig{"pooled"}, pval_bigwig{"pooled"} ) = \
 				macs2_chipseq_npeak_and_signal( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, \
 				true, macs2_pooled_o_dir, macs2_pooled_sig_o_dir, "pooled_rep" )
-		if ( peak_caller == "macs2" ) {
-			( gpeak_pooled{"macs2"}, bpeak_pooled{"macs2"} ) = \
-				macs2_chipseq_gpeak_and_bpeak( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, \
-					macs2_pooled_o_dir, "pooled_rep" )
-			add_file_to_report( gpeak_pooled{"macs2"}, "g. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Gapped peak" )
-			add_file_to_report( bpeak_pooled{"macs2"}, "b. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Broad peak" )
-			add_file_to_report( peak_pooled{"macs2"}, "n. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Narrow peak" )
-		}
-		else if ( is_histone_chipseq() ) {
-			add_file_to_report( peak_pooled{"macs2"}, "n. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Narrow peak" )
-		}
-		else {
-			add_file_to_table( peak_pooled{"macs2"}, "Peaks/MACS2/Pooled replicate/Narrow peak" )
+		if ( !is_final_stage_signal() ) {
+			if ( peak_caller == "macs2" ) {
+				( gpeak_pooled{"macs2"}, bpeak_pooled{"macs2"} ) = \
+					macs2_chipseq_gpeak_and_bpeak( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, \
+						macs2_pooled_o_dir, "pooled_rep" )
+				add_file_to_report( gpeak_pooled{"macs2"}, "g. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Gapped peak" )
+				add_file_to_report( bpeak_pooled{"macs2"}, "b. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Broad peak" )
+				add_file_to_report( peak_pooled{"macs2"}, "n. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Narrow peak" )
+			}
+			else if ( is_histone_chipseq() ) {
+				add_file_to_report( peak_pooled{"macs2"}, "n. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Narrow peak" )
+			}
+			else {
+				add_file_to_table( peak_pooled{"macs2"}, "Peaks/MACS2/Pooled replicate/Narrow peak" )
+			}
 		}
 		add_file_to_report( fc_bigwig{"pooled"}, "signal fc", "pooled_rep", "Signal tracks/MACS2/Pooled replicate/Fold enrichment" )
 		add_file_to_report( pval_bigwig{"pooled"}, "signal p-val", "pooled_rep", "Signal tracks/MACS2/Pooled replicate/P-value" )
 
 		if ( !true_rep ) {
-			// spp
-			if ( peak_caller == "spp" ) {
-				spp_ppr1_o_dir 	:= mkdir( "$spp_o_dir/pooled_pseudo_reps/ppr1" )
-				spp_ppr2_o_dir 	:= mkdir( "$spp_o_dir/pooled_pseudo_reps/ppr2" )
-				( peak_ppr1{"spp"}, tmp ) = \
-					spp( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, spp_ppr1_o_dir, "ppr1", nth_other )
-				( peak_ppr2{"spp"}, tmp ) = \
-					spp( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, spp_ppr2_o_dir, "ppr2", nth_other )
-				hrchy_ppr1 := "Peaks/SPP/Pooled pseudo-replicates/Pooled pseudo-replicate 1/Region peak"
-				hrchy_ppr2 := "Peaks/SPP/Pooled pseudo-replicates/Pooled pseudo-replicate 2/Region peak"
-				add_file_to_report( peak_ppr1{"spp"}, "r. peak", "ppr1", hrchy_ppr1 )
-				add_file_to_report( peak_ppr2{"spp"}, "r. peak", "ppr2", hrchy_ppr2 )
-			}
-			else if ( peak_caller == "peakseq" ) {
-				peakseq_ppr1_o_dir 	:= mkdir( "$peakseq_o_dir/pooled_pseudo_reps/ppr1" )
-				peakseq_ppr2_o_dir 	:= mkdir( "$peakseq_o_dir/pooled_pseudo_reps/ppr2" )
-				( peak_ppr1{"peakseq"}, tmp ) = \
-					peakseq( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, peakseq_ppr1_o_dir, "ppr1" )
-				( peak_ppr2{"peakseq"}, tmp ) = \
-					peakseq( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, peakseq_ppr2_o_dir, "ppr2" )
-				hrchy_ppr1 := "Peaks/PeakSeq/Pooled pseudo-replicates/Pooled pseudo-replicate 1/Region peak"
-				hrchy_ppr2 := "Peaks/PeakSeq/Pooled pseudo-replicates/Pooled pseudo-replicate 2/Region peak"
-				add_file_to_report( peak_ppr1{"peakseq"}, "r. peak", "ppr1", hrchy_ppr1 )
-				add_file_to_report( peak_ppr2{"peakseq"}, "r. peak", "ppr2", hrchy_ppr2 )
-			}
-			else if ( peak_caller == "gem" ) {
-				gem_ppr1_o_dir 	:= mkdir( "$gem_o_dir/pooled_pseudo_reps/ppr1" )
-				gem_ppr2_o_dir 	:= mkdir( "$gem_o_dir/pooled_pseudo_reps/ppr2" )
-				( peak_ppr1{"gem"}, tmp ) = \
-					gem( tag_ppr1, tag_ctl{"pooled"}, gem_ppr1_o_dir, "ppr1", nth_other )
-				( peak_ppr2{"gem"}, tmp ) = \
-					gem( tag_ppr2, tag_ctl{"pooled"}, gem_ppr2_o_dir, "ppr2", nth_other )
-				hrchy_ppr1 := "Peaks/Gem/Pooled pseudo-replicates/Pooled pseudo-replicate 1/Region peak"
-				hrchy_ppr2 := "Peaks/Gem/Pooled pseudo-replicates/Pooled pseudo-replicate 2/Region peak"
-				add_file_to_report( peak_ppr1{"gem"}, "n. peak", "ppr1", hrchy_ppr1 )
-				add_file_to_report( peak_ppr2{"gem"}, "n. peak", "ppr2", hrchy_ppr2 )
-			}
-
-			// macs2
-			if ( peak_caller == "macs2" || !sig_trk_for_pooled_rep_only ) {
-				macs2_ppr1_o_dir:= mkdir( "$macs2_o_dir/pooled_pseudo_reps/ppr1" )
-				macs2_ppr2_o_dir:= mkdir( "$macs2_o_dir/pooled_pseudo_reps/ppr2" )
-
-				tmp1 := macs2_chipseq_npeak_and_signal( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, false, macs2_ppr1_o_dir, "", "ppr1" )
-				peak_ppr1{"macs2"} = tmp1[0]
-				tmp2 := macs2_chipseq_npeak_and_signal( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, false, macs2_ppr2_o_dir, "", "ppr2" )
-				peak_ppr2{"macs2"} = tmp2[0]
-
-				if ( peak_caller == "macs2" ) {
-					( gpeak_ppr1{"macs2"}, bpeak_ppr1{"macs2"} ) = \
-						macs2_chipseq_gpeak_and_bpeak( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, macs2_ppr1_o_dir, "ppr1" )
-					( gpeak_ppr2{"macs2"}, bpeak_ppr2{"macs2"} ) = \
-						macs2_chipseq_gpeak_and_bpeak( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, macs2_ppr2_o_dir, "ppr2" )
-					add_file_to_report( gpeak_ppr1{"macs2"}, "g. peak", "ppr1", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Gapped peak" )
-					add_file_to_report( gpeak_ppr2{"macs2"}, "g. peak", "ppr2", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Gapped peak" )
-					add_file_to_report( bpeak_ppr1{"macs2"}, "b. peak", "ppr1", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Broad peak" )
-					add_file_to_report( bpeak_ppr2{"macs2"}, "b. peak", "ppr2", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Broad peak" )
-					add_file_to_report( peak_ppr1{"macs2"}, "n. peak", "ppr1", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Narrow peak" )
-					add_file_to_report( peak_ppr2{"macs2"}, "n. peak", "ppr2", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Narrow peak" )
+			if ( !is_final_stage_signal() ) {
+				// spp
+				if ( peak_caller == "spp" ) {
+					spp_ppr1_o_dir 	:= mkdir( "$spp_o_dir/pooled_pseudo_reps/ppr1" )
+					spp_ppr2_o_dir 	:= mkdir( "$spp_o_dir/pooled_pseudo_reps/ppr2" )
+					( peak_ppr1{"spp"}, tmp ) = \
+						spp( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, spp_ppr1_o_dir, "ppr1", nth_other )
+					( peak_ppr2{"spp"}, tmp ) = \
+						spp( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, spp_ppr2_o_dir, "ppr2", nth_other )
+					hrchy_ppr1 := "Peaks/SPP/Pooled pseudo-replicates/Pooled pseudo-replicate 1/Region peak"
+					hrchy_ppr2 := "Peaks/SPP/Pooled pseudo-replicates/Pooled pseudo-replicate 2/Region peak"
+					add_file_to_report( peak_ppr1{"spp"}, "r. peak", "ppr1", hrchy_ppr1 )
+					add_file_to_report( peak_ppr2{"spp"}, "r. peak", "ppr2", hrchy_ppr2 )
 				}
-				else if ( is_histone_chipseq() ) {
-					add_file_to_report( peak_ppr1{"macs2"}, "n. peak", "ppr1", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Narrow peak" )
-					add_file_to_report( peak_ppr2{"macs2"}, "n. peak", "ppr2", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Narrow peak" )
+				else if ( peak_caller == "peakseq" ) {
+					peakseq_ppr1_o_dir 	:= mkdir( "$peakseq_o_dir/pooled_pseudo_reps/ppr1" )
+					peakseq_ppr2_o_dir 	:= mkdir( "$peakseq_o_dir/pooled_pseudo_reps/ppr2" )
+					( peak_ppr1{"peakseq"}, tmp ) = \
+						peakseq( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, peakseq_ppr1_o_dir, "ppr1" )
+					( peak_ppr2{"peakseq"}, tmp ) = \
+						peakseq( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, peakseq_ppr2_o_dir, "ppr2" )
+					hrchy_ppr1 := "Peaks/PeakSeq/Pooled pseudo-replicates/Pooled pseudo-replicate 1/Region peak"
+					hrchy_ppr2 := "Peaks/PeakSeq/Pooled pseudo-replicates/Pooled pseudo-replicate 2/Region peak"
+					add_file_to_report( peak_ppr1{"peakseq"}, "r. peak", "ppr1", hrchy_ppr1 )
+					add_file_to_report( peak_ppr2{"peakseq"}, "r. peak", "ppr2", hrchy_ppr2 )
 				}
-				else {
-					add_file_to_table( peak_ppr1{"macs2"}, \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Narrow peak" )
-					add_file_to_table( peak_ppr2{"macs2"}, \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Narrow peak" )
+				else if ( peak_caller == "gem" ) {
+					gem_ppr1_o_dir 	:= mkdir( "$gem_o_dir/pooled_pseudo_reps/ppr1" )
+					gem_ppr2_o_dir 	:= mkdir( "$gem_o_dir/pooled_pseudo_reps/ppr2" )
+					( peak_ppr1{"gem"}, tmp ) = \
+						gem( tag_ppr1, tag_ctl{"pooled"}, gem_ppr1_o_dir, "ppr1", nth_other )
+					( peak_ppr2{"gem"}, tmp ) = \
+						gem( tag_ppr2, tag_ctl{"pooled"}, gem_ppr2_o_dir, "ppr2", nth_other )
+					hrchy_ppr1 := "Peaks/Gem/Pooled pseudo-replicates/Pooled pseudo-replicate 1/Region peak"
+					hrchy_ppr2 := "Peaks/Gem/Pooled pseudo-replicates/Pooled pseudo-replicate 2/Region peak"
+					add_file_to_report( peak_ppr1{"gem"}, "n. peak", "ppr1", hrchy_ppr1 )
+					add_file_to_report( peak_ppr2{"gem"}, "n. peak", "ppr2", hrchy_ppr2 )
+				}
+
+				// macs2
+				if ( peak_caller == "macs2" || !sig_trk_for_pooled_rep_only ) {
+					macs2_ppr1_o_dir:= mkdir( "$macs2_o_dir/pooled_pseudo_reps/ppr1" )
+					macs2_ppr2_o_dir:= mkdir( "$macs2_o_dir/pooled_pseudo_reps/ppr2" )
+
+					tmp1 := macs2_chipseq_npeak_and_signal( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, false, macs2_ppr1_o_dir, "", "ppr1" )
+					peak_ppr1{"macs2"} = tmp1[0]
+					tmp2 := macs2_chipseq_npeak_and_signal( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, false, macs2_ppr2_o_dir, "", "ppr2" )
+					peak_ppr2{"macs2"} = tmp2[0]
+
+					if ( peak_caller == "macs2" ) {
+						( gpeak_ppr1{"macs2"}, bpeak_ppr1{"macs2"} ) = \
+							macs2_chipseq_gpeak_and_bpeak( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, macs2_ppr1_o_dir, "ppr1" )
+						( gpeak_ppr2{"macs2"}, bpeak_ppr2{"macs2"} ) = \
+							macs2_chipseq_gpeak_and_bpeak( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, macs2_ppr2_o_dir, "ppr2" )
+						add_file_to_report( gpeak_ppr1{"macs2"}, "g. peak", "ppr1", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Gapped peak" )
+						add_file_to_report( gpeak_ppr2{"macs2"}, "g. peak", "ppr2", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Gapped peak" )
+						add_file_to_report( bpeak_ppr1{"macs2"}, "b. peak", "ppr1", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Broad peak" )
+						add_file_to_report( bpeak_ppr2{"macs2"}, "b. peak", "ppr2", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Broad peak" )
+						add_file_to_report( peak_ppr1{"macs2"}, "n. peak", "ppr1", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Narrow peak" )
+						add_file_to_report( peak_ppr2{"macs2"}, "n. peak", "ppr2", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Narrow peak" )
+					}
+					else if ( is_histone_chipseq() ) {
+						add_file_to_report( peak_ppr1{"macs2"}, "n. peak", "ppr1", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Narrow peak" )
+						add_file_to_report( peak_ppr2{"macs2"}, "n. peak", "ppr2", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Narrow peak" )
+					}
+					else {
+						add_file_to_table( peak_ppr1{"macs2"}, \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Narrow peak" )
+						add_file_to_table( peak_ppr2{"macs2"}, \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Narrow peak" )
+					}
 				}
 			}
 		}
@@ -1097,26 +1105,27 @@ void call_peaks() {
 	// call peaks for each replicate and pseudo replicates for it
 	for (int rep=1; rep<=get_num_rep(); rep++) {
 
-		// spp
-		if ( peak_caller == "spp" ) {
-			spp_true_o_dir := mkdir( "$spp_o_dir/rep$rep" )
-			( peak{"spp,$rep"}, tmp ) = \
-				spp( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, spp_true_o_dir, "rep$rep", nth_other )
-			add_file_to_report( peak{"spp,$rep"}, "r. peak", "rep$rep", "Peaks/SPP/Replicate $rep/Region peak" )
+		if ( !is_final_stage_signal() ) {
+			// spp
+			if ( peak_caller == "spp" ) {
+				spp_true_o_dir := mkdir( "$spp_o_dir/rep$rep" )
+				( peak{"spp,$rep"}, tmp ) = \
+					spp( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, spp_true_o_dir, "rep$rep", nth_other )
+				add_file_to_report( peak{"spp,$rep"}, "r. peak", "rep$rep", "Peaks/SPP/Replicate $rep/Region peak" )
+			}
+			else if ( peak_caller == "peakseq" ) {
+				peakseq_true_o_dir := mkdir( "$peakseq_o_dir/rep$rep" )
+				( peak{"peakseq,$rep"}, tmp ) = \
+					peakseq( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, peakseq_true_o_dir, "rep$rep" )
+				add_file_to_report( peak{"peakseq,$rep"}, "r. peak", "rep$rep", "Peaks/PeakSeq/Replicate $rep/Region peak" )
+			}
+			else if ( peak_caller == "gem" ) {
+				gem_true_o_dir	:= mkdir( "$gem_o_dir/rep$rep" )
+				( peak{"gem,$rep"}, tmp ) = \
+					gem( tag{"rep$rep"}, tag_ctl{rep}, gem_true_o_dir, "rep$rep", nth_other )
+				add_file_to_report( peak{"gem,$rep"}, "n. peak", "rep$rep", "Peaks/Gem/Replicate $rep/Region peak" )
+			}
 		}
-		else if ( peak_caller == "peakseq" ) {
-			peakseq_true_o_dir := mkdir( "$peakseq_o_dir/rep$rep" )
-			( peak{"peakseq,$rep"}, tmp ) = \
-				peakseq( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, peakseq_true_o_dir, "rep$rep" )
-			add_file_to_report( peak{"peakseq,$rep"}, "r. peak", "rep$rep", "Peaks/PeakSeq/Replicate $rep/Region peak" )
-		}
-		else if ( peak_caller == "gem" ) {
-			gem_true_o_dir	:= mkdir( "$gem_o_dir/rep$rep" )
-			( peak{"gem,$rep"}, tmp ) = \
-				gem( tag{"rep$rep"}, tag_ctl{rep}, gem_true_o_dir, "rep$rep", nth_other )
-			add_file_to_report( peak{"gem,$rep"}, "n. peak", "rep$rep", "Peaks/Gem/Replicate $rep/Region peak" )
-		}
-
 		// macs2
 		if ( peak_caller == "macs2" || !sig_trk_for_pooled_rep_only ) {
 
@@ -1125,19 +1134,20 @@ void call_peaks() {
 
 			( peak{"macs2,$rep"}, fc_bigwig{rep}, pval_bigwig{rep} ) = \
 				macs2_chipseq_npeak_and_signal( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, true, macs2_true_o_dir, macs2_true_sig_dir, "rep$rep" )
-
-			if ( peak_caller == "macs2" ) {
-				( gpeak{"macs2,$rep"}, bpeak{"macs2,$rep"} ) = \
-					macs2_chipseq_gpeak_and_bpeak( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, macs2_true_o_dir, "rep$rep" )
-				add_file_to_report( gpeak{"macs2,$rep"}, "g. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Gapped peak" )
-				add_file_to_report( bpeak{"macs2,$rep"}, "b. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Broad peak" )
-				add_file_to_report( peak{"macs2,$rep"}, "n. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Narrow peak" )
-			}
-			else if ( is_histone_chipseq() ) {
-				add_file_to_report( peak{"macs2,$rep"}, "n. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Narrow peak" )
-			}
-			else {
-				add_file_to_table( peak{"macs2,$rep"}, "Peaks/MACS2/Replicate $rep/Narrow peak" )
+			if ( !is_final_stage_signal() ) {
+				if ( peak_caller == "macs2" ) {
+					( gpeak{"macs2,$rep"}, bpeak{"macs2,$rep"} ) = \
+						macs2_chipseq_gpeak_and_bpeak( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, macs2_true_o_dir, "rep$rep" )
+					add_file_to_report( gpeak{"macs2,$rep"}, "g. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Gapped peak" )
+					add_file_to_report( bpeak{"macs2,$rep"}, "b. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Broad peak" )
+					add_file_to_report( peak{"macs2,$rep"}, "n. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Narrow peak" )
+				}
+				else if ( is_histone_chipseq() ) {
+					add_file_to_report( peak{"macs2,$rep"}, "n. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Narrow peak" )
+				}
+				else {
+					add_file_to_table( peak{"macs2,$rep"}, "Peaks/MACS2/Replicate $rep/Narrow peak" )
+				}
 			}
 			add_file_to_report( fc_bigwig{rep}, "signal fc", "rep$rep", "Signal tracks/MACS2/Replicate $rep/Fold enrichment" )
 			add_file_to_report( pval_bigwig{rep}, "signal p-val", "rep$rep", "Signal tracks/MACS2/Replicate $rep/P-value" )
@@ -1147,87 +1157,90 @@ void call_peaks() {
 
 			if ( !no_pseudo_rep ) {
 
-				if ( peak_caller == "spp" ) {
-					spp_pr1_o_dir 	:= mkdir( "$spp_o_dir/pseudo_reps/rep$rep/pr1" )
-					spp_pr2_o_dir 	:= mkdir( "$spp_o_dir/pseudo_reps/rep$rep/pr2" )
-					( peak_pr1{"spp,$rep"}, tmp ) = \
-						spp( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, spp_pr1_o_dir, \
-										"rep$rep-pr1", nth_other )
-					( peak_pr2{"spp,$rep"}, tmp ) = \
-						spp( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, spp_pr2_o_dir, \
-										"rep$rep-pr2", nth_other )
-					add_file_to_report( peak_pr1{"spp,$rep"}, "r. peak", "rep$rep-pr1", \
-								"Peaks/SPP/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Region peak" )
-					add_file_to_report( peak_pr2{"spp,$rep"}, "r. peak", "rep$rep-pr2", \
-								"Peaks/SPP/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Region peak" )
-				}
-				else if ( peak_caller == "peakseq" ) {
-					peakseq_pr1_o_dir 	:= mkdir( "$peakseq_o_dir/pseudo_reps/rep$rep/pr1" )
-					peakseq_pr2_o_dir 	:= mkdir( "$peakseq_o_dir/pseudo_reps/rep$rep/pr2" )
-					( peak_pr1{"peakseq,$rep"}, tmp ) = \
-						peakseq( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, peakseq_pr1_o_dir, \
-										"rep$rep-pr1" )
-					( peak_pr2{"peakseq,$rep"}, tmp ) = \
-						peakseq( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, peakseq_pr2_o_dir, \
-										"rep$rep-pr2" )
-					add_file_to_report( peak_pr1{"peakseq,$rep"}, "r. peak", "rep$rep-pr1", \
-								"Peaks/peakseq/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Region peak" )
-					add_file_to_report( peak_pr2{"peakseq,$rep"}, "r. peak", "rep$rep-pr2", \
-								"Peaks/peakseq/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Region peak" )
-				}
-				else if ( peak_caller == "gem" ) {
-					gem_pr1_o_dir 	:= mkdir( "$gem_o_dir/pseudo_reps/rep$rep/pr1" )
-					gem_pr2_o_dir 	:= mkdir( "$gem_o_dir/pseudo_reps/rep$rep/pr2" )
-					( peak_pr1{"gem,$rep"}, tmp ) = \
-						gem( tag_pr1{"rep$rep"}, tag_ctl{rep}, gem_pr1_o_dir, \
-										"rep$rep-pr1", nth_other )
-					( peak_pr2{"gem,$rep"}, tmp ) = \
-						gem( tag_pr2{"rep$rep"}, tag_ctl{rep}, gem_pr2_o_dir, \
-										"rep$rep-pr2", nth_other )
-					add_file_to_report( peak_pr1{"gem,$rep"}, "n. peak", "rep$rep-pr1", \
-								"Peaks/gem/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Region peak" )
-					add_file_to_report( peak_pr2{"gem,$rep"}, "n. peak", "rep$rep-pr2", \
-								"Peaks/gem/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Region peak" )
-				}
+				if ( !is_final_stage_signal() ) {
 
-				if ( peak_caller == "macs2" || !sig_trk_for_pooled_rep_only ) {
-
-					macs2_pr1_o_dir := mkdir( "$macs2_o_dir/pseudo_reps/rep$rep/pr1" )
-					macs2_pr2_o_dir := mkdir( "$macs2_o_dir/pseudo_reps/rep$rep/pr2" )
-
-					tmp1 := macs2_chipseq_npeak_and_signal( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, macs2_pr1_o_dir, "", "rep$rep-pr1" )
-					peak_pr1{"macs2,$rep"} = tmp1[0]
-					tmp2 := macs2_chipseq_npeak_and_signal( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, macs2_pr2_o_dir, "", "rep$rep-pr2" )
-					peak_pr2{"macs2,$rep"} = tmp2[0]
-					if ( peak_caller == "macs2" ) {
-						( gpeak_pr1{"macs2,$rep"}, bpeak_pr1{"macs2,$rep"} ) = \
-							macs2_chipseq_gpeak_and_bpeak( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, macs2_pr1_o_dir, "rep$rep-pr1" )
-						( gpeak_pr2{"macs2,$rep"}, bpeak_pr2{"macs2,$rep"} ) = \
-							macs2_chipseq_gpeak_and_bpeak( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, macs2_pr2_o_dir, "rep$rep-pr2" )
-						add_file_to_report( gpeak_pr1{"macs2,$rep"}, "g. peak", "rep$rep-pr1", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Gapped peak" )
-						add_file_to_report( gpeak_pr2{"macs2,$rep"}, "g. peak", "rep$rep-pr2", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Gapped peak" )
-						add_file_to_report( bpeak_pr1{"macs2,$rep"}, "b. peak", "rep$rep-pr1", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Broad peak" )
-						add_file_to_report( bpeak_pr2{"macs2,$rep"}, "b. peak", "rep$rep-pr2", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Broad peak" )
-						add_file_to_report( peak_pr1{"macs2,$rep"}, "n. peak", "rep$rep-pr1", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Narrow peak" )
-						add_file_to_report( peak_pr2{"macs2,$rep"}, "n. peak", "rep$rep-pr2", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Narrow peak" )
+					if ( peak_caller == "spp" ) {
+						spp_pr1_o_dir 	:= mkdir( "$spp_o_dir/pseudo_reps/rep$rep/pr1" )
+						spp_pr2_o_dir 	:= mkdir( "$spp_o_dir/pseudo_reps/rep$rep/pr2" )
+						( peak_pr1{"spp,$rep"}, tmp ) = \
+							spp( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, spp_pr1_o_dir, \
+											"rep$rep-pr1", nth_other )
+						( peak_pr2{"spp,$rep"}, tmp ) = \
+							spp( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, spp_pr2_o_dir, \
+											"rep$rep-pr2", nth_other )
+						add_file_to_report( peak_pr1{"spp,$rep"}, "r. peak", "rep$rep-pr1", \
+									"Peaks/SPP/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Region peak" )
+						add_file_to_report( peak_pr2{"spp,$rep"}, "r. peak", "rep$rep-pr2", \
+									"Peaks/SPP/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Region peak" )
 					}
-					else if ( is_histone_chipseq() ) {
-						add_file_to_report( peak_pr1{"macs2,$rep"}, "n. peak", "rep$rep-pr1", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Narrow peak" )
-						add_file_to_report( peak_pr2{"macs2,$rep"}, "n. peak", "rep$rep-pr2", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Narrow peak" )
+					else if ( peak_caller == "peakseq" ) {
+						peakseq_pr1_o_dir 	:= mkdir( "$peakseq_o_dir/pseudo_reps/rep$rep/pr1" )
+						peakseq_pr2_o_dir 	:= mkdir( "$peakseq_o_dir/pseudo_reps/rep$rep/pr2" )
+						( peak_pr1{"peakseq,$rep"}, tmp ) = \
+							peakseq( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, peakseq_pr1_o_dir, \
+											"rep$rep-pr1" )
+						( peak_pr2{"peakseq,$rep"}, tmp ) = \
+							peakseq( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, peakseq_pr2_o_dir, \
+											"rep$rep-pr2" )
+						add_file_to_report( peak_pr1{"peakseq,$rep"}, "r. peak", "rep$rep-pr1", \
+									"Peaks/peakseq/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Region peak" )
+						add_file_to_report( peak_pr2{"peakseq,$rep"}, "r. peak", "rep$rep-pr2", \
+									"Peaks/peakseq/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Region peak" )
 					}
-					else {
-						add_file_to_table( peak_pr1{"macs2,$rep"}, \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Narrow peak" )
-						add_file_to_table( peak_pr2{"macs2,$rep"}, \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Narrow peak" )
+					else if ( peak_caller == "gem" ) {
+						gem_pr1_o_dir 	:= mkdir( "$gem_o_dir/pseudo_reps/rep$rep/pr1" )
+						gem_pr2_o_dir 	:= mkdir( "$gem_o_dir/pseudo_reps/rep$rep/pr2" )
+						( peak_pr1{"gem,$rep"}, tmp ) = \
+							gem( tag_pr1{"rep$rep"}, tag_ctl{rep}, gem_pr1_o_dir, \
+											"rep$rep-pr1", nth_other )
+						( peak_pr2{"gem,$rep"}, tmp ) = \
+							gem( tag_pr2{"rep$rep"}, tag_ctl{rep}, gem_pr2_o_dir, \
+											"rep$rep-pr2", nth_other )
+						add_file_to_report( peak_pr1{"gem,$rep"}, "n. peak", "rep$rep-pr1", \
+									"Peaks/gem/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Region peak" )
+						add_file_to_report( peak_pr2{"gem,$rep"}, "n. peak", "rep$rep-pr2", \
+									"Peaks/gem/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Region peak" )
+					}
+
+					if ( peak_caller == "macs2" || !sig_trk_for_pooled_rep_only ) {
+
+						macs2_pr1_o_dir := mkdir( "$macs2_o_dir/pseudo_reps/rep$rep/pr1" )
+						macs2_pr2_o_dir := mkdir( "$macs2_o_dir/pseudo_reps/rep$rep/pr2" )
+
+						tmp1 := macs2_chipseq_npeak_and_signal( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, false, macs2_pr1_o_dir, "", "rep$rep-pr1" )
+						peak_pr1{"macs2,$rep"} = tmp1[0]
+						tmp2 := macs2_chipseq_npeak_and_signal( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, macs2_pr2_o_dir, "", "rep$rep-pr2" )
+						peak_pr2{"macs2,$rep"} = tmp2[0]
+						if ( peak_caller == "macs2" ) {
+							( gpeak_pr1{"macs2,$rep"}, bpeak_pr1{"macs2,$rep"} ) = \
+								macs2_chipseq_gpeak_and_bpeak( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, macs2_pr1_o_dir, "rep$rep-pr1" )
+							( gpeak_pr2{"macs2,$rep"}, bpeak_pr2{"macs2,$rep"} ) = \
+								macs2_chipseq_gpeak_and_bpeak( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, macs2_pr2_o_dir, "rep$rep-pr2" )
+							add_file_to_report( gpeak_pr1{"macs2,$rep"}, "g. peak", "rep$rep-pr1", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Gapped peak" )
+							add_file_to_report( gpeak_pr2{"macs2,$rep"}, "g. peak", "rep$rep-pr2", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Gapped peak" )
+							add_file_to_report( bpeak_pr1{"macs2,$rep"}, "b. peak", "rep$rep-pr1", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Broad peak" )
+							add_file_to_report( bpeak_pr2{"macs2,$rep"}, "b. peak", "rep$rep-pr2", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Broad peak" )
+							add_file_to_report( peak_pr1{"macs2,$rep"}, "n. peak", "rep$rep-pr1", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Narrow peak" )
+							add_file_to_report( peak_pr2{"macs2,$rep"}, "n. peak", "rep$rep-pr2", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Narrow peak" )
+						}
+						else if ( is_histone_chipseq() ) {
+							add_file_to_report( peak_pr1{"macs2,$rep"}, "n. peak", "rep$rep-pr1", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Narrow peak" )
+							add_file_to_report( peak_pr2{"macs2,$rep"}, "n. peak", "rep$rep-pr2", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Narrow peak" )
+						}
+						else {
+							add_file_to_table( peak_pr1{"macs2,$rep"}, \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Narrow peak" )
+							add_file_to_table( peak_pr2{"macs2,$rep"}, \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Narrow peak" )
+						}
 					}
 				}
 			}
@@ -1753,6 +1766,11 @@ bool is_final_stage_xcor() {
 	return final_stage.toLower() == "xcor"
 }
 
+bool is_final_stage_signal() {
+
+	return final_stage.toLower() == "signal"
+}
+
 bool is_final_stage_peak() {
 
 	return final_stage.toLower() == "peak"
@@ -1765,7 +1783,8 @@ bool is_final_stage_idr() {
 
 bool is_final_stage_before_peak() {
 
-	return is_final_stage_bam() || is_final_stage_filt_bam() || is_final_stage_tag() || is_final_stage_xcor()
+	return is_final_stage_bam() || is_final_stage_filt_bam() || is_final_stage_tag() || is_final_stage_xcor() \
+		|| is_final_stage_signal()
 }
 
 bool is_final_stage_after_xcor() {

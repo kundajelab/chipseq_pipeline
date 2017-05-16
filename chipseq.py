@@ -34,7 +34,7 @@ def get_default_param_dict(): # this is not ordered
     return {
         "screen"        : { "_order_" : -13, "_default_" : "", "_help_" : "Create a screen with name [SCREEN].BDS and attach BDS pipeline to it. STDOUT/STDERR will be redirected to [SCREEN].log on the working directory." },
         "type"          : { "_order_" : -12, "_default_" : "TF", "_choices_" : ["TF","histone"], "_help_" : "Type of ChIP-Seq pipeline." },
-        "final_stage"   : { "_order_" : -11, "_default_" : "idr", "_choices_" : ["bam", "filt_bam", "tag", "xcor", "peak", "idr"], "_help_" : "Final stage for pipeline." },
+        "final_stage"   : { "_order_" : -11, "_default_" : "idr", "_choices_" : ["bam", "filt_bam", "tag", "xcor", "signal", "peak", "idr"], "_help_" : "Final stage for pipeline." },
         "out_dir"       : { "_order_" : -10, "_default_" : "out", "_help_" : "Output directory." },
         "title"         : { "_order_" : -9,  "_default_" : "", "_help_" : "Prefix for HTML report and outputs without given prefix." },
         "dry_run"       : { "_order_" : -8,  "_default_" : False, "_help_" : "Dry-run." },
