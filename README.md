@@ -237,7 +237,7 @@ Press Ctrl + C on a terminal or send any kind of kill signals to it. Please note
 
 ## Running pipelines with a cluster engine
 
-On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose `[CLUSTER_ENGINE]` between `sge` (default on Kundaje clusters and SCG4), `slurm` (default on Sherlock) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
+On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose `[CLUSTER_ENGINE]` between `sge` (default on Kundaje clusters and SCG4), `slurm` (default on Sherlock) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue/partition `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
 
 ```
 $ python chipseq.py -system [CLUSTER_ENGINE] ...
@@ -246,18 +246,18 @@ $ python chipseq.py -system [CLUSTER_ENGINE] -q [QUEUE_NAME] ...
 
 **IMPORTANT!** Please read this section carefully if you run pipelines on Stanford SCG4 and Sherlock cluster.
 
-To run more than 50 pipelines, most clusters have a policy to limit number of threads and memory per user on a login node. One BDS process, as a Java-based task manager, takes up to 500MB of memory and 50 threads even though it just submits/monitors subtasks. So if you want to run more than 50 pipelines in parallel, your cluster will kill BDS processes due to resource limit on a login node (check resource limit per user with `ulimit -a`). For example of 50 pipelines, 25 GB of memory and 2500 threads will be taken by 50 BDS processes. So the Workaround for this is to make an interactive node to keep all BDS processes alive. Such interactive node must have long walltime enough to wait for all pipelines in it to finish. Recommended resource settings are 0.05 cpu and 0.5GB memory per pipeline.
+Most clusters have a policy to limit number of threads and memory per user on a login node. One BDS process, as a Java-based task manager, takes up to 1GB of memory and 50 threads even though it just submits/monitors subtasks. So if you want to run more than 50 pipelines in parallel, your cluster will kill BDS processes due to resource limit on a login node (check resource limit per user with `ulimit -a`). For example of 50 pipelines, 50 GB of memory and 2500 threads will be taken by 50 BDS processes. So the Workaround for this is to make an interactive node to keep all BDS processes alive. Such interactive node must have long walltime enough to wait for all pipelines in it to finish. Recommended resource setting is 0.5GB memory per pipeline.
 
-SGE example to make an interactive node for 100 pipelines: 5 cpus, 50GB memory, 3 days walltime. For SCG4, `[PARALLEL_ENV] = shm`.
-
-```
-$ qlogin -l h_rt=72:00:00 -l h_vmem=50G -pe [PARALLEL_ENV] 5
-```
-
-SLURM example to make an interactive node for 100 pipelines: 5 cpus, 50GB memory, 3 days walltime.
+SGE example to make an interactive node for 100 pipelines: 1 cpu, 100GB memory, 3 days walltime.
 
 ```
-$ srun -n 5 -m 50G -t 3-0 -p [YOUR_PARTITON]
+$ qlogin -l h_rt=72:00:00 -l h_vmem=100G
+```
+
+SLURM example to make an interactive node for 100 pipelines: 1 cpus, 100GB memory, 3 days walltime.
+
+```
+$ srun -n 1 --mem 100G -t 3-0 -p [YOUR_PARTITON] --qos normal --pty /bin/bash -i -l 
 ```
 
 Once you get an interactive node, repeat the following commands per sample to run a pipeline.
