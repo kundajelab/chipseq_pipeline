@@ -30,7 +30,6 @@ fi
 
 GENOME=$1
 DATA_DIR=$(readlink -f $2)
-echo $DATA_DIR
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SPECIES_FILE=${DATA_DIR}/${SPECIES_FILE_BASENAME}
 echo 
@@ -62,6 +61,7 @@ elif [ $GENOME == "mm9" ]; then
   DNASE="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_univ_dhs_ucsc.from_mm10.bed.gz"
   PROM="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/tss_mm9_master.from_mm10.bed.gz"
   ENH="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_enh_dhs_ucsc.from_mm10.bed.gz"
+  REG2MAP_BED="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_dhs_universal_ucsc_v1.bed.gz"
   REG2MAP="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/dnase_avgs_merged_named.fseq.vals.gz"
   ROADMAP_META="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/accession_to_name.txt"
 
@@ -105,7 +105,6 @@ elif [ $GENOME == "dm3" ]; then
 elif [ $GENOME == "pantro5" ]; then
 
   REF_FA="http://hgdownload.cse.ucsc.edu/goldenPath/panTro5/bigZips/panTro5.fa.gz"
-
 fi
 
 ## show warning
