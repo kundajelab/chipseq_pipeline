@@ -404,6 +404,18 @@ $ screen -X -S [SCREEN_NAME] quit
 $ kill_scr [SCREEN_NAME]
 ```
 
+## Java issues (memory and temporary directory)
+
+Picard tools is used for marking dupes in the reads and it's based on Java. If you see any Java heap space errors then increase memory limit for Java with `-mem_dedup [MEM]` (default: `12G`).
+
+If your `/tmp` quickly fills up and you want to change temporary directory for all Java apps in the pipeline, then add the following line to your bash startup script (`$HOME/.bashrc`). Our pipeline takes in `$TMPDIR` (not `$TMP`) for all Java apps.
+
+```
+export TMPDIR=/your/temp/dir/
+```
+
+Another quick workaround for dealing with Java issues is not to use Picard tools in the pipeline. Add `-use_sambamba_markdup` to your command line and then you can use `sambamba markdup` instead of `picard markdup`.
+
 ## How to customize genome data installer?
 
 Please refer to the section `Installer for genome data` on [BDS pipeline programming](https://kundajelab.github.io/bds_pipeline_modules/programming.html).
