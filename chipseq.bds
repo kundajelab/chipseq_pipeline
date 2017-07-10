@@ -27,6 +27,7 @@ true_rep   	:= false	help Call peaks on true replicates only.
 no_pseudo_rep	:= false 	help Do not call peaks on self pseudo replicates.
 no_xcor 	:= false 	help Disable cross-correlation analysis.
 no_gpeak_filt 	:= false 	help Disable gapped peak filtering through narrow peak (for histone ChIP-Seq only).
+no_browser_tracks := false 	help Disable generation of genome browser tracks (workaround for bzip2 shared library issue).
 
 help() // print help and exit if no parameters are given
 
@@ -136,6 +137,7 @@ void read_conf_chipseq() {
 	no_pseudo_rep	= get_conf_val_bool( no_pseudo_rep, 	["no_pseudo_rep"] )
 	no_xcor		= get_conf_val_bool( no_xcor, 		["no_xcor"] )
 	no_gpeak_filt	= get_conf_val_bool( no_gpeak_filt, 	["no_gpeak_filt"] )
+	no_browser_tracks = get_conf_val_bool( no_browser_tracks,	["no_browser_tracks"] )
 
 	check_peak_caller_valid()		
 	check_aligner_valid()		
@@ -183,6 +185,7 @@ void read_conf_chipseq() {
 	print( "No peak calling for self pseudo reps\t: $no_pseudo_rep\n" )
 	print( "Disable cross-correlation analysis\t: $no_xcor\n" )
 	print( "Disable g. peak filt. thru. n. peak\t: $no_gpeak_filt\n" )
+	print( "Disable genome browser tracks\t: $no_browser_tracks\n" )	
 }
 
 void init_filetable() { // init file table labels in HTML report
@@ -1691,6 +1694,7 @@ string html_chipseq_QC() {
 }
 
 string html_chipseq_tracks() {
+	if ( no_browser_tracks ) return ""
 
 	string[] trk_files, trk_types, trk_names, trk_colors
 	string color

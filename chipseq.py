@@ -204,7 +204,8 @@ def get_default_param_dict(): # this is not ordered
                                         data files. A browser session JSON file must have absolute URLs when it's generated. Therefore, the pipeline needs to have \
                                         equivalent URL for the output directory ('-out_dir').",
             "url_base" :        { "_order_" : 0, "_default_" : "", "_help_" : "Equivalent URL address for your output directory (-out_dir)." },
-            "viz_genome_coord" :{ "_order_" : 1, "_default_" : "", "_help_" : "WashU genome browser genome coordinate (e.g. chr7:27117661-27153380)." }
+            "viz_genome_coord" :{ "_order_" : 1, "_default_" : "", "_help_" : "WashU genome browser genome coordinate (e.g. chr7:27117661-27153380)." },
+            "no_browser_tracks" :{ "_order_" : 2, "_default_" : False, "_help_" : "Disable generation of genome browser tracks (workaround for bzip2 shared library issue)." }
         },
 
         "ENCODE_accession" : { "_order_" : 8, "_group_desc_" : "Parameters needed to generate input spreadsheets for ENCODE accession.",
