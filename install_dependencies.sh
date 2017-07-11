@@ -15,9 +15,8 @@ INSTALL_PEAKSEQ=1
 
 ## install packages from official channels (bioconda and r)
 
-conda create -n ${ENV_NAME} --file requirements.txt -y -c daler -c asmeurer -c defaults -c bioconda -c r
-conda create -n ${ENV_NAME_PY3} --file requirements_py3.txt -y -c daler -c asmeurer -c defaults -c bioconda -c r
-
+conda create -n ${ENV_NAME} --file requirements.txt -y -c defaults -c bioconda -c r -c bcbio -c daler -c asmeurer
+conda create -n ${ENV_NAME_PY3} --file requirements_py3.txt -y -c defaults -c bioconda -c r -c bcbio -c daler -c asmeurer
 
 ### bash function definition
 
@@ -46,6 +45,7 @@ conda uninstall graphviz -y # graphviz in bioconda has segmentation fault bug
 conda install graphviz -c anaconda -y
 
 conda install ucsc-bedgraphtobigwig -c bioconda -y
+conda install ucsc-bedtobigbed -c bioconda -y
 
 CONDA_BIN=$(dirname $(which activate))
 CONDA_EXTRA="$CONDA_BIN/../extra"
@@ -56,8 +56,6 @@ if [[ $(find $CONDA_LIB -name '*egg-info*' -not -perm -o+r | wc -l ) > 0 ]]; the
   find $CONDA_LIB -name '*egg-info*' -not -perm -o+r -exec dirname {} \; | xargs chmod o+r -R
 fi
 
-
-
 mkdir -p $CONDA_EXTRA $CONDA_ACTIVATE_D
 
 ### install Anshul's phantompeakqualtool
@@ -65,6 +63,10 @@ cd $CONDA_EXTRA
 git clone https://github.com/kundajelab/phantompeakqualtools
 chmod 755 -R phantompeakqualtools
 CONTENTS=("export PATH=$CONDA_EXTRA/phantompeakqualtools:\$PATH")
+add_to_activate
+
+### disable locally installed python package lookup
+CONTENTS=("export PYTHONNOUSERSITE=True")
 add_to_activate
 
 if [ ${INSTALL_WIGGLER_AND_MCR} == 1 ]; then
