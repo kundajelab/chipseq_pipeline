@@ -2,7 +2,7 @@
 
 bwa ==0.7.13
 samtools ==1.2 # 0.1.19
-htslib # bgzip and tabix not included in new samtools
+htslib ==1.4 # 1.5 in bioconda needed libbz2.so.1.0
 bedtools ==2.26.0 #2.19.1
 ucsc-fetchchromsizes
 ucsc-wigtobigwig
