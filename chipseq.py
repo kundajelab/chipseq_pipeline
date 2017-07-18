@@ -96,7 +96,7 @@ def get_default_param_dict(): # this is not ordered
         "resource" : { "_order_" : 1, "_group_desc_" : "System resource and parallelization settings. '-nth' is the most important parameter to parallelize a pipeline. You can specify \
                                                         resource limit for the cluster engine for each task. '-wt' and '-memory' are for all other jobs not \
                                                         specified here ",
-            "nth"         : { "_order_" : 0, "_default_" : 8, "_help_" : "Maximum number of threads for a pipeline." },
+            "nth"         : { "_order_" : 0, "_default_" : 4, "_help_" : "Maximum number of threads for a pipeline." },
             "no_par"      : { "_order_" : 1, "_default_" : False, "_help_" : "Serialize all tasks (individual tasks can still use multiple threads up to '-nth')." },
             "wt"          : { "_order_" : 2, "_default_" : "5h50m", "_help_" : "Walltime for all single-threaded tasks (example: 8:10:00, 3h, 3600)." },
             "memory"      : { "_order_" : 3, "_default_" : "7G", "_help_" : "Maximum memory for all single-threaded tasks (equivalent to '-mem', example: 4.5G, 1024M)." },

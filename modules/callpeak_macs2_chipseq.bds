@@ -157,7 +157,6 @@ string[] macs2_chipseq_gpeak_and_bpeak( string tag, string ctl_tag, string frag_
 						: replace_dir( rm_ext( tag, "tagAlign" ), peak_o_dir )
 	bpeakfile	:= "$prefix.broadPeak.gz"
 	gpeakfile	:= "$prefix.gappedPeak.gz"
-	prefix_basename	:= get_basename( prefix )
 	extsize_param 	:= extsize_macs2 > -1 ? "--extsize $extsize_macs2" : "--extsize $frag_len"
 	// macs2 params with or w/o control
 	ctl 	:= (ctl_tag != "") ? "-c $ctl_tag" : ""
@@ -178,17 +177,20 @@ string[] macs2_chipseq_gpeak_and_bpeak( string tag, string ctl_tag, string frag_
 		//===========================================
 		//# Generate Broad and Gapped Peaks
 		//============================================
-		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --broad --nomodel --shift $shift_macs2 $extsize_param --keep-dup $keep_dup_macs2 $extra_param_macs2
+		// .tmp is to prevent file race condition with macs2_chipseq_npeak_and_signal
+		sys macs2 callpeak -t $tag $ctl -f BED -n $prefix.tmp \
+			-g $gensz -p $pval_thresh_macs2 --broad --nomodel --shift $shift_macs2 $extsize_param \
+			--keep-dup $keep_dup_macs2 $extra_param_macs2
 
 		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr "$prefix"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $bpeakfile
-		sys sort -k 14gr,14gr "$prefix"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $gpeakfile
+		sys sort -k 8gr,8gr "$prefix.tmp"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $bpeakfile
+		sys sort -k 14gr,14gr "$prefix.tmp"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $gpeakfile
 
 		//# remove additional files
-		sys rm -f "$prefix"_peaks.xls \
-		  "$prefix"_peaks.broadPeak \
-		  "$prefix"_peaks.gappedPeak \
-		  "$prefix"_summits.bed
+		sys rm -f "$prefix.tmp"_peaks.xls \
+		  "$prefix.tmp"_peaks.broadPeak \
+		  "$prefix.tmp"_peaks.gappedPeak \
+		  "$prefix.tmp"_summits.bed
 
 		sys $shcmd_finalize
 	}

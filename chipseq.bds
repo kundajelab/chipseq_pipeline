@@ -29,6 +29,8 @@ no_xcor 	:= false 	help Disable cross-correlation analysis.
 no_gpeak_filt 	:= false 	help Disable gapped peak filtering through narrow peak (for histone ChIP-Seq only).
 no_browser_tracks := false 	help Disable generation of genome browser tracks (workaround for bzip2 shared library issue).
 
+disable_gb_peak := true // disable gapped/broad peak generation
+
 help() // print help and exit if no parameters are given
 
 include "modules/pipeline_template.bds"
@@ -998,11 +1000,13 @@ void call_peaks() {
 				macs2_chipseq_npeak_and_signal( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, \
 				true, macs2_pooled_o_dir, macs2_pooled_sig_o_dir, "pooled_rep" )
 		if ( peak_caller == "macs2" ) {
-			( gpeak_pooled{"macs2"}, bpeak_pooled{"macs2"} ) = \
-				macs2_chipseq_gpeak_and_bpeak( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, \
-					macs2_pooled_o_dir, "pooled_rep" )
-			add_file_to_report( gpeak_pooled{"macs2"}, "g. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Gapped peak" )
-			add_file_to_report( bpeak_pooled{"macs2"}, "b. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Broad peak" )
+			if ( !disable_gb_peak ) {
+				( gpeak_pooled{"macs2"}, bpeak_pooled{"macs2"} ) = \
+					macs2_chipseq_gpeak_and_bpeak( tag{"pooled_rep"}, tag_ctl{"pooled"}, fraglen_mean, \
+						macs2_pooled_o_dir, "pooled_rep" )
+				add_file_to_report( gpeak_pooled{"macs2"}, "g. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Gapped peak" )
+				add_file_to_report( bpeak_pooled{"macs2"}, "b. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Broad peak" )
+			}
 			add_file_to_report( peak_pooled{"macs2"}, "n. peak", "pooled_rep", "Peaks/MACS2/Pooled replicate/Narrow peak" )
 		}
 		else if ( is_histone_chipseq() ) {
@@ -1064,18 +1068,20 @@ void call_peaks() {
 				peak_ppr2{"macs2"} = tmp2[0]
 
 				if ( peak_caller == "macs2" ) {
-					( gpeak_ppr1{"macs2"}, bpeak_ppr1{"macs2"} ) = \
-						macs2_chipseq_gpeak_and_bpeak( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, macs2_ppr1_o_dir, "ppr1" )
-					( gpeak_ppr2{"macs2"}, bpeak_ppr2{"macs2"} ) = \
-						macs2_chipseq_gpeak_and_bpeak( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, macs2_ppr2_o_dir, "ppr2" )
-					add_file_to_report( gpeak_ppr1{"macs2"}, "g. peak", "ppr1", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Gapped peak" )
-					add_file_to_report( gpeak_ppr2{"macs2"}, "g. peak", "ppr2", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Gapped peak" )
-					add_file_to_report( bpeak_ppr1{"macs2"}, "b. peak", "ppr1", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Broad peak" )
-					add_file_to_report( bpeak_ppr2{"macs2"}, "b. peak", "ppr2", \
-						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Broad peak" )
+					if ( !disable_gb_peak ) {
+						( gpeak_ppr1{"macs2"}, bpeak_ppr1{"macs2"} ) = \
+							macs2_chipseq_gpeak_and_bpeak( tag_ppr1, tag_ctl{"pooled"}, fraglen_ppr1, macs2_ppr1_o_dir, "ppr1" )
+						( gpeak_ppr2{"macs2"}, bpeak_ppr2{"macs2"} ) = \
+							macs2_chipseq_gpeak_and_bpeak( tag_ppr2, tag_ctl{"pooled"}, fraglen_ppr2, macs2_ppr2_o_dir, "ppr2" )
+						add_file_to_report( gpeak_ppr1{"macs2"}, "g. peak", "ppr1", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Gapped peak" )
+						add_file_to_report( gpeak_ppr2{"macs2"}, "g. peak", "ppr2", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Gapped peak" )
+						add_file_to_report( bpeak_ppr1{"macs2"}, "b. peak", "ppr1", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Broad peak" )
+						add_file_to_report( bpeak_ppr2{"macs2"}, "b. peak", "ppr2", \
+							"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 2/Broad peak" )
+					}
 					add_file_to_report( peak_ppr1{"macs2"}, "n. peak", "ppr1", \
 						"Peaks/MACS2/Pooled pseudo-replicate/Pooled pseudo-replicate 1/Narrow peak" )
 					add_file_to_report( peak_ppr2{"macs2"}, "n. peak", "ppr2", \
@@ -1130,10 +1136,12 @@ void call_peaks() {
 				macs2_chipseq_npeak_and_signal( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, true, macs2_true_o_dir, macs2_true_sig_dir, "rep$rep" )
 
 			if ( peak_caller == "macs2" ) {
-				( gpeak{"macs2,$rep"}, bpeak{"macs2,$rep"} ) = \
-					macs2_chipseq_gpeak_and_bpeak( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, macs2_true_o_dir, "rep$rep" )
-				add_file_to_report( gpeak{"macs2,$rep"}, "g. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Gapped peak" )
-				add_file_to_report( bpeak{"macs2,$rep"}, "b. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Broad peak" )
+				if ( !disable_gb_peak ) {
+					( gpeak{"macs2,$rep"}, bpeak{"macs2,$rep"} ) = \
+						macs2_chipseq_gpeak_and_bpeak( tag{"rep$rep"}, tag_ctl{rep}, fraglen_true{rep}, macs2_true_o_dir, "rep$rep" )
+					add_file_to_report( gpeak{"macs2,$rep"}, "g. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Gapped peak" )
+					add_file_to_report( bpeak{"macs2,$rep"}, "b. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Broad peak" )
+				}
 				add_file_to_report( peak{"macs2,$rep"}, "n. peak", "rep$rep", "Peaks/MACS2/Replicate $rep/Narrow peak" )
 			}
 			else if ( is_histone_chipseq() ) {
@@ -1203,18 +1211,20 @@ void call_peaks() {
 					tmp2 := macs2_chipseq_npeak_and_signal( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, false, macs2_pr2_o_dir, "", "rep$rep-pr2" )
 					peak_pr2{"macs2,$rep"} = tmp2[0]
 					if ( peak_caller == "macs2" ) {
-						( gpeak_pr1{"macs2,$rep"}, bpeak_pr1{"macs2,$rep"} ) = \
-							macs2_chipseq_gpeak_and_bpeak( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, macs2_pr1_o_dir, "rep$rep-pr1" )
-						( gpeak_pr2{"macs2,$rep"}, bpeak_pr2{"macs2,$rep"} ) = \
-							macs2_chipseq_gpeak_and_bpeak( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, macs2_pr2_o_dir, "rep$rep-pr2" )
-						add_file_to_report( gpeak_pr1{"macs2,$rep"}, "g. peak", "rep$rep-pr1", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Gapped peak" )
-						add_file_to_report( gpeak_pr2{"macs2,$rep"}, "g. peak", "rep$rep-pr2", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Gapped peak" )
-						add_file_to_report( bpeak_pr1{"macs2,$rep"}, "b. peak", "rep$rep-pr1", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Broad peak" )
-						add_file_to_report( bpeak_pr2{"macs2,$rep"}, "b. peak", "rep$rep-pr2", \
-							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Broad peak" )
+						if ( !disable_gb_peak ) {
+							( gpeak_pr1{"macs2,$rep"}, bpeak_pr1{"macs2,$rep"} ) = \
+								macs2_chipseq_gpeak_and_bpeak( tag_pr1{"rep$rep"}, tag_ctl{rep}, fraglen_pr1{rep}, macs2_pr1_o_dir, "rep$rep-pr1" )
+							( gpeak_pr2{"macs2,$rep"}, bpeak_pr2{"macs2,$rep"} ) = \
+								macs2_chipseq_gpeak_and_bpeak( tag_pr2{"rep$rep"}, tag_ctl{rep}, fraglen_pr2{rep}, macs2_pr2_o_dir, "rep$rep-pr2" )
+							add_file_to_report( gpeak_pr1{"macs2,$rep"}, "g. peak", "rep$rep-pr1", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Gapped peak" )
+							add_file_to_report( gpeak_pr2{"macs2,$rep"}, "g. peak", "rep$rep-pr2", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Gapped peak" )
+							add_file_to_report( bpeak_pr1{"macs2,$rep"}, "b. peak", "rep$rep-pr1", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Broad peak" )
+							add_file_to_report( bpeak_pr2{"macs2,$rep"}, "b. peak", "rep$rep-pr2", \
+								"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 2/Broad peak" )
+						}
 						add_file_to_report( peak_pr1{"macs2,$rep"}, "n. peak", "rep$rep-pr1", \
 							"Peaks/MACS2/Pseudo-replicates/Replicate $rep/Pseudo-replicate 1/Narrow peak" )
 						add_file_to_report( peak_pr2{"macs2,$rep"}, "n. peak", "rep$rep-pr2", \
@@ -1283,7 +1293,7 @@ void naive_overlap() {
 	else if ( peak_caller == "macs2" ) {
 		filetypes.add("narrowPeak")
 		// if ( !is_input_peak() && is_histone_chipseq() ) {
-		if ( !is_input_peak() ) {
+		if ( !is_input_peak() && !disable_gb_peak ) {
 			filetypes.add("gappedPeak")
 			filetypes.add("broadPeak")
 		}
