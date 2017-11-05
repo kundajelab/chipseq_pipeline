@@ -29,7 +29,8 @@ if [ "$#" -lt 2 ]; then
 fi
 
 GENOME=$1
-DATA_DIR=$(readlink -f $2)
+#DATA_DIR=$(readlink -f $2)
+DATA_DIR=$(cd $(dirname $2) && pwd -P)/$(basename $2)
 echo $DATA_DIR
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SPECIES_FILE=${DATA_DIR}/${SPECIES_FILE_BASENAME}
