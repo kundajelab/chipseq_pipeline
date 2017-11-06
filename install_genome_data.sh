@@ -14,7 +14,7 @@ BUILD_BWA_IDX=1
 
 ## show help
 
-if [ "$#" -lt 2 ]; then
+if [[ "$#" -lt 2 ]]; then
   echo
   echo "This script installs data for genome [GENOME] on a directory [DATA_DIR]."
   echo "Genome data files will be installed on [DATA_DIR]/[GENOME]."
@@ -31,14 +31,13 @@ fi
 GENOME=$1
 #DATA_DIR=$(readlink -f $2)
 DATA_DIR=$(cd $(dirname $2) && pwd -P)/$(basename $2)
-echo $DATA_DIR
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SPECIES_FILE=${DATA_DIR}/${SPECIES_FILE_BASENAME}
 echo 
 
 ## data URLs
 
-if [ $GENOME == "hg19" ]; then
+if [[ $GENOME == "hg19" ]]; then
 
   REF_FA="http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/referenceSequences/male.hg19.fa.gz"
   # UMAP="http://mitra.stanford.edu/kundaje/genome_data/hg19/globalmap_k20tok54.tgz"
@@ -52,7 +51,7 @@ if [ $GENOME == "hg19" ]; then
   REG2MAP="http://mitra.stanford.edu/kundaje/genome_data/hg19/ataqc/dnase_avgs_reg2map_p10_merged_named.pvals.gz"
   ROADMAP_META="http://mitra.stanford.edu/kundaje/genome_data/hg19/ataqc/eid_to_mnemonic.txt"
 
-elif [ $GENOME == "mm9" ]; then
+elif [[ $GENOME == "mm9" ]]; then
 
   REF_FA="http://hgdownload.cse.ucsc.edu/goldenPath/mm9/bigZips/mm9.2bit"
   # UMAP="http://mitra.stanford.edu/kundaje/genome_data/mm9/globalmap_k20tok54.tgz"
@@ -63,10 +62,11 @@ elif [ $GENOME == "mm9" ]; then
   DNASE="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_univ_dhs_ucsc.from_mm10.bed.gz"
   PROM="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/tss_mm9_master.from_mm10.bed.gz"
   ENH="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_enh_dhs_ucsc.from_mm10.bed.gz"
+  REG2MAP_BED="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/mm9_dhs_universal_ucsc_v1.bed.gz"
   REG2MAP="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/dnase_avgs_merged_named.fseq.vals.gz"
   ROADMAP_META="http://mitra.stanford.edu/kundaje/genome_data/mm9/ataqc/accession_to_name.txt"
 
-elif [ $GENOME == "hg38" ]; then
+elif [[ $GENOME == "hg38" ]]; then
 
   REF_FA="https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz"
   BLACKLIST="http://mitra.stanford.edu/kundaje/genome_data/hg38/hg38.blacklist.bed.gz"
@@ -80,7 +80,7 @@ elif [ $GENOME == "hg38" ]; then
   REG2MAP="http://mitra.stanford.edu/kundaje/genome_data/hg38/ataqc/hg38_dnase_avg_fseq_signal_formatted.txt.gz"
   ROADMAP_META="http://mitra.stanford.edu/kundaje/genome_data/hg38/ataqc/hg38_dnase_avg_fseq_signal_metadata.txt"
 
-elif [ $GENOME == "mm10" ]; then
+elif [[ $GENOME == "mm10" ]]; then
 
   REF_FA="https://www.encodeproject.org/files/mm10_no_alt_analysis_set_ENCODE/@@download/mm10_no_alt_analysis_set_ENCODE.fasta.gz"
   BLACKLIST="http://mitra.stanford.edu/kundaje/genome_data/mm10/mm10.blacklist.bed.gz"
@@ -94,23 +94,22 @@ elif [ $GENOME == "mm10" ]; then
   REG2MAP="http://mitra.stanford.edu/kundaje/genome_data/mm10/ataqc/mm10_dnase_avg_fseq_signal_formatted.txt.gz"
   ROADMAP_META="http://mitra.stanford.edu/kundaje/genome_data/mm10/ataqc/mm10_dnase_avg_fseq_signal_metadata.txt"
 
-elif [ $GENOME == "saccer3" ]; then
+elif [[ $GENOME == "saccer3" ]]; then
 
   REF_FA="http://hgdownload-test.cse.ucsc.edu/goldenPath/sacCer3/bigZips/sacCer3.2bit"
 
-elif [ $GENOME == "macam7" ]; then
+elif [[ $GENOME == "macam7" ]]; then
 
   REF_FA="http://www.unmc.edu/rhesusgenechip/MacaM_Rhesus_Genome_v7.fasta.bz2"
   EXTRA_LINE="nonamecheck = true # for bedtools >= 2.24. this prevents name convention error in bedtools intersect"
 
-elif [ $GENOME == "dm3" ]; then
+elif [[ $GENOME == "dm3" ]]; then
   
   REF_FA="http://hgdownload-test.cse.ucsc.edu/goldenPath/dm3/bigZips/dm3.2bit"
 
-elif [ $GENOME == "pantro5" ]; then
+elif [[ $GENOME == "pantro5" ]]; then
 
   REF_FA="http://hgdownload.cse.ucsc.edu/goldenPath/panTro5/bigZips/panTro5.fa.gz"
-
 fi
 
 ## show warning
@@ -142,7 +141,7 @@ mkdir -p ${DATA_DIR}/$GENOME/seq
 echo "Downloading files..."
 cd ${DATA_DIR}/$GENOME
 # if [[ $UMAP != "" ]]; then wget -N -c $UMAP; fi
-wget -N -c -O $(basename ${REF_FA}) ${REF_FA}
+wget -c -O $(basename ${REF_FA}) ${REF_FA}
 if [[ $BLACKLIST != "" ]]; then wget -N -c $BLACKLIST; fi
 mkdir -p ataqc && cd ataqc
 if [[ $TSS_ENRICH != "" ]]; then wget -N -c $TSS_ENRICH; fi
@@ -197,24 +196,24 @@ if [[ $GENOME == hg* ]]; then GENSZ=hs; fi
 if [[ $GENOME == mm* ]]; then GENSZ=mm; fi
 
 ## build index
-if [ ${BUILD_BWT2_IDX} == 1 ]; then
+if [[ ${BUILD_BWT2_IDX} == 1 ]]; then
   echo "Building bowtie2 index..."
   mkdir -p ${DATA_DIR}/$GENOME/bowtie2_index
   cd ${DATA_DIR}/$GENOME/bowtie2_index
   rm -f ${REF_FA_PREFIX}
   ln -s ../${REF_FA_PREFIX} ${REF_FA_PREFIX}
-  if [ ! -f ${REF_FA_PREFIX}.rev.1.bt2 ]; then
+  if [[ ! -f ${REF_FA_PREFIX}.rev.1.bt2 ]]; then
     bowtie2-build ${REF_FA_PREFIX} ${REF_FA_PREFIX}
   fi
 fi
 
-if [ ${BUILD_BWA_IDX} == 1 ]; then
+if [[ ${BUILD_BWA_IDX} == 1 ]]; then
   echo "Building bwa index..."
   mkdir -p ${DATA_DIR}/$GENOME/bwa_index
   cd ${DATA_DIR}/$GENOME/bwa_index
   rm -f ${REF_FA_PREFIX}
   ln -s ../${REF_FA_PREFIX} ${REF_FA_PREFIX}
-  if [ ! -f ${REF_FA_PREFIX}.sa ]; then
+  if [[ ! -f ${REF_FA_PREFIX}.sa ]]; then
     bwa index ${REF_FA_PREFIX}
   fi
 fi
@@ -240,10 +239,10 @@ if [[ $(grep "\[$GENOME\]" ${SPECIES_FILE} | wc -l) < 1 ]]; then
   echo -e "seq\t= ${DATA_DIR}/$GENOME/seq" >> ${SPECIES_FILE}
   echo -e "gensz\t= $GENSZ" >> ${SPECIES_FILE}
   # if [[ $UMAP != "" ]]; then echo -e "umap\t= ${UMAP_PATH}" >> ${SPECIES_FILE}; fi
-  if [ ${BUILD_BWT2_IDX} == 1 ]; then
+  if [[ ${BUILD_BWT2_IDX} == 1 ]]; then
     echo -e "bwt2_idx\t= ${DATA_DIR}/$GENOME/bowtie2_index/${REF_FA_PREFIX}" >> ${SPECIES_FILE}
   fi
-  if [ ${BUILD_BWA_IDX} == 1 ]; then
+  if [[ ${BUILD_BWA_IDX} == 1 ]]; then
     echo -e "bwa_idx\t= ${DATA_DIR}/$GENOME/bwa_index/${REF_FA_PREFIX}" >> ${SPECIES_FILE}
   fi
   echo -e "ref_fa\t= ${DATA_DIR}/$GENOME/${REF_FA_PREFIX}" >> ${SPECIES_FILE}
