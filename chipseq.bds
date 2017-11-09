@@ -497,11 +497,11 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 		add_file_to_report( tag_, "tag-align", group, "Alignment/$long/Tag-align" )
 
 		if ( ctl == 0 && parse_number( subsample_chip ) > 0 ) {
-			tag_ = subsample_tag( tag_, parse_number( subsample_chip ), aln_o_dir, group )
+			tag_ = subsample_tag( tag_, parse_number( subsample_chip ), false, aln_o_dir, group )
 			wait
 		}
 		else if ( ctl > 0 && parse_number( subsample_ctl ) > 0 ) {
-			tag_ = subsample_tag( tag_, parse_number( subsample_ctl ), aln_o_dir, group )
+			tag_ = subsample_tag( tag_, parse_number( subsample_ctl ), false, aln_o_dir, group )
 			wait
 		}
 
@@ -513,34 +513,27 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 
 		if ( ctl == 0 ) { // if replicate
 
-			subsampled_tag := subsample_tag( tag_, parse_number( subsample_xcor ), aln_o_dir, group )
-
-			string subsampled_tag_pr1, subsampled_tag_pr2
-
 			if ( !true_rep ) { // pseudo replicates
-
 				aln_pr1_o_dir := mkdir( "$out_dir/align/pseudo_reps/$group/pr1" )
 				aln_pr2_o_dir := mkdir( "$out_dir/align/pseudo_reps/$group/pr2" )
 
 				string tag_pr1_, tag_pr2_
 				(tag_pr1_, tag_pr2_ ) = spr( tag_, aln_pr1_o_dir, aln_pr2_o_dir, group ) // make self pseudo replicate
-
+				tag_pr1{group} = tag_pr1_
+				tag_pr2{group} = tag_pr2_
 				add_file_to_report( tag_pr1_, "tag-align", "$group-pr1", \
 							"Alignment/Pseudo-replicates/$long/Pseudo-replicate 1/Tag-align" )
 				add_file_to_report( tag_pr2_, "tag-align", "$group-pr2", \
 							"Alignment/Pseudo-replicates/$long/Pseudo-replicate 2/Tag-align" )
-
-				tag_pr1{group} = tag_pr1_
-				tag_pr2{group} = tag_pr2_
-				wait
 			}
-
-			wait
+			// wait
 
 			if ( !no_xcor ) {
+				subsampled_tag_xcor := subsample_tag( tag_, parse_number( subsample_xcor ), true, aln_o_dir, group )
+				wait
 				// xcor for true rep
 				string xcor_qc_, xcor_plot_
-				( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag, qc_o_dir, group, nth_rep )
+				( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag_xcor, qc_o_dir, group, nth_rep )
 
 				xcor_qc{group} = xcor_qc_
 				xcor_plot{group} = xcor_plot_
@@ -676,17 +669,7 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 		bedpe = bam_to_bedpe( filt_bam_, aln_o_dir, group )
 		wait
-
 		add_file_to_graph( bedpe, "bedpe", group )
-
-		if ( ctl == 0 && parse_number( subsample_chip ) > 0 ) {
-			bedpe = subsample_bedpe( bedpe, parse_number( subsample_chip ), aln_o_dir, group )
-			wait
-		}
-		else if ( ctl > 0 && parse_number( subsample_ctl ) > 0 ) {
-			bedpe = subsample_bedpe( bedpe, parse_number( subsample_ctl ), aln_o_dir, group )
-			wait
-		}
 
 		tag_ = bedpe_to_tag( bedpe, aln_o_dir, group )
 		wait
@@ -698,47 +681,42 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 
 		add_file_to_report( tag_, "tag-align", group, "Alignment/$long/Tag-align" )
 
+		if ( ctl == 0 && parse_number( subsample_chip ) > 0 ) {
+			tag_ = subsample_tag_PE( tag_, parse_number( subsample_chip ), false, aln_o_dir, group )
+			wait
+		}
+		else if ( ctl > 0 && parse_number( subsample_ctl ) > 0 ) {
+			tag_ = subsample_tag_PE( tag_, parse_number( subsample_ctl ), false, aln_o_dir, group )
+			wait
+		}
+
 		tag{group} = tag_
 
 		if ( is_final_stage_tag() ) return
 
 		if ( ctl == 0 ) { // if replicate
 
-			string subsampled_tag
-
-			if ( bedpe == "" ) \
-				subsampled_tag = tag_
-			else \
-				subsampled_tag = subsample_bedpe_to_tag_xcor( bedpe, parse_number( subsample_xcor ), aln_o_dir, group )
-
-			string tag_pr1_, tag_pr2_
-
 			if ( !true_rep ) { // if replicate
-
 				aln_pr1_o_dir := mkdir( "$out_dir/align/pseudo_reps/$group/pr1" )
 				aln_pr2_o_dir := mkdir( "$out_dir/align/pseudo_reps/$group/pr2" )
 
-				if ( bedpe == "" ) { // if starting from tag, we don't have bedpe file
-					( tag_pr1_, tag_pr2_ ) = spr_tag_PE( tag_, aln_pr1_o_dir, aln_pr2_o_dir, group )
-				}
-				else {
-					( tag_pr1_, tag_pr2_ ) = spr_PE( bedpe, aln_pr1_o_dir, aln_pr2_o_dir, group )
-				}
-
+				string tag_pr1_, tag_pr2_
+				( tag_pr1_, tag_pr2_ ) = spr_tag_PE( tag_, aln_pr1_o_dir, aln_pr2_o_dir, group )
 				tag_pr1{group} = tag_pr1_
 				tag_pr2{group} = tag_pr2_
-
 				add_file_to_report( tag_pr1_, "tag-align", "$group-pr1", \
 							"Alignment/Pseudo-replicates/$long/Pseudo-replicate 1/Tag-align" )
 				add_file_to_report( tag_pr2_, "tag-align", "$group-pr2", \
 							"Alignment/Pseudo-replicates/$long/Pseudo-replicate 2/Tag-align" )
 			}
-
-			wait
+			// wait
 
 			if ( !no_xcor ) {
+				subsampled_tag_xcor := subsample_tag_PE_for_xcor( tag_, parse_number( subsample_xcor ), true, aln_o_dir, group )
+				wait
+
 				string xcor_qc_, xcor_plot_
-				( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag, qc_o_dir, group, nth_rep )
+				( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag_xcor, qc_o_dir, group, nth_rep )
 
 				xcor_qc{group} = xcor_qc_
 				xcor_plot{group} = xcor_plot_
