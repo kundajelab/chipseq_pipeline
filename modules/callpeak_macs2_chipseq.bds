@@ -14,6 +14,7 @@ pval_thresh_macs2 := 0.01 	help --pvalue for macs2 callpeak (https://github.com/
 keep_dup_macs2    := "all"	help --keep-dup for macs2 callpeak (https://github.com/taoliu/MACS#--keep-dup, default: all).
 extsize_macs2 	  := -1 	help --extsize for macs2 callpeak (https://github.com/taoliu/MACS#--extsize). Use -1 to get from upstream cross-corr. analysis (default: -1).
 shift_macs2 	  := 0		help --shift for macs2 callpeak (https://github.com/taoliu/MACS#--shift, default: 0).
+cap_num_peak_macs2 := "500K"	help Cap number of peaks by taking top N peaks for MACS2 (default: 500K).
 extra_param_macs2 := ""		help Extra parameters for macs2 callpeak.
 
 grp_color_macs2	:= "lightgreen"
@@ -32,6 +33,7 @@ void init_callpeak_macs2() {
 	keep_dup_macs2		= get_conf_val( keep_dup_macs2, 	["keep_dup_macs2"] )
 	extsize_macs2		= get_conf_val_int( extsize_macs2, 	["extsize_macs2"] )
 	shift_macs2		= get_conf_val_int( shift_macs2, 	["shift_macs2"] )
+	cap_num_peak_macs2	= get_conf_val( cap_num_peak_macs2, ["cap_num_peak_macs2"] )
 	extra_param_macs2	= get_conf_val( extra_param_macs2, 	["extra_param_macs2"] )
 
 	print("\n\n== callpeak macs2 settings\n")
@@ -42,6 +44,7 @@ void init_callpeak_macs2() {
 	print( "--keep-dup (macs2 callpeak)\t\t\t: $keep_dup_macs2\n")
 	print( "--extsize (macs2 callpeak); if -1 then use frag. len.\t: $extsize_macs2\n")
 	print( "--shift (macs2 callpeak)\t\t\t: $shift_macs2\n")
+	print( "Cap number of peaks (macs2)\t: $cap_num_peak_macs2\n")
 	print( "Extra parameters for macs2 callpeak\t\t: $extra_param_macs2\n")
 }
 
@@ -58,7 +61,7 @@ string[] macs2_chipseq_npeak_and_signal( string tag, string ctl_tag, string frag
 						: replace_dir( rm_ext( tag, "tagAlign" ), peak_o_dir )
 	prefix_sig 	:= replace_dir( prefix, sig_o_dir )
 
-	npeakfile	:= "$prefix.narrowPeak.gz"
+	npeakfile 	:= "$prefix.pval$pval_thresh_macs2.$cap_num_peak_macs2.narrowPeak.gz"
 	fc_bedgraph 	:= "$prefix.fc.signal.bedgraph"
 	fc_bedgraph_srt	:= "$prefix.fc.signal.srt.bedgraph"
 	fc_bigwig 	:= "$prefix_sig.fc.signal.bw"
@@ -71,6 +74,7 @@ string[] macs2_chipseq_npeak_and_signal( string tag, string ctl_tag, string frag
  	ctl 	:= (ctl_tag != "") ? "-c $ctl_tag" : ""
 	sval_line := (ctl_tag != "") ?	"controlReads=$(zcat $ctl_tag | wc -l | awk '{printf \"%f\", $1/1000000}'); sval=$(echo \"${chipReads} ${controlReads}\" | awk '$1>$2{printf \"%f\",$2} $1<=$2{printf \"%f\",$1}')" : \
 					"sval=$(echo \"${chipReads}\" | awk '{printf \"%f\",$1}')"
+	int_cap_num_peak_macs2 := parse_number( cap_num_peak_macs2 )
 
 	in 	:= (ctl_tag != "") ? [ tag, ctl_tag ] : [ tag ]
 	out 	:= make_sig ? [ npeakfile, fc_bigwig, pval_bigwig ] : [ npeakfile ]
@@ -91,7 +95,9 @@ string[] macs2_chipseq_npeak_and_signal( string tag, string ctl_tag, string frag
 		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --nomodel --shift $shift_macs2 $extsize_param --keep-dup $keep_dup_macs2 -B --SPMR $extra_param_macs2
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $npeakfile
+		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' > $npeakfile.tmp
+		sys head -n $cap_num_peak_macs2 $npeakfile.tmp | gzip -nc > $npeakfile
+		sys rm -f $npeakfile.tmp
 
 		//# remove additional files
 		sys rm -f "$prefix"_peaks.xls \
@@ -155,11 +161,12 @@ string[] macs2_chipseq_gpeak_and_bpeak( string tag, string ctl_tag, string frag_
 
 	prefix 		:= (ctl_tag != "") ? 	("$peak_o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" ) ) \
 						: replace_dir( rm_ext( tag, "tagAlign" ), peak_o_dir )
-	bpeakfile	:= "$prefix.broadPeak.gz"
-	gpeakfile	:= "$prefix.gappedPeak.gz"
+	bpeakfile 	:= "$prefix.$pval_thresh_macs2.$cap_num_peak_macs2.broadPeak.gz"
+	gpeakfile 	:= "$prefix.$pval_thresh_macs2.$cap_num_peak_macs2.gappedPeak.gz"
 	extsize_param 	:= extsize_macs2 > -1 ? "--extsize $extsize_macs2" : "--extsize $frag_len"
 	// macs2 params with or w/o control
 	ctl 	:= (ctl_tag != "") ? "-c $ctl_tag" : ""
+	int_cap_num_peak_macs2 := parse_number( cap_num_peak_macs2 )
 
 	in 	:= (ctl_tag != "") ? [ tag, ctl_tag ] : [ tag ]
 	out 	:= [ gpeakfile, bpeakfile ]
@@ -183,8 +190,10 @@ string[] macs2_chipseq_gpeak_and_bpeak( string tag, string ctl_tag, string frag_
 			--keep-dup $keep_dup_macs2 $extra_param_macs2
 
 		//# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr "$prefix.tmp"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $bpeakfile
-		sys sort -k 14gr,14gr "$prefix.tmp"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' | gzip -nc > $gpeakfile
+		sys sort -k 8gr,8gr "$prefix.tmp"_peaks.broadPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' > $bpeakfile.tmp
+		sys head -n $cap_num_peak_macs2 $bpeakfile.tmp | gzip -nc > $bpeakfile
+		sys sort -k 14gr,14gr "$prefix.tmp"_peaks.gappedPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' > $gpeakfile.tmp
+		sys head -n $cap_num_peak_macs2 $gpeakfile.tmp | gzip -nc > $gpeakfile
 
 		//# remove additional files
 		sys rm -f "$prefix.tmp"_peaks.xls \

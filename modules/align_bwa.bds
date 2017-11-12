@@ -58,7 +58,7 @@ string[] bwa( string fastq, string o_dir, string log_o_dir, string group, int nt
 		sai.rm() // delete intermediate file sai		
 	}
 
-	add_task_to_graph( in, out, group, "BWA", grp_color_bwa )
+	add_task_to_graph( in, out, group, "BWA\\n(SE)", grp_color_bwa )
 
 	return out
 }
@@ -90,7 +90,7 @@ string[] bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, s
 		sai2.rm()
 	}
 
-	add_task_to_graph( in, out, group, "BWA", grp_color_bwa )
+	add_task_to_graph( in, out, group, "BWA\\n(PE)", grp_color_bwa )
 
 	return out
 }

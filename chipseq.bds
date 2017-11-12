@@ -28,7 +28,8 @@ no_pseudo_rep	:= false 	help Do not call peaks on self pseudo replicates.
 no_xcor 	:= false 	help Disable cross-correlation analysis.
 no_gpeak_filt 	:= false 	help Disable gapped peak filtering through narrow peak (for histone ChIP-Seq only).
 no_browser_tracks := false 	help Disable generation of genome browser tracks (workaround for bzip2 shared library issue).
-
+pe_xcor_only 	:= false 	help (PE ONLY) Align R1 of paired end fastqs only and for cross-correlation analysis. All other analyses and QCs will be disabled.
+pe_no_trim_fastq := false 	help (PE ONLY) No fastq trimming and use PE tagAlign for cross-correlation analysis.
 disable_gb_peak := true // disable gapped/broad peak generation
 
 help() // print help and exit if no parameters are given
@@ -38,6 +39,7 @@ include "modules/pipeline_template.bds"
 include "modules/input.bds"
 
 include "modules/align_bwa.bds"
+include "modules/align_trim_fastq.bds"
 include "modules/postalign_bam.bds"
 include "modules/postalign_bed.bds"
 include "modules/postalign_xcor.bds"
@@ -82,41 +84,29 @@ main()
 void main() { // chipseq pipeline starts here
 
 	init_chipseq() // read command line parameters or configruation file
-
 	chk_param() // check if parameters are valid
-
 	chk_input( true_rep, no_pseudo_rep ) // if inputs are fastq, bam, or tagalign, check if they exist
-	
+
 	align() // align and postalign
 
-	pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
-
-	call_peaks() // call peaks in parallel (MACS2,SPP)
-
-	read_input_peak() // if inputs are peaks, read them
-
-	naive_overlap() // get naive overlap peaks
-
-	log_number_of_peaks()
-
-	do_idr() // IDR
-
-	// create_sig_trk() // (BETA)
-	
-	filter_peak() // blacklist-filter peaks
-
+	if ( !pe_xcor_only ) {
+		pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
+		call_peaks() // call peaks in parallel (MACS2,SPP)
+		read_input_peak() // if inputs are peaks, read them
+		naive_overlap() // get naive overlap peaks
+		log_number_of_peaks()
+		do_idr() // IDR
+		filter_peak() // blacklist-filter peaks
+	}
 	report()
 }
 
 void init_chipseq() {
-
 	read_conf_chipseq()
-
 	init_filetable()
 }
 
 void read_conf_chipseq() {
-
 	type		= get_conf_val( type,			["type"] )
 	histone 	= get_conf_val_bool( histone, 		["histone"] )
 	if ( histone ) type = "histone" // backward compatibility for LEGACY param
@@ -140,9 +130,12 @@ void read_conf_chipseq() {
 	no_xcor		= get_conf_val_bool( no_xcor, 		["no_xcor"] )
 	no_gpeak_filt	= get_conf_val_bool( no_gpeak_filt, 	["no_gpeak_filt"] )
 	no_browser_tracks = get_conf_val_bool( no_browser_tracks,	["no_browser_tracks"] )
+	pe_xcor_only = get_conf_val_bool( pe_xcor_only,	["pe_xcor_only"] )
+	pe_no_trim_fastq = get_conf_val_bool( pe_no_trim_fastq,	["pe_no_trim_fastq"] )
 
 	check_peak_caller_valid()		
 	check_aligner_valid()		
+	if ( pe_xcor_only ) final_stage = "xcor"
 	if ( idr_rank == "" ) {
 		if ( peak_caller == "spp" || peak_caller == "gem" ) {
 			idr_rank = "signal.value"
@@ -188,6 +181,8 @@ void read_conf_chipseq() {
 	print( "Disable cross-correlation analysis\t: $no_xcor\n" )
 	print( "Disable g. peak filt. thru. n. peak\t: $no_gpeak_filt\n" )
 	print( "Disable genome browser tracks\t: $no_browser_tracks\n" )	
+	print( "Disable all QCs except cross-corr. (PE only)\t: $pe_xcor_only\n" )
+	print( "No fastq trimming and use PE tagAlign for cross-corr. (PE only)\t: $pe_no_trim_fastq\n" )
 }
 
 void init_filetable() { // init file table labels in HTML report
@@ -286,9 +281,11 @@ void init_filetable() { // init file table labels in HTML report
 
 void chk_param() {
 
-	print( "\n\n== checking chipseq parameters ...\n" );
-	if ( has_input_fastq() ) 	chk_align_bwa()
-	// if ( tag2bw ) 			chk_signal_aln2rawsig()
+	print( "\n\n== checking chipseq parameters ...\n" )
+	if ( pe_xcor_only && !is_input_fastq(0,1) ) {
+		error("-pe_xcor_only is for fastqs only!\n")
+	}
+	if ( has_input_fastq() ) 	chk_align_bwa()	
 	if ( is_final_stage_idr() ) 	chk_idr()
 	if ( is_final_stage_idr() || is_final_stage_peak() ) chk_callpeak_macs2()
 
@@ -321,7 +318,6 @@ void chk_param() {
 }
 
 void align() {
-
 	if ( is_input_peak() ) return
 
 	// distribute # of threads to each replicate/control according to their file sizes
@@ -378,12 +374,15 @@ void align() {
 
 void align( int ctl, int rep, int nth_rep ) {
 
-	if ( is_se( ctl, rep ) ) 	align_SE( ctl, rep, nth_rep )
-	else 				align_PE( ctl, rep, nth_rep )
+	if ( is_se( ctl, rep ) ) {
+		align_SE( ctl, rep, nth_rep )
+	}
+	else {
+		align_PE( ctl, rep, nth_rep )
+	}
 }
 
 void align_SE( int ctl, int rep, int nth_rep ) {
-		
 	// ctl==0: exp. replicate, ctl==1: control
 
 	group 	:= get_group_name( ctl, rep )
@@ -548,7 +547,7 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 }
 
 void align_PE( int ctl, int rep, int nth_rep ) {
-
+	if ( pe_xcor_only && ctl > 0 ) return
 	// ctl==0: exp. replicate, ctl==1: control
 
 	group 	:= get_group_name( ctl, rep )
@@ -557,173 +556,221 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 	aln_o_dir := mkdir( "$out_dir/align/$group" ) // create align output directory
 	qc_o_dir  := mkdir( "$out_dir/qc/$group" ) // create qc output dir.
 
-	string bam_, flagstat_qc_
+	string bam_, flagstat_qc_, bam_R1
 	string mapped_reads // read count
 
+	string tmp
 	if ( is_input_fastq( ctl, rep ) ) {
 
 		fastqs_pair1 := get_fastq( ctl, rep, 1 )
-		fastqs_pair2 := get_fastq( ctl, rep, 2 )
-
-		if ( fastqs_pair1.size() != fastqs_pair2.size() ) {
-			error("Number of fastqs to be pooled for pair 1 and pair 2 do not match!\n")
+		string[] fastqs_pair2
+		if ( !pe_xcor_only ) {
+			fastqs_pair2 = get_fastq( ctl, rep, 2 )
+			if ( fastqs_pair1.size() != fastqs_pair2.size() ) {
+				error("Number of fastqs to be pooled for pair 1 and pair 2 do not match!\n")
+			}
 		}
+
 		string pooled_fastq_pair1, pooled_fastq_pair2
 		if ( fastqs_pair1.size()==1 ) {
 			pooled_fastq_pair1 = fastqs_pair1[0]
-			pooled_fastq_pair2 = fastqs_pair2[0]
+			if ( !pe_xcor_only ) {
+				pooled_fastq_pair2 = fastqs_pair2[0]
+			}
 		}
 		else {
 			pooled_fastq_pair1 = pool_fastq( fastqs_pair1, aln_o_dir, group )
-			pooled_fastq_pair2 = pool_fastq( fastqs_pair2, aln_o_dir, group )
+			if ( !pe_xcor_only ) {
+				pooled_fastq_pair2 = pool_fastq( fastqs_pair2, aln_o_dir, group )
+			}
 			wait
 		}
 
-		if ( aligner == "bwa" ) {
-			( bam_, flagstat_qc_ ) = bwa_PE( pooled_fastq_pair1, pooled_fastq_pair2, aln_o_dir, qc_o_dir, group, nth_rep )
+		// allocate cpu for bwa_SE and bwa_PE
+		int[] nth_map 
+		if ( !pe_xcor_only ) {
+			nth_map = distribute_nonzero( nth_rep, [1,2] )
 		}
 		else {
-			error("Unsupported aligner ($aligner)!")
+			nth_map = [nth_rep]
 		}
-		bam{group} = bam_
-		flagstat_qc{group} = flagstat_qc_
-		add_file_to_table( flagstat_qc_, "QC and logs/$long/BWA map. flagstat log")
-		wait
-
-		// parse read counts
-		tmp_log := parse_flagstat( flagstat_qc_ )
-		raw_reads := metric_prefix( parse_int( tmp_log{"total"} ) )
-		half_raw_reads := metric_prefix( parse_int( tmp_log{"total"} )/2 )
-		mapped_reads = metric_prefix( parse_int( tmp_log{"mapped"} ) )
-
-		// apply read counts to report
-		if ( fastqs_pair1.size()==1 ) {
-			add_file_to_report( fastqs_pair1[0], "fastq1\\n$half_raw_reads", group, \
-				"Raw reads/$long/Fastq 1 ($half_raw_reads)" )
-			add_file_to_report( fastqs_pair2[0], "fastq2\\n$half_raw_reads", group, \
-				"Raw reads/$long/Fastq 2 ($half_raw_reads)" )
+		// align on R1 fastq
+		if ( ctl==0 && !pe_no_trim_fastq ) {
+			trimmed_fastq_R1 := trim_fastq( pooled_fastq_pair1, aln_o_dir, group )
+			add_file_to_report( trimmed_fastq_R1, "trim. fastq R1", group, "Raw reads/$long/Trimmed fastq R1" )
+			wait
+			( bam_R1, tmp ) \
+				= bwa( trimmed_fastq_R1, aln_o_dir, qc_o_dir, group, nth_map[0] )
+			add_file_to_report( bam_R1, "bam R1", group, "Alignment/$long/Bam R1" )
 		}
-		else {
-			for ( int i=0; i<fastqs_pair1.size(); i++) {
-				id := i+1
-				suffix := ":$id"
-				add_file_to_report( fastqs_pair1[i], "fastq$suffix", group, "Raw reads/$long/Fastq 1$suffix" )
-				add_file_to_report( fastqs_pair2[i], "fastq$suffix", group, "Raw reads/$long/Fastq 2$suffix" )
+
+		if ( !pe_xcor_only ) {
+			if ( aligner == "bwa" ) {
+				( bam_, flagstat_qc_ ) \
+					= bwa_PE( pooled_fastq_pair1, pooled_fastq_pair2, aln_o_dir, qc_o_dir, group, nth_map[1] )
+			}		
+			else {
+				error("Unsupported aligner ($aligner)!")
 			}
-			add_file_to_report( pooled_fastq_pair1, "pooled\\nfastq1\\n$raw_reads", group, \
-						"Raw reads/$long/Pooled fastq 1 ($raw_reads)" )			
-			add_file_to_report( pooled_fastq_pair2, "pooled\\nfastq2\\n$raw_reads", group, \
-						"Raw reads/$long/Pooled fastq 2 ($raw_reads)" )			
+			bam{group} = bam_
+			flagstat_qc{group} = flagstat_qc_
+			add_file_to_table( flagstat_qc_, "QC and logs/$long/BWA map. flagstat log")
+			wait
+
+			// parse read counts
+			tmp_log := parse_flagstat( flagstat_qc_ )
+			raw_reads := metric_prefix( parse_int( tmp_log{"total"} ) )
+			half_raw_reads := metric_prefix( parse_int( tmp_log{"total"} )/2 )
+			mapped_reads = metric_prefix( parse_int( tmp_log{"mapped"} ) )
+
+			// apply read counts to report
+			if ( fastqs_pair1.size()==1 ) {
+				add_file_to_report( fastqs_pair1[0], "fastq1\\n$half_raw_reads", group, \
+					"Raw reads/$long/Fastq 1 ($half_raw_reads)" )
+				add_file_to_report( fastqs_pair2[0], "fastq2\\n$half_raw_reads", group, \
+					"Raw reads/$long/Fastq 2 ($half_raw_reads)" )
+			}
+			else {
+				for ( int i=0; i<fastqs_pair1.size(); i++) {
+					id := i+1
+					suffix := ":$id"
+					add_file_to_report( fastqs_pair1[i], "fastq$suffix", group, "Raw reads/$long/Fastq 1$suffix" )
+					add_file_to_report( fastqs_pair2[i], "fastq$suffix", group, "Raw reads/$long/Fastq 2$suffix" )
+				}
+				add_file_to_report( pooled_fastq_pair1, "pooled\\nfastq1\\n$raw_reads", group, \
+							"Raw reads/$long/Pooled fastq 1 ($raw_reads)" )			
+				add_file_to_report( pooled_fastq_pair2, "pooled\\nfastq2\\n$raw_reads", group, \
+							"Raw reads/$long/Pooled fastq 2 ($raw_reads)" )			
+			}
 		}
 	}
 	wait
 
-	string filt_bam_, dup_qc_, pbc_qc_, flagstat_nodup_qc_
+	string filt_bam_, dup_qc_, pbc_qc_, flagstat_nodup_qc_, filt_bam_R1
 	string deduped_reads
 
 	if ( is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
-
-		if ( is_input_bam( ctl, rep ) ) bam_ = get_bam( ctl, rep )
-
-		add_file_to_report( bam_, "bam" + (mapped_reads ? "\\n$mapped_reads" : ""), group, \
-			"Alignment/$long/Bam" + (mapped_reads ? " ($mapped_reads)" : "") )
-
-		if ( is_final_stage_bam() ) return
-
-		if ( no_dup_removal ) {
-			string tmp
-			( filt_bam_, tmp ) \
-				= dedup_bam_PE( bam_, aln_o_dir, qc_o_dir, group, nth_rep )
-			wait
+		if ( bam_R1 && ctl==0 ) {
+			( filt_bam_R1, tmp ) \
+				= dedup_bam( bam_R1, aln_o_dir, qc_o_dir, group, pe_xcor_only ? nth_rep : 1 )
+			add_file_to_report( filt_bam_R1, "filt. bam R1", group, "Alignment/$long/Bam R1" )
 		}
-		else {
-			( filt_bam_, dup_qc_, flagstat_nodup_qc_, pbc_qc_ ) \
-				= dedup_bam_PE( bam_, aln_o_dir, qc_o_dir, group, nth_rep )			
-			dup_qc{group} = dup_qc_
-			add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
-			pbc_qc{group} = pbc_qc_
-			add_file_to_table( pbc_qc_, "QC and logs/$long/PBC log")
-			flagstat_nodup_qc{group} = flagstat_nodup_qc_
-			add_file_to_table( flagstat_nodup_qc_, "QC and logs/$long/Filtered flagstat log")
-			wait
-			// add to report
-			tmp_log := parse_flagstat( flagstat_nodup_qc_ )
-			deduped_reads = metric_prefix( parse_int( tmp_log{"total"} ) )
+
+		if ( !pe_xcor_only ) {
+
+			if ( is_input_bam( ctl, rep ) ) bam_ = get_bam( ctl, rep )
+
+			add_file_to_report( bam_, "bam" + (mapped_reads ? "\\n$mapped_reads" : ""), group, \
+				"Alignment/$long/Bam" + (mapped_reads ? " ($mapped_reads)" : "") )
+
+			if ( is_final_stage_bam() ) return
+
+			if ( no_dup_removal ) {
+				( filt_bam_, tmp ) \
+					= dedup_bam_PE( bam_, aln_o_dir, qc_o_dir, group, nth_rep )
+				wait
+			}
+			else {
+				( filt_bam_, dup_qc_, flagstat_nodup_qc_, pbc_qc_ ) \
+					= dedup_bam_PE( bam_, aln_o_dir, qc_o_dir, group, nth_rep )			
+				dup_qc{group} = dup_qc_
+				add_file_to_table( dup_qc_, "QC and logs/$long/Dedup. log")
+				pbc_qc{group} = pbc_qc_
+				add_file_to_table( pbc_qc_, "QC and logs/$long/PBC log")
+				flagstat_nodup_qc{group} = flagstat_nodup_qc_
+				add_file_to_table( flagstat_nodup_qc_, "QC and logs/$long/Filtered flagstat log")
+				wait
+				// add to report
+				tmp_log := parse_flagstat( flagstat_nodup_qc_ )
+				deduped_reads = metric_prefix( parse_int( tmp_log{"total"} ) )
+			}
 		}
 	}
 
-	string tag_, bedpe
+	string tag_, bedpe, tag_R1
 	
 	if ( is_input_filt_bam( ctl, rep ) || is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
+		if ( filt_bam_R1 && ctl==0 ) {
+			tag_R1 = bam_to_tag( filt_bam_R1, aln_o_dir, group )
+			add_file_to_report( tag_R1, "tag-align-R1", group, "Alignment/$long/Tag-align R1" )
+		}
 
-		if ( is_input_filt_bam( ctl, rep ) ) filt_bam_ = get_filt_bam( ctl, rep )
+		if ( !pe_xcor_only ) {
+			if ( is_input_filt_bam( ctl, rep ) ) filt_bam_ = get_filt_bam( ctl, rep )
 
-		add_file_to_report( filt_bam_, "filt. bam" + (deduped_reads ? "\\n$deduped_reads" : ""), group, \
-			"Alignment/$long/Filtered & deduped bam" + (deduped_reads ? " ($deduped_reads)" : "") )
+			add_file_to_report( filt_bam_, "filt. bam" + (deduped_reads ? "\\n$deduped_reads" : ""), group, \
+				"Alignment/$long/Filtered & deduped bam" + (deduped_reads ? " ($deduped_reads)" : "") )
 
-		filt_bam{group} = filt_bam_
+			filt_bam{group} = filt_bam_
 
-		if ( anon_filt_bam ) anonymize_filt_bam( filt_bam_, aln_o_dir, group )
+			if ( anon_filt_bam ) anonymize_filt_bam( filt_bam_, aln_o_dir, group )
 
-		if ( is_final_stage_filt_bam() ) return
+			if ( is_final_stage_filt_bam() ) return
 
-		bedpe = bam_to_bedpe( filt_bam_, aln_o_dir, group )
-		wait
-		add_file_to_graph( bedpe, "bedpe", group )
+			bedpe = bam_to_bedpe( filt_bam_, aln_o_dir, group )
+			wait
+			add_file_to_graph( bedpe, "bedpe", group )
 
-		tag_ = bedpe_to_tag( bedpe, aln_o_dir, group )
-		wait
+			tag_ = bedpe_to_tag( bedpe, aln_o_dir, group )
+			wait
+		}
 	}
 
 	if ( is_input_tag( ctl, rep ) || is_input_filt_bam( ctl, rep ) || is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
+		if ( !pe_xcor_only ) {
+			if ( is_input_tag( ctl, rep ) ) tag_ = get_tag( ctl, rep )
 
-		if ( is_input_tag( ctl, rep ) ) tag_ = get_tag( ctl, rep )
+			add_file_to_report( tag_, "tag-align", group, "Alignment/$long/Tag-align" )
 
-		add_file_to_report( tag_, "tag-align", group, "Alignment/$long/Tag-align" )
+			if ( ctl == 0 && parse_number( subsample_chip ) > 0 ) {
+				tag_ = subsample_tag_PE( tag_, parse_number( subsample_chip ), false, aln_o_dir, group )
+				wait
+			}
+			else if ( ctl > 0 && parse_number( subsample_ctl ) > 0 ) {
+				tag_ = subsample_tag_PE( tag_, parse_number( subsample_ctl ), false, aln_o_dir, group )
+				wait
+			}
 
-		if ( ctl == 0 && parse_number( subsample_chip ) > 0 ) {
-			tag_ = subsample_tag_PE( tag_, parse_number( subsample_chip ), false, aln_o_dir, group )
-			wait
-		}
-		else if ( ctl > 0 && parse_number( subsample_ctl ) > 0 ) {
-			tag_ = subsample_tag_PE( tag_, parse_number( subsample_ctl ), false, aln_o_dir, group )
-			wait
-		}
+			tag{group} = tag_
 
-		tag{group} = tag_
+			if ( is_final_stage_tag() ) return
 
-		if ( is_final_stage_tag() ) return
+			if ( ctl == 0 ) { // if replicate
 
-		if ( ctl == 0 ) { // if replicate
+				if ( !true_rep ) { // if replicate
+					aln_pr1_o_dir := mkdir( "$out_dir/align/pseudo_reps/$group/pr1" )
+					aln_pr2_o_dir := mkdir( "$out_dir/align/pseudo_reps/$group/pr2" )
 
-			if ( !true_rep ) { // if replicate
-				aln_pr1_o_dir := mkdir( "$out_dir/align/pseudo_reps/$group/pr1" )
-				aln_pr2_o_dir := mkdir( "$out_dir/align/pseudo_reps/$group/pr2" )
-
-				string tag_pr1_, tag_pr2_
-				( tag_pr1_, tag_pr2_ ) = spr_tag_PE( tag_, aln_pr1_o_dir, aln_pr2_o_dir, group )
-				tag_pr1{group} = tag_pr1_
-				tag_pr2{group} = tag_pr2_
-				add_file_to_report( tag_pr1_, "tag-align", "$group-pr1", \
-							"Alignment/Pseudo-replicates/$long/Pseudo-replicate 1/Tag-align" )
-				add_file_to_report( tag_pr2_, "tag-align", "$group-pr2", \
-							"Alignment/Pseudo-replicates/$long/Pseudo-replicate 2/Tag-align" )
+					string tag_pr1_, tag_pr2_
+					( tag_pr1_, tag_pr2_ ) = spr_tag_PE( tag_, aln_pr1_o_dir, aln_pr2_o_dir, group )
+					tag_pr1{group} = tag_pr1_
+					tag_pr2{group} = tag_pr2_
+					add_file_to_report( tag_pr1_, "tag-align", "$group-pr1", \
+								"Alignment/Pseudo-replicates/$long/Pseudo-replicate 1/Tag-align" )
+					add_file_to_report( tag_pr2_, "tag-align", "$group-pr2", \
+								"Alignment/Pseudo-replicates/$long/Pseudo-replicate 2/Tag-align" )
+				}
 			}
 			// wait
-
-			if ( !no_xcor ) {
-				subsampled_tag_xcor := subsample_tag_PE_for_xcor( tag_, parse_number( subsample_xcor ), true, aln_o_dir, group )
-				wait
-
-				string xcor_qc_, xcor_plot_
-				( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag_xcor, qc_o_dir, group, nth_rep )
-
-				xcor_qc{group} = xcor_qc_
-				xcor_plot{group} = xcor_plot_
-
-				add_file_to_report( xcor_qc_, "xcor log", group, "QC and logs/$long/Cross-corr. log" )
-				add_file_to_table( xcor_plot_, "QC and logs/$long/Cross-corr. plot" )
+		}
+		if ( !no_xcor && ctl==0 ) {
+			string subsampled_tag_xcor
+			if ( tag_R1 ) {
+				subsampled_tag_xcor = subsample_tag( tag_R1, parse_number( subsample_xcor ), true, aln_o_dir, group )
 			}
+			else {
+				subsampled_tag_xcor = subsample_tag_PE_for_xcor( tag_, parse_number( subsample_xcor ), true, aln_o_dir, group )
+			}			
+			wait
+
+			string xcor_qc_, xcor_plot_
+			( xcor_qc_, xcor_plot_ ) = xcor( subsampled_tag_xcor, qc_o_dir, group, nth_rep )
+
+			xcor_qc{group} = xcor_qc_
+			xcor_plot{group} = xcor_plot_
+
+			add_file_to_report( xcor_qc_, "xcor log", group, "QC and logs/$long/Cross-corr. log" )
+			add_file_to_table( xcor_plot_, "QC and logs/$long/Cross-corr. plot" )
 		}
 
 		if ( is_final_stage_xcor() ) return
