@@ -384,7 +384,7 @@ void jsd() { // plot fingerprint
 	if (ctl_exists() && \
 		(is_input_filt_bam( 0, 1 ) || is_input_bam( 0, 1 ) || is_input_fastq( 0, 1 ))) {
 
-		nth_sam_idx = min(2,nth)
+		nth_sam_idx := min(2,nth)
 
 		string[] filt_bams, labels
 		for ( int rep=1; rep <= get_num_rep( 0 ); rep++) { // IP replicate
