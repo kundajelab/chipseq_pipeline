@@ -60,6 +60,9 @@ include "modules/callpeak_blacklist_filter.bds"
 string{} flagstat_qc, dup_qc, flagstat_nodup_qc, pbc_qc, xcor_qc, xcor_plot
 string{} bam, filt_bam
 
+string jsd_png, jsd_tsv, jsd_qc
+string{} synth_jsd
+
 string{} tag, tag_pr1, tag_pr2
 string tag_ppr1, tag_ppr2
 
@@ -93,6 +96,7 @@ void main() { // chipseq pipeline starts here
 	chk_input( true_rep, no_pseudo_rep ) // if inputs are fastq, bam, or tagalign, check if they exist
 
 	align() // align and postalign
+	jsd()	// plot fingerprint and compute synthetic JS distance
 
 	if ( !pe_xcor_only ) {
 		pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
@@ -371,10 +375,35 @@ void align() {
 			else	  par align( ctl, rep, nth_rep{group} ) // parallel jobs for align() for each replicate and each control
 		}
 	}
-
 	wait
 
 	print( "\n== Done align()\n" )
+}
+
+void jsd() {
+	// plot fingerprint
+	if (ctl_exists() && \
+		(is_input_filt_bam( 0, 1 ) || is_input_bam( 0, 1 ) || is_input_fastq( 0, 1 ))) {
+		// IP replicate
+		string[] filt_bams, labels
+		for ( int rep=1; rep <= get_num_rep( 0 ); rep++) {
+			group := get_group_name( 0, rep )
+			filt_bams.add(filt_bam{group})
+			labels.add(group)
+		}
+		group_ctl1 := get_group_name( 1, 1 )
+		ctl_filt_bam1 := filt_bam{group_ctl1}
+		labels.add(group_ctl1)
+
+		(jsd_png, jsd_tsv, jsd_qc) = \
+			jsd(filt_bams, ctl_filt_bam1, labels, "$out_dir/qc", min(4,nth))
+	 	add_file_to_report( jsd_qc, "JS\\nDistance", "", "QC and logs/Fingerprint/JS Distance" )
+		add_file_to_table( jsd_png, "QC and logs/Fingerprint/Plot")
+	// 	add_file_to_report( jsd_png, "JS\\nmetric", "", "QC and logs/Fingerprint/Plot (PNG)" )
+	// 	add_file_to_table( jsd_qc, "QC and logs/Fingerprint/QC Metric")
+	}
+
+	print( "\n== Done jsd()\n" )
 }
 
 void align( int ctl, int rep, int nth_rep ) {
@@ -1611,11 +1640,12 @@ void report() {
 string html_chipseq_QC() {
 
 	string[] flagstat_qcs, dup_qcs, flagstat_nodup_qcs, pbc_qcs, xcor_qcs, xcor_plots
-	string[] groups
+	string[] groups, groups_no_ctl
 
 	for ( int rep=1; rep <= get_num_rep(); rep++) {
 		group := "rep$rep"
 		groups.add( group )
+		groups_no_ctl.add( group )
 
 		if ( xcor_qc.hasKey( group ) )	{
 			xcor_qcs 		+= xcor_qc{group}
@@ -1639,6 +1669,7 @@ string html_chipseq_QC() {
 
 	html := "<div id='chipseq_qc'>"
 	html += "<div style='float:left'>"
+
 	html += html_table_multiple_logs( "Flagstat (raw) QC", false, "flagstat", groups, flagstat_qcs )
 	html += "</div>"
 	if ( !no_dup_removal ) {
@@ -1661,6 +1692,14 @@ string html_chipseq_QC() {
 	for ( int i=0; i<xcor_plots.size(); i++ ) {
 		png := pdf_to_png( xcor_plots[i] )
 		html += html_img( png, 500, groups[i] ) + "&nbsp"
+	}
+	if ( jsd_qc ) {
+		html += "<div style='float:left'>"
+		html += html_table_horz_table("JS distance", jsd_qc, groups_no_ctl)
+		html += "</div>"
+	}
+	if ( jsd_png ) {
+		html += html_img( jsd_png, 800, "Fingerprint plot" ) + "<br>"
 	}
 	// number of peaks
 	if ( num_peak_log ) {

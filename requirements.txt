@@ -12,7 +12,7 @@ ucsc-bedclip
 ucsc-bedtobigbed
 ucsc-twobittofa
 picard ==1.126 # 1.97 in bioconda has corrupted .jar
-deeptools ==2.2.3
+deeptools ==2.5.4 #2.2.3 does not support plotFingerprint --outQualityMetrics
 numpy ==1.10.2 # 1.9.3 (conflict)
 matplotlib ==1.5.1
 macs2 ==2.1.0
