@@ -96,7 +96,7 @@ void main() { // chipseq pipeline starts here
 	chk_input( true_rep, no_pseudo_rep ) // if inputs are fastq, bam, or tagalign, check if they exist
 
 	align() // align and postalign
-	jsd()	// plot fingerprint and compute synthetic JS distance
+	par jsd() // plot fingerprint and compute synthetic JS distance
 
 	if ( !pe_xcor_only ) {
 		pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
@@ -380,23 +380,32 @@ void align() {
 	print( "\n== Done align()\n" )
 }
 
-void jsd() {
-	// plot fingerprint
+void jsd() { // plot fingerprint
 	if (ctl_exists() && \
 		(is_input_filt_bam( 0, 1 ) || is_input_bam( 0, 1 ) || is_input_fastq( 0, 1 ))) {
-		// IP replicate
+
+		nth_sam_idx = min(2,nth)
+
 		string[] filt_bams, labels
-		for ( int rep=1; rep <= get_num_rep( 0 ); rep++) {
+		for ( int rep=1; rep <= get_num_rep( 0 ); rep++) { // IP replicate
 			group := get_group_name( 0, rep )
-			filt_bams.add(filt_bam{group})
+			filt_bam_ := filt_bam{group}
+			filt_bams.add(filt_bam_)
 			labels.add(group)
+
+			samtools_index(filt_bam_, group, nth_sam_idx)
 		}
-		group_ctl1 := get_group_name( 1, 1 )
+		group_ctl1 := get_group_name( 1, 1 ) // 1st control replicate
 		ctl_filt_bam1 := filt_bam{group_ctl1}
 		labels.add(group_ctl1)
 
+		samtools_index(ctl_filt_bam1, group_ctl1, nth_sam_idx)
+		wait
+
+		nth_jsd := min(4,nth)
+
 		(jsd_png, jsd_tsv, jsd_qc) = \
-			jsd(filt_bams, ctl_filt_bam1, labels, "$out_dir/qc", min(4,nth))
+			jsd(filt_bams, ctl_filt_bam1, labels, "$out_dir/qc", nth_jsd )
 	 	add_file_to_report( jsd_qc, "JS\\nDistance", "", "QC and logs/Fingerprint/JS Distance" )
 		add_file_to_table( jsd_png, "QC and logs/Fingerprint/Plot")
 	// 	add_file_to_report( jsd_png, "JS\\nmetric", "", "QC and logs/Fingerprint/Plot (PNG)" )
