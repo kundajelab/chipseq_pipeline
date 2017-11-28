@@ -57,11 +57,10 @@ include "modules/callpeak_blacklist_filter.bds"
 // Important file names are stored in global variables (usually a string map string{} with a key with replicate id and peakcaller name)
 // e.g. filt_bam{"Replicate 1"} = filtered bam for replicate 1, peak_pr1{"spp,2"} = peak file for pseudo replicate 1 of replicate 2 generated from spp
 
-string{} flagstat_qc, dup_qc, flagstat_nodup_qc, pbc_qc, xcor_qc, xcor_plot
+string{} flagstat_qc, dup_qc, flagstat_nodup_qc, pbc_qc, xcor_qc, xcor_plot, jsd_qc
 string{} bam, filt_bam
 
-string jsd_png, jsd_tsv, jsd_qc
-string{} synth_jsd
+string jsd_png
 
 string{} tag, tag_pr1, tag_pr2
 string tag_ppr1, tag_ppr2
@@ -70,6 +69,8 @@ string{} peak, peak_pr1, peak_pr2, peak_pooled, peak_ppr1, peak_ppr2
 string{} gpeak, gpeak_pr1, gpeak_pr2, gpeak_pooled, gpeak_ppr1, gpeak_ppr2
 string{} bpeak, bpeak_pr1, bpeak_pr2, bpeak_pooled, bpeak_ppr1, bpeak_ppr2
 // string peak_overlap, gpeak_overlap, bpeak_overlap
+
+string{} raw_peak_qc_FRiP
 
 string{} idr_tr, idr_pr, idr_tr_png, idr_pr_png
 string idr_ppr, idr_opt, idr_consv, idr_ppr_png
@@ -96,7 +97,7 @@ void main() { // chipseq pipeline starts here
 	chk_input( true_rep, no_pseudo_rep ) // if inputs are fastq, bam, or tagalign, check if they exist
 
 	align() // align and postalign
-	par jsd() // plot fingerprint and compute synthetic JS distance
+	jsd() // plot fingerprint and compute synthetic JS distance
 
 	if ( !pe_xcor_only ) {
 		pool_tags() // make pooled tagaligns and choose appropriate control for each replicate
@@ -404,12 +405,32 @@ void jsd() { // plot fingerprint
 
 		nth_jsd := min(4,nth)
 
-		(jsd_png, jsd_tsv, jsd_qc) = \
+		string jsd_qc_all_reps
+		(jsd_png, jsd_qc_all_reps) = \
 			jsd(filt_bams, ctl_filt_bam1, labels, "$out_dir/qc", nth_jsd )
-	 	add_file_to_report( jsd_qc, "JS\\nDistance", "", "QC and logs/Fingerprint/JS Distance" )
-		add_file_to_table( jsd_png, "QC and logs/Fingerprint/Plot")
-	// 	add_file_to_report( jsd_png, "JS\\nmetric", "", "QC and logs/Fingerprint/Plot (PNG)" )
-	// 	add_file_to_table( jsd_qc, "QC and logs/Fingerprint/QC Metric")
+		wait
+		// get each line in jsd_qc_all_reps and save to individual qc file for each rep
+		lines := jsd_qc_all_reps.readLines()
+		for ( int rep=1; rep <= get_num_rep( 0 ); rep++) { // IP replicate
+			arr := lines[rep].trim().split("\t")
+			string[] arr_without_col_1 // remove sample name from log file
+			for ( int i=1; i < arr.size(); i++) {
+				arr_without_col_1.add(arr[i])
+			}
+			group := get_group_name( 0, rep )
+			long := get_long_group_name( 0, rep )
+			filt_bam_ := filt_bam{group}
+
+			prefix := replace_dir( rm_ext( filt_bam_, "bam" ), "$out_dir/qc/rep$rep" )
+			jsd_qc_ := "$prefix.jsd.qc"
+			if ( jsd_qc_ <- jsd_qc_all_reps ) {
+				jsd_qc_.write( arr_without_col_1.join("\t") )
+			}
+			jsd_qc{group} = jsd_qc_
+			add_file_to_table( jsd_qc_, "QC and logs/$long/JS Distance" )
+		}
+		// jsd_qc_all_reps.rm()
+		add_file_to_table( jsd_png, "QC and logs/Fingerprint JSD Plot")
 	}
 
 	print( "\n== Done jsd()\n" )
@@ -1599,7 +1620,7 @@ void log_number_of_peaks() {
 	num_peak_log.write(lines)
 }
 
-// black list filter and then convert to bigbed (for true replicates only)
+// black list filter and then calculate FRIP on filtered peakfile
 void filter_peak() {
 	if ( is_final_stage_before_peak() ) return
 	if ( !path_exists( blacklist ) ) return
@@ -1612,14 +1633,38 @@ void filter_peak() {
 	else if ( peak_caller == "spp" || peak_caller == "peakseq" ) {
 		file_type = "regionPeak"
 	}
-	if ( get_num_rep() > 1 && peak_pooled.hasKey(peak_caller) ) {
-		filt_peak_pooled := \
-			blacklist_filter_peak( file_type, peak_pooled{peak_caller}, (peak_pooled{peak_caller}).dirName(), "peak_pooled" )
-	}
+	string{} fraglen_true
+	real fraglen_sum = 0.0 // temp var.	
 	for (int rep=1; rep<=get_num_rep(); rep++) {
+		// blacklist filter
 		if ( !peak.hasKey(peak_caller+",$rep") ) continue
 		filt_peak := \
 			blacklist_filter_peak( file_type, peak{peak_caller+",$rep"}, (peak{peak_caller+",$rep"}).dirName(), "peak $rep" )
+		// FRiP
+		if ( xcor_qc ) {
+			group := get_group_name( 0, rep ) // for each experiment replicate
+			fraglen_true{rep} = get_fraglen( xcor_qc{group} )
+			fraglen_sum += fraglen_true{rep}.parseReal()
+			raw_peak_o_dir := mkdir( "$out_dir/peak/$peak_caller/rep$rep" )
+			raw_peak_qc_FRiP{"rep$rep"} = \
+				FRiP_shifted( tag{group}, filt_peak, parse_int(fraglen_true{rep}), raw_peak_o_dir, "rep$rep" )
+			// add_file_to_table( raw_peak_qc_FRiP{"rep$rep"}, "QC and logs/"+peak_caller.toUpper()+"/True replicates/Replicate $rep/FRiP" )
+		}
+	}
+	if ( get_num_rep() > 1 && peak_pooled.hasKey(peak_caller) ) {
+		// blacklist filter
+		filt_peak_pooled := \
+			blacklist_filter_peak( file_type, peak_pooled{peak_caller}, (peak_pooled{peak_caller}).dirName(), "peak_pooled" )
+		// FRiP
+		if ( xcor_qc ) {
+			real num_rep_real = get_num_rep()
+			fraglen_mean := round( fraglen_sum / num_rep_real ) // compute fraglen mean for pooled
+
+			raw_peak_o_dir := mkdir( "$out_dir/peak/$peak_caller/pooled_rep" )
+			raw_peak_qc_FRiP{"pooled_rep"} = \
+				FRiP_shifted( tag{"pooled_rep"}, filt_peak_pooled, parse_int(fraglen_mean), raw_peak_o_dir, "pooled_rep" )
+			// add_file_to_table( raw_peak_qc_FRiP{"pooled_rep"}, "QC and logs/"+peak_caller.toUpper()+"/Pooled replicate/FRiP" )
+		}
 	}
 	wait
 
@@ -1648,7 +1693,7 @@ void report() {
 
 string html_chipseq_QC() {
 
-	string[] flagstat_qcs, dup_qcs, flagstat_nodup_qcs, pbc_qcs, xcor_qcs, xcor_plots
+	string[] flagstat_qcs, dup_qcs, flagstat_nodup_qcs, pbc_qcs, xcor_qcs, xcor_plots, jsd_qcs
 	string[] groups, groups_no_ctl
 
 	for ( int rep=1; rep <= get_num_rep(); rep++) {
@@ -1664,6 +1709,7 @@ string html_chipseq_QC() {
 		if ( dup_qc.hasKey( group ) ) 		dup_qcs 		+= dup_qc{group}
 		if ( flagstat_nodup_qc.hasKey( group ) )	flagstat_nodup_qcs 	+= flagstat_nodup_qc{group}
 		if ( pbc_qc.hasKey( group ) ) 		pbc_qcs			+= pbc_qc{group}
+		if ( jsd_qc.hasKey( group ) ) 		jsd_qcs			+= jsd_qc{group}
 	}
 	for ( int rep=1; rep<=get_num_rep(); rep++ ) {
 		if ( input_file_exists( 1, rep ) ) { // if control exists
@@ -1689,6 +1735,12 @@ string html_chipseq_QC() {
 		html += html_table_multiple_logs( "Dup. QC", false, "dup", groups, dup_qcs )
 		html += "</div>"
 		html += "<div style='float:left'>"
+		html += html_table_multiple_logs( "Fingerprint JS metric", false, "jsd", groups, jsd_qcs )
+		if ( jsd_png ) {
+			html += html_img( jsd_png, 800, "Fingerprint plot" ) + "<br>"
+		}
+		html += "</div>"
+		html += "<div style='float:left'>"
 		html += html_table_multiple_logs( "Library Complexity QC", false, has_pe() ? "pbc_PE" : "pbc", groups, pbc_qcs )
 		if ( pbc_qcs.size()>0 ) html += html_help_pbc()
 		html += "</div>"
@@ -1702,32 +1754,30 @@ string html_chipseq_QC() {
 		png := pdf_to_png( xcor_plots[i] )
 		html += html_img( png, 500, groups[i] ) + "&nbsp"
 	}
-	if ( jsd_qc ) {
-		html += "<div style='float:left'>"
-		html += html_table_horz_table("JS distance", jsd_qc, groups_no_ctl)
-		html += "</div>"
-	}
-	if ( jsd_png ) {
-		html += html_img( jsd_png, 800, "Fingerprint plot" ) + "<br>"
-	}
 	// number of peaks
 	if ( num_peak_log ) {
 		html += "<div style='float:left'>"
 		html += html_table_multiple_logs( "Number of peaks", false, "num_peaks", num_peak_log )
 		html += html_help_num_peaks()
 		html += "</div>"
-	}	
+	}
+	// FRiP (raw peaks; macs2 or spp)
+	if ( raw_peak_qc_FRiP.size()>0 ) {
+		html += "<div style='float:left'>"
+		html += html_table_multiple_logs( "Enrichment QC (Fraction of reads in raw peaks)", false, "FRiP", raw_peak_qc_FRiP )
+		html += "</div>"
+	}
 	// FRiP (Naive overlap)
 	if ( peak_overlap_qc_FRiP.size()>0 ) {
 		html += "<div style='float:left'>"
-		html += html_table_multiple_logs( "Enrichment QC (Fraction of reads in overlapping peaks)", false, "idr_FRiP", peak_overlap_qc_FRiP )
+		html += html_table_multiple_logs( "Enrichment QC (Fraction of reads in overlapping peaks)", false, "overlap_FRiP", peak_overlap_qc_FRiP )
 		html += html_help_peak_overlap_FRiP()
 		html += "</div>"
 	}
 	if ( peak_overlap_qc != "" ) {
 		html += "<div style='float:left'>"
 		html += html_table_multiple_logs( "Reproducibility QC and Peak Detection Statistics (Overlapping peaks)", \
-							false, "idr", ["rep1"], [peak_overlap_qc] )
+							false, "overlap", ["rep1"], [peak_overlap_qc] )
 		html += html_help_peak_overlap()
 		html += "</div>"
 	}

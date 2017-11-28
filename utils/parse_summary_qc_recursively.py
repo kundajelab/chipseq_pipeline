@@ -8,7 +8,7 @@ import re
 import argparse
 import json
 import subprocess
-import collections
+from collections import OrderedDict
 
 parser = argparse.ArgumentParser(prog='ENCODE_summary.json parser for QC', \
                                     description='Recursively find ENCODE_summary.json, parse it and make a TSV spreadsheet of QC metrics.')
@@ -32,7 +32,7 @@ json_files = subprocess.check_output("find -L %s -name %s" % (args.search_dir,ar
 jsons = []
 for json_file in json_files:
     with open(json_file,'r') as f:
-        jsons.append( json.load(f) )
+        jsons.append( json.load(f, object_pairs_hook=OrderedDict) )
 
 # sort
 # sorted_jsons = sorted(jsons, key = lambda x: (\
@@ -43,7 +43,7 @@ for json_file in json_files:
 #     x['title']))
 
 # look at headers first
-headers = collections.OrderedDict()
+headers = OrderedDict()
 headers['common'] = [\
         'ENCODE award rfa',\
         'ENCODE assay category',\
@@ -63,6 +63,9 @@ for json in jsons:
         if not qc_type in headers or len(headers[qc_type])<len(header_list):
             headers[qc_type] = header_list
 
+qc_type = 'files_to_be_submitted'
+headers[qc_type] = []
+
 # second add missing items for each qc_type
 for json in jsons:
     for qc_file in json['qc_files']:
@@ -71,14 +74,23 @@ for json in jsons:
         for header_item in header_list:
             if not header_item in headers[qc_type]:
                 headers[qc_type].append(header_item)
+    # files to be submitted to ENCODE portal
+    qc_type = 'files_to_be_submitted'
+    for data_file in json['data_files']:
+        header_item = ":".join([data_file['output_type'],data_file['file_format']])
+	if not header_item in headers[qc_type]:
+	    headers[qc_type].append(header_item)
 
 # write header1
 args.out_file.write( '\t'.join( [ qc_type+'\t'*(len(headers[qc_type])-1) \
                         for qc_type in headers ] ) +'\n')
 
 # write header2
-args.out_file.write( '\t'.join( [ '\t'.join(headers[qc_type]) \
-                        for qc_type in headers ] ) +'\n')
+headers_wo_numbering = OrderedDict()
+for qc_type in headers:
+    headers_wo_numbering[qc_type] = [re.sub(r'^\d+_','',header) for header in headers[qc_type]]
+args.out_file.write( '\t'.join( [ '\t'.join(headers_wo_numbering[qc_type]) \
+                        for qc_type in headers_wo_numbering ] ) +'\n')
 
 # for each replicate, write contents
 for json in jsons:
@@ -86,7 +98,7 @@ for json in jsons:
     replicates = set()
     for qc_file in json['qc_files']:        
         info = qc_file['info'].replace('-pr','' )
-        if not info or info == 'null': info = 'rep1'
+        if not info or info == 'null' or info == 'pooled_rep': info = 'rep1'
         if not re.match(r'^rep\d+$', info): continue
         replicates.add( info )
 
@@ -98,13 +110,26 @@ for json in jsons:
             json['title']+'\t'+\
             rep
         for qc_type in headers:
+            if rep == 'rep1' and qc_type == 'files_to_be_submitted':
+                for header in headers[qc_type]:
+                    header_found = False
+                    tmp_result = []
+                    for data_file in json['data_files']:
+                        if header == ':'.join([data_file['output_type'],data_file['file_format']]):
+                            tmp_result.append(data_file['submitted_file_name'])
+                            header_found = True
+                    if header_found:
+                        result += '\t'+ ','.join(tmp_result)
+                    else:
+                        result += '\t'
+
             if qc_type=='common':
                 continue
             registered_header_list = headers[qc_type]
             found = False
             for qc_file in json['qc_files']:
                 info = qc_file['info'].replace('-pr','' )
-                if not info or info == 'null': info = 'rep1'
+                if not info or info == 'null' or info == 'pooled_rep': info = 'rep1'
                 if not re.match(r'^rep\d+$', info): continue
                 if rep != info:
                     continue
@@ -119,6 +144,7 @@ for json in jsons:
                             result += ('\t')
                     found = True
                     break
+
             if not found:
                 result += ('\t'*len(registered_header_list))
 

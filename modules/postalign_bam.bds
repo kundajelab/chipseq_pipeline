@@ -796,10 +796,9 @@ string[] jsd( string[] bams, string ctl_bam1, string[] labels, \
 			string o_dir, int nth_jsd ) {
 	prefix 	:= "$o_dir/"+ (title ? ("$title"+"_") : "" ) + "jsd"
 	png 	:= "$prefix.png"
-	tab 	:= "$prefix.tsv"
 	qc 	:= "$prefix.qc"
 	in 	:= bams + [ctl_bam1]
-	out 	:= [png, tab, qc]
+	out 	:= [png, qc]
 	// fraglen_param := fraglen <= 0 ? "" : "--minFragmentLength $fraglen"
 
 	// plot jsd
@@ -819,7 +818,7 @@ string[] jsd( string[] bams, string ctl_bam1, string[] labels, \
 			-T "Fingerprints of different samples" \
 			--blackListFileName $blacklist \
 			--numberOfProcessors $nth_jsd \
-			--plotFile $png --outRawCounts $tab
+			--plotFile $png
 
 		sys $shcmd_finalize
 	}
