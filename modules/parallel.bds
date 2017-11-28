@@ -6,7 +6,7 @@ include "conf.bds"
 
 help == parallelization settings
 no_par		:= false	help Serialize all tasks (individual tasks can still use multiple threads up to '-nth').
-nth 		:= 4 		help Maximum # threads for a pipeline. (default: 4).
+nth 		:= 8 		help Maximum # threads for a pipeline. (default: 8).
 
 string[] _tids_all 	// array of task ids currently running
 int{} _nth_tasks 	// key: task id, value: # of threads for the task
