@@ -78,8 +78,8 @@ for json in jsons:
     qc_type = 'files_to_be_submitted'
     for data_file in json['data_files']:
         header_item = ":".join([data_file['output_type'],data_file['file_format']])
-	if not header_item in headers[qc_type]:
-	    headers[qc_type].append(header_item)
+        if not header_item in headers[qc_type]:
+            headers[qc_type].append(header_item)
 
 # write header1
 args.out_file.write( '\t'.join( [ qc_type+'\t'*(len(headers[qc_type])-1) \
@@ -98,7 +98,7 @@ for json in jsons:
     replicates = set()
     for qc_file in json['qc_files']:        
         info = qc_file['info'].replace('-pr','' )
-        if not info or info == 'null' or info == 'pooled_rep': info = 'rep1'
+        if not info or info == 'null': info = 'rep1'
         if not re.match(r'^rep\d+$', info): continue
         replicates.add( info )
 
@@ -119,17 +119,16 @@ for json in jsons:
                             tmp_result.append(data_file['submitted_file_name'])
                             header_found = True
                     if header_found:
-                        result += '\t'+ ','.join(tmp_result)
+                        result += '\t'+ ','.join(tmp_result)		
                     else:
                         result += '\t'
-
             if qc_type=='common':
                 continue
             registered_header_list = headers[qc_type]
             found = False
             for qc_file in json['qc_files']:
                 info = qc_file['info'].replace('-pr','' )
-                if not info or info == 'null' or info == 'pooled_rep': info = 'rep1'
+                if not info or info == 'null': info = 'rep1'
                 if not re.match(r'^rep\d+$', info): continue
                 if rep != info:
                     continue
@@ -144,7 +143,7 @@ for json in jsons:
                             result += ('\t')
                     found = True
                     break
-
+		
             if not found:
                 result += ('\t'*len(registered_header_list))
 
