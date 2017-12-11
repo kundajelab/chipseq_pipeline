@@ -96,7 +96,7 @@ def get_default_param_dict(): # this is not ordered
         "resource" : { "_order_" : 1, "_group_desc_" : "System resource and parallelization settings. '-nth' is the most important parameter to parallelize a pipeline. You can specify \
                                                         resource limit for the cluster engine for each task. '-wt' and '-memory' are for all other jobs not \
                                                         specified here ",
-            "nth"         : { "_order_" : 0, "_default_" : 8, "_help_" : "Maximum number of threads for a pipeline." },
+            "nth"         : { "_order_" : 0, "_default_" : 4, "_help_" : "Maximum number of threads for a pipeline." },
             "no_par"      : { "_order_" : 1, "_default_" : False, "_help_" : "Serialize all tasks (individual tasks can still use multiple threads up to '-nth')." },
             "wt"          : { "_order_" : 2, "_default_" : "5h50m", "_help_" : "Walltime for all single-threaded tasks (example: 8:10:00, 3h, 3600)." },
             "memory"      : { "_order_" : 3, "_default_" : "7G", "_help_" : "Maximum memory for all single-threaded tasks (equivalent to '-mem', example: 4.5G, 1024M)." },
@@ -110,15 +110,19 @@ def get_default_param_dict(): # this is not ordered
             "mem_macs2"   : { "_order_" : 11, "_default_" : "15G", "_help_" : "Max. memory for MACS2." },
             "wt_spp"      : { "_order_" : 12, "_default_" : "47h", "_help_" : "Walltime for spp." },
             "mem_spp"     : { "_order_" : 13, "_default_" : "12G", "_help_" : "Max. memory for spp." },
-            # "wt_gem"      : { "_order_" : 14, "_default_" : "47h", "_help_" : "Walltime for GEM." },
-            # "mem_gem"     : { "_order_" : 15, "_default_" : "12G", "_help_" : "Max. memory for GEM." },
-            "wt_peakseq"  : { "_order_" : 16, "_default_" : "47h", "_help_" : "Walltime for PeakSeq." },
-            "mem_peakseq" : { "_order_" : 17, "_default_" : "12G", "_help_" : "Max. memory for PeakSeq." },
+            "mem_xcor"     : { "_order_" : 14, "_default_" : "15G", "_help_" : "Max. memory for cross-corr. analysis." },
+            # "wt_gem"      : { "_order_" : 15, "_default_" : "47h", "_help_" : "Walltime for GEM." },
+            # "mem_gem"     : { "_order_" : 16, "_default_" : "12G", "_help_" : "Max. memory for GEM." },
+            #"wt_peakseq"  : { "_order_" : 17, "_default_" : "47h", "_help_" : "Walltime for PeakSeq." },
+            #"mem_peakseq" : { "_order_" : 18, "_default_" : "12G", "_help_" : "Max. memory for PeakSeq." },
         },
 
         "alignment" : { "_order_" : 2, "_group_desc_" : "Read mapping and alignment settings. Currently bwa is the only available aligner.",
-            "aligner"     : { "_order_" : -1, "_default_" : "bwa", "_help_" : "Aligner to map raw reads in FASTQs." },
-            "multimapping"  : { "_order_" : 0, "_default_" : 0, "_help_" : "Number of alignments reported for multimapping." },
+            "pe_xcor_only"  : { "_order_" : -4, "_default_" : False, "_help_" : "Align R1 of paired end fastqs only and for cross-correlation analysis. All other analyses and QCs will be disabled." },
+            "pe_no_trim_fastq"  : { "_order_" : -3, "_default_" : False, "_help_" : "No fastq trimming and use PE tagAlign for cross-correlation analysis." },
+            "aligner"       : { "_order_" : -2, "_default_" : "bwa", "_help_" : "Aligner to map raw reads in FASTQs." },
+            "multimapping"  : { "_order_" : -1, "_default_" : 0, "_help_" : "Number of alignments reported for multimapping." },
+            "trim_bp"       : { "_order_" : 0, "_default_" : 50, "_help_" : "Number of basepairs after trimming fastqs." },
             "alignment_bwa" : { "_order_" : 1, "_group_desc_" : "",
                 "param_bwa_aln"   : { "_order_" : 0, "_default_" : "-q 5 -l 32 -k 2", "_help_" : "Parameters for bwa aln" },
                 "bwa_idx"         : { "_order_" : 1, "_default_" : "", "_help_" : "BWA index (full path prefix of *.bwt file)" },
@@ -150,7 +154,7 @@ def get_default_param_dict(): # this is not ordered
             "true_rep"        : { "_order_" : 3, "_default_" : False, "_help_" : "Call peaks on true replicates only." },
             "no_pseudo_rep"   : { "_order_" : 4, "_default_" : False, "_help_" : "Do not call peaks on self pseudo replicates." },
             "callpeak_spp" : { "_order_" : 5, "_group_desc_" : "",
-                "npeak_spp"         : { "_order_" : 0, "_default_" : 300000, "_help_" : "Threshold on max. number of peaks (-npeak in run_spp.R)."  },
+                "cap_num_peak_spp"         : { "_order_" : 0, "_default_" : 300000, "_help_" : "Cap number of peaks (-npeak= in run_spp.R)."  },
                 "max_ppsize_spp"    : { "_order_" : 1, "_default_" : "", "_help_" : "R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP."  },
                 "speak_spp"         : { "_order_" : 2, "_default_" : -1, "_help_" : "User-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis."  },
                 "extra_param_spp"   : { "_order_" : 3, "_default_" : "", "_help_" : "Extra parameters for run_spp.R"  },
@@ -160,7 +164,8 @@ def get_default_param_dict(): # this is not ordered
                 "keep_dup_macs2"    : { "_order_" : 1, "_default_" : "all", "_help_" : "--keep-dup for macs2 callpeak (https://github.com/taoliu/MACS#--keep-dup)."  },
                 "extsize_macs2"     : { "_order_" : 2, "_default_" : -1, "_help_" : "--extsize for macs2 callpeak (https://github.com/taoliu/MACS#--extsize). Use -1 to get from upstream cross-corr. analysis."  },
                 "shift_macs2"       : { "_order_" : 3, "_default_" : 0, "_help_" : "--shift for macs2 callpeak (https://github.com/taoliu/MACS#--shift)."  },
-                "extra_param_macs2" : { "_order_" : 4, "_default_" : "", "_help_" : "Extra parameters for macs2 callpeak."  },
+                "cap_num_peak_macs2": { "_order_" : 4, "_default_" : 500000, "_help_" : "Cap number of peaks by taking top N peaks for macs2." },
+                "extra_param_macs2" : { "_order_" : 5, "_default_" : "", "_help_" : "Extra parameters for macs2 callpeak."  },
             },
             # "callpeak_gem" : { "_order_" : 7, "_group_desc_" : "",
             #     "npeak_gem"     : { "_order_" : 0, "_default_" : 300000, "_help_" : "Threshold on # of peaks for GEM."  },
@@ -204,7 +209,8 @@ def get_default_param_dict(): # this is not ordered
                                         data files. A browser session JSON file must have absolute URLs when it's generated. Therefore, the pipeline needs to have \
                                         equivalent URL for the output directory ('-out_dir').",
             "url_base" :        { "_order_" : 0, "_default_" : "", "_help_" : "Equivalent URL address for your output directory (-out_dir)." },
-            "viz_genome_coord" :{ "_order_" : 1, "_default_" : "", "_help_" : "WashU genome browser genome coordinate (e.g. chr7:27117661-27153380)." }
+            "viz_genome_coord" :{ "_order_" : 1, "_default_" : "", "_help_" : "WashU genome browser genome coordinate (e.g. chr7:27117661-27153380)." },
+            "no_browser_tracks" :{ "_order_" : 2, "_default_" : False, "_help_" : "Disable generation of genome browser tracks (workaround for bzip2 shared library issue)." }
         },
 
         "ENCODE_accession" : { "_order_" : 8, "_group_desc_" : "Parameters needed to generate input spreadsheets for ENCODE accession.",

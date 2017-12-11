@@ -1,0 +1,41 @@
+#!/usr/bin/env bds
+#vim: syntax=java
+
+include "species.bds"
+include "module_template.bds"
+
+
+help == fastq trimmer settings
+trim_bp	:= 50 	help Number of basepairs after trimming fastqs (default: 50).
+
+grp_color_trim_fq	:= "skyblue"
+
+init_align_trim_fastq()
+
+void init_align_trim_fastq() {
+	trim_bp	= get_conf_val_int( trim_bp, ["trim_bp"] )
+
+	print("\n\n== fastq trimmer settings\n")
+	print( "Number of basepairs after trimming\t\t: $trim_bp\n")
+}
+
+string trim_fastq( string fastq, string o_dir, string group ) {
+
+	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
+	trimmed	:= "$prefix.trim_"+metric_prefix(trim_bp)+"bp.fastq.gz"
+
+	in 	:= [ fastq ]
+	out 	:= trimmed
+	taskName:= "trim_fq " + group
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
+		sys $shcmd_init
+		sys python $(which trimfastq.py) $fastq $trim_bp | gzip -nc > $trimmed
+		sys $shcmd_finalize
+	}
+
+	add_task_to_graph( in, out, group, "TRIM-FQ", grp_color_trim_fq )
+
+	return out
+}

@@ -9,24 +9,23 @@ ENV_NAME_PY3=aquas_chipseq_py3
 
 ## install wiggler or not
 
-INSTALL_WIGGLER_AND_MCR=1
+INSTALL_WIGGLER_AND_MCR=0
 INSTALL_GEM=1
 INSTALL_PEAKSEQ=1
 
 ## install packages from official channels (bioconda and r)
 
-conda create -n ${ENV_NAME} --file requirements.txt -y -c daler -c asmeurer -c defaults -c bioconda -c r
-conda create -n ${ENV_NAME_PY3} --file requirements_py3.txt -y -c daler -c asmeurer -c defaults -c bioconda -c r
-
+conda create -n ${ENV_NAME} --file requirements.txt -y -c defaults -c bioconda -c r -c bcbio -c daler -c asmeurer
+conda create -n ${ENV_NAME_PY3} --file requirements_py3.txt -y -c defaults -c bioconda -c r -c bcbio -c daler -c asmeurer
 
 ### bash function definition
 
 function add_to_activate {
-  if [ ! -f $CONDA_INIT ]; then
+  if [[ ! -f $CONDA_INIT ]]; then
     echo > $CONDA_INIT
   fi
   for i in "${CONTENTS[@]}"; do
-    if [ $(grep "$i" "$CONDA_INIT" | wc -l ) == 0 ]; then
+    if [[ $(grep "$i" "$CONDA_INIT" | wc -l ) == 0 ]]; then
       echo $i >> "$CONDA_INIT"
     fi
   done
@@ -35,8 +34,8 @@ function add_to_activate {
 ## install useful tools for BigDataScript
 
 mkdir -p $HOME/.bds
-cp --remove-destination ./utils/bds_scr ./utils/bds_scr_5min ./utils/kill_scr bds.config $HOME/.bds/
-cp --remove-destination -rf ./utils/clusterGeneric/ $HOME/.bds/
+cp -f ./utils/bds_scr ./utils/bds_scr_5min ./utils/kill_scr bds.config $HOME/.bds/
+cp -rf ./utils/clusterGeneric/ $HOME/.bds/
 
 ## install additional packages
 
@@ -44,6 +43,9 @@ source activate ${ENV_NAME}
 
 conda uninstall graphviz -y # graphviz in bioconda has segmentation fault bug
 conda install graphviz -c anaconda -y
+
+conda install ucsc-bedgraphtobigwig -c bioconda -y
+conda install ucsc-bedtobigbed -c bioconda -y
 
 CONDA_BIN=$(dirname $(which activate))
 CONDA_EXTRA="$CONDA_BIN/../extra"
@@ -54,8 +56,6 @@ if [[ $(find $CONDA_LIB -name '*egg-info*' -not -perm -o+r | wc -l ) > 0 ]]; the
   find $CONDA_LIB -name '*egg-info*' -not -perm -o+r -exec dirname {} \; | xargs chmod o+r -R
 fi
 
-
-
 mkdir -p $CONDA_EXTRA $CONDA_ACTIVATE_D
 
 ### install Anshul's phantompeakqualtool
@@ -65,7 +65,13 @@ chmod 755 -R phantompeakqualtools
 CONTENTS=("export PATH=$CONDA_EXTRA/phantompeakqualtools:\$PATH")
 add_to_activate
 
-if [ ${INSTALL_WIGGLER_AND_MCR} == 1 ]; then
+### disable locally installed python package lookup
+CONTENTS=("export PYTHONNOUSERSITE=True")
+add_to_activate
+CONTENTS=("export PYTHONPATH=$CONDA_LIB/python2.7/site-packages:\$PYTHONPATH")
+add_to_activate
+
+if [[ ${INSTALL_WIGGLER_AND_MCR} == 1 ]]; then
   conda install -y -c conda-forge bc
   ### install Wiggler (for generating signal tracks)
   cd $CONDA_EXTRA
@@ -99,7 +105,7 @@ if [ ${INSTALL_WIGGLER_AND_MCR} == 1 ]; then
 fi
 
 # install PeakSeq
-if [ ${INSTALL_PEAKSEQ} == 1 ]; then
+if [[ ${INSTALL_PEAKSEQ} == 1 ]]; then
   cd $CONDA_EXTRA
   wget http://archive.gersteinlab.org/proj/PeakSeq/Scoring_ChIPSeq/Code/C/PeakSeq_1.31.zip -N --no-check-certificate
   unzip PeakSeq_1.31.zip
@@ -118,19 +124,32 @@ source activate ${ENV_NAME_PY3}
 
 CONDA_BIN=$(dirname $(which activate))
 CONDA_EXTRA="$CONDA_BIN/../extra"
-mkdir -p $CONDA_EXTRA
+CONDA_ACTIVATE_D="$CONDA_BIN/../etc/conda/activate.d"
+CONDA_INIT="$CONDA_ACTIVATE_D/init.sh"
+CONDA_LIB="$CONDA_BIN/../lib"
+if [[ $(find $CONDA_LIB -name '*egg-info*' -not -perm -o+r | wc -l ) > 0 ]]; then
+  find $CONDA_LIB -name '*egg-info*' -not -perm -o+r -exec dirname {} \; | xargs chmod o+r -R
+fi
+
+mkdir -p $CONDA_EXTRA $CONDA_ACTIVATE_D
 
 ### uninstall IDR 2.0.3 and install the latest one
 conda uninstall idr -y
 cd $CONDA_EXTRA
-git clone https://github.com/nboley/idr
+git clone https://github.com/kundajelab/idr
 cd idr
 python3 setup.py install
 cd $CONDA_EXTRA
 rm -rf idr
 
+### disable locally installed python package lookup
+CONTENTS=("export PYTHONNOUSERSITE=True")
+add_to_activate
+CONTENTS=("export PYTHONPATH=$CONDA_LIB/python3.5/site-packages:\$PYTHONPATH")
+add_to_activate
+
 # install GEM
-if [ ${INSTALL_GEM} == 1 ]; then
+if [[ ${INSTALL_GEM} == 1 ]]; then
   cd $CONDA_EXTRA
   wget http://groups.csail.mit.edu/cgs/gem/download/gem.v3.0.tar.gz -N --no-check-certificate
   tar zxvf gem.v3.0.tar.gz  

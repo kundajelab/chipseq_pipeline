@@ -9,7 +9,7 @@ include "module_template.bds"
 
 help == postalign bam settings
 mapq_thresh	:= 30 		help Threshold for low MAPQ reads removal (default: 30).
-rm_chr_from_tag := "" 		help Perl style reg-ex to exclude reads from tag-aligns. (example: 'other|ribo|mito|_', '_', default: blank)
+rm_chr_from_tag := "chrM"	help Perl style reg-ex to exclude reads from tag-aligns. (example: 'other|ribo|mito|_', '_', default: blank)
 no_dup_removal 	:= false	help No dupe removal when filtering raw bam.
 
 wt_dedup 	:= "23h" 	help Walltime for post-alignment filtering (default: 23h, 24:00:00).
@@ -106,6 +106,24 @@ string samtools_flagstat_bam( string bam, string o_dir, string group ) {
 	return out
 }
 
+string samtools_index( string bam, string group, int nth_sam_idx ) {
+	bai 	:= "$bam.bai"
+	in 	:= [ bam ]
+	out 	:= bai
+
+	taskName:= "samtools_index " + group
+	wait_par( cpus )
+	tid := task( out<-in ) {
+		sys $shcmd_init
+		sys sambamba index -t $nth_sam_idx $bam
+		sys $shcmd_finalize
+	}
+	register_par( tid, cpus )
+	add_task_to_graph( in, out, group )
+
+	return out
+}
+
 string[] dedup_bam( string bam, string o_dir, string log_o_dir, string group, int nth_dedup ) {
 
 	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
@@ -118,7 +136,7 @@ string[] dedup_bam( string bam, string o_dir, string log_o_dir, string group, in
 	filt_bam 	:= "$prefix.filt.bam"
 
 	in	:= [ bam ]
-	out	:= no_dup_removal ? [filt_bam, map_qc, pbc_qc ] : [ nodup_bam, dup_qc, map_qc, pbc_qc ]
+	out	:= no_dup_removal ? [ filt_bam ] : [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	cpus 	:= (nth_dedup==1) ? -1 : nth_dedup; mem := get_res_mem(mem_dedup,nth_dedup);	timeout := get_res_wt(wt_dedup)
 
@@ -225,7 +243,7 @@ string[] dedup_bam( string bam, string o_dir, string log_o_dir, string group, in
 		}
 	}
 
-	add_task_to_graph( in, out, group, "FILTER", grp_color_dedup_bam )
+	add_task_to_graph( in, out, group, "FILTER\\n(SE)", grp_color_dedup_bam )
 
 	return out
 }
@@ -242,7 +260,7 @@ string[] dedup_bam_PE( string bam, string o_dir, string log_o_dir, string group,
 	filt_bam 	:= "$prefix.filt.bam"
 
 	in 	:= [ bam ]
-	out 	:= no_dup_removal ? [ filt_bam, map_qc, pbc_qc ] : [ nodup_bam, dup_qc, map_qc, pbc_qc ]
+	out 	:= no_dup_removal ? [ filt_bam ] : [ nodup_bam, dup_qc, map_qc, pbc_qc ]
 
 	cpus 	:= (nth_dedup==1) ? -1 : nth_dedup; mem := get_res_mem(mem_dedup,nth_dedup);	timeout := get_res_wt(wt_dedup)
 
@@ -367,7 +385,7 @@ string[] dedup_bam_PE( string bam, string o_dir, string log_o_dir, string group,
 		}
 	}
 
-	add_task_to_graph( in, out, group, "FILTER", grp_color_dedup_bam )
+	add_task_to_graph( in, out, group, "FILTER\\n(PE)", grp_color_dedup_bam )
 
 	return out
 }
@@ -540,8 +558,9 @@ string[] markdup_bam_picard( string bam, string o_dir, string log_o_dir, string 
 		//# Set Java environment variable with Xmx, because JVM will ignore our
 		//# runtime flag and use this if it has been set.
 		sys export _JAVA_OPTIONS="-Xms256M -Xmx$max_java_heap -XX:ParallelGCThreads=1"
-		//sys export MAX_JAVA_MEM="12G"
-
+		sys if [ "$java_tmp_dir" != "" ] && [ -d "$java_tmp_dir" ]; then \
+			export _JAVA_OPTIONS="${_JAVA_OPTIONS} -Djava.io.tmpdir=$java_tmp_dir"; \
+		fi
 		// to deal with horrible compatility issue for various versions of picard tools
 		// # if PICARDROOT is not defined, then look into ../shared/picard* (default picard dir. in bioconda)
 		// # elseif ../shared/picard*/MarkDuplicates.jar exist, use it
@@ -732,7 +751,7 @@ string bam_to_tag( string bam, string o_dir, string group ) {
 
 	register_par( tid, cpus )
 
-	add_task_to_graph( in, out, group, "ALIGN", grp_color_align )
+	add_task_to_graph( in, out, group, "ALIGN\\n(SE)", grp_color_align )
 
 	return out
 }
@@ -772,7 +791,7 @@ string bam_to_bedpe( string bam, string o_dir, string group ) {
 		nmsrt_bam.rm()
 	}
 
-	add_task_to_graph( in, out, group, "ALIGN", grp_color_align )
+	add_task_to_graph( in, out, group, "ALIGN\\n(PE)", grp_color_align )
 
 	return out
 }
@@ -812,7 +831,41 @@ string bedpe_to_tag( string bedpe, string o_dir, string group ) {
 	return out
 }
 
+string bedpe_to_tag_adj( string bedpe, string o_dir, string group ) {
 
+	prefix 	:= replace_dir( rm_ext( bedpe, ["bedpe","bed"] ), o_dir )
+	tag 	:= "$prefix.adj.tagAlign.gz"
+	RM_CHR_ := "echo"
+	if ( rm_chr_from_tag != "" ) {
+		RM_CHR_ = "zcat $tag | grep -P -v '$rm_chr_from_tag' | gzip -nc > $prefix.rm_chr.tmp.gz; mv $prefix.rm_chr.tmp.gz $tag"
+	}
+
+	in 	:= [ bedpe ]
+	out 	:= tag
+
+	taskName:= "bedpe_to_tag " + group
+
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
+
+		sys $shcmd_init
+
+		sys zcat $bedpe | awk -F '\t' '{ if ($9=="+") {fraglen=$6-$2} else {fraglen=$3-$5}; print $1"\t"$2"\t"$3"\tN\t1000\t"$9"\t"fraglen"\n"$4"\t"$5"\t"$6"\tN\t1000\t"$10"\t"fraglen }' | awk -F '\t' 'BEGIN{ OFS=FS }{ if ($7 < 120 || $7 > 200) {if ($6=="+") {$2=$2+int($7/2)-4; $3=$3+int($7/2)+5} else {$3=$3-int($7/2)+5; $2=$2-int($7/2)-4} } print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6 }' | \
+			gzip -nc > $tag
+		// sys zcat $bedpe | awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}' | \
+		// 	gzip -nc > $tag
+		sys $RM_CHR_
+
+		sys $shcmd_finalize
+	}
+
+	register_par( tid, cpus )
+
+	add_task_to_graph( in, out, group )
+
+	return out
+}
 
 string pool_fastq( string fastq1, string fastq2, string o_dir, string group ) {
 	// LINUX has limit on filename length (255), make it as shorter as possible
@@ -881,5 +934,41 @@ string pool_fastq( string[] fastqs, string o_dir, string group ) {
 
 	add_task_to_graph( in, out, group )
 
+	return out
+}
+
+string[] jsd( string[] bams, string ctl_bam1, string[] labels, \
+			string o_dir, int nth_jsd ) {
+	prefix 	:= "$o_dir/"+ (title ? ("$title"+"_") : "" ) + "jsd"
+	png 	:= "$prefix.png"
+	qc 	:= "$prefix.qc"
+	in 	:= bams + [ctl_bam1]
+	out 	:= [png, qc]
+	// fraglen_param := fraglen <= 0 ? "" : "--minFragmentLength $fraglen"
+
+	// plot jsd
+	bams_str  := array_to_str(bams + [ctl_bam1]," ")
+	labels_str:= array_to_str(labels," ")
+
+	cpus := nth_jsd
+	taskName:= "jsd"
+	wait_par( cpus )
+
+	tid := task( out<-in ) {
+		sys $shcmd_init
+		sys plotFingerprint -b $bams_str --JSDsample $ctl_bam1 \
+			--labels $labels_str \
+			--outQualityMetrics $qc \
+			--minMappingQuality $mapq_thresh \
+			-T "Fingerprints of different samples" \
+			--blackListFileName $blacklist \
+			--numberOfProcessors $nth_jsd \
+			--plotFile $png
+
+		sys $shcmd_finalize
+	}
+
+	register_par( tid, cpus )
+	add_task_to_graph( in, out, "" )
 	return out
 }

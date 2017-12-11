@@ -22,6 +22,9 @@ if( $timeout > 0 ) {
 	$timeout = ceil($timeout/60); # minute
 	$qsub .= "-t $timeout ";
 }
+if ( $queue ne "" ) {
+        $qsub .= "-p $queue "
+}
 
 $pid = open QSUB, " | $qsub";
 die "Cannot run command '$qsub'\n" if ! kill(0, $pid); # Check that process exists

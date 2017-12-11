@@ -6,7 +6,7 @@ include "module_template.bds"
 
 
 help == callpeak spp settings
-npeak_spp 	:= 300000 	help Threshold on # peaks (-npeak= in run_spp.R) (default: 300000).
+cap_num_peak_spp 	:= 300000 help Cap number of peaks (-npeak= in run_spp.R) (default: 300000).
 max_ppsize_spp 	:= ""		help R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP.
 speak_spp 	:= -1 		help User-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis (default: -1).
 extra_param_spp := ""		help Extra parameters for SPP (run_spp.R, peak calling only).
@@ -22,7 +22,7 @@ init_callpeak_spp()
 
 void init_callpeak_spp() {
 
-	npeak_spp 	= get_conf_val_int( npeak_spp,	["npeak_spp"] )
+	cap_num_peak_spp 	= get_conf_val_int( cap_num_peak_spp,	["cap_num_peak_spp"] )
 	wt_spp 		= get_conf_val( wt_spp, 	["walltime_spp", "wt_spp", "timeout_spp"] )
 	mem_spp 	= get_conf_val( mem_spp, 	["memory_spp", "mem_spp"] )
 	max_ppsize_spp 	= get_conf_val( max_ppsize_spp, ["max_ppsize_spp"] )
@@ -30,7 +30,7 @@ void init_callpeak_spp() {
 	extra_param_spp = get_conf_val( extra_param_spp,["extra_param_spp"] )
 
 	print("\n\n== callpeak spp settings\n")
-	print( "Threshold for # peak\t\t: $npeak_spp\n")
+	print( "Threshold for # peak\t\t: $cap_num_peak_spp\n")
 	print( "Walltime (spp)\t\t\t: $wt_spp\n")
 	print( "Max. memory (spp)\t\t: $mem_spp\n")
 	print( "Stack size for run_spp.R\t\t:$max_ppsize_spp\n")
@@ -75,7 +75,7 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 		    fi
 
 		sys Rscript $extra_param ${RUN_SPP} -c=$tag -p=$nth_spp -i=$ctl_tag \
-			-npeak=$npeak_spp -odir=$o_dir $param_speak -savr -savp -rf -out=$ccscore
+			-npeak=$cap_num_peak_spp -odir=$o_dir $param_speak -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
 		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{ if ($2<0) $2=0; print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -nc > $rpeakfile

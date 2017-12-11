@@ -62,11 +62,11 @@ string _get_sort_param( string filetype ) {
 	
 	if ( filetype.toLower() == "narrowpeak" || filetype.toLower() == "regionpeak" || filetype.toLower() == "broadpeak" ) {
 		// p-value is at 8th column
-		return "-grk8"
+		return "-s -grk8,8"
 	}
 	else if ( filetype.toLower() == "gappedpeak") { 
 		// p-value is at 14th column
-		return "-grk14"
+		return "-s -grk14,14"
 	}
 	else {
 		error("Unsupport peak file type! ($filetype)\n")
