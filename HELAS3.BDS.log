@@ -1,0 +1,172 @@
+===== Created a new screen ====
+[DATE] : Mon Apr 24 15:49:08 PDT 2017
+[HOST] : surya
+[SCR_NAME] : HELAS3.BDS
+[BDS_PARAM] :  /srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/chipseq.bds -title HELAS3 -nth 5 -no_pseudo_rep -macs2_for_pooled_rep_only -species hg38 -url_base http://mitra.stanford.edu/kundaje/leepc12/imk_chipseq/HELAS3/out -tag1 -tag2 -se -final_stage tag
+
+
+
+== git info
+Latest git commit		: 3371b18131264df528f23a0e8288bfce2f589726 (Fri Apr 21 15:08:54 2017)
+	Reading parameters from section (surya) in file(/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/default.env)...
+
+
+== configuration file info
+Hostname			: surya
+Configuration file		: 
+Environment file		: /srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/default.env
+
+
+== parallelization info
+No parallel jobs		: false
+Maximum # threads 		: 5
+
+
+== cluster/system info
+Walltime (general)		: 5h50m
+Max. memory (general)		: 7G
+Force to use a system		: sge
+Process priority (niceness)	: 19
+Retiral for failed tasks	: 0
+Submit tasks to a cluster queue	: 
+Unlimited cluster mem./walltime	: true
+
+
+== shell environment info
+Conda env. 			: aquas_chipseq
+Conda env. for python3		: aquas_chipseq_py3
+Conda bin. directory		: /software/miniconda3/bin/
+
+Shell cmd. for init.		: if [[ -f $(which /software/miniconda3/bin/conda) && $(/software/miniconda3/bin/conda env list | grep aquas_chipseq | wc -l) != "0" ]]; then source /software/miniconda3/bin/activate aquas_chipseq; sleep 5; fi;  export PATH=/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/.:/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/modules:/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/utils:${PATH}:/bin:/usr/bin:/usr/local/bin:${HOME}/.bds; set -o pipefail; STARTTIME=$(date +%s); if (( $(nice)<19 )); then renice -n 19 $$; fi
+
+Shell cmd. for init.(py3)	: if [[ -f $(which /software/miniconda3/bin/conda) && $(/software/miniconda3/bin/conda env list | grep aquas_chipseq_py3 | wc -l) != "0" ]]; then source /software/miniconda3/bin/activate aquas_chipseq_py3; sleep 5; fi;  export PATH=/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/.:/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/modules:/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/utils:${PATH}:/bin:/usr/bin:/usr/local/bin:${HOME}/.bds; set -o pipefail; STARTTIME=$(date +%s); if (( $(nice)<19 )); then renice -n 19 $$; fi
+
+Shell cmd. for fin.		: TASKTIME=$[$(date +%s)-${STARTTIME}]; if [ ${TASKTIME} -lt 60 ]; then echo "Waiting for $[60-${TASKTIME}] seconds."; sleep $[60-${TASKTIME}]; fi
+
+
+== output directory/title info
+Output dir.			: /srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/out
+Title (prefix)			: HELAS3
+	Reading parameters from section (default) in file(/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/default.env)...
+	Reading parameters from section (hg38) in file(/srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/species/kundaje.conf)...
+
+
+== species settings
+Species				: hg38
+Species file			: /srv/scratch/shared/surya/imk1/TFBindingPredictionProject/src/chipseq_pipeline/species/kundaje.conf
+
+Species name (WashU browser)	: hg38
+Ref. genome seq. fasta		: /mnt/data/pipeline_genome_data/hg38/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+Chr. sizes file			: /mnt/data/pipeline_genome_data/hg38/hg38.chrom.sizes
+Black list bed			: /mnt/data/pipeline_genome_data/hg38/hg38.blacklist.bed.gz
+
+
+== ENCODE accession settings
+ENCODE experiment accession	: 
+ENCODE award RFA			: 
+ENCODE assay category		: 
+ENCODE assay title		: 
+ENCODE award				: 
+ENCODE lab				: 
+ENCODE assembly genome		: GRCh38
+ENCODE alias prefix		: KLAB_PIPELINE
+
+
+== report settings
+URL root for output directory	: http://mitra.stanford.edu/kundaje/leepc12/imk_chipseq/HELAS3/out
+
+
+== align bwa settings
+Param. for bwa			: -q 5 -l 32 -k 2
+BWA index			: /mnt/data/pipeline_genome_data/hg38/bwa_index/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+Walltime (bwa)			: 47h
+Max. memory (bwa)		: 12G
+
+
+== align multimapping settings
+# alignments reported for multimapping	: 0
+
+
+== postalign bam settings
+MAPQ reads rm thresh.		: 30
+Rm. tag reads with str.		: 
+No dupe removal in filtering raw bam	: false
+Walltime (bam filter)		: 23h
+Max. memory (bam filter)	: 12G
+Dup marker				: picard
+Use sambamba markdup (instead of picard)	: false
+
+
+== postalign bed/tagalign settings
+Max. memory for UNIX shuf			: 12G
+
+
+== postalign cross-corr. analysis settings
+Max. memory for UNIX shuf			: 12G
+User-defined cross-corr. peak strandshift	: -1
+Extra parameters for cross-corr. analysis	: 
+
+
+== callpeak spp settings
+Threshold for # peak		: 300000
+Walltime (spp)			: 47h
+Max. memory (spp)		: 12G
+Stack size for run_spp.R		:
+Use-defined cross-corr. peak strandshift; if -1, use frag. len.	:-1
+Extra parameters for run_spp.R	:
+
+
+== callpeak macs2 settings
+Genome size (hs,mm)			: hs
+Walltime (macs2)			: 23h
+Max. memory (macs2)			: 15G
+P-value cutoff (macs2 callpeak)		: 0.01
+--keep-dup (macs2 callpeak)			: all
+--extsize (macs2 callpeak); if -1 then use frag. len.	: -1
+--shift (macs2 callpeak)			: 0
+Extra parameters for macs2 callpeak		: 
+
+
+== callpeak naiver overlap settings
+Bedtools intersect -nonamecheck	: false
+
+
+== IDR settings
+Append IDR threshold to IDR out_dir	: false
+
+
+== signal track generation settings
+Ref. genome seq. dir.		: /mnt/data/pipeline_genome_data/hg38/seq
+Umap dir.			: 
+Param. for bamCoverage (deeptools)	: --normalizeTo1x 2451960000 --centerReads -bs 10
+Walltime (bam_cvrg)			: 23h
+Max. memory (bam_cvrg)			: 16G
+
+
+== chipseq pipeline settings
+# replicates 				: 0
+Type of ChIP-Seq pipeline		: TF
+Final stage for ChIP-Seq		: tag
+Signal tracks for pooled rep. only	: false
+Aligner to map raw reads			: bwa
+# reads to subsample for cross-corr. analysis		: 15000000
+# reads to subsample exp. replicates (0: no subsampling): 0
+# reads to subsample controls (0: no subsampling)	: 0
+Generate anonymized filt. bam		: false
+Peak caller for IDR analysis		: spp
+Control rep. depth ratio		: 1.2
+Scoring column for IDR			: signal.value
+IDR threshold				: 0.05
+Force to use pooled ctl			: false
+Peak calling for true reps only		: false
+No peak calling for self pseudo reps	: true
+Disable cross-correlation analysis	: false
+
+
+== checking chipseq parameters ...
+
+
+== checking input files ...
+
+00:00:00.507	Error (modules/parallel.bds, line 90, pos 18): distribute_nth: sum is zero. check if input file size is 0?
+
