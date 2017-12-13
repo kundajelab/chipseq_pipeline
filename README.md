@@ -26,12 +26,16 @@ Install software/database in a correct order according to your system. For examp
   * [AQUAS Pipeline](#aquas-pipeline)
 
 * Stanford SCG cluster
+  * [Conda](#conda)
   * [BigDataScript](#bigdatascript)
   * [AQUAS Pipeline](#aquas-pipeline)
+  * [Dependencies](#dependencies)
 
 * Stanford Sherlock cluster
+  * [Conda](#conda)
   * [BigDataScript](#bigdatascript)
   * [AQUAS Pipeline](#aquas-pipeline)
+  * [Dependencies](#dependencies)
 
 ## Java
 

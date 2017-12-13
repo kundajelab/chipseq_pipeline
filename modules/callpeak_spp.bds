@@ -6,7 +6,7 @@ include "module_template.bds"
 
 
 help == callpeak spp settings
-cap_num_peak_spp 	:= 300000 help Cap number of peaks (-npeak= in run_spp.R) (default: 300000).
+cap_num_peak_spp 	:= "300K" help Cap number of peaks (-npeak= in run_spp.R) (default: 300000).
 max_ppsize_spp 	:= ""		help R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for SPP.
 speak_spp 	:= -1 		help User-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to get from upstream cross-corr. analysis (default: -1).
 extra_param_spp := ""		help Extra parameters for SPP (run_spp.R, peak calling only).
@@ -22,7 +22,7 @@ init_callpeak_spp()
 
 void init_callpeak_spp() {
 
-	cap_num_peak_spp 	= get_conf_val_int( cap_num_peak_spp,	["cap_num_peak_spp"] )
+	cap_num_peak_spp = get_conf_val( cap_num_peak_spp,	["cap_num_peak_spp"] )
 	wt_spp 		= get_conf_val( wt_spp, 	["walltime_spp", "wt_spp", "timeout_spp"] )
 	mem_spp 	= get_conf_val( mem_spp, 	["memory_spp", "mem_spp"] )
 	max_ppsize_spp 	= get_conf_val( max_ppsize_spp, ["max_ppsize_spp"] )
@@ -42,6 +42,8 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 
 	if ( ctl_tag == "" ) error("missing file: control tagalign!")
 	if ( frag_len == "" ) error("missing parameter: fragment length!")
+
+	int_cap_num_peak_spp := parse_number( cap_num_peak_spp )
 
 	prefix_vs	:= "$o_dir/" + make_vs_basename_wo_gz( tag, ctl_tag, "" )
 	prefix_x	:= "$o_dir/" + make_x_basename_wo_gz( tag, ctl_tag, "" )
@@ -75,7 +77,7 @@ string[] spp( string tag, string ctl_tag, string frag_len, string o_dir, string 
 		    fi
 
 		sys Rscript $extra_param ${RUN_SPP} -c=$tag -p=$nth_spp -i=$ctl_tag \
-			-npeak=$cap_num_peak_spp -odir=$o_dir $param_speak -savr -savp -rf -out=$ccscore
+			-npeak=$int_cap_num_peak_spp -odir=$o_dir $param_speak -savr -savp -rf -out=$ccscore
 
 		// Bug fix (we have scientific representation of chr coord., possible bug in run_spp.R?):
 		sys zcat $rpeakfile_vs | awk 'BEGIN{OFS="\t"}{ if ($2<0) $2=0; print $1,int($2),int($3),$4,$5,$6,$7,$8,$9,$10;}' | gzip -f -nc > $rpeakfile
