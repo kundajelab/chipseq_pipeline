@@ -1,7 +1,8 @@
 nomkl
 python ==3.5
+numpy ==1.11.3
 idr ==2.0.3
 bedtools ==2.26.0
 pigz
 java-jdk ==8.0.92
-matplotlib
+matplotlib ==1.5.1

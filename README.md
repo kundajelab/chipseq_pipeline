@@ -26,12 +26,16 @@ Install software/database in a correct order according to your system. For examp
   * [AQUAS Pipeline](#aquas-pipeline)
 
 * Stanford SCG cluster
+  * [Conda](#conda)
   * [BigDataScript](#bigdatascript)
   * [AQUAS Pipeline](#aquas-pipeline)
+  * [Dependencies](#dependencies)
 
 * Stanford Sherlock cluster
+  * [Conda](#conda)
   * [BigDataScript](#bigdatascript)
   * [AQUAS Pipeline](#aquas-pipeline)
+  * [Dependencies](#dependencies)
 
 ## Java
 
@@ -113,21 +117,6 @@ $ cp bds.config ./utils/bds_scr $HOME/.bds
 ```
 
 If `install_dependencies.sh` fails, run `./uninstall_dependencies.sh`, fix problems and then try `bash install_dependencies.sh` again.
-
-If you have super-user privileges on your system, it is recommended to install Miniconda3 on `/opt/miniconda3/` and share conda environment with others.
-
-```
-$ sudo su
-$ bash install_dependencies.sh
-$ chmod 755 -R /opt/miniconda3/  # if you get some annoying permission issues.
-```
-
-In order to make Miniconda3 accessible for all users, create an intialization script `/etc/profile.d/conda_init.sh`.
-
-```
-$ echo '#!/bin/bash' > /etc/profile.d/conda_init.sh
-$ echo 'export PATH=$PATH:/opt/miniconda3/bin' >> /etc/profile.d/conda_init.sh
-```
 
 ## Genome data
 
