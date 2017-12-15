@@ -164,7 +164,7 @@ string[] dedup_bam( string bam, string o_dir, string log_o_dir, string group, in
 
 			sys if [[ $multimapping > 0 ]]; then \
 				sambamba sort -t $nth_dedup $bam -n -o $qname_sort_bam; \
-				samtools view -h $qname_sort_bam | $(which assign_multimappers.py) -k $multimapping | \
+				samtools view -h $qname_sort_bam | $(which modifyMultiMappers.py) -MultiMapThresh $multimapping | \
 				samtools view -F 1804 -Su /dev/stdin | \
 				sambamba sort -t $nth_dedup /dev/stdin -o $filt_bam; \
 				rm -f $qname_sort_bam; \
@@ -297,7 +297,7 @@ string[] dedup_bam_PE( string bam, string o_dir, string log_o_dir, string group,
 				samtools view -F 524 -f 2 -u $bam | \
 				sambamba sort -t $nth_dedup -n /dev/stdin -o $tmp_filt_bam; \
 				samtools view -h $tmp_filt_bam | \
-				$(which assign_multimappers.py) -k $multimapping --paired-end | \
+				$(which modifyMultiMappers.py) -MultiMapThresh $multimapping | \
 				samtools fixmate -r /dev/stdin $tmp_filt_bam.fixmate.bam; \
 			    else \
 			    	samtools view -F 1804 -f 2 -q $mapq_thresh -u $bam | \
@@ -386,36 +386,6 @@ string[] dedup_bam_PE( string bam, string o_dir, string log_o_dir, string group,
 	}
 
 	add_task_to_graph( in, out, group, "FILTER\\n(PE)", grp_color_dedup_bam )
-
-	return out
-}
-
-string prepare_bam_PE_mm( string bam, string o_dir, string group, int nth_dedup ) {
-	if ( multimapping<1 ) error("This function is for multimapping reads!")
-	prefix 		:= replace_dir( rm_ext( bam, "bam" ), o_dir )
-
-	in 	:= [ bam ]
-	out 	:= bam
-	cpus 	:= (nth_dedup==1) ? -1 : nth_dedup; mem := get_res_mem(mem_dedup,nth_dedup);	timeout := get_res_wt(wt_dedup)
-
-	if ( out<-in ) {			
-		tid := task( out1<-in1 ) {
-			sys $shcmd_init
-			sort_bam := "$prefix.sorted.bam"
-			taskName:= "prepare_bam_mm_1 " + group
-			in1 	:= in
-			out1 := bam
-			sambamba sort -t $nth_dedup $bam -n -o $qname_sort_bam;
-			samtools view -h $sort_bam | $(which modifyMultiMappers.py) -MultiMapThresh $multimapping | \
-				samtools view -F 1804 -Su /dev/stdin | \
-				sambamba sort -t $nth_dedup /dev/stdin -o $bam           
-			sys $shcmd_finalize
-		}
-		register_par( tid, cpus )
-		wait
-	}
-
-	add_task_to_graph( in, out, group, "FILTER", grp_color_dedup_bam )
 
 	return out
 }

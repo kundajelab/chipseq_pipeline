@@ -305,9 +305,6 @@ void chk_param() {
 	if ( !is_input_peak() && peak_caller == "spp" && !ctl_exists() && !is_final_stage_before_peak() ) \
 		error("Cannot call peaks (SPP) without controls!\n")
 
-	if ( multimapping > 0 && has_se() ) \
-		error("Multimapping is not available for single-ended dataset!\n")
-
 	if ( is_input_peak() && true_rep && get_num_rep() == 1 && is_TF_chipseq() ) \
 		error("Cannot perform IDR on with only one replicate when '-true_rep' is turned on!")
 
@@ -733,9 +730,6 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 					= dedup_bam_PE( bam_, aln_o_dir, qc_o_dir, group, nth_rep )
 			}
 			else {
-				if ( multimapping ) {
-					bam_ = prepare_bam_PE_mm( bam_ aln_o_dir, group, nth_rep )
-				}
 				( filt_bam_, dup_qc_, flagstat_nodup_qc_, pbc_qc_ ) \
 					= dedup_bam_PE( bam_, aln_o_dir, qc_o_dir, group, nth_rep )
 											
