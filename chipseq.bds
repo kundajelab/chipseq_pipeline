@@ -379,9 +379,7 @@ void align() {
 }
 
 void jsd() { // plot fingerprint
-	if (ctl_exists() && \
-		(is_input_filt_bam( 0, 1 ) || is_input_bam( 0, 1 ) || is_input_fastq( 0, 1 ))) {
-
+	if ( filt_bam.hasKey("ctl1") && filt_bam.hasKey("rep1") ) {
 		nth_sam_idx := min(2,nth)
 
 		string[] filt_bams, labels
@@ -394,6 +392,7 @@ void jsd() { // plot fingerprint
 			samtools_index(filt_bam_, group, nth_sam_idx)
 		}
 		group_ctl1 := get_group_name( 1, 1 ) // 1st control replicate
+
 		ctl_filt_bam1 := filt_bam{group_ctl1}
 		labels.add(group_ctl1)
 
@@ -428,9 +427,9 @@ void jsd() { // plot fingerprint
 		}
 		// jsd_qc_all_reps.rm()
 		add_file_to_table( jsd_png, "QC and logs/Fingerprint JSD Plot")
-	}
 
-	print( "\n== Done jsd()\n" )
+		print( "\n== Done jsd()\n" )
+	}
 }
 
 void align( int ctl, int rep, int nth_rep ) {
