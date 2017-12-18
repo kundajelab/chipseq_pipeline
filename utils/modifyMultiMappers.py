@@ -16,6 +16,8 @@ def parseArgument():
 			help='Maximum number of allowed best hits')
 	parser.add_argument("--outputFileName", required=False, default=None,\
 			help='Name of sam file where the output will be recorded, will use stdout if None')
+	parser.add_argument("--outputRemovedReadFileName", required=False, default=None,\
+                        help='Name of text file where the reads that will be removed will be recorded, will not recorde the removed reads if None')
 	options = parser.parse_args()
 	return options
 
@@ -34,6 +36,10 @@ def modifyMultiMappers(options):
 	else:
 		# The output will be written to stdout
 		outputFile = sys.stdout
+	outputRemovedReadFile = None
+	if options.outputRemovedReadFileName != None:
+		# The removed reads will be recorded
+		outputRemovedReadFile = open(options.outputRemovedReadFileName, 'w+')
 	for line in samFile:
 		# Iterate through the lines of the sam file and record those that meet the criteria
 		#outputFile.write(line)
@@ -63,6 +69,9 @@ def modifyMultiMappers(options):
 					if (numBestHits > 1) and (numBestHits <= options.MultiMapThresh):
 						# The read is a multi-mapper with sufficiently few best hits, so keep it
 						lineElements[4] = "30" # Adjusting the MAPQ threshold so that the read will not get eliminated later
+					elif options.outputRemovedReadFileName != None:
+						# The current read will later be removed because it has too many multi-mappers, so record it
+						outputRemovedReadFile.write(line)
 					break
 			outputFile.write("\t".join(lineElements) + "\n")
 	if options.samFileName != None:
@@ -71,6 +80,9 @@ def modifyMultiMappers(options):
 	if options.outputFileName != None:
 		# Close the output file
 		outputFile.close()
+	if options.outputRemovedReadFileName != None:
+		# Close the file with the reads that will later be removed because they have too many multi-mappers
+		outputRemovedReadFile.close()
 	
 if __name__ == "__main__":
 	options = parseArgument()
