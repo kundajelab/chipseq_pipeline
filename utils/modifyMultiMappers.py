@@ -14,7 +14,7 @@ def parseArgument():
 			help='MAPQ threshold for uniquely-mapping reads')
 	parser.add_argument("--MultiMapThresh", required=False, type=int, default=4,\
 			help='Maximum number of allowed best hits')
-	parser.add_argument("--outputFileName", required=False, default=None\
+	parser.add_argument("--outputFileName", required=False, default=None,\
 			help='Name of sam file where the output will be recorded, will use stdout if None')
 	options = parser.parse_args()
 	return options
@@ -25,17 +25,21 @@ def modifyMultiMappers(options):
 	if options.samFileName != None:
 		# A sam file has been inputted
 		samFile = io.bufferedReader(gzip.open(options.samFileName))
-	else
+	else:
 		samFile = sys.stdin
 	outputFile = None
 	if options.outputFileName != None:
 		# An output file has been inputted
-		outputFile = io.bufferedWriter(gzip.open(options.outputFileName, 'w+'))
+		outputFile = open(options.outputFileName, 'w+')
 	else:
 		# The output will be written to stdout
 		outputFile = sys.stdout
 	for line in samFile:
 		# Iterate through the lines of the sam file and record those that meet the criteria
+		#outputFile.write(line)
+		#if line[0] != "@":
+		#	break
+		#continue
 		if line[0] == "@":
 			# The line is a header, so keep it
 			outputFile.write(line)
@@ -60,7 +64,7 @@ def modifyMultiMappers(options):
 						# The read is a multi-mapper with sufficiently few best hits, so keep it
 						lineElements[4] = "30" # Adjusting the MAPQ threshold so that the read will not get eliminated later
 					break
-			outputFile.write(".".join(lineElements) + "\n")
+			outputFile.write("\t".join(lineElements) + "\n")
 	if options.samFileName != None:
 		# Close the sam file
 		samFile.close()
@@ -70,4 +74,4 @@ def modifyMultiMappers(options):
 	
 if __name__ == "__main__":
 	options = parseArgument()
-	removeMultiMappers(options)
+	modifyMultiMappers(options)
