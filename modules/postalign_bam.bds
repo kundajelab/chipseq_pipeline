@@ -146,7 +146,6 @@ string[] dedup_bam( string bam, string o_dir, string log_o_dir, string group, in
 		tmp_filt_bam 	:= "$prefix.dupmark.bam"
 		tmp_unsorted_filt_bam := "$prefix.dupmark.unsorted.bam"
 		tmp_modified_sam := "$prefix.modified.sam"
-		too_many_multimappers_txt := "$prefix.tooManyMultimappers.txt"
 
 		taskName:= "dedup_bam_1 " + group
 		in1 	:= in
@@ -166,15 +165,19 @@ string[] dedup_bam( string bam, string o_dir, string log_o_dir, string group, in
 
 			sys if [[ $multimapping > 0 ]]; then \
 				samtools view -h $bam | \
-				$(which modifyMultiMappers.py) --MultiMapThresh $multimapping --outputFileName $tmp_modified_sam \
-					--outputRemovedReadFileName $too_many_multimappers_txt; \
+				$(which modifyMultiMappers.py) --MultiMapThresh $multimapping --outputFileName $tmp_modified_sam; \
 				samtools view -F 1804 -q $mapq_thresh -b $tmp_modified_sam -o $tmp_unsorted_filt_bam; \
 				rm -f $tmp_modified_sam; \
 			    else \
 				samtools view -F 1804 -q $mapq_thresh -b $bam -o $tmp_unsorted_filt_bam; \
 			    fi
 			sys sambamba sort -t $nth_dedup -n $tmp_unsorted_filt_bam -o $tmp_filt_bam
+
+			sys rm -f $tmp_unsorted_filt_bam			
+
 			sys samtools fixmate -r $tmp_filt_bam $tmp_filt_bam.fixmate.bam
+
+			sys rm -f $tmp_filt_bam
 
 			sys $shcmd_finalize
 		}
@@ -273,7 +276,6 @@ string[] dedup_bam_PE( string bam, string o_dir, string log_o_dir, string group,
 		tmp_filt_bam 	:= "$prefix.dupmark.bam"
 		tmp_unsorted_filt_bam := "$prefix.dupmark.unsorted.bam"
 		tmp_modified_sam := "$prefix.modified.sam"
-		too_many_multimappers_txt := "$prefix.tooManyMultimappers.txt"
 
 		taskName:= "dedup_bam_PE_1 " + group
 		in1 	:= in
@@ -301,20 +303,22 @@ string[] dedup_bam_PE( string bam, string o_dir, string log_o_dir, string group,
 
 			sys if [[ $multimapping > 0 ]]; then \
 				samtools view -h $bam | \
-				$(which modifyMultiMappers.py) --MultiMapThresh $multimapping --outputFileName $tmp_modified_sam \
-					--outputRemovedReadFileName $too_many_multimappers_txt; \
+				$(which modifyMultiMappers.py) --MultiMapThresh $multimapping --outputFileName $tmp_modified_sam; \
 				samtools view -F 1804 -f 2 -q $mapq_thresh -b $tmp_modified_sam -o $tmp_unsorted_filt_bam; \
 				rm -f $tmp_modified_sam; \
 			    else \
 				samtools view -F 1804 -f 2 -q $mapq_thresh -b $bam -o $tmp_unsorted_filt_bam; \
 			    fi
 			sys sambamba sort -t $nth_dedup -n $tmp_unsorted_filt_bam -o $tmp_filt_bam
+			
+			sys rm -f $tmp_unsorted_filt_bam
+
 			sys samtools fixmate -r $tmp_filt_bam $tmp_filt_bam.fixmate.bam
+
+			sys rm -f $tmp_filt_bam
 
 			sys samtools view -F 1804 -f 2 -u $tmp_filt_bam.fixmate.bam | sambamba sort -t $nth_dedup /dev/stdin -o $filt_bam
 
-			sys rm -f $tmp_filt_bam.fixmate.bam
-			sys rm -f $tmp_filt_bam
 			sys rm -f $tmp_unsorted_filt_bam
 
 			sys $shcmd_finalize
