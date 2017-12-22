@@ -121,7 +121,7 @@ string[] macs2_chipseq_npeak_and_signal( string tag, string ctl_tag, string frag
 		sys rm -f "$prefix"_FE.bdg
 		
 		//# Convert bedgraph to bigwig
-		sys sort -k1,1 -k2,2n $fc_bedgraph > $fc_bedgraph_srt
+		sys sort -S 4G -k1,1 -k2,2n $fc_bedgraph > $fc_bedgraph_srt
 		sys bedGraphToBigWig $fc_bedgraph_srt $chrsz $fc_bigwig
 		sys rm -f $fc_bedgraph $fc_bedgraph_srt
 
@@ -140,7 +140,7 @@ string[] macs2_chipseq_npeak_and_signal( string tag, string ctl_tag, string frag
 		sys rm -rf "$prefix"_ppois.bdg
 		
 		//# Convert bedgraph to bigwig
-		sys sort -k1,1 -k2,2n $pval_bedgraph > $pval_bedgraph_srt
+		sys sort -S 4G -k1,1 -k2,2n $pval_bedgraph > $pval_bedgraph_srt
 		sys bedGraphToBigWig $pval_bedgraph_srt $chrsz $pval_bigwig
 		sys rm -f $pval_bedgraph $pval_bedgraph_srt
 
