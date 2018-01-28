@@ -30,6 +30,7 @@ no_gpeak_filt 	:= false 	help Disable gapped peak filtering through narrow peak 
 no_browser_tracks := false 	help Disable generation of genome browser tracks (workaround for bzip2 shared library issue).
 pe_xcor_only 	:= false 	help (PE ONLY) Align R1 of paired end fastqs only and for cross-correlation analysis. All other analyses and QCs will be disabled.
 pe_no_trim_fastq := false 	help (PE ONLY) No fastq trimming and use PE tagAlign for cross-correlation analysis.
+no_jsd 		:= false 	help Disable JSD plot generation
 disable_gb_peak := true // disable gapped/broad peak generation
 
 help() // print help and exit if no parameters are given
@@ -139,6 +140,7 @@ void read_conf_chipseq() {
 	no_pseudo_rep	= get_conf_val_bool( no_pseudo_rep, 	["no_pseudo_rep"] )
 	no_xcor		= get_conf_val_bool( no_xcor, 		["no_xcor"] )
 	no_gpeak_filt	= get_conf_val_bool( no_gpeak_filt, 	["no_gpeak_filt"] )
+	no_jsd		= get_conf_val_bool( no_jsd, 		["no_jsd"] )
 	no_browser_tracks = get_conf_val_bool( no_browser_tracks,	["no_browser_tracks"] )
 	pe_xcor_only = get_conf_val_bool( pe_xcor_only,	["pe_xcor_only"] )
 	pe_no_trim_fastq = get_conf_val_bool( pe_no_trim_fastq,	["pe_no_trim_fastq"] )
@@ -193,6 +195,7 @@ void read_conf_chipseq() {
 	print( "Disable genome browser tracks\t: $no_browser_tracks\n" )	
 	print( "Disable all QCs except cross-corr. (PE only)\t: $pe_xcor_only\n" )
 	print( "No fastq trimming and use PE tagAlign for cross-corr. (PE only)\t: $pe_no_trim_fastq\n" )
+	print( "Disable JSD plot generation\t\t: $no_jsd\n" )
 }
 
 void init_filetable() { // init file table labels in HTML report
@@ -382,6 +385,7 @@ void align() {
 }
 
 void jsd() { // plot fingerprint
+	if ( no_jsd ) return
 	if ( filt_bam.hasKey("ctl1") && filt_bam.hasKey("rep1") ) {
 		nth_sam_idx := min(2,nth)
 

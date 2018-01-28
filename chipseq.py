@@ -138,6 +138,7 @@ def get_default_param_dict(): # this is not ordered
                 "subsample_chip"  : { "_order_" : 0, "_default_" : "0", "_help_" : "Number of reads to subsample IP replicate. Subsampled tagalign will be used for analysis (peak and idr) downstream (0: no subsampling)." },
                 "subsample_ctl"   : { "_order_" : 1, "_default_" : "0", "_help_" : "Number of reads to subsample control if non-zero (recommended: 40M or lower)." },
             },
+            "no_jsd"  : { "_order_" : 4, "_default_" : False, "_help_" : "Disable JSD plot generation." },
         },
 
         "cross_corr_analysis" : { "_order_" : 3, "_group_desc_" : "Cross-correlation analysis.",
