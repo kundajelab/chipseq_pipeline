@@ -97,7 +97,7 @@ string[] bwa_PE( string fastq1, string fastq2, string o_dir, string log_o_dir, s
 
 string bwa_aln( string fastq, string o_dir, string group, int nth_bwa ) {
 
-	prefix 	:= replace_dir( rm_ext( fastq, "fastq" ), o_dir )
+	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	sai 	:= "$prefix.sai"	
 	
 	in 	:= [ fastq ]
@@ -127,7 +127,7 @@ string bwa_aln( string fastq, string o_dir, string group, int nth_bwa ) {
 
 string[] bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, string group, int nth_bwa ) {
 
-	prefix 	:= replace_dir( rm_ext( fastq, "fastq" ), o_dir )
+	prefix 	:= replace_dir( rm_ext( fastq, ["fastq","fq"] ), o_dir )
 	prefix2 := replace_dir( prefix, log_o_dir )
 	bam 	:= "$prefix.bam"
 	qc	:= "$prefix2.flagstat.qc"
@@ -163,7 +163,7 @@ string[] bwa_sam( string fastq, string sai, string o_dir, string log_o_dir, stri
 
 string[] bwa_sam_PE( string fastq1, string fastq2, string sai1, string sai2, string o_dir, string log_o_dir, string group, int nth_bwa ) {
 
-	prefix 	:= replace_dir( rm_ext( fastq1, "fastq" ), o_dir ) + ".PE2SE"
+	prefix 	:= replace_dir( rm_ext( fastq1, ["fastq","fq"] ), o_dir ) + ".PE2SE"
 	prefix2 := replace_dir( prefix, log_o_dir )
 	sam 	:= "$prefix.sam.gz"
 	badcigar:= "$prefix.badReads"
