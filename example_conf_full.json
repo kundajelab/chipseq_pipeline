@@ -21,7 +21,7 @@
 		"gensz" : ""
 	},
 	"cluster" : {
-		"use_system" : "local",
+		"system" : "local",
 		"nice" : 0,
 		"retrial" : 0,
 		"q" : ""
@@ -73,7 +73,7 @@
 		"true_rep" : false,
 		"no_pseudo_rep" : false,
 		"spp" : {
-			"npeak_spp" : 300000,
+			"cap_num_peak_spp" : 300000,
 			"max_ppsize_spp" : "",
 			"speak_spp" : -1,
 			"extra_param_spp" : ""
