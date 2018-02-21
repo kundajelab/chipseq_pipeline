@@ -595,7 +595,14 @@ void align_SE( int ctl, int rep, int nth_rep ) {
 			// wait
 
 			if ( !no_xcor ) {
-				subsampled_tag_xcor := subsample_tag( tag_, parse_number( subsample_xcor ), true, aln_o_dir, group )
+				string tag_xcor
+				if ( bam_ ) {
+					tag_xcor = bam_to_tag( bam_, aln_o_dir, group )
+				}
+				else {
+					tag_xcor = tag_
+				}
+				subsampled_tag_xcor := subsample_tag( tag_xcor, parse_number( subsample_xcor ), true, aln_o_dir, group )
 				wait
 				// xcor for true rep
 				string xcor_qc_, xcor_plot_
@@ -713,16 +720,10 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 	}
 	wait
 
-	string filt_bam_, dup_qc_, pbc_qc_, flagstat_nodup_qc_, filt_bam_R1
+	string filt_bam_, dup_qc_, pbc_qc_, flagstat_nodup_qc_
 	string deduped_reads
 
 	if ( is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
-		if ( bam_R1 && ctl==0 ) {
-			( filt_bam_R1, tmp ) \
-				= dedup_bam( bam_R1, aln_o_dir, qc_o_dir, group, pe_xcor_only ? nth_rep : 1 )
-			add_file_to_report( filt_bam_R1, "filt. bam R1", group, "Alignment/$long/Bam R1" )
-		}
-
 		if ( !pe_xcor_only ) {
 
 			if ( is_input_bam( ctl, rep ) ) bam_ = get_bam( ctl, rep )
@@ -757,8 +758,8 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 	string tag_, bedpe, tag_R1
 	
 	if ( is_input_filt_bam( ctl, rep ) || is_input_bam( ctl, rep ) || is_input_fastq( ctl, rep ) ) {
-		if ( filt_bam_R1 && ctl==0 ) {
-			tag_R1 = bam_to_tag( filt_bam_R1, aln_o_dir, group )
+		if ( ctl==0 && bam_R1 ) {
+			tag_R1 = bam_to_tag( bam_R1, aln_o_dir, group )
 			add_file_to_report( tag_R1, "tag-align-R1", group, "Alignment/$long/Tag-align R1" )
 		}
 
@@ -824,6 +825,13 @@ void align_PE( int ctl, int rep, int nth_rep ) {
 			string subsampled_tag_xcor
 			if ( tag_R1 ) {
 				subsampled_tag_xcor = subsample_tag( tag_R1, parse_number( subsample_xcor ), true, aln_o_dir, group )
+			}
+			else if ( bam_ ) {
+				bedpe_ := bam_to_bedpe( bam_, aln_o_dir, group )
+				wait
+				tag_xcor := bedpe_to_tag( bedpe_, aln_o_dir, group )
+				wait
+				subsampled_tag_xcor = subsample_tag_PE_for_xcor( tag_xcor, parse_number( subsample_xcor ), true, aln_o_dir, group )
 			}
 			else {
 				subsampled_tag_xcor = subsample_tag_PE_for_xcor( tag_, parse_number( subsample_xcor ), true, aln_o_dir, group )
@@ -1436,13 +1444,14 @@ void naive_overlap() {
 
 	qc_o_dir := mkdir( "$out_dir/qc" ) // create qc output dir.
 
-	// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
-	(peak_overlap_qc, peak_overlap_opt, peak_overlap_consv) = peak_overlap_final_qc( peak_overlap_tr, peak_overlap_pr, peak_overlap_ppr, peak_overlap_o_dir, qc_o_dir, "" )
+	if ( !true_rep && !no_pseudo_rep ) {
+		// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
+		(peak_overlap_qc, peak_overlap_opt, peak_overlap_consv) = peak_overlap_final_qc( peak_overlap_tr, peak_overlap_pr, peak_overlap_ppr, peak_overlap_o_dir, qc_o_dir, "" )
 
-	add_file_to_report( peak_overlap_qc, "Naive overlap QC log", "", "QC and logs/Naive overlap/Overlap QC log" )
-	add_file_to_report( peak_overlap_opt, "opt. overlap peak", "", "Peaks/"+peak_caller.toUpper()+"/Naive overlap/Optimal set/Overlapping peak" )
-	add_file_to_report( peak_overlap_consv, "consv. overlap peak", "", "Peaks/"+peak_caller.toUpper()+"/Naive overlap/Conservative set/Overlapping peak" )
-
+		add_file_to_report( peak_overlap_qc, "Naive overlap QC log", "", "QC and logs/Naive overlap/Overlap QC log" )
+		add_file_to_report( peak_overlap_opt, "opt. overlap peak", "", "Peaks/"+peak_caller.toUpper()+"/Naive overlap/Optimal set/Overlapping peak" )
+		add_file_to_report( peak_overlap_consv, "consv. overlap peak", "", "Peaks/"+peak_caller.toUpper()+"/Naive overlap/Conservative set/Overlapping peak" )
+	}
 	// FRiP (fraction of reads in peak)
 	if ( !is_input_peak() && xcor_qc ) {
 		string{} fraglen_true
@@ -1549,13 +1558,14 @@ void do_idr() {
 
 	qc_o_dir := mkdir( "$out_dir/qc" ) // create qc output dir.
 
-	// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
-	(idr_qc, idr_opt, idr_consv) = idr_final_qc( idr_tr, idr_pr, idr_ppr, idr_o_dir, qc_o_dir, "" )
+	if ( !true_rep && !no_pseudo_rep ) {
+		// get final idr qc score, use idr final idr narrow peak files from true, pseudo and pooled pseudo reps
+		(idr_qc, idr_opt, idr_consv) = idr_final_qc( idr_tr, idr_pr, idr_ppr, idr_o_dir, qc_o_dir, "" )
 
-	add_file_to_report( idr_qc, "IDR QC log", "", "QC and logs/IDR/IDR QC log" )
-	add_file_to_report( idr_opt, "opt. IDR peak", "", "Peaks/"+peak_caller.toUpper()+"/IDR/Optimal set/IDR peak" )
-	add_file_to_report( idr_consv, "consv. IDR peak", "", "Peaks/"+peak_caller.toUpper()+"/IDR/Conservative set/IDR peak" )
-
+		add_file_to_report( idr_qc, "IDR QC log", "", "QC and logs/IDR/IDR QC log" )
+		add_file_to_report( idr_opt, "opt. IDR peak", "", "Peaks/"+peak_caller.toUpper()+"/IDR/Optimal set/IDR peak" )
+		add_file_to_report( idr_consv, "consv. IDR peak", "", "Peaks/"+peak_caller.toUpper()+"/IDR/Conservative set/IDR peak" )
+	}
 	// FRiP (fraction of reads in peak)
 	if ( !is_input_peak() && xcor_qc ) {
 		string{} fraglen_true
