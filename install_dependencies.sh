@@ -44,7 +44,7 @@ conda install graphviz -c anaconda -y
 conda install ucsc-bedgraphtobigwig -c bioconda -y
 conda install ucsc-bedtobigbed -c bioconda -y
 
-# CONDA_BIN=$(dirname $(which activate))/../envs/${ENV_NAME}/bin
+#CONDA_BIN=$(dirname $(which activate))/../envs/${ENV_NAME}/bin
 #CONDA_BIN=$(dirname $(which activate))
 CONDA_BIN=$(dirname $(which bedtools))
 CONDA_EXTRA="$CONDA_BIN/../extra"
@@ -70,6 +70,10 @@ CONTENTS=("export PYTHONNOUSERSITE=True")
 add_to_activate
 #CONTENTS=("export PYTHONPATH=$CONDA_LIB/python2.7/site-packages:\$PYTHONPATH")
 #add_to_activate
+
+### decompress MACS2 python egg
+cd $CONDA_LIB/python2.7/site-packages
+unzip -o MACS2-2.1.1.20160309-py2.7-linux-x86_64.egg
 
 # install PeakSeq
 if [[ ${INSTALL_PEAKSEQ} == 1 ]]; then
