@@ -91,6 +91,7 @@ def get_default_param_dict(): # this is not ordered
             "q"           : { "_order_" : 3, "_default_" : "", "_help_" : "Submit tasks to a specified cluster queue." },
             "cluster_task_min_len": { "_order_" : 4, "_default_" : 60, "_help_" : "Minimum length for a cluster job in seconds (dealing with NFS delayed write)." },
             "cluster_task_delay"  : { "_order_" : 5, "_default_" : 0, "_help_" : "Constant delay for every job in seconds (dealing with NFS delayed write)." },
+            "q_for_slurm_account" : { "_order_" : 6, "_default_" : False, "_help_" : "Use --account instead of -p (partition) for SLURM." },
         },
 
         "resource" : { "_order_" : 1, "_group_desc_" : "System resource and parallelization settings. '-nth' is the most important parameter to parallelize a pipeline. You can specify \

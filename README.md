@@ -229,14 +229,15 @@ Press Ctrl + C on a terminal or send any kind of kill signals to it. Please note
 
 ## Running pipelines with a cluster engine
 
-On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose `[CLUSTER_ENGINE]` between `sge` (default on Kundaje clusters and SCG4), `slurm` (default on Sherlock) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue/partition `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
+On servers with a cluster engine (such as Sun Grid Engine and SLURM), **DO NOT QSUB/SBATCH BDS COMMAND LINE**. Run BDS command directly on login nodes. BDS is a task manager and it will automatically submit(qsub/sbatch) and manage its sub tasks. You can choose `[CLUSTER_ENGINE]` between `sge` (default on Kundaje), `slurm` (default on Sherlock and SCG) and `local` (default for others). You can also let BDS submit its subtasks to a specific queue/partition `[QUEUE_NAME]` on Sun Grid Engine or SLURM.
 
 ```
-$ python chipseq.py -system [CLUSTER_ENGINE] ...
-$ python chipseq.py -system [CLUSTER_ENGINE] -q [QUEUE_NAME] ...
+$ python chipseq.py -system sge -q [SGE_QUEUE_NAME] ...
+$ python chipseq.py -system slurm -q [SLURM_PARTITON_NAME] ... # Sherlock example 
+$ python chipseq.py -system slurm -q_for_slurm_account -q [SLURM_ACCOUNT_NAME] ... # SCG example
 ```
 
-**IMPORTANT!** Please read this section carefully if you run pipelines on Stanford SCG4 and Sherlock cluster.
+**IMPORTANT!** Please read this section carefully if you run pipelines on Stanford SCG and Sherlock cluster.
 
 Most clusters have a policy to limit number of threads and memory per user on a login node. One BDS process, as a Java-based task manager, takes up to 1GB of memory and 50 threads even though it just submits/monitors subtasks. So if you want to run more than 50 pipelines in parallel, your cluster will kill BDS processes due to resource limit on a login node (check resource limit per user with `ulimit -a`). For example of 50 pipelines, 50 GB of memory and 2500 threads will be taken by 50 BDS processes. So the Workaround for this is to make an interactive node to keep all BDS processes alive. Such interactive node must have long walltime enough to wait for all pipelines in it to finish. Recommended resource setting is 1.0GB memory per pipeline.
 
@@ -250,13 +251,18 @@ SLURM example to make an interactive node for 100 pipelines: 1 cpu, 100GB memory
 
 ```
 $ srun -n 1 --mem 100G -t 3-0 -p [YOUR_PARTITON] --qos normal --pty /bin/bash -i -l 
+$ srun -n 1 --mem 100G -t 3-0 --account [YOUR_ACCOUNT] --qos normal --pty /bin/bash -i -l 
 ```
 
 Once you get an interactive node, repeat the following commands per sample to run a pipeline.
 
 ```
 $ cd [WORK_DIR]
-$ python chipseq.py -screen [SCREEN_NAME] -q [SGE_QUEUE_OR_SLURM_PARTITION] -nth [MAX_NUM_THREAD_PER_PIPELINE] ...
+
+$ python chipseq.py -screen [SCREEN_NAME] -system [CLUSTER_ENGINE: slurm or sge] -q [SGE_QUEUE_OR_SLURM_PARTITION] -nth [MAX_NUM_THREAD_PER_PIPELINE] ...
+
+$ python chipseq.py -screen [SCREEN_NAME] -system slurm -q_for_slurm_account -q [SLURM_ACCOUNT] -nth [MAX_NUM_THREAD_PER_PIPELINE] ...
+
 $ sleep 2 # wait for 2 seconds for safety
 ```
 
@@ -371,7 +377,7 @@ Default `-nth` for each cluster is defined on `./default.env` (e.g. 16 on SCG an
 
 The pipeline automatically distributes `[MAX_TOTAL_NO_THREADS]` threads for jobs according to corresponding input file sizes. For example of two fastqs (1GB and 2GB) with `-nth 6`, 2 and 4 threads are allocated for aligning 1GB and 2GB fastqs, respectively. The same policy applies to other multi-threaded tasks like deduping and peak calling.
 
-However, all multi-threaded tasks (like bwa, bowtie2, spp and macs2) still have their own max. memory (`-mem_APPNAME [MEM_APP]`) and walltime (`-wt_APPNAME [WALLTIME_APP]`) settings. Max. memory is **NOT PER CPU**. For example on Kundaje lab cluster (with SGE flag activated `bds -s sge chipseq.bds ...`) or on SCG4, the actual shell command submitted by BDS for each task is like the following:
+However, all multi-threaded tasks (like bwa, bowtie2, spp and macs2) still have their own max. memory (`-mem_APPNAME [MEM_APP]`) and walltime (`-wt_APPNAME [WALLTIME_APP]`) settings. Max. memory is **NOT PER CPU**. For example on Kundaje lab cluster (with SGE flag activated `bds -s sge chipseq.bds ...`), the actual shell command submitted by BDS for each task is like the following:
 
 ```
 qsub -V -pe shm [NTH_ALLOCATED_FOR_APP] -h_vmem=[MEM_APP]/[NTH_ALLOCATED_FOR_APP] -h_rt=[WALLTIME_APP] -s_rt=[WALLTIME_APP] ...
