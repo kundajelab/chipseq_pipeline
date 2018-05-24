@@ -148,6 +148,7 @@ def get_default_param_dict(): # this is not ordered
             "subsample_xcor"    : { "_order_" : 1, "_default_" : "15M", "_help_" : "Number of reads to be subsampled for cross corr. analysis only." },
             "speak_xcor"        : { "_order_" : 2, "_default_" : -1, "_help_" : "Set user-defined cross-corr. peak strandshift (-speak= in run_spp.R). Use -1 to disable." },
             "extra_param_xcor"  : { "_order_" : 3, "_default_" : "", "_help_" : "Set extra parameters for run_spp.R" },
+            "max_ppsize_xcor"    : { "_order_" : 4, "_default_" : "", "_help_" : "R stack size (R parameter --max-ppsize=; between 5000 and 5000000) for cross-corr. analysis."  },
         },
 
         "callpeak" : { "_order_" : 4, "_group_desc_" : "Peak-calling settings. spp and macs2 are stable for calling peaks and IDR analysis on called peaks. peakseq and gem are currently in BETA test.",

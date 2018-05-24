@@ -95,7 +95,7 @@ string[] macs2_chipseq_npeak_and_signal( string tag, string ctl_tag, string frag
 		sys macs2 callpeak -t $tag $ctl -f BED -n $peak_o_dir/$prefix_basename -g $gensz -p $pval_thresh_macs2 --nomodel --shift $shift_macs2 $extsize_param --keep-dup $keep_dup_macs2 -B --SPMR $extra_param_macs2
 
 		//# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}' > $npeakfile.tmp
+		sys sort -k 8gr,8gr "$prefix"_peaks.narrowPeak | awk 'BEGIN{OFS="\t"}{$4="Peak_"NR; if ($2<0) $2=0; if ($3<0) $3=0; print $0}' > $npeakfile.tmp
 		sys head -n $cap_num_peak_macs2 $npeakfile.tmp | gzip -nc > $npeakfile
 		sys rm -f $npeakfile.tmp
 
