@@ -1,3 +1,7 @@
+This pipeline has been deprecated
+===================================================
+New WDL-based pipeline is [here](https://github.com/kundajelab/chip-seq-pipeline2).
+
 AQUAS Transcription Factor and Histone ChIP-Seq processing pipeline
 ==============
 
