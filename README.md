@@ -1,6 +1,8 @@
-This pipeline has been deprecated
+This particular implementation of the pipeline has been deprecated (June 2018)
 ===================================================
-New WDL-based pipeline is [here](https://github.com/kundajelab/chip-seq-pipeline2).
+A new WDL-based pipeline is [here](https://github.com/kundajelab/chip-seq-pipeline2). Note that the updated WDL-based pipeline is an exact replica of the pipeline in this repository except that it uses WDL instead of BigDataScript for workflow management. We recommend using the WDL version since it easier to install. Also all future updates and bug fixes will be made to the WDL-based pipeline. 
+
+If you have processed datasets using the pipeline in this repository, you do NOT need to rerun anything. For future runs, we recommend switching to the WDL-based pipeline.
 
 AQUAS Transcription Factor and Histone ChIP-Seq processing pipeline
 ==============
@@ -12,7 +14,9 @@ AQUAS Transcription Factor and Histone ChIP-Seq processing pipeline
 
 # Introduction
 
-The AQUAS pipeline is based off the ENCODE (phase-3) transcription factor and histone ChIP-seq pipeline specifications (by Anshul Kundaje) in [this google doc](https://docs.google.com/document/d/1lG_Rd7fnYgRpSIqrIfuVlAz2dW1VaSQThzk836Db99c/edit#) . However, please note that this is NOT the official ENCODE (phase-3) pipeline but rather a free and open-source implementation that adheres to the specifications. The official ENCODE (phase-3) pipeline is being implemented by the ENCODE DCC on a cloud computing platform knows as DNAnexus.It will be released shortly by the ENCODE DCC and will be linked to from this site as well. The official DNAnexus pipeline is open-source as well. However, users need to create an account on DNAnexus and pay for cloud compute. We have created this free version as an alternative for those who might have access to local compute infrastructure and not necessarily want to pay for DNAnexus cloud compute. We have run extensive tests to make sure the output of AQUAS and the official DNAnexus pipeline match exactly. We plan to continue making sure AQUAS and the DNAnexus implementation continue to remain in sync.
+The AQUAS pipeline implements the ENCODE (phase-3) transcription factor and histone ChIP-seq pipeline specifications (by Anshul Kundaje) in [this google doc](https://docs.google.com/document/d/1lG_Rd7fnYgRpSIqrIfuVlAz2dW1VaSQThzk836Db99c/edit#).
+
+*NOTE:* We recommend using the [WDL-based implementation]((https://github.com/kundajelab/chip-seq-pipeline2) of this pipeline here as it uses a more stable and maintained workflow management system.
 
 # Installation
 
