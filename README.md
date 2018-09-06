@@ -1,8 +1,7 @@
-This particular implementation of the pipeline has been deprecated (June 2018)
+This pipeline has been deprecated as of June 2018. Please update your pipelines to the official WDL-based ENCODE DCC pipeline at [https://github.com/ENCODE-DCC/chip-seq-pipeline2](https://github.com/ENCODE-DCC/chip-seq-pipeline2) (June 2018)
 ===================================================
-A new WDL-based pipeline is [here](https://github.com/kundajelab/chip-seq-pipeline2). Note that the updated WDL-based pipeline is an exact replica of the pipeline in this repository except that it uses WDL instead of BigDataScript for workflow management. We recommend using the WDL version since it easier to install. Also all future updates and bug fixes will be made to the WDL-based pipeline. 
 
-If you have processed datasets using the pipeline in this repository, you do NOT need to rerun anything. For future runs, we recommend switching to the WDL-based pipeline.
+*June 2018:* Note that the updated official ENCODE DCC pipeline is an exact replica of the pipeline in this repository except that it uses WDL instead of BigDataScript for workflow management. We recommend transitioning to the WDL version since it easier to install. Also all future updates and bug fixes will be made to the WDL-based pipeline. If you have processed datasets using the pipeline in this repository, you do NOT need to rerun anything. For future runs, we recommend switching to the WDL-based pipeline.
 
 AQUAS Transcription Factor and Histone ChIP-Seq processing pipeline
 ==============
