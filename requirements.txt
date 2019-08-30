@@ -15,7 +15,7 @@ matplotlib ==1.5.1
 macs2 ==2.1.0
 boost ==1.57.0
 openssl ==1.0.2g-0
-graphviz=2.38.0=1
+graphviz==2.38.0
 libtool
 ghostscript
 pigz

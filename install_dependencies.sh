@@ -20,7 +20,7 @@ function add_to_activate {
 
 source activate aquas_chipseq
 
-CONDA_BIN=$(dirname $(which activate))
+CONDA_BIN=$CONDA_PREFIX/bin
 CONDA_EXTRA="$CONDA_BIN/../extra"
 CONDA_ACTIVATE_D="$CONDA_BIN/../etc/conda/activate.d"
 CONDA_INIT="$CONDA_ACTIVATE_D/init.sh"
@@ -39,12 +39,12 @@ CONTENTS=("export PICARDROOT=$CONDA_BIN/../share/picard-1.97-0")
 add_to_activate
 
 #### install Wiggler (for generating signal tracks)
-cd $CONDA_EXTRA
-wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz -N
-tar zxvf align2rawsignal.2.0.tgz
-rm -f align2rawsignal.2.0.tgz
-CONTENTS=("export PATH=\$PATH:$CONDA_EXTRA/align2rawsignal/bin")
-add_to_activate
+#cd $CONDA_EXTRA
+#wget https://align2rawsignal.googlecode.com/files/align2rawsignal.2.0.tgz -N
+#tar zxvf align2rawsignal.2.0.tgz
+#rm -f align2rawsignal.2.0.tgz
+#CONTENTS=("export PATH=\$PATH:$CONDA_EXTRA/align2rawsignal/bin")
+#add_to_activate
 
 #### install MCR (560MB)
 cd $CONDA_EXTRA
@@ -69,7 +69,8 @@ add_to_activate
 
 #### install run_spp.R (Anshul's phantompeakqualtool)
 cd $CONDA_EXTRA
-wget https://phantompeakqualtools.googlecode.com/files/ccQualityControl.v.1.1.tar.gz -N
+wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/phantompeakqualtools/ccQualityControl.v.1.1.tar.gz -N
+#wget https://phantompeakqualtools.googlecode.com/files/ccQualityControl.v.1.1.tar.gz -N
 tar zxvf ccQualityControl.v.1.1.tar.gz
 rm -f ccQualityControl.v.1.1.tar.gz
 chmod 755 -R phantompeakqualtools
@@ -86,7 +87,7 @@ if [ $? != 0 ]; then
   exit
 fi
 
-CONDA_BIN=$(dirname $(which activate))
+CONDA_BIN=$CONDA_PREFIX/bin
 CONDA_EXTRA="$CONDA_BIN/../extra"
 mkdir -p $CONDA_EXTRA
 
